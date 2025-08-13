@@ -92,19 +92,22 @@ def generate_player_avatars_sdxl(
 
     # Initialise the SDXL pipeline
     model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+    init_progress += 1
+    if progress_callback:
+        progress_callback(init_progress, overall_total)
     pipe = StableDiffusionXLPipeline.from_pretrained(
         model_id, torch_dtype=torch.float16
     )
+
     init_progress += 1
     if progress_callback:
         progress_callback(init_progress, overall_total)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
     pipe.to(device)
+
     init_progress += 1
     if progress_callback:
         progress_callback(init_progress, overall_total)
-
     if controlnet_path:
         try:
             from diffusers import ControlNetModel
@@ -121,10 +124,6 @@ def generate_player_avatars_sdxl(
             pipe.load_ip_adapter(ip_adapter_path)  # type: ignore[attr-defined]
         except Exception:
             pass
-
-    init_progress += 1
-    if progress_callback:
-        progress_callback(init_progress, overall_total)
 
     team_map = {t.team_id: t for t in teams}
 
