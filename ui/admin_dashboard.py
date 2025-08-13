@@ -26,6 +26,7 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
+from utils.ubl_avatar_generator import INIT_STEPS
 from models.trade import Trade
 import csv
 import os
@@ -224,11 +225,12 @@ class AdminDashboard(QWidget):
             player_ids.update(roster.act + roster.aaa + roster.low)
 
         total = sum(1 for pid in player_ids if pid in players)
+        overall_total = total + INIT_STEPS
         progress = QProgressDialog(
             "Generating player avatars...",
             "Cancel",
             0,
-            total,
+            overall_total,
             self,
         )
         progress.setWindowTitle("Generating Avatars")

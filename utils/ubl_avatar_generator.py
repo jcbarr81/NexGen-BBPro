@@ -14,6 +14,11 @@ from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.roster_loader import load_roster
 
+# Number of progress steps used during model initialisation before any
+# avatars are generated. Exposed so UIs can extend their progress range
+# accordingly.
+INIT_STEPS = 3
+
 
 def generate_player_avatars_sdxl(
     out_dir: str | None = None,
@@ -73,6 +78,8 @@ def generate_player_avatars_sdxl(
 
     total = sum(1 for pid in players if pid in player_team)
     completed = 0
+    init_progress = 0
+    overall_total = total + INIT_STEPS
 
     if out_dir is None:
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -81,19 +88,22 @@ def generate_player_avatars_sdxl(
 
     cache = Cache(os.path.join(out_dir, ".cache"))
     if progress_callback:
-        progress_callback(0, total)
+        progress_callback(0, overall_total)
 
     # Initialise the SDXL pipeline
     model_id = "stabilityai/stable-diffusion-xl-base-1.0"
-    if progress_callback:
-        progress_callback(0, total)
     pipe = StableDiffusionXLPipeline.from_pretrained(
         model_id, torch_dtype=torch.float16
     )
+    init_progress += 1
+    if progress_callback:
+        progress_callback(init_progress, overall_total)
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     pipe.to(device)
+    init_progress += 1
     if progress_callback:
-        progress_callback(0, total)
+        progress_callback(init_progress, overall_total)
 
     if controlnet_path:
         try:
@@ -111,6 +121,10 @@ def generate_player_avatars_sdxl(
             pipe.load_ip_adapter(ip_adapter_path)  # type: ignore[attr-defined]
         except Exception:
             pass
+
+    init_progress += 1
+    if progress_callback:
+        progress_callback(init_progress, overall_total)
 
     team_map = {t.team_id: t for t in teams}
 
@@ -136,7 +150,7 @@ def generate_player_avatars_sdxl(
                 img.save(thumb_path)
             completed += 1
             if progress_callback:
-                progress_callback(completed, total)
+                progress_callback(init_progress + completed, overall_total)
             continue
 
         prompt = (
@@ -153,7 +167,7 @@ def generate_player_avatars_sdxl(
 
         completed += 1
         if progress_callback:
-            progress_callback(completed, total)
+            progress_callback(init_progress + completed, overall_total)
 
     cache.close()
     return out_dir
