@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QApplication,
     QProgressDialog,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, pyqtSlot
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from utils.trade_utils import load_trades, save_trade
@@ -223,7 +223,7 @@ class AdminDashboard(QWidget):
         total = sum(1 for pid in player_ids if pid in players)
         progress = QProgressDialog(
             "Generating player avatars...",
-            None,
+            "Cancel",
             0,
             total,
             self,
@@ -231,33 +231,94 @@ class AdminDashboard(QWidget):
         progress.setWindowTitle("Generating Avatars")
         progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setValue(0)
-        progress.show()
-        QApplication.processEvents()
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
 
-        def cb(done: int, _total: int) -> None:
-            progress.setValue(done)
-            QApplication.processEvents()
+        class AvatarWorker(QObject):
+            progress = pyqtSignal(int)
+            finished = pyqtSignal(str)
+            error = pyqtSignal(str)
+            canceled = pyqtSignal()
 
-        try:
-            from utils.avatar_generator import generate_player_avatars as gen_avatars
+            def __init__(self, players, teams):
+                super().__init__()
+                self.players = players
+                self.teams = teams
+                self._cancel = False
 
-            out_dir = gen_avatars(
-                progress_callback=cb,
-                use_sdxl=True,
-                players=players,
-                teams=teams,
-                controlnet_path=None,
-                ip_adapter_path=None,
-            )
+            def cancel(self):
+                self._cancel = True
+
+            @pyqtSlot()
+            def run(self):
+                from utils.avatar_generator import generate_player_avatars as gen_avatars
+
+                def cb(done: int, _total: int) -> None:
+                    if self._cancel:
+                        raise RuntimeError("cancelled")
+                    self.progress.emit(done)
+
+                try:
+                    out_dir = gen_avatars(
+                        progress_callback=cb,
+                        use_sdxl=True,
+                        players=self.players,
+                        teams=self.teams,
+                        controlnet_path=None,
+                        ip_adapter_path=None,
+                    )
+                    if self._cancel:
+                        self.canceled.emit()
+                    else:
+                        self.finished.emit(out_dir)
+                except Exception as e:  # includes cancellation
+                    if self._cancel:
+                        self.canceled.emit()
+                    else:
+                        self.error.emit(str(e))
+
+        worker = AvatarWorker(players, teams)
+        thread = QThread(self)
+        worker.moveToThread(thread)
+
+        worker.progress.connect(progress.setValue)
+
+        def cleanup():
+            progress.close()
+            thread.quit()
+            thread.wait()
+            worker.deleteLater()
+            thread.deleteLater()
+
+        def handle_finished(out_dir: str) -> None:
             QMessageBox.information(
                 self,
                 "Avatars Generated",
                 f"Player avatars created in: {out_dir}",
             )
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"Failed to generate avatars: {e}")
-        finally:
-            progress.close()
+            cleanup()
+
+        def handle_error(msg: str) -> None:
+            QMessageBox.warning(self, "Error", f"Failed to generate avatars: {msg}")
+            cleanup()
+
+        def handle_canceled() -> None:
+            QMessageBox.information(self, "Cancelled", "Avatar generation was cancelled.")
+            cleanup()
+
+        worker.finished.connect(handle_finished)
+        worker.error.connect(handle_error)
+        worker.canceled.connect(handle_canceled)
+
+        progress.canceled.connect(worker.cancel)
+
+        thread.started.connect(worker.run)
+        thread.start()
+        progress.exec()
+        if thread.isRunning():
+            worker.cancel()
+            thread.quit()
+            thread.wait()
         return
 
     def open_exhibition_dialog(self):
