@@ -80,14 +80,20 @@ def generate_player_avatars_sdxl(
     os.makedirs(out_dir, exist_ok=True)
 
     cache = Cache(os.path.join(out_dir, ".cache"))
+    if progress_callback:
+        progress_callback(0, total)
 
     # Initialise the SDXL pipeline
     model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+    if progress_callback:
+        progress_callback(0, total)
     pipe = StableDiffusionXLPipeline.from_pretrained(
         model_id, torch_dtype=torch.float16
     )
     device = "cuda" if torch.cuda.is_available() else "cpu"
     pipe.to(device)
+    if progress_callback:
+        progress_callback(0, total)
 
     if controlnet_path:
         try:
