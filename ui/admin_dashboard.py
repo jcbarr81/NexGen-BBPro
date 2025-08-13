@@ -232,6 +232,7 @@ class AdminDashboard(QWidget):
         progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setValue(0)
         progress.show()
+        QApplication.processEvents()
 
         def cb(done: int, _total: int) -> None:
             progress.setValue(done)
