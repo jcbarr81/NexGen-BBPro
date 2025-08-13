@@ -10,11 +10,15 @@ class StandingsWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Standings")
+        # Expand the dialog so the standings HTML can be viewed without scrolling
+        self.setGeometry(100, 100, 1000, 800)
 
         layout = QVBoxLayout(self)
 
         viewer = QTextEdit()
         viewer.setReadOnly(True)
+        # Ensure the text area grows with the dialog
+        viewer.setMinimumHeight(760)
 
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         html_path = os.path.join(base_dir, "samples", "StandingsSample.html")
