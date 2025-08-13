@@ -14,10 +14,14 @@ USER_FILE = os.path.abspath(
 )
 
 class LoginWindow(QWidget):
-    def __init__(self):
+    def __init__(self, splash=None):
         super().__init__()
         self.setWindowTitle("UBL Login")
         self.setGeometry(100, 100, 300, 150)
+
+        # Keep a reference to the splash screen so it can be closed after
+        # successful authentication.
+        self.splash = splash
 
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
@@ -77,6 +81,11 @@ class LoginWindow(QWidget):
         # Display the dashboard in a maximized window so standard window
         # controls (minimize, maximize, close) are available.
         self.dashboard.showMaximized()
+
+        # Close the splash screen once the dashboard is displayed
+        if self.splash:
+            self.splash.close()
+
         self.close()
 
 if __name__ == "__main__":

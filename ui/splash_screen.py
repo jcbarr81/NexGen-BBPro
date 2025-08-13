@@ -43,7 +43,9 @@ class SplashScreen(QWidget):
         self.login_window = None
 
     def open_login(self):
-        """Show the login window and hide the splash screen."""
-        self.login_window = LoginWindow()
+        """Show the login window while keeping the splash visible."""
+        # Disable the button to prevent spawning multiple login windows
+        self.login_button.setEnabled(False)
+
+        self.login_window = LoginWindow(self)
         self.login_window.show()
-        self.hide()
