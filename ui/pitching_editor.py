@@ -52,7 +52,10 @@ class PitchingEditor(QDialog):
             with open(path, newline='', encoding="utf-8") as f:
                 for row in csv.DictReader(f):
                     pid = row["player_id"].strip()
-                    name = f"{row['first_name']} {row['last_name']} ({row['primary_position']})"
+                    # Show the pitcher's role (SP/RP) instead of raw "P" when possible
+                    role = get_role(row)
+                    display_pos = role or row["primary_position"]
+                    name = f"{row['first_name']} {row['last_name']} ({display_pos})"
                     players[pid] = {
                         "name": name,
                         "primary_position": row["primary_position"],
