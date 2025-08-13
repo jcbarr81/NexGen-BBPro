@@ -53,7 +53,12 @@ class PitchingEditor(QDialog):
                 for row in csv.DictReader(f):
                     pid = row["player_id"].strip()
                     name = f"{row['first_name']} {row['last_name']} ({row['primary_position']})"
-                    players[pid] = {"name": name, "primary_position": row["primary_position"]}
+                    players[pid] = {
+                        "name": name,
+                        "primary_position": row["primary_position"],
+                        "role": row.get("role", ""),
+                        "endurance": row.get("endurance", ""),
+                    }
         return players
 
     def get_act_level_ids(self):
