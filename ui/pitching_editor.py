@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QGridLayout, QComboBox
 import os
 import csv
 from utils.pitcher_role import get_role
+from utils.pitching_autofill import autofill_pitching_staff
 
 class PitchingEditor(QDialog):
     def __init__(self, team_id):
@@ -107,16 +108,20 @@ class PitchingEditor(QDialog):
                                     break
 
     def autofill_staff(self):
-        available = [pid for pid, pdata in self.players_dict.items()
-                     if pid in self.act_ids and get_role(pdata)]
-        used = set()
-        for role in self.roles:
-            dropdown = self.pitcher_dropdowns[role]
+        available = [
+            (pid, pdata)
+            for pid, pdata in self.players_dict.items()
+            if pid in self.act_ids and get_role(pdata)
+        ]
+        assignments = autofill_pitching_staff(available)
+        for role, dropdown in self.pitcher_dropdowns.items():
+            pid = assignments.get(role)
+            if pid is None:
+                dropdown.setCurrentIndex(-1)
+                continue
             for i in range(dropdown.count()):
-                pid = dropdown.itemData(i)
-                if pid not in used:
+                if dropdown.itemData(i) == pid:
                     dropdown.setCurrentIndex(i)
-                    used.add(pid)
                     break
 
     def clear_staff(self):
