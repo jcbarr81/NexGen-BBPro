@@ -1,13 +1,11 @@
-from PyQt6.QtWidgets import (
-    QDialog,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-)
+from __future__ import annotations
+
+import os
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
 
 
 class StandingsWindow(QDialog):
-    """Simple dialog displaying dummy league standings."""
+    """Dialog displaying league standings using an HTML template."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -15,19 +13,15 @@ class StandingsWindow(QDialog):
 
         layout = QVBoxLayout(self)
 
-        table = QTableWidget()
-        data = [
-            ("Team A", 10, 5),
-            ("Team B", 8, 7),
-            ("Team C", 7, 8),
-            ("Team D", 5, 10),
-        ]
-        table.setColumnCount(3)
-        table.setRowCount(len(data))
-        table.setHorizontalHeaderLabels(["Team", "Wins", "Losses"])
-        for row, (team, wins, losses) in enumerate(data):
-            table.setItem(row, 0, QTableWidgetItem(team))
-            table.setItem(row, 1, QTableWidgetItem(str(wins)))
-            table.setItem(row, 2, QTableWidgetItem(str(losses)))
-        table.resizeColumnsToContents()
-        layout.addWidget(table)
+        viewer = QTextEdit()
+        viewer.setReadOnly(True)
+
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        html_path = os.path.join(base_dir, "samples", "StandingsSample.html")
+        try:
+            with open(html_path, encoding="utf-8") as f:
+                viewer.setHtml(f.read())
+        except OSError:
+            viewer.setPlainText("Standings data not found.")
+
+        layout.addWidget(viewer)
