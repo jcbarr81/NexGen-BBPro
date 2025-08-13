@@ -32,6 +32,8 @@ class Dummy:
         pass
     def setPlainText(self, *args, **kwargs):
         pass
+    def setHtml(self, *args, **kwargs):
+        pass
     def setReadOnly(self, *args, **kwargs):
         pass
     def setStyleSheet(self, *args, **kwargs):
