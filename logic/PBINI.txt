@@ -1,0 +1,1654 @@
+; There are several basic things to know about making changes to these entries
+;
+;   1. Entries must be integer values (either positive or negative).
+;   2. Comments must be preceded by a semicolon (;).
+;   3. All final chances will be clamped between 0 and 100 percent.
+;   4. Thresholds will be specified as either minimum or maximum in the
+;       entry description.
+;   5. Spaces may be used between the "=" and the entry name and value.
+;   6. Due to an undocumented "feature" in Windows, all .ini files must be
+;      less than 60,000 bytes in size.  This means that you must edit out all
+; 	 these comments if you intend to use this file as a basis for your PB.INI.
+;      We recommend that you instead create a new PB.INI file and only insert the
+;      entries you wish to change from the default values.
+;
+; There are several different basic types of entries in this file:
+;
+;       Base Value - The value is used as the base chance that the specified
+;                   event or decision will occur.
+;
+;       Percent Modifier - The value is used as a multiplier on the specified
+;                   chance, using the formula:  ( PctMod * SpecChance / 100 ).
+;                   A percent modifier value of 100 is the same as multiplying
+;                   the specified chance by 1.  A value of 0 will nullify the
+;                   specified chance.
+;
+;       Adjustment - The value is added to the specified chance, using the
+;                   formula: ( Adjust + SpecChance ).  A negative value will
+;                   reduce the chance and a positive value will increase it.
+;
+;       Distribution - To obtain a non-linear chance distribution, we use
+;                   three entries labeled Count, Faces, and Base.  These
+;                   are used to generate a "dice roll", using the formula:
+;                   (( Count dice Faces ) + Base ).  Increasing the Count
+;                   will cause the increases the height of the distribution
+;                   curve while increasing the Faces increases the width of
+;                   the curve.  Base is used to bring the average result to
+;                   zero or center.
+;
+;       Weights -  Weights are used to determine the random chance a specific
+;                   event occurs out of a group of events.  Each event has a
+;                   chance equal to it's value divided by the sum of the values
+;                   of all the entries in the group.
+;
+;       Dividers - A divider used to reduce the value, using the formula:
+;                   ( value / divider ).
+;
+;
+[PlayBalance]
+;**************************** DEFENSIVE MANAGER *******************************
+; The defensive manager entries include those that control the chance of
+; the manager issuing orders to:
+;
+;   1. charge a bunt with the first and/or third baseman
+;   2. hold a runner at first base
+;   3. attempt a pickoff throw on the lead runner
+;   4. pitch out in a potential stolen base situation
+;   5. pitch around a hitter (don't give him anything good to hit)
+;   6. set the outfielders depths and shifts
+;
+;
+; CHARGE BUNT
+; Base chances for each position
+chargeChanceBaseFirst=0         ; Base charge chance for the 1B
+chargeChanceBaseThird=-20       ; Base charge chance for the 3B
+;
+; Percent modifier for FA ( Pct * FA / 100 ) to add to base chance
+chargeChancePitcherFAPct=25     ; Pitcher's FA
+chargeChanceFAPct=25            ; Fielder's FA
+;
+; Adjustments to the charge chance
+chargeChanceSacChanceAdjust=-20     ; The offensive team's base chance of
+;                                      calling for a sacrifice bunt and this
+;                                      value are added to the charge chance
+chargeChanceThirdOnFirstSecond=20   ; 3B charging with runners at 1st & 2nd
+chargeChanceThirdOnThird=20         ; 3B charging with a runner on 3rd
+defManChargeChancePct=50            ; Percent modifier on final chance
+;
+;
+; HOLD RUNNER AT FIRST BASE
+holdChanceBase=0                ; Base chance
+holdChanceMinRunnerSpeed=30     ; Minimum speed of runner on 1st to consider
+;                                  holding the runner
+holdChanceAdjust=100            ; Modifier for runners with at least the
+;                                  minimum speed
+;
+;
+; PICKOFF ATTEMPT ON LEAD RUNNER
+pickoffChanceBase=0                 ; Base chance
+pickoffChanceStealChanceAdjust=-10  ; The offensive team's base steal chance
+;                                      and this value are added to the chance
+;                                      of making a pickoff attempt
+pickoffChanceLeadMult=5             ; Each runner can have 3 levels of "lead",
+;                                      short, medium, and long.  This value is
+;                                      added to the pickoff chance for each
+;                                      level of baserunner lead.
+pickoffChancePitchesMult=-10        ; The game keeps track of how many pitches
+;                                      have been thrown since the last pickoff
+;                                      attempt, up to a maximum of 4 pitches
+;                                      between attempts.  The value of this
+;                                      entry is multiplied by four minus the
+;                                      number of pitches thrown since the last
+;                                      pickoff attempt, so if no pitches have
+;                                      been thrown since the last pickoff,
+;                                      attempt, the pickoff chance would be
+;                                      modified by 4 times this value.
+;
+;
+; PITCH OUT IN POTENTIAL STEAL SITUATION
+pitchOutChanceStealThresh=25
+pitchOutChanceHitRunThresh=25
+pitchOutChanceBase=25               ; Base pitchout chance
+pitchOutChanceBall0Adjust=5         ; Modifier for any 0-X count
+pitchOutChanceBall1Adjust=0         ; Modifier for any 1-X count
+pitchOutChanceBall2Adjust=-25       ; Modifier for any 2-X count
+pitchOutChanceBall3Adjust=-100      ; Modifier for any 3-X count
+pitchOutChanceInn8Adjust=5          ; Modifier for the 8th inning
+pitchOutChanceInn9Adjust=10         ; Modifier for the 9th inning and beyond
+pitchOutChanceHomeAdjust=-5         ; Modifier for the home team
+;
+;
+; PITCH AROUND A BATTER (INCLUDING INTENTIONAL WALKS)
+pitchAroundChanceNoInn=6            ; Do not pitch around until AFTER this
+;                                      inning
+pitchAroundChanceBase=25            ; Base pitch around chance
+pitchAroundChanceInn7Adjust=5       ; Modifier for the 7th & 8th innings
+pitchAroundChanceInn9Adjust=10      ; Modifier for the 9th inning and beyond
+;
+; When deciding whether to pitch around a batter or not, the abilities of the
+; batter are compared to those of the on-deck batter.  Both CH and PH are
+; divided into five arbitrary "levels", with break points at 20, 40, 60, and
+; 80 points.  The levels of the current batter and the on-deck batter are
+; compared and the difference is checked on this table to determine the
+; modifier to apply to the pitch around chance.  
+;
+pitchAroundChancePH2BatAdjust=25    ; Batter's PH is 2 levels higher than OD
+pitchAroundChancePH1BatAdjust=10    ; Batter's PH is 1 level higher than OD
+pitchAroundChancePHBatAdjust=5      ; Batter's PH is same level as OD, but
+;                                      is actually a higher value
+pitchAroundChancePHODAdjust=-10     ; OD's PH is higher than batter's, but
+;                                      has a higher actual value
+pitchAroundChancePH1ODAdjust=-25    ; OD's PH is 1 level higher than batter's
+pitchAroundChancePH2ODAdjust=-50    ; OD's PH is 2 levels higher than batter's
+pitchAroundChanceCH2BatAdjust=15    ; Batter's CH is 2 levels higher than OD's
+pitchAroundChanceCH1BatAdjust=5     ; Batter's CH is 1 level higher than OD's
+pitchAroundChanceCHBatAdjust=0      ; Batter's CH is same level as OD's, but
+;                                      has a higher actual value
+pitchAroundChanceCHODAdjust=-5      ; OD's CH is same level as batter's,, but
+;                                      has a higher actual value
+pitchAroundChanceCH1ODAdjust=-15    ; OD's CH is 1 level higher than batter's
+pitchAroundChanceCH2ODAdjust=-30    ; OD's CH is 2 levels higher than batter's
+pitchAroundChanceLowGFThresh=45     ; Threshold to consider a G/F "low"
+pitchAroundChanceLowGFAdjust=5      ; Modifier for low G/F
+pitchAroundChanceOut0=0             ; Modifier for 0 outs situations
+pitchAroundChanceOut1=5             ; Modifier for 1 out situations
+pitchAroundChanceOut2=10            ; Modifier for 2 out situations
+pitchAroundChanceOn23=5             ; Modifier for when runners are on 2nd & 3rd
+defManPitchAroundToIBBPct=100       ; IBB chance is this % of PitchAround chance
+;
+;
+; OUTFIELDER POSITIONING
+; During normal situations, both the extreme and "extra" shifts are used
+; based on the batter's pull rating.  PosHighPull/PosLowPull are the extreme
+; shifts and should have higher pull rating values than the PosHighPullExtra/
+; PosLowPullExtra values.  In close and late situations, you won't want your
+; outfielders shifting to the extremes, so only the PosHighPullExtra and
+; PosLowPullExtra values are used.  High pull values will shift an outfield
+; to the right against a left-handed hitter or to the left against a right-
+; handed hitter.  The following descriptions assume a left-handed hitter.
+;
+defPosHighPull=80           ; PL rating value to shift OFs right twice
+defPosLowPull=19            ; PL rating value to shift OFs left twice
+defPosHighPullExtra=60      ; PL rating value to shift OFs right once
+defPosLowPullExtra=39       ; PL rating value to shift OFs left once
+;
+; With high PH rated players, OF's play back a little further and with low PH,
+; they play a little closer in.
+;
+defPosHighPower=85          ; Min PH value to cause OFs to play back
+defPosLowPower=20           ; Max PH value to cause OFs to play in
+;
+; The following parameters control fielder positioning in each of the
+; different fielding situations.  For infielders, position is controlled by
+; specifying the angle (home plate to second base is 0 degrees) and the
+; distance from home plate (in feet).  Outfielder positioning is set
+; by specifying the angle and the percentage of the distance between the
+; edge of the infield and the outfield fence.
+;
+; Infielder positioning in "Normal" situations
+normalPos1BDist=130
+normalPos1BAngle=-35
+normalPos2BDist=140
+normalPos2BAngle=-15
+normalPosSSDist=140
+normalPosSSAngle=15
+normalPos3BDist=130
+normalPos3BAngle=35
+;
+; Infielder positioning in "Guard Lines" situations
+guardLinesPos1BDist=120
+guardLinesPos1BAngle=-40
+guardLinesPos2BDist=140
+guardLinesPos2BAngle=-15
+guardLinesPosSSDist=140
+guardLinesPosSSAngle=15
+guardLinesPos3BDist=120
+guardLinesPos3BAngle=40
+;
+; Infielder positioning in "Cutoff Run" situation
+cutoffRunPos1BDist=90
+cutoffRunPos1BAngle=-35
+cutoffRunPos2BDist=105
+cutoffRunPos2BAngle=-15
+cutoffRunPosSSDist=105
+cutoffRunPosSSAngle=15
+cutoffRunPos3BDist=90
+cutoffRunPos3BAngle=35
+;
+; Infielder positioning for "Double Play" situations
+doublePlayPos1BDist=100
+doublePlayPos1BAngle=-35
+doublePlayPos2BDist=135
+doublePlayPos2BAngle=-12
+doublePlayPosSSDist=135
+doublePlayPosSSAngle=12
+doublePlayPos3BDist=100
+doublePlayPos3BAngle=35
+;
+; Outfielder positioning for "Normal" situations
+normalPosLFPct=69
+normalPosLFAngle=25
+normalPosCFPct=69
+normalPosCFAngle=0
+normalPosRFPct=69
+normalPosRFAngle=-25
+;
+; Outfielder positioning for "Guard Left-field Line" situations
+guardLeftPosLFPct=65
+guardLeftPosLFAngle=30
+guardLeftPosCFPct=69
+guardLeftPosCFAngle=5
+guardLeftPosRFPct=45
+guardLeftPosRFAngle=-25
+;
+; Outfielder positioning for "Guard Right-field Line" situations
+guardRightPosLFPct=45
+guardRightPosLFAngle=25
+guardRightPosCFPct=69
+guardRightPosCFAngle=-5
+guardRightPosRFPct=65
+guardRightPosRFAngle=30
+;
+;
+; Each variation of infielder depth moves the fielder in or out this many feet.
+infieldPosFeetPerDepth=10
+;
+; Each variation of outfielder depth moves the outfielder to a distance which is
+; this percentage of the normal distance percentage.  For example, if the normal
+; percentage is 50 and the "Deep" percentage is 150, then a player playing Deep
+; will be 75% of the distance between the infield and the outfield fence.
+outfieldPosPctVeryShallow=50
+outfieldPosPctShallow=60
+outfieldPosPctNormal=70
+outfieldPosPctDeep=80
+outfieldPosPctVeryDeep=100
+;
+;
+;**************************** OFFENSIVE MANAGER *******************************
+; The offensive manager entries include those that control the chance of
+; the manager issuing orders to:
+;
+;   1. steal a base
+;   2. hit and run
+;   3. attempt a sacrifice bunt
+;   4. attempt a suicide squeeze bunt
+;
+;
+; STEAL A BASE
+;
+; Adjustments for each count
+stealChance00Count=0            ; Adjustment for 0-0 count
+stealChance01Count=0            ; Adjustment for 0-1 count
+stealChance02Count=-10          ; Adjustment for 0-2 count
+stealChance10Count=10           ; Adjustment for 1-0 count
+stealChance11Count=0            ; Adjustment for 1-1 count
+stealChance12Count=-10          ; Adjustment for 1-2 count
+stealChance20Count=15           ; Adjustment for 2-0 count
+stealChance21Count=5            ; Adjustment for 2-1 count
+stealChance22Count=0            ; Adjustment for 2-2 count
+stealChance30Count=15           ; Adjustment for 3-0 count
+stealChance31Count=15           ; Adjustment for 3-1 count
+stealChance32Count=20           ; Adjustment for 3-2 count
+offManStealChancePct=67         ; Percent modifier to final steal chance
+;
+; Runner speed adjustments.  The threshold is the maximum SP value to place
+; the runner in a specific classification grouping.
+;
+stealChanceVerySlowThresh=13    ; Threshold to consider a runner "very slow"
+stealChanceSlowThresh=27        ; Threshold to consider a runner "slow"
+stealChanceMedThresh=60         ; Threshold to consider a runner "medium"
+stealChanceFastThresh=80        ; Threshold to consider a runner "fast",
+;                                  anything above this is "very fast"
+stealChanceVerySlowAdjust=-40   ; Adjustment for "very slow" runners
+stealChanceSlowAdjust=-10       ; Adjustment for "slow" runners
+stealChanceMedAdjust=0          ; Adjustment for "medium" runners
+stealChanceFastAdjust=20        ; Adjustment for "fast" runners
+stealChanceVeryFastAdjust=25    ; Adjustment for "very fast" runners
+;
+; Pitcher hold runner adjustments.  Threshold is the maximum HdRn value to
+; place a pitcher in a specific classification grouping.
+;
+stealChanceVeryLowHoldThresh=19     ; "Very low" hold runner ability threshold
+stealChanceLowHoldThresh=39         ; "Low" hold runner ability threshold
+stealChanceMedHoldThresh=65         ; "Medium" hold runner ability threshold
+stealChanceHighHoldThresh=74        ; "High" hold runner ability threshold
+stealChanceVeryLowHoldAdjust=15     ; "Very low" hold runner ability modifier
+stealChanceLowHoldAdjust=5          ; "Low" hold runner ability modifier
+stealChanceMedHoldAdjust=0          ; "Medium" hold runner ability modifier
+stealChanceHighHoldAdjust=-10       ; "High" hold runner ability modifier
+stealChanceVeryHighHoldAdjust=-20   ; "Very high" hold runner ability modifier
+stealChancePitcherFaceAdjust=-5     ; Modifier for LH pitcher on mound
+stealChancePitcherBackAdjust=5      ; Modifier for RH pitcher on mound
+stealChancePitcherWindupAdjust=5    ; Modifier for pitcher in windup
+stealChancePitcherWildAdjust=0      ; Modifier for when pitcher is "wild"
+;
+; Adjustments to steal chance with runner on 1st and 2 outs
+;
+stealChanceOnFirst2OutHighCHThresh=60   ; "High" CH batter if above this value
+stealChanceOnFirst2OutHighCHAdjust=10   ; Adjustment for "high" CH batter
+stealChanceOnFirst2OutLowCHThresh=27    ; "Low" CH batter if below this value
+stealChanceOnFirst2OutLowCHAdjust=-25   ; Adjustment for "low" CH batter
+;
+; Adjustments to steal chance with runner on 1st and 0 or 1 outs
+;
+stealChanceOnFirst01OutHighCHThresh=60  ; "High" CH batter if above this value
+stealChanceOnFirst01OutHighCHAdjust=15  ; Adjustment for "high" CH batter
+stealChanceOnFirst01OutLowCHThresh=27   ; "Low" CH batter if below this value
+stealChanceOnFirst01OutLowCHAdjust=-15  ; Adjustment for "low" CH batter
+;
+; Adjustments to steal chance with runner on 2nd base
+;
+stealChanceOnSecond0OutAdjust=-15       ; Adjustment for 0 outs
+stealChanceOnSecond1OutAdjust=0         ; Adjustment for 1 out
+stealChanceOnSecond2OutAdjust=-30       ; Adjustment for 2 outs
+stealChanceOnSecondHighCHThresh=55      ; "High" CH batter if above this value
+stealChanceOnSecondHighCHAdjust=5     ; Adjustment for "high" CH batter
+;
+; Adjustments to steal chance when losing the game
+;
+stealChanceWayBehindThresh=-3   ; Run differential to be "way behind"
+stealChanceWayBehindAdjust=-70  ; "Way behind" adjustment to steal chance
+;
+;
+; HIT AND RUN
+; Situational adjustments
+hnrChanceBase=25                ; Base chance
+hnrChance3MoreBehindAdjust=-40  ; Adjustment when losing by 3 or more runs
+hnrChance2BehindAdjust=-10      ; Adjustment when losing by 2 runs
+hnrChance1AheadAdjust=-10       ; Adjustment when winning by 1 run
+hnrChance2MoreAheadAdjust=-40   ; Adjustment when winning by 2 or more runs
+hnrChanceOn12Adjust=-25         ; Adjustment when runners are on 1st and 2nd
+hnrChancePitcherWildAdjust=-20  ; Adjustment for when the pitcher is "wild"
+hnrChance3BallsAdjust=10        ; Adjustment for any 3-X count
+hnrChance2StrikesAdjust=-15     ; Adjustment for any X-2 count
+hnrChanceEvenCountAdjust=-5     ; Adjustment for even counts
+hnrChance01CountAdjust=-15      ; Adjustment for the 0-1 count
+offManHNRChancePct=100          ; Percent modifier to final hit and run chance
+;
+; Hit and run adjustments for lead runner speed.  Threshold is the maximum
+; value to consider a runner in a specific classification grouping.
+;
+hnrChanceSlowSPThresh=27        ; "Slow" runner SP threshold
+hnrChanceMedSPThresh=47         ; "Medium" runner SP threshold
+hnrChanceFastSPThresh=74        ; "Fast" runner SP threshold
+hnrChanceSlowSPAdjust=-20       ; Adjustment for "slow" lead runner
+hnrChanceMedSPAdjust=-10        ; Adjustment for "medium" lead runner
+hnrChanceFastSPAdjust=5         ; Adjustment for "fast" lead runner
+hnrChanceVeryFastSPAdjust=10    ; Adjustment for "very fast" lead runner
+;
+; Hit and run adjustments for batter abilities
+;
+hnrChanceLowCHThresh=27         ; "Low" CH batter if below this value
+hnrChanceMedCHThresh=47         ; "Medium" CH batter if below this value
+hnrChanceHighCHThresh=74        ; "High" CH batter if below this value
+hnrChanceLowCHAdjust=-20        ; Adjustment for "low" CH batter
+hnrChanceMedCHAdjust=-10        ; Adjustment for "medium" CH batter
+hnrChanceHighCHAdjust=0         ; Adjustment for "high" CH batter
+hnrChanceVeryHighCHAdjust=10    ; Adjustment for "very high" CH batter
+hnrChanceLowPHThresh=27         ; "Low" PH batter if below this value
+hnrChanceMedPHThresh=47         ; "Medium" PH batter if below this value
+hnrChanceHighPHThresh=74        ; "High" PH batter if below this value
+hnrChanceLowPHAdjust=10         ; Adjustment for "low" PH batter
+hnrChanceMedPHAdjust=0          ; Adjustment for "medium" PH batter
+hnrChanceHighPHAdjust=-10       ; Adjustment for "high" PH batter
+hnrChanceVeryHighPHAdjust=-20   ; Adjustment for "very high" PH batter
+;
+;
+; SACRIFICE BUNT
+; Situational adjustments
+;
+sacChanceMaxCH=44               ; Maximum CH to consider a sacrifice bunt
+sacChanceMaxPH=44               ; Maximum PH to consider a sacrifice bunt
+sacChanceBase=7                 ; Base chance
+sacChancePitcherAdjust=15       ; Adjustment for if the batter is the pitcher
+sacChance1OutAdjust=-25         ; Adjustment for 1 out situations
+offManSacChancePct=200          ; Percent modifier to final sac bunt chance
+;
+; Adjustments for Close & Late situations (7th inning or later and batting
+; team is leading by 1 run, is tied, or has the tying run on base, at bat,
+; or on deck).
+;
+sacChanceCLAdjust=30            ; Adjustment for Close & Late situations
+sacChanceCL0OutOn12Adjust=15    ; Adjustment for 0 outs, runners on 1st & 2nd
+;
+; Close and Late modifiers for Batter and On Deck (OD) Batter abilities.
+;
+sacChanceCLLowCHThresh=14       ; "Low" CH batter if below this value
+sacChanceCLLowPHThresh=14       ; "Low" PH batter if below this value
+sacChanceCLLowCHPHAdjust=25     ; Adjustment for "low" CH batter
+sacChanceCL1OutODHighCHThresh=56    ; "High" CH OD batter if above this value
+sacChanceCL1OutODHighPHThresh=56    ; "High" PH OD batter if above this value
+sacChanceCL1OutODHighAdjust=-10     ; 1 out modifier for "high" CH/PH OD batter
+;
+; Additional adjustments for batting abilities if the batter is a pitcher
+;
+sacChancePitcherLowCHThresh=19      ; "Low" CH batter if below this value
+sacChancePitcherLowPHThresh=19      ; "Low" PH batter if below this value
+sacChancePitcherLowCHPHAdjust=50    ; Adjustment for "low" CH/PH batter
+;
+;
+; SUICIDE SQUEEZE BUNT
+;
+squeezeChanceMaxCH=27               ; Maximum batter CH to attempt squeeze
+squeezeChanceMaxPH=27               ; Maximum batter PH to attempt squeeze
+squeezeChanceLowCountAdjust=15      ; Adjustment for 0-0, 1-0, and 0-1 counts
+squeezeChanceMedCountAdjust=10      ; Adjustment for 1-1 and 2-0 counts only
+squeezeChanceThirdFastSPThresh=69   ; Runner at 3rd is "fast" if above value
+squeezeChanceThirdFastAdjust=10     ; Modifier for "fast" runner at 3rd
+offManSqueezeChancePct=100          ; Percent modifier to final squeeze chance
+;
+;
+; ******************************** SUBSTITUTIONS ******************************
+; The substitutions entries include those that control the chance that the
+; manager will:
+;
+;   1. use a pinch hit
+;       a. for the current pitcher
+;       b. in a "need a hit/baserunner" situation
+;       c. in a "need a run/RBI" situation
+;   2. use a pinch runner
+;   3. make a defensive substitution
+;   4. do a double switch to move the pitcher's batting slot
+;   5. relieve the current pitcher (including warming up relievers)
+;
+;
+; COMBINED RATINGS
+; Some of the substitution formulas use special "combined" ratings, called
+; Offense, Slugging, and Defense, calculated using the formulas:
+;       Offense - ((( 2 * CH * PH ) + ( CH * CH )) / ( PH + 2 * CH + 1 ))
+;       Slugging - ((( 2 * PH * CH ) + ( PH * PH )) / ( CH + 2 * PH + 1 ))
+;       Defense - ((( 2 * FA * AS ) + ( FA * FA )) / ( AS + 2 * FA + 1 ))
+;
+; Adjustments to each factor in the combined ratings formulas
+;
+offRatCHPct=100     ; Percentage multiplier to CH in Offense formula
+offRatPHPct=100     ; Percentage multiplier to PH in Offense formula
+slugRatCHPct=100    ; Percentage multiplier to CH in Slugging formula
+slugRatPHPct=100    ; Percentage multiplier to PH in Slugging formula
+defRatASPct=100     ; Percentage multiplier to AS in Defense formula
+defRatFAPct=100     ; Percentage multiplier to FA in Defense formula
+;
+;
+; PINCH HIT FOR THE CURRENT PITCHER
+; Situational adjustments
+;
+phForPitcherBase=-90                ; Base chance
+phForPitcherEarlyInnAdjust=-50      ; Adjustment for innings 1-3
+phForPitcherMiddleInnAdjust=-10     ; Adjustment for innings 4-6
+phForPitcherLateInnAdjust=10        ; Adjustment for innings 7-9
+phForPitcherInn9Adjust=20           ; Adjustment for the 9th inning
+phForPitcherExtraInnAdjust=50       ; Adjustment for extra innings
+phForPitcherPerOutAdjust=-5         ; Adjustment for each out in the inning
+phForPitcherPerBPPitcherAdjust=10   ; Adjustment for each available pitcher in
+;                                      the bullpen
+phForPitcherPerBenchPlayerAdjust=10 ; Adjustment for each available player on
+;                                      the bench
+;
+; Adjustments for when the team is winning the game
+;
+phForPitcherBigLeadAdjust=-30       ; Adjustment for lead of 5 or more runs
+phForPitcherLeadAdjust=-20          ; Adjustment for lead of at least 1 run
+;
+; Adjustments for when the team is losing the game.  Each adjustment is used
+; if the position of the player that represents the winning run is in the
+; specified location.
+;
+phForPitcherWinRunInScoringPosAdjust=10 ; Adjustment when in scoring position
+phForPitcherWinRunOnFirstAdjust=5       ; Adjustment when on first base
+phForPitcherWinRunAtBatAdjust=5         ; Adjustment when at bat
+phForPitcherWinRunOnDeckAdjust=10       ; Adjustment when on deck
+phForPitcherWinRunInDugoutAdjust=20     ; Adjustment when in the dugout
+;
+; Pitcher condition adjustments
+;
+phForPitcherExhaustedAdjust=50      ; Adjustment when exhausted pitcher
+phForPitcherTiredAdjust=25          ; Adjustment when tired pitcher
+phForPitcherRestedAdjust=-50        ; Adjustment when pitcher is rested
+phForPitcherShutoutAdjust=-30       ; Adjustment when pitcher throwing shutout
+phForPitcherNoHitterAdjust=-60      ; Adjustment when pitcher throwing no hitter
+phForPitcherPerInjuryPointAdjust=5  ; Adjustment per injury point on the player
+;
+;
+; PINCH HIT IN A "NEED A HIT" SITUATION
+; Situational adjustments
+;
+phForHitBase=-40                ; Base chance
+phForHitLateInnAdjust=-15       ; Adjustment for innings 7-9
+phForHitInn9Adjust=-10          ; Adjustment for the ninth inning
+phForHitExtraInnAdjust=-5       ; Adjustment for extra innings
+phForHitAwayAdjust=-15          ; Adjustment for visiting team
+phForHitHomeAdjust=-20          ; Adjustment for home team
+phForHitPerOutAdjust=-5         ; Adjustment for each out in inning
+phForHitPerBenchPlayerAdjust=10 ; Adjustment per eligible hitter on bench
+phForHitPerInjuryPointAdjust=5  ; Adjustment per injury point on the player
+;
+; Adjustments for when the team is winning the game
+;
+phForHitBigLeadAdjust=-30   ; Adjustment for a lead of 5 or more runs
+phForHitLeadAdjust=-20      ; Adjustment for a lead of at least 1 run
+;
+; Adjustments for when the team is losing the game.  Each adjustment is used
+; if the position of the player that represents the winning run is in the
+; specified location.
+;
+phForHitWinRunInScoringPosAdjust=-5 ; Adjustment when in scoring position
+phForHitWinRunOnFirstAdjust=5       ; Adjustment when on first base
+phForHitWinRunAtBatAdjust=10        ; Adjustment when at bat
+phForHitWinRunOnDeckAdjust=10       ; Adjustment when on deck
+phForHitWinRunInDugoutAdjust=0      ; Adjustment when in the dugout
+;
+; Adjustments for the batter's Offensive abilities, using the above formula.
+; Thresholds are the minimum values to place the hitter in a specific
+; classification grouping.
+;
+phForHitVeryHighBatRatThresh=60     ; "Very high" batter if above this value
+phForHitHighBatRatThresh=38         ; "High" batter if above this value
+phForHitMedBatRatThresh=28          ; "Medium" batter if above this value
+phForHitLowBatRatThresh=14          ; "Low" batter if above this value
+phForHitVeryHighBatRatAdjust=-100   ; Adjustment for "very high" batter
+phForHitHighBatRatAdjust=-50        ; Adjustment for "high" batter
+phForHitMedBatRatAdjust=0           ; Adjustment for "medium" batter
+phForHitLowBatRatAdjust=20          ; Adjustment for "low" batter
+phForHitVeryLowBatRatAdjust=50      ; Adjustment for "very low" batter
+phForHitBatPlatAdvAdjust=-10        ; Adjustment if the batter has the platoon
+;                                     advantage (bats opposite pitcher hand)
+;
+; Adjustments for the on deck batter's offensive abilities, using the above
+; formula.  Thresholds are the minimum values to place the hitter in a
+; specific classification grouping.
+;
+phForHitVeryHighODRatThresh=60      ; "Very high" OD batter if above this value
+phForHitHighODRatThresh=38          ; "High" OD batter if above this value
+phForHitMedODRatThresh=28           ; "Medium" OD batter if above this value
+phForHitLowODRatThresh=14           ; "Low" OD batter if above this value
+phForHitVeryHighODRatAdjust=-10     ; Adjustment for "very high" OD batter
+phForHitHighODRatAdjust=-5          ; Adjustment for "high" OD batter
+phForHitMedODRatAdjust=0            ; Adjustment for "medium" OD batter
+phForHitLowODRatAdjust=5            ; Adjustment for "low" OD batter
+phForHitVeryLowODRatAdjust=10       ; Adjustment for "very low" OD batter
+;
+; Adjustments for the offensive abilities of the potential pinch hitter, using
+; the above formula.  Thresholds are the minimum values to place the
+; potential pinch hitter in a specific classification grouping.
+;
+phForHitVeryHighPHBatDiffRatThresh=15   ; "Very high" PH if above this value
+phForHitHighPHBatDiffRatThresh=5        ; "High" PH if above this value
+phForHitMedPHBatDiffRatThresh=-5        ; "Medium" PH if above this value
+phForHitLowPHBatDiffRatThresh=-15       ; "Low" PH if above this value
+phForHitVeryHighPHBatDiffRatAdjust=50   ; Adjustment for "very high" PH
+phForHitHighPHBatDiffRatAdjust=25       ; Adjustment for "high" PH
+phForHitMedPHBatDiffRatAdjust=0         ; Adjustment for "medium" PH
+phForHitLowPHBatDiffRatAdjust=-50       ; Adjustment for "low" PH
+phForHitVeryLowPHBatDiffRatAdjust=-100  ; Adjustment for "very low" PH
+phForHitPHPlatAdvAdjust=30              ; Adjustment if the PH has the platoon
+;                                         advantage (bats opposite pitcher hand)
+;
+;
+; PINCH HIT IN A "NEED A RUN" SITUATION
+; Situational adjustments
+;
+phForRunBase=-50                ; Base chance
+phForRunLateInnAdjust=-15       ; Adjustment for innings 7-9
+phForRunInn9Adjust=-10          ; Adjustment for the ninth inning
+phForRunExtraInnAdjust=-5       ; Adjustment for extra innings
+phForRunAwayAdjust=-20          ; Adjustment for visiting team
+phForRunHomeAdjust=-15          ; Adjustment for home team
+phForRunPerOutAdjust=5          ; Adjustment for each out in inning
+phForRunPerBenchPlayerAdjust=10 ; Adjustment per eligible hitter on bench
+phForRunPerInjuryPointAdjust=5  ; Adjustment per injury point on the player
+;
+; Adjustments for when the team is winning the game
+;
+phForRunBigLeadAdjust=-50   ; Adjustment for a lead of 5 or more runs
+phForRunLeadAdjust=-10      ; Adjustment for a lead of at least 1 run
+;
+; Adjustments for when the team is losing the game.  Each adjustment is used
+; if the position of the player that represents the winning run is in the
+; specified location.
+;
+phForRunWinRunInScoringPosAdjust=10 ; Adjustment when in scoring position
+phForRunWinRunOnFirstAdjust=5       ; Adjustment when on first base
+phForRunWinRunAtBatAdjust=5         ; Adjustment when at bat
+phForRunWinRunOnDeckAdjust=-5       ; Adjustment when on deck
+phForRunWinRunInDugoutAdjust=-10    ; Adjustment when in the dugout
+;
+; Adjustments for the batter's slugging abilities, using the above formula.
+; Thresholds are the minimum values to place the hitter in a specific
+; classification grouping.
+;
+phForRunVeryHighBatRatThresh=60     ; "Very high" batter if above this value
+phForRunHighBatRatThresh=38         ; "High" batter if above this value
+phForRunMedBatRatThresh=28          ; "Medium" batter if above this value
+phForRunLowBatRatThresh=14          ; "Low" batter if above this value
+phForRunVeryHighBatRatAdjust=-100   ; Adjustment for "very high" batter
+phForRunHighBatRatAdjust=-50        ; Adjustment for "high" batter
+phForRunMedBatRatAdjust=0           ; Adjustment for "medium" batter
+phForRunLowBatRatAdjust=20          ; Adjustment for "low" batter
+phForRunVeryLowBatRatAdjust=50      ; Adjustment for "very low" batter
+phForRunBatPlatAdvAdjust=-10        ; Adjustment if the batter has the platoon
+;                                     advantage (bats opposite pitcher hand)
+;
+; Adjustments for the on deck batter's slugging abilities, using the above
+; formula.  Thresholds are the minimum values to place the hitter in a
+; specific classification grouping.
+;
+phForRunVeryHighODRatThresh=60      ; "Very high" OD batter if above this value
+phForRunHighODRatThresh=38          ; "High" OD batter if above this value
+phForRunMedODRatThresh=28           ; "Medium" OD batter if above this value
+phForRunLowODRatThresh=14           ; "Low" OD batter if above this value
+phForRunVeryHighODRatAdjust=-10     ; Adjustment for "very high" OD batter
+phForRunHighODRatAdjust=-5          ; Adjustment for "high" OD batter
+phForRunMedODRatAdjust=0            ; Adjustment for "medium" OD batter
+phForRunLowODRatAdjust=5            ; Adjustment for "low" OD batter
+phForRunVeryLowODRatAdjust=10       ; Adjustment for "very low" OD batter
+;
+; Adjustments for the slugging abilities of the potential pinch hitter, using
+; the above formula.  Thresholds are the minimum values to place the potential
+; pinch hitter in a specific classification grouping.
+;
+phForRunVeryHighPHBatDiffRatThresh=15   ; "Very high" PH if above this value
+phForRunHighPHBatDiffRatThresh=5        ; "High" PH if above this value
+phForRunMedPHBatDiffRatThresh=-5        ; "Medium" PH if above this value
+phForRunLowPHBatDiffRatThresh=-15       ; "Low" PH if above this value
+phForRunVeryHighPHBatDiffRatAdjust=50   ; Adjustment for "very high" PH
+phForRunHighPHBatDiffRatAdjust=25       ; Adjustment for "high" PH
+phForRunMedPHBatDiffRatAdjust=0         ; Adjustment for "medium" PH
+phForRunLowPHBatDiffRatAdjust=-50       ; Adjustment for "low" PH
+phForRunVeryLowPHBatDiffRatAdjust=-100  ; Adjustment for "very low" PH
+phForRunPHPlatAdvAdjust=30              ; Adjustment if the PH has the platoon
+;                                          advantage (bats opposite pitcher
+;                                          hand)
+;
+;
+; USE A PINCH RUNNER
+; Situational adjustments
+;
+prChanceOnFirstBase=-50             ; Base chance for runner on 1st base
+prChanceOnSecondBase=-60            ; Base chance for runner on 2nd base
+prChanceOnThirdBase=-70             ; Base chance for runner on 3rd base
+prChanceWinningRun=20               ; Adjustment for runner being winning run
+prChanceTyingRun=10                 ; Adjustment for runner being tying run
+prChanceInsignificant=-100          ; Adjustment for "insignificant" runners
+prChancePerOutAdjust=-5             ; Adjustment per out in inning
+prChanceEarlyInnAdjust=-50          ; Adjustment when in innings 1-3
+prChanceMidInnAdjust=-30            ; Adjustment when in innings 4-6
+prChanceLateInnAdjust=0             ; Adjustment when in innings 7-9
+prChanceInn9Adjust=10               ; Adjustment when in 9th inning
+prChanceExtraInnAdjust=20           ; Adjustment when in extra innings
+prChancePerBenchPlayerAdjust=10     ; Adjustment per eligible player on bench
+prChancePerInjuryPointAdjust=5      ; Adjustment per injury point on player
+;
+; Adjustments for the current runner's SP rating.  Thresholds are the minimum
+; values for the SP rating to place a runner in a specific classification
+; grouping.
+;
+prChanceVeryFastSPThresh=75     ; "Very fast" runner if above this value
+prChanceFastSPThresh=49         ; "Fast" runner if above this value
+prChanceMedSPThresh=28          ; "Medium" runner if above this value
+prChanceSlowSPThresh=14         ; "Slow" runner if above this value
+prChanceVeryFastSPAdjust=-100   ; Adjustment for "very fast" runner
+prChanceFastSPAdjust=-50        ; Adjustment for "fast" runner
+prChanceMedSPAdjust=0           ; Adjustment for "medium" runner
+prChanceSlowSPAdjust=10         ; Adjustment for "slow" runner
+prChanceVerySlowSPAdjust=20     ; Adjustment for "very slow" runner
+;
+; Adjustments for the potential pinch runner's SP rating.  Thresholds are the
+; minimum values for the SP rating to place a runner in a specific
+; classification grouping.
+;
+prChanceVeryFastPRThresh=75     ; "Very fast" pinch runner if above this value
+prChanceFastPRThresh=49         ; "Fast" pinch runner if above this value
+prChanceMedPRThresh=28          ; "Medium" pinch runner if above this value
+prChanceSlowPRThresh=14         ; "Slow" pinch runner if above this value
+prChanceVeryFastPRAdjust=20     ; Adjustment for "very fast" pinch runner
+prChanceFastPRAdjust=10         ; Adjustment for "fast" pinch runner
+prChanceMedPRAdjust=0           ; Adjustment for "medium" pinch runner
+prChanceSlowPRAdjust=-50        ; Adjustment for "slow" pinch runner
+prChanceVerySlowPRAdjust=-100   ; Adjustment for "very slow" pinch runner
+;
+;
+; MAKE A DEFENSIVE SUBSTITUTION
+; Situational adjustments
+;
+defSubBase=15                   ; Base chance
+defSubBeforeInn7Adjust=-15      ; Adjustment for innings 1-6
+defSubInn7Adjust=5              ; Adjustment for the 7th inning
+defSubInn8Adjust=10             ; Adjustment for the 8th inning
+defSubAfterInn8Adjust=15        ; Adjustment for the 9th inning and beyond
+defSubNoPrimaryPosAdjust=-10    ; Adjustment if pos not player's primary pos
+defSubNoQualifiedPosAdjust=-25  ; Adjustment if player not qualified for pos
+defSubPerInjuryPointAdjust=5    ; Adjustment per injury point on player
+;
+; Adjustments for the current player's Defensive abilities.  Thresholds are
+; the minimum value to place the player in the specific group.
+;
+defSubVeryHighCurrDefThresh=75      ; "Very high" if cur def above this value
+defSubHighCurrDefThresh=49          ; "High" if cur def above this value
+defSubMedCurrDefThresh=28           ; "Medium" if cur def above this value
+defSubLowCurrDefThresh=14           ; "Low" if cur def above this value
+defSubVeryHighCurrDefAdjust=-100    ; Adjustment for "very high" current defense
+defSubHighCurrDefAdjust=-50         ; Adjustment for "high" current defense
+defSubMedCurrDefAdjust=0            ; Adjustment for "medium" current defense
+defSubLowCurrDefAdjust=20           ; Adjustment for "low" current defense
+defSubVeryLowCurrDefAdjust=50       ; Adjustment for "very low" current defense
+;
+; Adjustments for the potential substitution's Defensive abilities.  Thresholds are
+; the minimum value to place the player in the specific group.
+;
+defSubVeryHighNewDefThresh=75       ; "Very high" if sub def above this value
+defSubHighNewDefThresh=49           ; "High" if sub def above this value
+defSubMedNewDefThresh=28            ; "Medium" if sub def above this value
+defSubLowNewDefThresh=14            ; "Low" if sub def above this value
+defSubVeryHighNewDefAdjust=50       ; Adjustment for "very high" sub defense
+defSubHighNewDefAdjust=20           ; Adjustment for "high" sub defense
+defSubMedNewDefAdjust=0             ; Adjustment for "medium" sub defense
+defSubLowNewDefAdjust=-50           ; Adjustment for "low" sub defense
+defSubVeryLowNewDefAdjust=-100      ; Adjustment for "very low" sub defense
+;
+;
+; DO A DOUBLE SWITCH
+; Situational adjustments
+;
+doubleSwitchBase=0              ; Base value
+doubleSwitchPitcherDueAdjust=25 ; Adjustment if pitcher is due to bat next inn
+doubleSwitchPHAdjust=25         ; Adjustment if player is a pinch hitter
+doubleSwitchNoPrimaryPosAdjust=-10  ; Adjustment if pos not player's primary pos
+doubleSwitchNoQualifiedPosAdjust=-25    ; Adjustment if player not qualified
+;
+; Adjustments for current defensive player's Defense ability.  Thresholds are
+; the minimum value to place a player in a specific group.
+;
+doubleSwitchVeryHighCurrDefThresh=75    ; "Very high" cur def if above this val
+doubleSwitchHighCurrDefThresh=49        ; "High" cur def if above this val
+doubleSwitchMedCurrDefThresh=28         ; "Medium" cur def if above this val
+doubleSwitchLowCurrDefThresh=14         ; "Low" cur def if above this val
+doubleSwitchVeryHighCurrDefAdjust=-100  ; Adjustment for "very high" cur defense
+doubleSwitchHighCurrDefAdjust=-50       ; Adjustment for "high" cur defense
+doubleSwitchMedCurrDefAdjust=0          ; Adjustment for "medium" cur defense
+doubleSwitchLowCurrDefAdjust=20         ; Adjustment for "low" cur defense
+doubleSwitchVeryLowCurrDefAdjust=50     ; Adjustment for "very low" cur defense
+;
+; Adjustments for the potential defensive substitution's Defense ability.
+; Thresholds are the minimum value to place a player in a specific group.
+;
+doubleSwitchVeryHighNewDefThresh=75     ; "Very high" sub def if above this val
+doubleSwitchHighNewDefThresh=49         ; "High" sub def if above this val
+doubleSwitchMedNewDefThresh=28          ; "Medium" sub def if above this val
+doubleSwitchLowNewDefThresh=14          ; "Low" sub def if above this val
+doubleSwitchVeryHighNewDefAdjust=50     ; Adjustment for "very high" sub defense
+doubleSwitchHighNewDefAdjust=20         ; Adjustment for "high" sub defense
+doubleSwitchMedNewDefAdjust=0           ; Adjustment for "medium" sub defense
+doubleSwitchLowNewDefAdjust=-50         ; Adjustment for "low" sub defense
+doubleSwitchVeryLowNewDefAdjust=-100    ; Adjustment for "very low" sub defense
+;
+;
+; RELIEVE THE CURRENT PITCHER (INCLUDING WARMING UP RELIEVERS)
+; Situational adjustments
+; Pitcher fatigue levels.  The value represents the number of pitches available
+; to consider the pitcher in the specific group.
+;
+pitcherTiredThresh=20       ; Available pitches to make pitcher Tired
+pitcherExhaustedThresh=0    ; Available pitches to make pitcher Exhausted
+posPlayerPitchingRuns = 12  ; The number of runs the team must be behind the
+;                              opposing team to consider putting a position
+;                              player in to pitch, before considering to put
+;                              in a starting pitcher, in mop-up situations.
+;
+; Starting pitchers enter the game with 0 "toast" points accumulated.  If
+; their accumulated "toast" points ever gets below the threshold value for
+; a particular inning, they are considered "toast" and a reliever will start
+; warming up.  Once the reliever is warm, if the starter is still "toast",
+; the reliever is brought in, otherwise, the reliever sits down.
+;
+; Starters get "toast" points in the following manner:
+;
+pitchScoringOut=1           ; For each out recorded
+pitchScoringStrikeOut=2     ; For each strikeout
+pitchScoringOffRun=2        ; For each run scored by his team
+pitchScoringInnsAfter4=2    ; For each full inning completed after the 4th
+pitchScoringWalk=-1         ; For each walk allowed
+pitchScoringHit=-2          ; For each hit allowed
+pitchScoringConsHit=-1      ; Additional points for each consecutive hit allowed
+pitchScoringRun=-2          ; For each run allowed
+pitchScoringER=-2           ; Additional points for each earned run allowed
+pitchScoringHR=-3           ; For each home run allowed
+pitchScoringWP=-2           ; For each wild pitch thrown
+;
+; Relieving starters
+starterToastThreshInn1=-20      ; Threshold for inning 1
+starterToastThreshInn2=-25      ; Threshold for inning 2
+starterToastThreshInn3=-21      ; Threshold for inning 3
+starterToastThreshInn4=-17      ; Threshold for inning 4
+starterToastThreshInn5=-13      ; Threshold for inning 5
+starterToastThreshInn6=-7       ; Threshold for inning 6
+starterToastThreshInn7=-1       ; Threshold for inning 7
+starterToastThreshInn8=5        ; Threshold for inning 8
+starterToastThreshInn9=11       ; Threshold for inning 9
+starterToastThreshPerInn=6      ; Threshold increments this value each inning
+;                                  beyond the 9th
+starterToastThreshAwayAdjust=2  ; Threshold adjustment for visiting teams
+starterToastThreshFewBullpenPitchesAdjust=-4
+;                                 If there are less than 50 total pitches
+;                                  available in the bullpen per inning left
+;                                  in the game (up to 8 innings), this value
+;                                  is added to each inning threshold
+starterToastThreshManyBullpenPitchesAdjust=4
+;                                 If there are more than 100 total pitches
+;                                  available in the bullpen per inning left in
+;                                  the game (up to 8 innings), this value is
+;                                  added to each inning threshold.
+;
+; Relieving relief pitchers
+; When a relief pitcher is considered "toast" a new reliever is warmed up and
+; brought into the game when warm.  Once toasted, relievers remain toasted.
+;
+pitcherToastPctPitchesLeft=10   ; If the reliever gets down to this percent of
+;                                  pitches remaining (out of the maximum
+;                                  possible), he is "toast".
+;
+; A reliever is considered to be toast if he allows two consecutive batters to
+; reach base or if he allows a home run in a close game.  A game is considered
+; "close" if the lead falls between the two following values:
+;
+pitcherToastMaxLead=0       ; Top end of lead to consider the game "close"
+pitcherToastMinLead=0       ; Bottom end of lead to consider game "close"
+;
+;
+;
+; ******************************** PHYSICS ***********************************
+; The physics factors are those that control:
+;
+;   1. physical factors controlling ball movement
+;   2. how fast players move within 3-space
+;   3. bat speed
+;   4. swing angles
+;   5. the amount of ball speed transferred to a hit
+;   6. vertical angle of the ball off the bat
+;   7. pitcher fatigue and overall ability ratings multipliers
+;   8. pitcher warmup time
+;   9. pitch parameters (velocity, control, movement, missed control)
+;  10. AI "slop" times
+;
+; SURFACE FRICTION (CONTROLLING BALL ROLL)
+;
+rollFrictionGrass=12        ; Friction factor for grass surfaces
+rollFrictionTurf=10         ; Friction factor for artificial turf surfaces
+ballAirResistancePct=99     ; Percent multiplier to overall air resistance
+ballAltitudePct=100         ; Percent multiplier to overall altitude
+ballBaseAltitude=0          ; Base altitude to add to Nearest City altitude
+ballTempPct=33              ; Percent of temperature effect to apply to ball
+ballWindSpeedPct=33         ; Percent of wind speed to apply to ball
+throwHeightPct = 70         ; The maximum height of fielder throws as a
+;                              percentage value
+;
+; SURFACE BOUNCE FACTORS
+; The factors control the horizontal and vertical bounce of the ball off
+; the different surfaces, as well as adjustments for weather conditions
+; other than moderate temperatures and a dry surface.
+;
+bounceVertTurfPct=37    ; Vertical bounce on artificial turf
+bounceHorizTurfPct=74   ; Horizontal bounce on artificial turf
+bounceVertGrassPct=35   ; Vertical bounce on grass
+bounceHorizGrassPct=72  ; Horizontal bounce on grass
+bounceVertDirtPct=30    ; Vertical bounce on dirt
+bounceHorizDirtPct=67   ; Horizontal bounce on dirt
+bounceWetAdjust=-3      ; Adjustment for wet surfaces
+bounceHotAdjust=3       ; Adjustment for hot temperatures
+bounceColdAdjust=-3     ; Adjustment for cold temperatures
+;
+; PLAYER SPEED
+speedBase=19    ; Base speed in feet per second
+speedPct=5      ; Percentage multiplier for player SP rating to add to base
+;
+; BAT SPEED
+swingSpeedBase=61           ; Base speed in miles per hour
+swingSpeedPHPct=10          ; Percentage of PH rating to add to Base bat speed
+swingSpeedPowerAdjust=5     ; Adjustment to player PH if using Power swing
+swingSpeedNormalAdjust=0    ; Adjustment to player PH if using Normal swing
+swingSpeedContactAdjust=-5  ; Adjustment to player PH if using Contact swing
+swingSpeedBuntAdjust=-70    ; Adjustment to player PH if using Bunt swing
+averagePitchSpeed=94        ; Mid range for "geared" pitch velocity
+fastPitchBatSlowdownPct=110 ; Percent of difference between pitch speed and
+;                              averagePitchSpeed to reduce bat speed if pitch
+;                              speed is higher than averagePitchSpeed
+slowPitchBatSpeedupPct=85   ; Percent of difference between pitch speed and
+;                              averagePitchSpeed to increase bat speed if pitch
+;                              speed is slower than averagePitchSpeed
+;
+; SWING ANGLE
+swingAngleTenthDegreesBase=44   ; Base swing angle in tenths of degrees
+swingAngleTenthDegreesRange=0   ; Add 0 to this value tenths of degrees
+;                                  to the base, randomly
+swingAngleTenthDegreesGFPct=95  ; Percent multiplier to batter's G/F above or
+;                                   below 50 to add or subtract from the swing
+;                                   angle. A value of 100 will add 1 tenth of
+;                                   a degree per G/F point over 50.
+swingAngleTenthDegreesPowerAdjust=0   ; Tenths of degrees to add to swing
+;                                        angle when using a power swing
+swingAngleTenthDegreesContactAdjust=0    ; Tenths of degrees to add to swing
+;                                           angle when using contact swing
+swingAngleTenthDegreesHighAdjust=20      ; Tenths of degrees to add to swing
+;                                           angle when contact in upper third
+;                                           of strike zone
+swingAngleTenthDegreesLowAdjust=-20      ; Tenths of degrees to add to swing
+;                                           angle when contact is in lower
+;                                           third of strike zone
+swingAngleTenthDegreesOutsideAdjust=0    ; Tenths of degrees to add to swing
+;                                           angle when contact is made in outer
+;                                           third of strike zone
+;
+; PERCENT OF BAT SPEED TO TRANSFER TO HIT WITH EACH PART OF BAT
+; Adjustments are determined randomly within the specified range
+;
+batPowerHandleBase=25   ; Base percentage for the handle of the bat
+batPowerHandleRange=10  ; Maximum adjustment for the handle of the bat
+batPowerDullBase=50     ; Base percentage for the dull part of the bat
+batPowerDullRange=10    ; Maximum adjustment for the dull part of the bat
+batPowerSweetBase=97    ; Base percentage for the sweet part of the bat
+batPowerSweetRange=12   ; Maximum adjustment for the sweet part of the bat
+batPowerEndBase=50      ; Base percentage for the end of the bat
+batPowerEndRange=10     ; Maximum adjustment for the end of the bat
+;
+; VERTICAL HIT ANGLE DETERMINATION
+; Hit angles are determined from a bell curve distribution based on the type
+; of swing used by the batter.  There are 60 possible angle increments for
+; contact, ranging from 0 to 59.  Values of 0 and 60 are considered misses.
+; A value of 1 will result in an angle of -90 degrees from the base swing
+; angle and a value of 59 will result in an angle of 90 degrees from the
+; base swing angle.
+;
+hitAngleCountPower=5        ; Number of dice to roll for a Power swing
+hitAngleFacesPower=13       ; Number of faces on each die for a Power swing
+hitAngleBasePower=-1        ; Adjustment to resulting roll for a Power swing
+hitAngleCountNormal=5       ; Number of dice to roll for a Normal swing
+hitAngleFacesNormal=13      ; Number of faces on each die for a Normal swing
+hitAngleBaseNormal=-1       ; Adjustment to resulting roll for a Normal swing
+hitAngleCountContact=5      ; Number of dice to roll for a Contact swing
+hitAngleFacesContact=13     ; Number of faces on each die for a Contact swing
+hitAngleBaseContact=-1      ; Adjustment to resulting roll for a Contact swing
+hitAngleCountBunt=30        ; Number of dice to roll for a Bunt swing
+hitAngleFacesBunt=3         ; Number of faces on each die for a Bunt swing
+hitAngleBaseBunt=-30        ; Adjustment to resulting roll for a Bunt swing
+;
+; PITCHER FATIGUE MODIFIERS (percent multipliers to the specified ratings)
+;
+tiredPitchRatPct=90         ; Pct multiplier to pitch ratings when Tired
+tiredASPct=90               ; Pct multiplier to AS ratings when Tired
+exhaustedPitchRatPct=75     ; Pct multiplier to Pitch ratings when Exhausted
+exhaustedASPct=75           ; Pct multiplier to AS ratings when Exhausted
+effCOPct=86                ; Overall percent multiplier to pitcher CO rating
+effMOPct=100               ; Overall percent multiplier to pitcher MO rating
+;
+; PITCHER WARMUP TIMES
+; Pitchers require between 20 to 25 pitches to get warmed up (starters require
+; 40-45).  When warming up, they will throw one pitch every XX seconds, as
+; specified in the entry.  After warmup, pitchers may either continue throwing
+; in the bullpen or may sit down.  If the pitcher continues to throw he will
+; use a pitch from his available pitches every XX seconds, as specified in the
+; entry.  If the pitcher sits down, he will cool down by losing the pitches he
+; threw to get warm, at a rate of one pitch every XX seconds, as specified in
+; the entry.  When he reaches half the total required to get warm, he gets his
+; condition declassified to "half" from "warm" and when he reaches 0 pitches,
+; he is considered "cold".  Regardless of the number of pitches required
+; to get warm and the interval between cool down pitches, the pitcher will be
+; considered "cold" after XX seconds, as specified in the entry.  If a pitcher
+; starts warming up again before he becomes completely cold, he will acquire
+; pitches toward getting to warm status from the number of pitches he had left
+; toward warm status.
+;
+warmupSecsPerWarmPitch=30       ; Normal time between warmup pitches
+warmupSecsPerQuickPitch=20      ; Time between warmup pitches when the opposing
+;                                  team has runners on base
+warmupSecsPerMaintPitch=120     ; Time between pitches used to maintain "warm"
+;                                  status
+warmupSecsPerCoolPitch=60       ; Time between each pitch lost when cooling down
+warmupSecsBeforeCool=1800       ; Time until cooling down pitcher is cold
+;
+; PITCH PARAMETERS
+; Pitch velocity determination
+;
+fbSpeedBase=70      ; Base FASTBALL speed in mph
+fbSpeedRange=2      ; Add from 0 to this value to the base, randomly
+fbSpeedASPct=30     ; Percent multiplier to AS rating to add to base
+;
+cbSpeedBase=55      ; Base CURVEBALL speed in mph
+cbSpeedRange=2      ; Add from 0 to this value to the base, randomly
+cbSpeedASPct=30      ; Percent multiplier to AS rating to add to base
+;
+cuSpeedBase=50      ; Base CHANGE-UP speed in mph
+cuSpeedRange=2      ; Add from 0 to this value to the base, randomly
+cuSpeedASPct=30     ; Percent multiplier to AS rating to add to base
+;
+slSpeedBase=63      ; Base SLIDER speed in mph
+slSpeedRange=2      ; Add from 0 to this value to the base, randomly
+slSpeedASPct=30     ; Percent multiplier to AS rating to add to base
+;
+sbSpeedBase=55      ; Base SCREWBALL speed in mph
+sbSpeedRange=2      ; Add from 0 to this value to the base, randomly
+sbSpeedASPct=30     ; Percent multiplier to AS rating to add to base
+;
+kbSpeedBase=65      ; Base KNUCKLEBALL speed in mph
+kbSpeedRange=2      ; Add from 0 to this value to the base, randomly
+kbSpeedASPct=0      ; Percent multiplier to AS rating to add to base
+;
+siSpeedBase=64      ; Base SINKER speed in mph
+siSpeedRange=2      ; Add from 0 to this value to the base, randomly
+siSpeedASPct=30     ; Percent multiplier to AS rating to add to base
+;
+; Control box sizes
+; Whenever a pitch is thrown a control check is made on the pitch.  If the
+; check is passed it will end up within the area the pitcher aiming the
+; pitch, which is called the "control box".  The control box is centered on
+; the aim point, with any "slop" being applied up and out of the strike zone.
+; If the pitch misses the control check the control box is increased in size
+; by one square in both height and width based on a percentage of the pitcher's
+; effective control for that pitch.  The pitch will then end up anywhere within
+; the newly enlarged control box, and could presumably end up exactly where it
+; was aimed.
+;
+fbControlBoxWidth=1     ; Control box width for the FASTBALL
+fbControlBoxHeight=1    ; Control box height for the FASTBALL
+;
+cbControlBoxWidth=1     ; Control box width for the CURVEBALL
+cbControlBoxHeight=1    ; Control box height for the CURVEBALL
+;
+cuControlBoxWidth=1     ; Control box width for the CHANGE-UP
+cuControlBoxHeight=1    ; Control box height for the CHANGE-UP
+;
+slControlBoxWidth=1     ; Control box width for the SLIDER
+slControlBoxHeight=1    ; Control box height for the SLIDER
+;
+sbControlBoxWidth=1     ; Control box width for the SCREWBALL
+sbControlBoxHeight=1    ; Control box height for the SCREWBALL
+;
+kbControlBoxWidth=1     ; Control box width for the KNUCKLEBALL
+kbControlBoxHeight=1    ; Control box height for the KNUCKLEBALL
+;
+siControlBoxWidth=1     ; Control box width for the SINKER
+siControlBoxHeight=1    ; Control box height for the SINKER
+;
+; Pitch curve/break parameters
+; When the pitcher wants to hit a certain spot with the pitch, he must
+; consider the amount of break he expects to get on the pitch.  These entries
+; represent how much a pitch will "break" from this "phantom" aiming point.
+; If a pitch "hangs" or fails to break it will end up within a control box
+; centered on the phantom aim point, otherwise it will end up within a control
+; box centered on the actual aim point.
+;
+; The Base Width parameters specify the number of squares the pitch will break
+; to the RIGHT of the phantom aim point.  A negative width will mean the pitch
+; will break to the left.  Similarly, the base Height parameters specify the
+; number of squares the pitch will break UPWARD of it's phantom aim point.  A
+; negative value will move the pitch downwards, as most pitches do.
+; The Range parameters specify the maximum number of squares to add to the
+; Width or Height, determined randomly from 0 to the number specified.
+;
+fbBreakBaseWidth=0      ; Base amount of break to the RIGHT for a fastball
+fbBreakBaseHeight=0     ; Base amount of break UPWARDS for a fastball
+fbBreakRangeWidth=0     ; Random range to add to RIGHT break for a fastball
+fbBreakRangeHeight=0    ; Random range to add to UPWARD break for a fastball
+;
+cbBreakBaseWidth=2      ; Base amount of break to the RIGHT for a curveball
+cbBreakBaseHeight=-5    ; Base amount of break UPWARDS for a curveball
+cbBreakRangeWidth=2     ; Random range to add to RIGHT break for a curveball
+cbBreakRangeHeight=-1   ; Random range to add to UPWARD break for a curveball
+;
+cuBreakBaseWidth=0      ; Base amount of break to the RIGHT for a change-up
+cuBreakBaseHeight=-3    ; Base amount of break UPWARDS for a change-up
+cuBreakRangeWidth=0     ; Random range to add to RIGHT break for a change-up
+cuBreakRangeHeight=-2   ; Random range to add to UPWARD break for a change-up
+;
+slBreakBaseWidth=1      ; Base amount of break to the RIGHT for a slider
+slBreakBaseHeight=0     ; Base amount of break UPWARDS for a slider
+slBreakRangeWidth=2     ; Random range to add to RIGHT break for a slider
+slBreakRangeHeight=-1   ; Random range to add to UPWARD break for a slider
+;
+sbBreakBaseWidth=-2     ; Base amount of break to the RIGHT for a screwball
+sbBreakBaseHeight=-4    ; Base amount of break UPWARDS for a screwball
+sbBreakRangeWidth=-2    ; Random range to add to RIGHT break for a screwball
+sbBreakRangeHeight=-1   ; Random range to add to UPWARD break for a screwball
+;
+kbBreakBaseWidth=0      ; Base amount of break to the RIGHT for a knuckleball
+kbBreakBaseHeight=-4    ; Base amount of break UPWARDS for a knuckleball
+kbBreakRangeWidth=2     ; Random range to add to RIGHT break for a knuckleball
+kbBreakRangeHeight=-2   ; Random range to add to UPWARD break for a knuckleball
+;
+siBreakBaseWidth=0      ; Base amount of break to the RIGHT for a sinker
+siBreakBaseHeight=-2    ; Base amount of break UPWARDS for a sinker
+siBreakRangeWidth=0     ; Random range to add to RIGHT break for a sinker
+siBreakRangeHeight=-1   ; Random range to add to UPWARD break for a sinker
+;
+; Missed control check pitch modifiers
+controlBoxIncreaseEffCOPct=15   ; When the control check is missed, the amount
+;                                  it missed by is multiplied by this percentage
+;                                  to get the number of squares the control box
+;                                  will increase in size to determine the final
+;                                  pitch location.
+speedReductionBase=3        ; When the control check is missed and it calls for
+;                              a velocity reduction, this is the base amount the
+;                              velocity will be reduced by.
+speedReductionRange=3       ; A random number between 0 and this value will be
+;                              added to the amount of velocity reduction.
+speedReductionEffMOPct=5    ; Percent multiplier on the amount that the
+;                              control check misses by to add to the amount of
+;                              velocity reduction.
+;
+; AI "SLOP" TIMES
+coverForPitcherSlop=9   ; When deciding to take a pop-up from the pitcher,
+;                         fielders will add this number of frames to the time
+;                         they think it will take the pitcher to catch the ball.
+couldBeCaughtSlop=-18   ; If the time to run to the ball location + this
+;                         slop time is less than the hang time of the ball,
+;                         the ball could be caught.
+shouldBeCaughtSlop=6    ; If the time to run to the ball location + this slop
+;                         time is less than the hang time of the ball, the
+;                         ball should be caught.
+generalSlop=9           ; Added to all time calculations.
+relaySlop=12            ; Frames added to compensate for a relay throw
+;
+userCatchDist=4         ; Distance player's glove must be from ball to sync up
+;                         and make a catch if the fielder is human controlled.
+computerCatchDist=3     ; Distance player's glove must be from ball to sync up
+;                         and make a catch if fielder is computer controlled.
+effortCatchDist=6       ; If the player will be within this distance from the
+;                         ball but cannot sync up to make a catch, he will make
+;                         an effort to catch the ball (jump or dive).
+tagSyncDist=3           ; If the fielder's glove is within this distance from
+;                         runner, he will sync up and make a tag.
+possibleOutFrames=7     ; If fielders calculate they can make the out with this
+;                         many frames to spare, it is a "possible" out.
+likelyOutFrames=24      ; If fielders calculate they can make the out with this
+;                         many frames to spare, it is a "likely" out.
+tagTimeSlop=6           ; Time added to calculations to compensate for time to
+;                         place a tag on a runner in non-force situations.
+throwTimeSlop=6         ; Time added to calculation to compensate for the amount
+;                         of time it takes to get a throw off.
+stepOnBagSlop=-5        ; Time added to calculation to determine whether the
+;                         fielder should take the ball to the bag himself or
+;                         throw it to another fielder covering the bag.
+tagAtBagSlop=4          ; Time added to calculation to determine whether the
+;                         fielder can make a tag at a base after running there.
+throwToBagSlop=8        ; Time added to the other fielder's time to run to bag
+;                         to determine whether to throw to the bag or simply
+;                         run it there.
+;
+;
+; ******************************* PITCHER AI **********************************
+; The pitcher AI entries include:
+;
+;   1. pitcher ratings variations
+;   2. pitch type selection adjustments
+;   3. pitch objective weights
+;
+; PITCH RATINGS
+; Pitch ratings can vary from game to game.  This curve controls how many points
+; a pitch will vary from it's actual value.
+;
+pitchRatVariationCount=1    ; number of dice
+pitchRatVariationFaces=3    ; number of sides per die
+pitchRatVariationBase=-2    ; amount to add to random result
+;
+; PITCH SELECTION ASDJUSTMENTS
+;
+nonEstablishedPitchTypeAdjust=0     ; Add this value to the ratings value of
+;                                      any pitches that have not yet been
+;                                      thrown for strikes, when determining the
+;                                      pitch type to throw
+primaryPitchTypeAdjust=50           ; Add this value to the ratings value of
+;                                      the pitcher's primary pitch, when
+;                                      determining which pitch type to throw
+;
+; PITCH OBJECTIVE WEIGHTS
+; Pitchers will have an objective with each pitch, with the objectives being
+; one of the following types:
+;   1. establish a pitch, i.e., prove to the hitters that he can that pitch
+;       to that location in the strikezone, forcing the batter to consider
+;       that type and location when determining what to "look" for on
+;       each pitch.
+;   2. throw a pitch outside the strikezone (outside a plus or neutral location)
+;   3. throw his best pitch to a plus or neutral location
+;   4. throw his best pitch to the center of the strike zone
+;   5. throw his primary pitch to the center of the strike zone
+;   6. throw any pitch to it's plus location
+;
+pitchObj00CountEstablishWeight=0    ; Establish a pitch on 0-0 counts
+pitchObj00CountOutsideWeight=40     ; Throw outside the zone on 0-0 counts
+pitchObj00CountBestWeight=0         ; Best pitch to plus location on 0-0 counts
+pitchObj00CountBestCenterWeight=0   ; Best pitch to center of zone on 0-0 counts
+pitchObj00CountFastCenterWeight=0   ; Primary pitch to center of zone 0-0 counts
+pitchObj00CountPlusWeight=60        ; Any pitch to plus location on 0-0 counts
+;
+pitchObj01CountEstablishWeight=0    ; Establish a pitch on 0-1 counts
+pitchObj01CountOutsideWeight=46     ; Throw outside the zone on 0-1 counts
+pitchObj01CountBestWeight=15        ; Best pitch to plus location on 0-1 counts
+pitchObj01CountBestCenterWeight=0   ; Best pitch to center of zone on 0-1 counts
+pitchObj01CountFastCenterWeight=0   ; Primary pitch to center of zone 0-1 counts
+pitchObj01CountPlusWeight=39        ; Any pitch to plus location on 0-1 counts
+;
+pitchObj02CountEstablishWeight=0    ; Establish a pitch on 0-2 counts
+pitchObj02CountOutsideWeight=52     ; Throw outside the zone on 0-2 counts
+pitchObj02CountBestWeight=20        ; Best pitch to plus location on 0-2 counts
+pitchObj02CountBestCenterWeight=5   ; Best pitch to center of zone on 0-2 counts
+pitchObj02CountFastCenterWeight=0   ; Primary pitch to center of zone 0-2 counts
+pitchObj02CountPlusWeight=23        ; Any pitch to plus location on 0-2 counts
+;
+pitchObj10CountEstablishWeight=0   ; Establish a pitch on 1-0 counts
+pitchObj10CountOutsideWeight=25     ; Throw outside the zone on 1-0 counts
+pitchObj10CountBestWeight=10        ; Best pitch to plus location on 1-0 counts
+pitchObj10CountBestCenterWeight=0   ; Best pitch to center of zone on 1-0 counts
+pitchObj10CountFastCenterWeight=5   ; Primary pitch to center of zone 1-0 counts
+pitchObj10CountPlusWeight=60        ; Any pitch to plus location on 1-0 counts
+;
+pitchObj11CountEstablishWeight=0    ; Establish a pitch on 1-1 counts
+pitchObj11CountOutsideWeight=40     ; Throw outside the zone on 1-1 counts
+pitchObj11CountBestWeight=0         ; Best pitch to plus location on 1-1 counts
+pitchObj11CountBestCenterWeight=0   ; Best pitch to center of zone on 1-1 counts
+pitchObj11CountFastCenterWeight=0   ; Primary pitch to center of zone 1-1 counts
+pitchObj11CountPlusWeight=60        ; Any pitch to plus location on 1-1 counts
+;
+pitchObj12CountEstablishWeight=0    ; Establish a pitch on 1-2 counts
+pitchObj12CountOutsideWeight=38     ; Throw outside the zone on 1-2 counts
+pitchObj12CountBestWeight=15        ; Best pitch to plus location on 1-2 counts
+pitchObj12CountBestCenterWeight=10  ; Best pitch to center of zone on 1-2 counts
+pitchObj12CountFastCenterWeight=5   ; Primary pitch to center of zone 1-2 counts
+pitchObj12CountPlusWeight=32        ; Any pitch to plus location on 1-2 counts
+;
+pitchObj20CountEstablishWeight=0    ; Establish a pitch on 2-0 counts
+pitchObj20CountOutsideWeight=25     ; Throw outside the zone on 2-0 counts
+pitchObj20CountBestWeight=5         ; Best pitch to plus location on 2-0 counts
+pitchObj20CountBestCenterWeight=5   ; Best pitch to center of zone on 2-0 counts
+pitchObj20CountFastCenterWeight=15  ; Primary pitch to center of zone 2-0 counts
+pitchObj20CountPlusWeight=50        ; Any pitch to plus location on 2-0 counts
+;
+pitchObj21CountEstablishWeight=0    ; Establish a pitch on 2-1 counts
+pitchObj21CountOutsideWeight=20     ; Throw outside the zone on 2-1 counts
+pitchObj21CountBestWeight=5         ; Best pitch to plus location on 2-1 counts
+pitchObj21CountBestCenterWeight=10  ; Best pitch to center of zone on 2-1 counts
+pitchObj21CountFastCenterWeight=15  ; Primary pitch to center of zone 2-1 counts
+pitchObj21CountPlusWeight=50        ; Any pitch to plus location on 2-1 counts
+;
+pitchObj22CountEstablishWeight=0    ; Establish a pitch on 2-2 counts
+pitchObj22CountOutsideWeight=25     ; Throw outside the zone on 2-2 counts
+pitchObj22CountBestWeight=15        ; Best pitch to plus location on 2-2 counts
+pitchObj22CountBestCenterWeight=15  ; Best pitch to center of zone on 2-2 counts
+pitchObj22CountFastCenterWeight=15  ; Primary pitch to center of zone 2-2 counts
+pitchObj22CountPlusWeight=30        ; Any pitch to plus location on 2-2 counts
+;
+pitchObj30CountEstablishWeight=0    ; Establish a pitch on 3-0 counts
+pitchObj30CountOutsideWeight=35     ; Throw outside the zone on 3-0 counts
+pitchObj30CountBestWeight=0         ; Best pitch to plus location on 3-0 counts
+pitchObj30CountBestCenterWeight=15  ; Best pitch to center of zone on 3-0 counts
+pitchObj30CountFastCenterWeight=35  ; Primary pitch to center of zone 3-0 counts
+pitchObj30CountPlusWeight=15        ; Any pitch to plus location on 3-0 counts
+;
+pitchObj31CountEstablishWeight=0    ; Establish a pitch on 3-1 counts
+pitchObj31CountOutsideWeight=27     ; Throw outside the zone on 3-1 counts
+pitchObj31CountBestWeight=5         ; Best pitch to plus location on 3-1 counts
+pitchObj31CountBestCenterWeight=10  ; Best pitch to center of zone on 3-1 counts
+pitchObj31CountFastCenterWeight=25  ; Primary pitch to center of zone 3-1 counts
+pitchObj31CountPlusWeight=33        ; Any pitch to plus location on 3-1 counts
+;
+pitchObj32CountEstablishWeight=0    ; Establish a pitch on 3-2 counts
+pitchObj32CountOutsideWeight=17     ; Throw outside the zone on 3-2 counts
+pitchObj32CountBestWeight=15        ; Best pitch to plus location on 3-2 counts
+pitchObj32CountBestCenterWeight=20  ; Best pitch to center of zone on 3-2 counts
+pitchObj32CountFastCenterWeight=25  ; Primary pitch to center of zone 3-2 counts
+pitchObj32CountPlusWeight=23        ; Any pitch to plus location on 3-2 counts
+;
+;
+; ******************************** BATTER AI **********************************
+; The batter AI entries include those that effect the batter's:
+;
+;   1. strike zone determination
+;   2. chance of looking for certain types of pitches on certain counts.  Look
+;       location is determined by the locations the pitcher has proven he can
+;       throw the pitch for a strike.
+;   3. chance of identifying the pitch parameters (type, velocity, location)
+;   4. swing timing
+;   5. amount of adjustment from look to actual pitch parameters
+;   6. discipline to NOT swing at a "bad pitch"
+;   7. chance of checking a swing after secondary identification
+;   8. Chance of avoiding a pitch that would otherwise hit him
+;
+; STRIKE ZONE DETERMINATION
+; The strike zone is a broken down into a 9x9 grid, with 0,0 being considered
+; the middle of zone, horizontally and vertically.  A pitch is considered to
+; be either a sure strike, a close strike, a close ball, or a sure ball.
+; The values here are how far from 0,0 to call a particular class of pitch.
+; The number of squares out from center to classify the parts of the zone.
+;
+sureStrikeDist=3
+closeStrikeDist=4
+closeBallDist=5
+;
+; LOOK FOR PITCH TYPE ADJUSTMENTS
+; The batter will "look" for a specific pitch type on each count.  Each
+; pitch type is given a weight based on the formula:
+;         ( PitchRating * times_thrown_for_strike / time_thrown )
+; These entries serve to add weight to the final pitch rating percentage
+; for the pitcher's primary pitch (FB, SI, or KN, whichever is dominant)
+; or to the pitcher's best rated pitch.
+;
+; Primary pitch weight adjustments
+;
+lookPrimaryType00CountAdjust=0  ; Adjustment to primary pitch on 0-0 counts
+lookPrimaryType01CountAdjust=0  ; Adjustment to primary pitch on 0-1 counts
+lookPrimaryType02CountAdjust=0  ; Adjustment to primary pitch on 0-2 counts
+lookPrimaryType10CountAdjust=0  ; Adjustment to primary pitch on 1-0 counts
+lookPrimaryType11CountAdjust=0  ; Adjustment to primary pitch on 1-1 counts
+lookPrimaryType12CountAdjust=0  ; Adjustment to primary pitch on 1-2 counts
+lookPrimaryType20CountAdjust=0  ; Adjustment to primary pitch on 2-0 counts
+lookPrimaryType21CountAdjust=0  ; Adjustment to primary pitch on 2-1 counts
+lookPrimaryType22CountAdjust=0  ; Adjustment to primary pitch on 2-2 counts
+lookPrimaryType30CountAdjust=0  ; Adjustment to primary pitch on 3-0 counts
+lookPrimaryType31CountAdjust=0  ; Adjustment to primary pitch on 3-1 counts
+lookPrimaryType32CountAdjust=0  ; Adjustment to primary pitch on 3-2 counts
+;
+; Best pitch weight adjustments
+;
+lookBestType00CountAdjust=0     ; Adjustment to best pitch on 0-0 counts
+lookBestType01CountAdjust=0     ; Adjustment to best pitch on 0-1 counts
+lookBestType02CountAdjust=0     ; Adjustment to best pitch on 0-2 counts
+lookBestType10CountAdjust=0     ; Adjustment to best pitch on 1-0 counts
+lookBestType11CountAdjust=0     ; Adjustment to best pitch on 1-1 counts
+lookBestType12CountAdjust=0     ; Adjustment to best pitch on 1-2 counts
+lookBestType20CountAdjust=0     ; Adjustment to best pitch on 2-0 counts
+lookBestType21CountAdjust=0     ; Adjustment to best pitch on 2-1 counts
+lookBestType22CountAdjust=0     ; Adjustment to best pitch on 2-2 counts
+lookBestType30CountAdjust=15    ; Adjustment to best pitch on 3-0 counts
+lookBestType31CountAdjust=15    ; Adjustment to best pitch on 3-1 counts
+lookBestType32CountAdjust=0     ; Adjustment to best pitch on 3-2 counts
+;
+; PITCH IDENTIFICATION
+; The chance that a batter will identify any of the three components of the
+; pitch is based on the formula:
+;       Base + (( CH + EXP + (100 - PitchRating) / 2 )
+;
+idRatingBase=44             ; Base identification chance
+idRatingCHPct=90            ; Percent multiplier on CH component of formula
+idRatingExpPct=80           ; Percent multiplier on EXP component of formula
+idRatingPitchRatPct=100     ; Percent multiplier on Pitch component of formula
+idRatingTypeWeight=100      ; Percent multiplier on chance to ID pitch type
+idRatingLocWeight=100       ; Percent multiplier on chance to ID pitch location
+idRatingTimingWeight=100    ; Percent multiplier on chance to ID pitch timing
+;
+; SWING TIMING
+; Assuming a proper ID, batter swing timing is a bell curve around the mid
+; point of the swing.  The following 5 timing elements determine the height
+; and width of the bell curve and the maximum base ID chance that particular
+; curve should be used on.  Lower CH values have lower curve heights a greater
+; curve widths meaning that it is harder to get exact timing.
+;
+; Note:  Curves are built from a "dice roll" formula using COUNT number of
+; dice with FACES number of sides to the die and subtracting BASE from the
+; result so that it centers on 0.  Note that die can have an odd number of
+; faces.
+;
+timingVeryBadThresh=55      ; Max base ID chance to use with this curve
+timingVeryBadCount=7        ; number of die used
+timingVeryBadFaces=16       ; number of sides to each die
+timingVeryBadBase=-59       ; number to add to result
+;
+timingBadThresh=70
+timingBadCount=7
+timingBadFaces=16
+timingBadBase=-59
+;
+timingMedThresh=80
+timingMedCount=7
+timingMedFaces=15
+timingMedBase=-56
+;
+timingGoodThresh=86
+timingGoodCount=7
+timingGoodFaces=15
+timingGoodBase=-56
+;
+timingVeryGoodCount=9
+timingVeryGoodFaces=13
+timingVeryGoodBase=-63
+;
+; SWING ADJUSTMENT
+; If a batter originally misidentifies a pitch location or timing, he gets a
+; second chance at identifying that element.  If he does identify a more
+; correct location or timing, he will need to adjust his original swing to the
+; new location or timing.  The adjustments are measured in "units".  A unit is
+; either a one of the squares in the 9x9 strike zone grid or are timing units.
+;
+adjustUnitsCHPct=100
+adjustUnitsPowerPct=75
+adjustUnitsContactPct=150
+;
+; SWING ADJUSTMENT UNITS
+; These controls allow you to set how many adjustment "units" it costs
+; the batter to adjust his swing in each direction.
+;
+; Units in the horizontal and vertical planes are each small (9x9)
+; square in the strike zone (and without).
+;
+; Timing units are a little more complicated and work this way:
+;    1. Get the difference between the final timing ID speed and the
+;       first timing ID speed (ID - 1stID), measured as the number of
+;       inches difference between hitting the ball squarely for
+;       each ID'd pitch speed.  This is the amount of timing adjustment
+;       needed to make good contact.
+;
+;       For example:  If the batter first IDs the pitch as being 85 mph,
+;       he will start his swing such that the ball and bat will meet in the
+;       center of the swing.  The next time he IDs the pitch as being 90 mph,
+;       so when the ball gets to the point where it would have met the bat
+;       according to his calculation, and how he started his swing, the bat
+;       is still XX inches behind the swing apex (look it up in the table).
+;
+;    2. Each batter has a "geared speed" which is the speed of pitch to which
+;       he is "geared up" to hit and which starts at 86 mph.  If a pitch comes
+;       in faster than the geared speed, the batter must speed up his swing to
+;       hit the pitch, otherwise he must slow it down.  It is far easier adjust
+;       a swing to a slower pitch than it is to a faster pitch.
+;
+;       As the batter sees pitches in the game, he will start to adjust his
+;       geared speed to the velocity of the pitches he is seeing, so if you
+;       have a knuckleball starter followed by a fireballing reliever, the
+;       reliever will be much more effective than he would be if following
+;       a normal pitcher.
+;
+;    3. The amount of timing adjustment needed is multiplied by the
+;       appropriate factor to get the number of timing adjustment units
+;       needed to adjust the swing to make good contact, which is added to
+;       the number of location adjustment units to get the total.
+;
+;    4. The batter gets a number of adjustment units based on the specified
+;       percent multiplier on his CH rating.
+;
+adjustUnitsDiag=2   ; Units used to move swing 1 square diagonally
+adjustUnitsHoriz=3  ; Units used to move swing 1 square horizontally
+adjustUnitsVert=2   ; Units used to move swing 1 square vertically
+adjustUnitsSpeedUpLowGeared=1   ; Multiplier to timing adjustment units
+;                                  if swing needs to be sped up to a speed
+;                                  lower than the geared speed
+adjustUnitsSpeedUpHighGeared=8  ; Multiplier to timing adjustment units
+;                                  if swing needs to be sped up to a speed
+;                                  higher than the geared speed
+adjustUnitsSlowDownLowGeared=1  ; Multiplier to timing adjustment units
+;                                  if swing needs to be slowed down to a
+;                                  speed lower than the geared speed
+adjustUnitsSlowDownHighGeared=4 ; Multiplier to timing adjustment units
+;                                  if swing needs to be slowed down to a
+;                                  speed higher than the geared speed
+;
+; SWING DISCIPLINE
+; When the pitch isn't a good one to hit, the batter needs to pass a
+; discipline check to NOT swing at the pitch.  The discipline check is
+; made (meaning the batter WILL NOT swing) if a random number from 0-100
+; falls below the discipline rating value for that pitch.
+;
+; The base discipline rating is calculated as:
+;      ( Adjust + ( CHPct * CH / 100 ) + ( ExpPct * Exp / 100 ))
+;
+disciplineRatingBase=0      ; Base discipline rating
+disciplineRatingCHPct=150   ; Percent multiplier on the CH component of formula
+disciplineRatingExpPct=100  ; Percent multiplier on the EXP component of formula
+disciplineRatingPct=100     ; Percent multiplier on the final discipline rating
+;
+; Adjustments to the base discipline rating
+;
+disciplineRatingNoPitchesAdjust=0       ; If the pitcher has not thrown any
+;                                          pitches in the game
+disciplineRatingScoringPosAdjust=0      ; With runners in scoring position
+disciplineRatingOnThird01OutsAdjust=0   ; With runner on 3rd, less than 2 outs
+disciplineRatingPlusZoneAdjust=-10      ; Pitch is in it's plus zone
+disciplineRatingMinusZoneAdjust=-35     ; Pitch is in it's minus zone
+disciplineRatingLocNextToLookAdjust=-10 ; Pitch is in location next to look loc
+disciplineRatingFBDownMiddleAdjust=-45  ; Pitch is a fastball down the middle
+;
+; Adjustments to discipline based on the pitch count
+;
+disciplineRating00CountAdjust=0     ; Adjustment on 0-0 counts
+disciplineRating01CountAdjust=30    ; Adjustment on 0-1 counts
+disciplineRating02CountAdjust=10    ; Adjustment on 0-2 counts
+disciplineRating10CountAdjust=-10   ; Adjustment on 1-0 counts
+disciplineRating11CountAdjust=10    ; Adjustment on 1-1 counts
+disciplineRating12CountAdjust=0     ; Adjustment on 1-2 counts
+disciplineRating20CountAdjust=-5    ; Adjustment on 2-0 counts
+disciplineRating21CountAdjust=5     ; Adjustment on 2-1 counts
+disciplineRating22CountAdjust=10    ; Adjustment on 2-2 counts
+disciplineRating30CountAdjust=55    ; Adjustment on 3-0 counts
+disciplineRating31CountAdjust=0     ; Adjustment on 3-1 counts
+disciplineRating32CountAdjust=10    ; Adjustment on 3-2 counts
+;
+; CHECK SWING CHANCE
+; If the batter has started his swing then determines that the actual pitch
+; location and/or timing is too far from his original determination to be able
+; to properly adjust to the new location, he will attempt to "check" his
+; swing.  The following entries determine his chance of successfully checking
+; his swing.
+;
+checkChanceBasePower=100    ; Base chance to check a Power swing
+checkChanceBaseNormal=200   ; Base chance to check a Normal swing
+checkChanceBaseContact=300  ; Base chance to check a Contact swing
+checkChanceBaseBunt=100     ; Base chance to check a Bunt swing
+checkChanceCHPctPower=200   ; Pct mult to CH to add to base for Power swing
+checkChanceCHPctNormal=240  ; Pct mult to CH to add to base for Normal swing
+checkChanceCHPctContact=280 ; Pct mult to CH to add to base for Contact swing
+checkChanceCHPctBunt=0      ; Pct mult to CH to add to base for Bunt swing
+failedCheckContactChance = 0   ; If a player checks his swing and the bat
+;                                  happens to be in the way of the ball, this
+;                                  is the percent of time that contact will
+;                                  actually be made
+;
+; AVOIDING HIT BY PITCH
+; The chance that the batter will be able to avoid being hit by a pitch.
+hbpBatterStepOutChance=80
+; *************************** FIELDER ABILITIES ******************************
+; The fielder abilities entries include those that control the fielder's:
+;
+;   1. reaction times (delay)
+;   2. chance of catching a batted or thrown ball
+;   3. maximum throwing distance
+;   4. chance of making a bad throw
+;   5. catcher's chance of catching a wild pitch
+;
+; REACTION TIMES (FIELDER DELAY)
+; Fielders have a reaction time which is the amount of time before they can
+; move after the ball comes off the bat.
+;
+delayBasePitcher=12         ; Base delay for pitchers
+delayFAPctPitcher=-8        ; Percent multiplier to FA to add to base delay
+delayBaseCatcher=12         ; Base delay for catchers
+delayFAPctCatcher=-4        ; Percent multiplier to FA to add to base delay
+delayBaseFirstBase=10       ; Base delay for first basemen
+delayFAPctFirstBase=-6      ; Percent multiplier to FA to add to base delay
+delayBaseSecondBase=13      ; Base delay for second basemen
+delayFAPctSecondBase=-6     ; Percent multiplier to FA to add to base delay
+delayBaseThirdBase=10       ; Base delay for third basemen
+delayFAPctThirdBase=-6      ; Percent multiplier to FA to add to base delay
+delayBaseShortStop=13       ; Base delay for shortstops
+delayFAPctShortStop=-6      ; Percent multiplier to FA to add to base delay
+delayBaseLeftField=25       ; Base delay for left fielders
+delayFAPctLeftField=-9      ; Percent multiplier to FA to add to base delay
+delayBaseCenterField=25     ; Base delay for center fielders
+delayFAPctCenterField=-9    ; Percent multiplier to FA to add to base delay
+delayBaseRightField=25      ; Base delay for right fielders
+delayFAPctRightField=-9     ; Percent multiplier to FA to add to base delay
+;
+; CATCH CHANCE
+catchBaseChance=90              ; Base chance to catch the ball
+catchFADiv=7                    ; Divider to FA to add to base chance
+catchChanceDiving=-40           ; Adjustment when player is diving
+catchChanceLeaping=-15          ; Adjustment when player is leaping
+catchChanceLessThan1Sec=-10     ; Adjustment when ball is in air less than 1 second
+catchChancePerTenth=-1          ; Adjustment per tenth sec less than 1 sec
+catchChancePitcherAdjust=-10    ; Adjustment to catch chance for pitchers
+catchChanceCatcherAdjust=10     ; Adjustment to catch chance for catchers
+catchChanceFirstBaseAdjust=0    ; Adjustment to catch chance for first basemen
+catchChanceSecondBaseAdjust=0   ; Adjustment to catch chance for second basemen
+catchChanceThirdBaseAdjust=0    ; Adjustment to catch chance for third basemen
+catchChanceShortStopAdjust=0    ; Adjustment to catch chance for shortstops
+catchChanceLeftFieldAdjust=5    ; Adjustment to catch chance for left fielders
+catchChanceCenterFieldAdjust=5  ; Adjustment to catch chance for center fielders
+catchChanceRightFieldAdjust=5   ; Adjustment to catch chance for right fielders
+automaticCatchDist=15           ; Distance to have 100% chance of making catch
+;
+; FIELDER THROWING DISTANCE
+;
+maxThrowDistBase=190    ; Base maximum throwing distance
+maxThrowDistASPct=100   ; Percent multiplier to AS to add to base distance
+;
+; FIELDER THROWING SPEED
+; These factors control the fielder throwing speed.  You may specify the
+; base speed (in mph), the percent multiplier to the distance the throw
+; is supposed to go (in feet), and the maximum throwing speed.
+;
+throwSpeedIFBase=52     ; Infielder base speed
+throwSpeedIFDistPct=3   ; Infielder percent multiplier to distance
+throwSpeedIFMax=92      ; Infielder maximum throwing speed
+throwSpeedOFBase=52     ; Outfielder base speed
+throwSpeedOFDistPct=3   ; Outfielder percent multiplier to distance
+throwSpeedOFMax=92      ; Outfielder maximum throwing speed
+;
+; CHANCE OF THROWING ERRORS
+;
+goodThrowBase=63        ; Base chance of making a good throw
+goodThrowFAPct=40       ; Percent multiplier to FA to add to base chance
+goodThrowChancePitcher=10       ; Adjustment to chance for pitchers
+goodThrowChanceCatcher=-20      ; Adjustment to chance for catchers
+goodThrowChanceFirstBase=10     ; Adjustment to chance for first basemen
+goodThrowChanceSecondBase=10    ; Adjustment to chance for second basemen
+goodThrowChanceThirdBase=0      ; Adjustment to chance for third basemen
+goodThrowChanceShortStop=10     ; Adjustment to chance for shortstops
+goodThrowChanceLeftField=-10    ; Adjustment to chance for left fielders
+goodThrowChanceCenterField=-10  ; Adjustment to chance for center fielders
+goodThrowChanceRightField=-10   ; Adjustment to chance for right fielders
+;
+; WILD PITCH CATCH CHANCE
+; When a pitcher throws the ball far from the intended location, he will
+; cross the catcher up, thus generating a possible wild pitch.  The catcher
+; has a chance of catching the wild pitch.
+;
+wildCatchChanceBase=85      ; Base chance to catch wild pitch
+wildCatchChanceFAPct=50      ; Percent multiplier to FA to add to base chance
+wildCatchChanceOppMod=-10    ; Adjustment to chance when the pitch location is
+;                              across the catcher's body from his glove hand
+wildCatchChanceHighMod=-5   ; Adjustment when the pitch is high out of the
+;                              strike zone
+;
+; MAXIMUM CHASE DISTANCES
+; Infielders will not chase the ball if they think they cannot get to it before
+; it will be this distance away from their current location.
+infieldMaxChaseDist=50
+; Pitchers will not chase the ball if they think they cannot get to it before
+; it will be this distance away from their current location.
+pitcherMaxChaseDist=90
+; Outfielders will not chase the ball unless it they think they will get to it
+; no closer than this distance from home plate.
+outfieldMinChaseDist=150
+;
+;
+; ******************************* BASERUNNERS *********************************
+longLeadSpeed=60        ; Minimum SP rating for baserunner to attempt a long
+;                          lead (must have long lead to attempt steal)
+pickoffScareSpeed=60    ; Maximum SP rating at which the runner will be
+;                          scared back from a long lead after a close pickoff
+;                          attempt
+;
+; END OF FILE

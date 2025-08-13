@@ -1,0 +1,297 @@
+/* ??????????????????????????????????????????????????????????????????????????
+   Copyright 1996 by Dynamix
+
+   PGenD.arr
+
+   Tables for use by PlayerGenDoug object
+
+   GJW: 2-29-1996, original creation
+   GJW: 4-11-1996, twidled potential pts value for 0, 15, 33 to -5, 5, 101
+   GJW: 5-3-1996, more twiddling
+   GJW: 7-25-1996, flipped vsL modifier for Pitchers
+   GJW: 7-29-1996, added more fielding age modifiers
+?????????????????????????????????????????????????????????????????????????? */
+
+// From player.h:
+//      enum Hand
+//      {
+//            HAND_NONE,     // 0
+//            HAND_LEFT,     // 1
+//            HAND_RIGHT,    // 2
+//            HAND_BOTH,     // 3 (how convenient, it equals LEFT | RIGHT)
+//            HAND_MAX,
+//      };
+#define  HAND_NONE           0
+#define  HAND_LEFT           1
+#define  HAND_RIGHT          2
+#define  HAND_BOTH           3
+
+#define  DELIVERY_OVERHAND   0
+#define  DELIVERY_SIDEARM    1
+
+#define  SKIN_DARK           0
+#define  SKIN_MEDIUM       128
+#define  SKIN_LIGHT        255
+
+open_block "PGD:"
+long
+// number of players to generate at each position
+   0    0            // P, C
+   0    0    0    0  // 1B, 2B, 3B, SS
+   0    0    0       // LF, CF, RF
+   0                 // sum
+
+byte
+// number of points to distribute (base, numDice, numSides/dice)
+ -10   10   51    // amateur
+ -10   10   51    // fictional
+-100   15   33    // filler
+
+  75              // minimum value
+   0   75    3    // re-roll
+
+// primary position percentages (multiplied by two, for .5 resolution)
+  80              // P
+  19              // C
+  15              // 1B
+  14              // 2B
+  13              // SS
+  14              // 3B
+  16              // LF
+  13              // CF
+  16              // RF
+  
+   1  100         // chanches a pitcher is a good hitter
+  75  100         // % of points to use for hitting ability
+  69    3   23    // otherwise die roll to use to make player marginal
+
+   1 1000         // chanches a position player is a good pitcher
+  75  100         // % of points to use for hitting ability
+
+word
+// point distributions among ratings
+//ch   ph   sp   fa   as
+  20  127  393  557    0      // P
+ 169  183  166  214  269      // C
+ 193  198  163  226  221      // 1B
+ 180  155  206  220  239      // 2B
+ 167  153  199  225  256      // SS
+ 181  182  175  221  240      // 3B
+ 175  185  202  218  220      // LF
+ 182  164  235  206  213      // CF
+ 173  195  187  212  233      // RF
+
+//en   co   hr   mo   as
+ 196  206  184  184  228      // P
+  25   25   25   25    0      // non-P
+
+byte
+// bats, throws, per position
+HAND_RIGHT  HAND_LEFT    1    // P
+HAND_RIGHT  HAND_RIGHT  50
+HAND_LEFT   HAND_LEFT   25
+HAND_LEFT   HAND_RIGHT  10
+HAND_BOTH   HAND_LEFT    4
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    0    // C
+HAND_RIGHT  HAND_RIGHT  75
+HAND_LEFT   HAND_LEFT    0
+HAND_LEFT   HAND_RIGHT  15
+HAND_BOTH   HAND_LEFT    0
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    1
+HAND_RIGHT  HAND_RIGHT  40
+HAND_LEFT   HAND_LEFT   32
+HAND_LEFT   HAND_RIGHT  13
+HAND_BOTH   HAND_LEFT    4
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    0    // 2B
+HAND_RIGHT  HAND_RIGHT  75
+HAND_LEFT   HAND_LEFT    0
+HAND_LEFT   HAND_RIGHT  15
+HAND_BOTH   HAND_LEFT    0
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    0    // 3B
+HAND_RIGHT  HAND_RIGHT  75
+HAND_LEFT   HAND_LEFT    0
+HAND_LEFT   HAND_RIGHT  15
+HAND_BOTH   HAND_LEFT    0
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    0    // SS
+HAND_RIGHT  HAND_RIGHT  75
+HAND_LEFT   HAND_LEFT    0
+HAND_LEFT   HAND_RIGHT  15
+HAND_BOTH   HAND_LEFT    0
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    1    // LF
+HAND_RIGHT  HAND_RIGHT  50
+HAND_LEFT   HAND_LEFT   25
+HAND_LEFT   HAND_RIGHT  10
+HAND_BOTH   HAND_LEFT    4
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    1    // CF
+HAND_RIGHT  HAND_RIGHT  50
+HAND_LEFT   HAND_LEFT   25
+HAND_LEFT   HAND_RIGHT  10
+HAND_BOTH   HAND_LEFT    4
+HAND_BOTH   HAND_RIGHT  10
+
+HAND_RIGHT  HAND_LEFT    1    // RF
+HAND_RIGHT  HAND_RIGHT  50
+HAND_LEFT   HAND_LEFT   25
+HAND_LEFT   HAND_RIGHT  10
+HAND_BOTH   HAND_LEFT    4
+HAND_BOTH   HAND_RIGHT  10
+
+// pitching delivery
+DELIVERY_OVERHAND       95
+DELIVERY_SIDEARM         5
+
+// skin tone
+SKIN_DARK               25
+SKIN_MEDIUM             25
+SKIN_LIGHT              25
+
+// player's age (base, numDice, numSides/dice)
+  14    3    3    // amateur
+  14    4    6    // fictional
+  17    4    6    // filler
+
+// lefties have better movement, at the expense of control
+  90   50   10    // max LO, min CO, delta
+
+// number of pitches player knows how to throw
+  55    2    5    // value to divide by, min and max number to know
+
+// extra points added to pitch points, just because
+  60
+
+// %-age of pitchers, and or subtract some value from endurance
+  30   49         // with 30 <= en <= 49,
+  50   69         // with 50 <= en <= 69,
+  50  100         // 50 % of being modified
+   0    1   20    // subtract or add, 1 to 20 points
+
+word
+// pitch type weightings
+// fb  si   cu   cb   sl   kn   sc
+  512 112  168  164  138    1   13     // overhand left
+  512 168  112  138  164    1   11     // sidearm left
+  512 112  168  164  138   13    1     // overhand right
+  512 168  112  138  164   13    1     // sidearm right
+
+byte
+// convert potential to actual ratings at age 17
+   6    4    6    // ch, ph and co starting %age
+  83    2    6    // sp, as and en
+  36    4    6    // fa and hr
+   4    3    4    // fb and si
+   6    3    6    // cb, sl, cu and sc
+  -1    1    6    // kn
+
+// batting/pitching modifiers
+  35    5    5    // monthly
+  25   10    4    // ground/fly
+  35    5    5    // close/late
+  35    5    5    // home
+  35    5    5    // scoring position
+  35    5    5    // pull rating
+
+                  // Batting
+  20   10    4    // Left vs. Left
+  35    1   15
+  35
+
+  30   10    4    // Right vs. Left
+  50    1   15
+  65
+
+  25   10    4    // Switch vs. Left
+
+                  // Pitching
+  30   10    4    // Left vs. Left
+  50    1   15
+  35
+
+  20   10    4    // Right vs. Left
+  35    1   14
+  65
+
+// values for aging (all values have been multiplied by 100)
+  -4    2    3    // +/- .02
+
+//ch   ph   sp   as   hr   co   en   fa   age
+  18    5    1    1    2    5    1    2   // 18
+  15    5    1    1    3    5    1    3   // 19
+  12    5    1    1    4    5    1    4   // 20
+  10    5    1    1    5    5    1    5   // 21
+   8    5    1    1    6    5    1    6   // 22
+   6    7    1    1    7    7    1    7   // 23
+   4    9    1    1    6    9    1    6   // 24
+   3   11    1    1    5   11    1    5   // 25
+   2    9    1    1    4    9    1    4   // 26
+   1    7    1    1    3    7    1    3   // 27
+   1    5    0    0    2    5    0    2   // 28
+   0    3   -1    0    2    3    0    2   // 29
+   0    2   -2    0    1    2    0    1   // 30
+   0    1   -2    0    0    1    0    0   // 31
+  -1    1   -3    0    0    1    0    0   // 32
+  -2    0   -3    0    0    0   -1   -1   // 33
+  -3   -1   -4    0    0    0   -1   -1   // 34
+  -4   -2   -4   -1   -1   -1   -1   -2   // 35
+  -5   -2   -5   -1   -1   -1   -1   -2   // 36
+  -5   -3   -5   -2   -2   -2   -1   -3   // 37
+  -6   -3   -6   -2   -2   -2   -1   -3   // 38
+  -6   -4   -6   -3   -3   -3   -2   -4   // 39
+  -6   -4   -6   -3   -3   -3   -2   -4   // 40
+  -6   -5   -6   -4   -4   -4   -2   -5   // 41
+  -7   -5   -6   -4   -4   -4   -3   -5   // 42
+  -7   -6   -6   -5   -5   -4   -3   -6   // 43
+  -7   -6   -6   -5   -5   -4   -4   -7   // 44
+  -8   -7   -6   -5   -6   -4   -5   -8   // 45
+  -8   -8   -6   -5   -6   -4   -5   -9   // 46
+  -8   -8   -8   -5   -7   -5   -6  -10   // 47
+  -8   -9   -8   -5   -7   -5   -6  -11   // 48
+  -8   -9   -8   -5   -7   -5   -6  -12   // 49
+
+// pitch 'aging' tables
+// %age in spring training, %change in value
+// each pitcher will allocate 15% of training camp time to developing
+// a pitch (it increases that pitch's value by 35%)
+  35
+   2
+
+// non-qualified fielding position potentials
+// p    c   1b   2b   3b   ss   lf   cf   rf
+   0   10  100   20   60   10   90   40   80 //  p
+  60    0  100   20   60   10   90   40   80 //  c
+  60   10    0   20   60   10   90   40   80 // 1b
+ 130   10  160    0  130   90  150  120  140 // 2b
+ 100   10  140   90    0   80  130  100  120 // 3b
+ 140   10  170  100  140    0  160  120  150 // ss
+  90   10  120   60   90   40    0   80  100 // lf
+ 110   10  150   80  110   70  140    0  130 // cf
+  90   10  130   60   90   40  110   80    0 // rf
+
+// chanch of player HAVING a 2nd-ary position, and what it might be
+// %    p    c   1b   2b   3b   ss   lf   cf   rf
+   1    0    0   30    0    0    0   25    0   45 //  p
+   2    0    0   30    0   20    0   20    0   30 //  c
+   2    0    5    0    0   15    0   50    0   30 // 1b
+   5    0    0    0    0   40   50    0   10    0 // 2b
+   5    0    5   15   20    0   10   25    0   25 // 3b
+   5    0    0    0   50   40    0    0   10    0 // ss
+   9    0    5   25    0   15    0    0   20   35 // lf
+   6    0    0    0   10    0   10   40    0   40 // cf
+   9    0    5   25    0   15    0   35   20    0 // rf
+
+// if a secondary is to be generated, the %-age of 'normal' to use
+  16    4    6    // 4d6 + 16
+close_block
