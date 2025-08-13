@@ -1,0 +1,7 @@
+PyQt6
+Pillow
+diffusers
+transformers
+torch
+opencv-python
+diskcache
