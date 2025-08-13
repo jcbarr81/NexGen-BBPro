@@ -14,7 +14,10 @@ from PyQt6.QtWidgets import (
     QApplication,
     QProgressDialog,
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, pyqtSlot
+from PyQt6.QtCore import Qt, QTimer
+from queue import Empty
+
+from services.avatar_process_worker import start_avatar_generation
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from utils.trade_utils import load_trades, save_trade
@@ -234,91 +237,59 @@ class AdminDashboard(QWidget):
         progress.setAutoClose(False)
         progress.setAutoReset(False)
 
-        class AvatarWorker(QObject):
-            progress = pyqtSignal(int)
-            finished = pyqtSignal(str)
-            error = pyqtSignal(str)
-            canceled = pyqtSignal()
+        process, queue = start_avatar_generation(players, teams)
 
-            def __init__(self, players, teams):
-                super().__init__()
-                self.players = players
-                self.teams = teams
-                self._cancel = False
+        timer = QTimer(self)
 
-            def cancel(self):
-                self._cancel = True
+        def poll_queue():
+            try:
+                while True:
+                    msg = queue.get_nowait()
+                    kind = msg[0]
+                    if kind == "progress":
+                        progress.setValue(msg[1])
+                    elif kind == "finished":
+                        timer.stop()
+                        process.join()
+                        progress.close()
+                        QMessageBox.information(
+                            self,
+                            "Avatars Generated",
+                            f"Player avatars created in: {msg[1]}",
+                        )
+                        return
+                    elif kind == "error":
+                        timer.stop()
+                        process.join()
+                        progress.close()
+                        QMessageBox.warning(
+                            self, "Error", f"Failed to generate avatars: {msg[1]}"
+                        )
+                        return
+            except Empty:
+                pass
 
-            @pyqtSlot()
-            def run(self):
-                from utils.avatar_generator import generate_player_avatars as gen_avatars
+        timer.timeout.connect(poll_queue)
+        timer.start(100)
 
-                def cb(done: int, _total: int) -> None:
-                    if self._cancel:
-                        raise RuntimeError("cancelled")
-                    self.progress.emit(done)
-
-                try:
-                    out_dir = gen_avatars(
-                        progress_callback=cb,
-                        use_sdxl=True,
-                        players=self.players,
-                        teams=self.teams,
-                        controlnet_path=None,
-                        ip_adapter_path=None,
-                    )
-                    if self._cancel:
-                        self.canceled.emit()
-                    else:
-                        self.finished.emit(out_dir)
-                except Exception as e:  # includes cancellation
-                    if self._cancel:
-                        self.canceled.emit()
-                    else:
-                        self.error.emit(str(e))
-
-        worker = AvatarWorker(players, teams)
-        thread = QThread(self)
-        worker.moveToThread(thread)
-
-        worker.progress.connect(progress.setValue)
-
-        def cleanup():
-            progress.close()
-            thread.quit()
-            thread.wait()
-            worker.deleteLater()
-            thread.deleteLater()
-
-        def handle_finished(out_dir: str) -> None:
+        def cancel() -> None:
+            timer.stop()
+            if process.is_alive():
+                process.terminate()
+                process.join()
             QMessageBox.information(
-                self,
-                "Avatars Generated",
-                f"Player avatars created in: {out_dir}",
+                self, "Cancelled", "Avatar generation was cancelled."
             )
-            cleanup()
+            progress.close()
 
-        def handle_error(msg: str) -> None:
-            QMessageBox.warning(self, "Error", f"Failed to generate avatars: {msg}")
-            cleanup()
+        progress.canceled.connect(cancel)
 
-        def handle_canceled() -> None:
-            QMessageBox.information(self, "Cancelled", "Avatar generation was cancelled.")
-            cleanup()
-
-        worker.finished.connect(handle_finished)
-        worker.error.connect(handle_error)
-        worker.canceled.connect(handle_canceled)
-
-        progress.canceled.connect(worker.cancel)
-
-        thread.started.connect(worker.run)
-        thread.start()
         progress.exec()
-        if thread.isRunning():
-            worker.cancel()
-            thread.quit()
-            thread.wait()
+
+        timer.stop()
+        if process.is_alive():
+            process.terminate()
+            process.join()
         return
 
     def open_exhibition_dialog(self):
