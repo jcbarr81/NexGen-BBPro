@@ -12,6 +12,7 @@ from logic.substitution_manager import SubstitutionManager
 from logic.playbalance_config import PlayBalanceConfig
 from logic.physics import Physics
 from logic.pitcher_ai import PitcherAI
+from logic.batter_ai import BatterAI
 
 
 @dataclass
@@ -82,6 +83,7 @@ class GameSimulation:
         self.subs = SubstitutionManager(config, self.rng)
         self.physics = Physics(config, self.rng)
         self.pitcher_ai = PitcherAI(config, self.rng)
+        self.batter_ai = BatterAI(config)
         self.debug_log: List[str] = []
 
     # ------------------------------------------------------------------
@@ -212,7 +214,19 @@ class GameSimulation:
             outs += 1
             return outs
 
-        if self._swing_result(batter, pitcher_state.player):
+        pitch_type, _ = self.pitcher_ai.last_selection or ("fb", "establish")
+        r = self.rng.random()
+        swing, contact = self.batter_ai.decide_swing(
+            batter,
+            pitcher_state.player,
+            pitch_type=pitch_type,
+            balls=0,
+            strikes=0,
+            dist=0,
+            random_value=r,
+        )
+
+        if swing and self._swing_result(batter, pitcher_state.player, rand=r, contact_quality=contact):
             batter_state.hits += 1
             self._advance_runners(offense, batter_state)
             steal_result = self._attempt_steal(
@@ -231,13 +245,20 @@ class GameSimulation:
     # ------------------------------------------------------------------
     # Swing outcome
     # ------------------------------------------------------------------
-    def _swing_result(self, batter: Player, pitcher: Pitcher) -> bool:
+    def _swing_result(
+        self,
+        batter: Player,
+        pitcher: Pitcher,
+        *,
+        rand: float,
+        contact_quality: float = 1.0,
+    ) -> bool:
         bat_speed = self.physics.bat_speed(batter.ph)
         # The angle is calculated for completeness even though the simplified
         # simulation does not yet use it for the outcome.
         self.physics.swing_angle(batter.gf)
-        hit_prob = max(0.0, min(0.95, bat_speed / 100.0))
-        return self.rng.random() < hit_prob
+        hit_prob = max(0.0, min(0.95, (bat_speed / 100.0) * contact_quality))
+        return rand < hit_prob
 
     def _advance_runners(self, team: TeamState, batter_state: BatterState) -> None:
         b = team.bases
