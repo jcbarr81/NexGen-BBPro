@@ -36,7 +36,9 @@ class AdminDashboard(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Admin Dashboard")
-        self.setGeometry(200, 200, 500, 300)
+        # Use a modest default size so the dashboard doesn't fill the screen
+        # when launched.
+        self.setGeometry(200, 200, 800, 600)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)

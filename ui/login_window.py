@@ -78,13 +78,12 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Error", "Unrecognized role.")
             return
 
-        # Display the dashboard in a maximized window so standard window
-        # controls (minimize, maximize, close) are available.
-        self.dashboard.showMaximized()
+        # Show the dashboard at its default size rather than maximized so it
+        # doesn't dominate the entire screen.
+        self.dashboard.show()
 
-        # Close the splash screen once the dashboard is displayed
-        if self.splash:
-            self.splash.close()
+        # Keep the splash screen visible in the background until the
+        # application exits.
 
         self.close()
 
