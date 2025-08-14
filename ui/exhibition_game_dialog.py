@@ -14,7 +14,15 @@ import os
 from utils.team_loader import load_teams
 from utils.player_loader import load_players_from_csv
 from utils.roster_loader import load_roster
-from logic.simulation import GameSimulation, TeamState, generate_boxscore
+from datetime import datetime
+
+from logic.simulation import (
+    GameSimulation,
+    TeamState,
+    generate_boxscore,
+    render_boxscore_html,
+    save_boxscore_html,
+)
 from models.pitcher import Pitcher
 from logic.playbalance_config import PlayBalanceConfig
 
@@ -111,6 +119,13 @@ class ExhibitionGameDialog(QDialog):
             sim.simulate_game()
             box = generate_boxscore(home_state, away_state)
             text = self._format_box_score(home_id, away_id, box)
+            # Render and save an HTML version of the box score
+            html = render_boxscore_html(
+                box,
+                home_name=self._teams.get(home_id, home_id),
+                away_name=self._teams.get(away_id, away_id),
+            )
+            save_boxscore_html("exhibition", html, datetime.now().strftime("%Y%m%d_%H%M%S"))
             if sim.debug_log:
                 text += "\n\nStrategy Log:\n" + "\n".join(sim.debug_log)
             positions = sim.defense.set_field_positions()

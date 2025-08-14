@@ -400,10 +400,96 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
     return {"home": team_section(home), "away": team_section(away)}
 
 
+# ---------------------------------------------------------------------------
+# Box score HTML rendering / saving
+# ---------------------------------------------------------------------------
+from datetime import datetime
+from pathlib import Path
+
+
+def render_boxscore_html(
+    box: Dict[str, Dict[str, object]],
+    home_name: str = "Home",
+    away_name: str = "Away",
+) -> str:
+    """Return a very small HTML representation of ``box``.
+
+    The goal is not to be feature complete but to provide an easily testable
+    HTML output that mirrors the structure of ``samples/BoxScoreSample.html``.
+    """
+
+    def team_line(key: str, name: str) -> str:
+        innings = box[key]["inning_runs"]
+        innings_str = "".join(f"{r:>3}" for r in innings)
+        if len(innings) < 9:
+            innings_str += "".join("   " for _ in range(9 - len(innings)))
+        hits = sum(entry["h"] for entry in box[key]["batting"])
+        return (
+            f"<b>{name:<15}</b>{innings_str}   {box[key]['score']:>2}   {hits:>2}   0"
+        )
+
+    lines = ["<html><body><pre>"]
+    lines.append("<b>                  1  2  3   4  5  6   7  8  9         R   H   E</b>")
+    lines.append(team_line("away", away_name))
+    lines.append(team_line("home", home_name))
+    lines.append("</pre><hr><pre>")
+
+    def team_section(key: str, name: str) -> None:
+        lines.append(f"<b>{name} Batting</b>")
+        for entry in box[key]["batting"]:
+            p = entry["player"]
+            lines.append(
+                f"{p.first_name} {p.last_name}: {entry['h']}-{entry['ab']}, BB {entry['bb']}, SO {entry['so']}, SB {entry['sb']}"
+            )
+        if box[key]["pitching"]:
+            lines.append("")
+            lines.append(f"<b>{name} Pitching</b>")
+            for entry in box[key]["pitching"]:
+                p = entry["player"]
+                lines.append(
+                    f"{p.first_name} {p.last_name}: {entry['pitches']} pitches, BB {entry['bb']}, SO {entry['so']}"
+                )
+        lines.append("")
+
+    team_section("away", away_name)
+    team_section("home", home_name)
+    lines.append("</pre></body></html>")
+    return "\n".join(lines)
+
+
+def save_boxscore_html(game_type: str, html: str, game_id: str | None = None) -> str:
+    """Persist ``html`` to the appropriate box score directory.
+
+    Parameters
+    ----------
+    game_type:
+        Either ``"exhibition"`` or ``"season"``.
+    html:
+        The HTML to write.
+    game_id:
+        Optional file name stem.  If not provided a timestamp is used.
+
+    Returns
+    -------
+    str
+        Full path of the written file.
+    """
+
+    base = Path(__file__).resolve().parent.parent / "data" / "boxscores" / game_type
+    base.mkdir(parents=True, exist_ok=True)
+    if game_id is None:
+        game_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = base / f"{game_id}.html"
+    path.write_text(html, encoding="utf-8")
+    return str(path)
+
+
 __all__ = [
     "BatterState",
     "PitcherState",
     "TeamState",
     "GameSimulation",
     "generate_boxscore",
+    "render_boxscore_html",
+    "save_boxscore_html",
 ]
