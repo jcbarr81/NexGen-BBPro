@@ -84,7 +84,7 @@ def test_swing_result_respects_bat_speed():
     sim1 = GameSimulation(home1, away1, cfg_slow, rng1)
     outs1 = sim1.play_at_bat(away1, home1)
     assert outs1 == 1
-    assert away1.lineup_stats["b1"].hits == 0
+    assert away1.lineup_stats["b1"].h == 0
 
     # High bat speed -> hit
     cfg_fast = make_cfg(swingSpeedBase=80)
@@ -95,7 +95,7 @@ def test_swing_result_respects_bat_speed():
     sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
     outs2 = sim2.play_at_bat(away2, home2)
     assert outs2 == 0
-    assert away2.lineup_stats["b2"].hits == 1
+    assert away2.lineup_stats["b2"].h == 1
 
 
 def test_runner_advancement_respects_speed():
