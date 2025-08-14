@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 import re
 
 @dataclass
@@ -24,6 +24,7 @@ class Team:
     act_roster: List[str] = field(default_factory=list)
     aaa_roster: List[str] = field(default_factory=list)
     low_roster: List[str] = field(default_factory=list)
+    season_stats: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate color fields after initialization."""

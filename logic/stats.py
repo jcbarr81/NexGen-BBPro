@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .simulation import BatterState, PitcherState, FieldingState
+    from .simulation import BatterState, PitcherState, FieldingState, TeamState
 
 
 def compute_batting_derived(stats: 'BatterState') -> Dict[str, float]:
@@ -157,3 +157,59 @@ def compute_fielding_rates(stats: 'FieldingState') -> Dict[str, float]:
         "cs_pct": cs_pct,
         "pb_g": pb_g,
     }
+
+
+def compute_team_derived(team: 'TeamState', opponent: 'TeamState') -> Dict[str, float]:
+    """Return counting totals needed for team-level metrics.
+
+    Parameters
+    ----------
+    team: TeamState
+        The team to compute derived stats for (used for LOB).
+    opponent: TeamState
+        The opposing team whose offensive stats are used to compute defensive
+        efficiency for ``team``.
+    """
+
+    pa = sum(bs.pa for bs in opponent.lineup_stats.values())
+    h = sum(bs.h for bs in opponent.lineup_stats.values())
+    bb = sum(bs.bb for bs in opponent.lineup_stats.values())
+    so = sum(bs.so for bs in opponent.lineup_stats.values())
+    hbp = sum(bs.hbp for bs in opponent.lineup_stats.values())
+    hr = sum(bs.hr for bs in opponent.lineup_stats.values())
+    roe = sum(bs.roe for bs in opponent.lineup_stats.values())
+    der_den = pa - bb - so - hbp - hr
+    der = 1 - (h + roe) / der_den if der_den else 0.0
+
+    return {
+        "opp_pa": pa,
+        "opp_h": h,
+        "opp_bb": bb,
+        "opp_so": so,
+        "opp_hbp": hbp,
+        "opp_hr": hr,
+        "opp_roe": roe,
+        "der": der,
+    }
+
+
+def compute_team_rates(stats: Dict[str, float]) -> Dict[str, float]:
+    """Return rate-based team metrics from cumulative totals."""
+
+    g = stats.get("g", 0)
+    r = stats.get("r", 0)
+    ra = stats.get("ra", 0)
+    opp_pa = stats.get("opp_pa", 0)
+    opp_h = stats.get("opp_h", 0)
+    opp_bb = stats.get("opp_bb", 0)
+    opp_so = stats.get("opp_so", 0)
+    opp_hbp = stats.get("opp_hbp", 0)
+    opp_hr = stats.get("opp_hr", 0)
+    opp_roe = stats.get("opp_roe", 0)
+
+    der_den = opp_pa - opp_bb - opp_so - opp_hbp - opp_hr
+    der = 1 - (opp_h + opp_roe) / der_den if der_den else 0.0
+    rpg = r / g if g else 0.0
+    rag = ra / g if g else 0.0
+
+    return {"der": der, "rpg": rpg, "rag": rag}
