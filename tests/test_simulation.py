@@ -221,3 +221,35 @@ def test_walk_records_stats():
     assert stats.pa == 1
     assert pstats.walks == 1
     assert pstats.pitches_thrown == 4
+
+
+def test_fielding_stats_tracking():
+    cfg = load_config()
+    catcher = make_player("c")
+    catcher.primary_position = "C"
+    second = make_player("2")
+    second.primary_position = "2B"
+    defense = TeamState(
+        lineup=[catcher, second], bench=[], pitchers=[make_pitcher("hp")]
+    )
+    runner = make_player("r")
+    offense = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    offense.lineup_stats[runner.player_id] = runner_state
+    offense.bases[0] = runner_state
+    offense.base_pitchers[0] = defense.current_pitcher_state
+    rng = MockRandom([0.9, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9])
+    sim = GameSimulation(defense, offense, cfg, rng)
+    res = sim._attempt_steal(offense, defense, defense.current_pitcher_state.player, force=True)
+    assert res is False
+    outs = sim.play_at_bat(offense, defense)
+    assert outs == 1
+    c_fs = defense.fielding_stats[catcher.player_id]
+    s_fs = defense.fielding_stats[second.player_id]
+    p_fs = defense.fielding_stats[defense.current_pitcher_state.player.player_id]
+    assert c_fs.cs == 1
+    assert c_fs.sba == 1
+    assert c_fs.a == 1
+    assert c_fs.po == 1
+    assert s_fs.po == 1
+    assert p_fs.a == 1

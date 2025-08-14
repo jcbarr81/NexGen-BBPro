@@ -18,6 +18,8 @@ from .stats import (
     compute_batting_rates,
     compute_pitching_derived,
     compute_pitching_rates,
+    compute_fielding_derived,
+    compute_fielding_rates,
 )
 
 
@@ -113,6 +115,25 @@ class PitcherState:
 
 
 @dataclass
+class FieldingState:
+    """Tracks defensive statistics for a player."""
+
+    player: Player
+    g: int = 0  # Games fielded
+    gs: int = 0  # Games started
+    po: int = 0  # Putouts
+    a: int = 0  # Assists
+    e: int = 0  # Errors
+    dp: int = 0  # Double plays
+    tp: int = 0  # Triple plays
+    pk: int = 0  # Pickoffs
+    pb: int = 0  # Passed balls
+    ci: int = 0  # Catcher's interference
+    cs: int = 0  # Runners caught stealing
+    sba: int = 0  # Stolen base attempts against
+
+
+@dataclass
 class TeamState:
     """Mutable state for a team during a game."""
 
@@ -121,6 +142,7 @@ class TeamState:
     pitchers: List[Pitcher]
     lineup_stats: Dict[str, BatterState] = field(default_factory=dict)
     pitcher_stats: Dict[str, PitcherState] = field(default_factory=dict)
+    fielding_stats: Dict[str, FieldingState] = field(default_factory=dict)
     batting_index: int = 0
     bases: List[Optional[BatterState]] = field(default_factory=lambda: [None, None, None])
     base_pitchers: List[Optional[PitcherState]] = field(
@@ -137,8 +159,15 @@ class TeamState:
             self.current_pitcher_state = state
             state.g += 1
             state.gs += 1
+            fs = self.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
+            fs.g += 1
+            fs.gs += 1
         else:
             self.current_pitcher_state = None
+        for p in self.lineup:
+            fs = self.fielding_stats.setdefault(p.player_id, FieldingState(p))
+            fs.g += 1
+            fs.gs += 1
 
 
 class GameSimulation:
@@ -183,6 +212,29 @@ class GameSimulation:
             state.player.season_stats = season
         season[attr] = season.get(attr, 0) + amount
 
+    def _add_fielding_stat(self, state: FieldingState, attr: str, amount: int = 1) -> None:
+        """Increment ``attr`` on ``state`` and season totals."""
+
+        setattr(state, attr, getattr(state, attr) + amount)
+        season = getattr(state.player, "season_stats", None)
+        if season is None:
+            season = {}
+            state.player.season_stats = season
+        season[attr] = season.get(attr, 0) + amount
+
+    def _get_fielder(self, defense: TeamState, position: str) -> Optional[FieldingState]:
+        """Return the ``FieldingState`` for ``position`` if present."""
+
+        for player in defense.lineup + defense.pitchers:
+            if (
+                player.primary_position == position
+                or position in getattr(player, "other_positions", [])
+            ):
+                return defense.fielding_stats.setdefault(
+                    player.player_id, FieldingState(player)
+                )
+        return None
+
     # ------------------------------------------------------------------
     # Pitcher state helpers
     # ------------------------------------------------------------------
@@ -197,6 +249,10 @@ class GameSimulation:
         ps.g += 1
         if starting:
             ps.gs += 1
+        fs = defense.fielding_stats.setdefault(ps.player.player_id, FieldingState(ps.player))
+        fs.g += 1
+        if starting:
+            fs.gs += 1
         ps.ir += sum(1 for b in offense.bases if b is not None)
         lead = defense.runs - offense.runs
         if lead > 0 and lead <= 3:
@@ -296,6 +352,21 @@ class GameSimulation:
                 season.update(compute_pitching_derived(season_state))
                 season.update(compute_pitching_rates(season_state))
                 ps.player.season_stats = season
+
+            for fs in team.fielding_stats.values():
+                season = getattr(fs.player, "season_stats", {})
+                for f in fields(FieldingState):
+                    if f.name == "player":
+                        continue
+                    season[f.name] = season.get(f.name, 0) + getattr(fs, f.name)
+                season_state = FieldingState(fs.player)
+                for f in fields(FieldingState):
+                    if f.name == "player":
+                        continue
+                    setattr(season_state, f.name, season.get(f.name, 0))
+                season.update(compute_fielding_derived(season_state))
+                season.update(compute_fielding_rates(season_state))
+                fs.player.season_stats = season
 
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
@@ -397,7 +468,7 @@ class GameSimulation:
             ):
                 self.debug_log.append("Hit and run")
                 steal_result = self._attempt_steal(
-                    offense, pitcher_state.player, force=True
+                    offense, defense, pitcher_state.player, force=True
                 )
                 if steal_result is False:
                     outs += 1
@@ -487,7 +558,7 @@ class GameSimulation:
                     self._add_stat(batter_state, "b1")
                     self._advance_runners(offense, defense, batter_state)
                     steal_result = self._attempt_steal(
-                        offense, pitcher_state.player, batter=batter
+                        offense, defense, pitcher_state.player, batter=batter
                     )
                     if steal_result is False:
                         outs += 1
@@ -522,6 +593,12 @@ class GameSimulation:
                 self._add_stat(batter_state, "so")
                 pitcher_state.so += 1
                 outs += 1
+                catcher_fs = self._get_fielder(defense, "C")
+                if catcher_fs:
+                    self._add_fielding_stat(catcher_fs, "po")
+                p_fs = defense.fielding_stats.get(pitcher_state.player.player_id)
+                if p_fs:
+                    self._add_fielding_stat(p_fs, "a")
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
@@ -623,6 +700,7 @@ class GameSimulation:
     def _attempt_steal(
         self,
         offense: TeamState,
+        defense: TeamState,
         pitcher: Pitcher,
         *,
         force: bool = False,
@@ -643,6 +721,7 @@ class GameSimulation:
             attempt = self.rng.random() < chance
         if attempt:
             success_prob = 0.7
+            catcher_fs = self._get_fielder(defense, "C")
             if self.rng.random() < success_prob:
                 ps_runner = offense.base_pitchers[0]
                 offense.bases[0] = None
@@ -650,10 +729,19 @@ class GameSimulation:
                 offense.bases[1] = runner_state
                 offense.base_pitchers[1] = ps_runner
                 self._add_stat(runner_state, "sb")
+                if catcher_fs:
+                    self._add_fielding_stat(catcher_fs, "sba")
                 return True
             offense.bases[0] = None
             offense.base_pitchers[0] = None
             self._add_stat(runner_state, "cs")
+            if catcher_fs:
+                self._add_fielding_stat(catcher_fs, "sba")
+                self._add_fielding_stat(catcher_fs, "cs")
+                self._add_fielding_stat(catcher_fs, "a")
+            tagger = self._get_fielder(defense, "2B") or self._get_fielder(defense, "SS")
+            if tagger:
+                self._add_fielding_stat(tagger, "po")
             return False
         return None
 
@@ -732,10 +820,31 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
             line.update(compute_pitching_derived(ps))
             line.update(compute_pitching_rates(ps))
             pitching.append(line)
+        fielding = []
+        for fs in team.fielding_stats.values():
+            line = {
+                "player": fs.player,
+                "g": fs.g,
+                "gs": fs.gs,
+                "po": fs.po,
+                "a": fs.a,
+                "e": fs.e,
+                "dp": fs.dp,
+                "tp": fs.tp,
+                "pk": fs.pk,
+                "pb": fs.pb,
+                "ci": fs.ci,
+                "cs": fs.cs,
+                "sba": fs.sba,
+            }
+            line.update(compute_fielding_derived(fs))
+            line.update(compute_fielding_rates(fs))
+            fielding.append(line)
         return {
             "score": team.runs,
             "batting": batting,
             "pitching": pitching,
+            "fielding": fielding,
             "inning_runs": team.inning_runs,
         }
 
@@ -766,8 +875,9 @@ def render_boxscore_html(
         if len(innings) < 9:
             innings_str += "".join("   " for _ in range(9 - len(innings)))
         hits = sum(entry["h"] for entry in box[key]["batting"])
+        errors = sum(entry["e"] for entry in box[key]["fielding"])
         return (
-            f"<b>{name:<15}</b>{innings_str}   {box[key]['score']:>2}   {hits:>2}   0"
+            f"<b>{name:<15}</b>{innings_str}   {box[key]['score']:>2}   {hits:>2}   {errors:>2}"
         )
 
     lines = ["<html><body><pre>"]
@@ -790,6 +900,14 @@ def render_boxscore_html(
                 p = entry["player"]
                 lines.append(
                     f"{p.first_name} {p.last_name}: BF {entry['bf']}, R {entry['r']}, ER {entry['er']}, H {entry['h']}, BB {entry['bb']}, SO {entry['so']}, P {entry['pitches']}, S {entry['strikes']}"
+                )
+        if box[key]["fielding"]:
+            lines.append("")
+            lines.append(f"<b>{name} Fielding</b>")
+            for entry in box[key]["fielding"]:
+                p = entry["player"]
+                lines.append(
+                    f"{p.first_name} {p.last_name}: PO {entry['po']}, A {entry['a']}, E {entry['e']}"
                 )
         lines.append("")
 
@@ -829,6 +947,7 @@ def save_boxscore_html(game_type: str, html: str, game_id: str | None = None) ->
 __all__ = [
     "BatterState",
     "PitcherState",
+    "FieldingState",
     "TeamState",
     "GameSimulation",
     "generate_boxscore",

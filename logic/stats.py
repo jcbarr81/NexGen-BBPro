@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .simulation import BatterState, PitcherState
+    from .simulation import BatterState, PitcherState, FieldingState
 
 
 def compute_batting_derived(stats: 'BatterState') -> Dict[str, float]:
@@ -129,4 +129,31 @@ def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
         "ozone_pct": ozone_pct,
         "ozone_swing_pct": ozone_swing_pct,
         "ozone_contact_pct": ozone_contact_pct,
+    }
+
+
+def compute_fielding_derived(stats: 'FieldingState') -> Dict[str, float]:
+    """Return derived fielding totals."""
+
+    tc = stats.po + stats.a + stats.e
+    of_a = stats.a if stats.player.primary_position in {"LF", "CF", "RF"} else 0
+    return {"tc": tc, "of_a": of_a}
+
+
+def compute_fielding_rates(stats: 'FieldingState') -> Dict[str, float]:
+    """Return rate-based fielding metrics."""
+
+    tc = stats.po + stats.a + stats.e
+    fpct = (stats.po + stats.a) / tc if tc else 0.0
+    total_play = stats.po + stats.a
+    rf9 = total_play / stats.g if stats.g else 0.0
+    rfg = total_play / stats.g if stats.g else 0.0
+    cs_pct = stats.cs / stats.sba if stats.sba else 0.0
+    pb_g = stats.pb / stats.g if stats.g else 0.0
+    return {
+        "fpct": fpct,
+        "rf9": rf9,
+        "rfg": rfg,
+        "cs_pct": cs_pct,
+        "pb_g": pb_g,
     }
