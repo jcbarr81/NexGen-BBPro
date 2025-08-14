@@ -87,12 +87,12 @@ class LoginWindow(QWidget):
         # Show the dashboard at its default size rather than maximized so it
         # doesn't dominate the entire screen.
         self.dashboard.show()
+        self.dashboard.raise_()
         self.dashboard.activateWindow()
 
-        # Keep the splash screen visible above the dashboard.
+        # Hide the splash screen so the dashboard takes focus.
         if self.splash:
-            self.splash.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
-            self.splash.show()
+            self.splash.hide()
 
         # Close the login window now that the dashboard is displayed.
         self.close()
@@ -100,6 +100,8 @@ class LoginWindow(QWidget):
     def dashboard_closed(self, event):
         """Handle a dashboard being closed by returning focus to the splash."""
         if self.splash:
+            # Restore the splash screen when the dashboard closes.
+            self.splash.show()
             self.splash.raise_()
             self.splash.activateWindow()
             self.splash.login_button.setEnabled(True)
