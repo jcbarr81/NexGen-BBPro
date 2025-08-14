@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Dict, List, Optional
 
 from models.player import Player
@@ -13,6 +13,7 @@ from logic.playbalance_config import PlayBalanceConfig
 from logic.physics import Physics
 from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
+from .stats import compute_batting_derived, compute_batting_rates
 
 
 @dataclass
@@ -43,6 +44,8 @@ class BatterState:
     cs: int = 0  # Caught stealing
     po: int = 0  # Pickoffs
     pocs: int = 0  # Pickoff caught stealing
+    pitches: int = 0  # Pitches seen
+    lob: int = 0  # Left on base
 
 
 @dataclass
@@ -135,6 +138,18 @@ class GameSimulation:
             self._play_half(self.away, self.home)  # Top half
             self._play_half(self.home, self.away)  # Bottom half
 
+        for team in (self.home, self.away):
+            for bs in team.lineup_stats.values():
+                season = getattr(bs.player, "season_stats", {})
+                season_state = BatterState(bs.player)
+                for f in fields(BatterState):
+                    if f.name == "player":
+                        continue
+                    setattr(season_state, f.name, season.get(f.name, 0))
+                season.update(compute_batting_derived(season_state))
+                season.update(compute_batting_rates(season_state))
+                bs.player.season_stats = season
+
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
         self.subs.maybe_defensive_sub(defense, self.debug_log)
@@ -143,6 +158,9 @@ class GameSimulation:
         outs = 0
         while outs < 3:
             outs += self.play_at_bat(offense, defense)
+        for runner in offense.bases:
+            if runner is not None:
+                self._add_stat(runner, "lob")
         offense.bases = [None, None, None]
         offense.inning_runs.append(offense.runs - start_runs)
 
@@ -187,6 +205,8 @@ class GameSimulation:
         if pitcher_state is None:
             raise RuntimeError("Defense has no available pitcher")
 
+        start_pitches = pitcher_state.pitches_thrown
+
         # Record plate appearance
         self._add_stat(batter_state, "pa")
         season_pitcher = getattr(pitcher_state.player, "season_stats", None)
@@ -202,6 +222,9 @@ class GameSimulation:
             self._add_stat(batter_state, "ibb")
             pitcher_state.walks += 1
             self._advance_walk(offense, batter_state)
+            self._add_stat(
+                batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+            )
             return outs
 
         runner_state = offense.bases[0]
@@ -248,6 +271,9 @@ class GameSimulation:
                 if runs_scored:
                     self._add_stat(batter_state, "rbi", runs_scored)
                 outs += 1
+                self._add_stat(
+                    batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+                )
                 return outs
 
         if offense.bases[2] and self.offense.maybe_suicide_squeeze(
@@ -266,6 +292,9 @@ class GameSimulation:
             self._add_stat(batter_state, "sh")
             self._add_stat(batter_state, "rbi")
             outs += 1
+            self._add_stat(
+                batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+            )
             return outs
 
         while True:
@@ -299,6 +328,11 @@ class GameSimulation:
                     )
                     if steal_result is False:
                         outs += 1
+                    self._add_stat(
+                        batter_state,
+                        "pitches",
+                        pitcher_state.pitches_thrown - start_pitches,
+                    )
                     return outs
                 strikes += 1
             else:
@@ -313,12 +347,18 @@ class GameSimulation:
                     self._add_stat(batter_state, "ibb")
                 pitcher_state.walks += 1
                 self._advance_walk(offense, batter_state)
+                self._add_stat(
+                    batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+                )
                 return outs
             if strikes >= 3:
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
                 pitcher_state.strikeouts += 1
                 outs += 1
+                self._add_stat(
+                    batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+                )
                 return outs
 
 
@@ -441,8 +481,9 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
     """Return a simplified box score for ``home`` and ``away`` teams."""
 
     def team_section(team: TeamState) -> Dict[str, object]:
-        batting = [
-            {
+        batting = []
+        for bs in team.lineup_stats.values():
+            line = {
                 "player": bs.player,
                 "pa": bs.pa,
                 "ab": bs.ab,
@@ -468,8 +509,9 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
                 "po": bs.po,
                 "pocs": bs.pocs,
             }
-            for bs in team.lineup_stats.values()
-        ]
+            line.update(compute_batting_derived(bs))
+            line.update(compute_batting_rates(bs))
+            batting.append(line)
         pitching = [
             {
                 "player": ps.player,
