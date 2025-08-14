@@ -8,6 +8,7 @@ import random
 
 
 def test_create_league_generates_files(tmp_path):
+    random.seed(0)
     divisions = {"East": [("CityA", "Cats"), ("CityB", "Dogs")]}
     create_league(str(tmp_path), divisions, "Test League")
 

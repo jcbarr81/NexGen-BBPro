@@ -11,6 +11,7 @@ from logic.offensive_manager import OffensiveManager
 from logic.substitution_manager import SubstitutionManager
 from logic.playbalance_config import PlayBalanceConfig
 from logic.physics import Physics
+from logic.pitcher_ai import PitcherAI
 
 
 @dataclass
@@ -80,6 +81,7 @@ class GameSimulation:
         self.offense = OffensiveManager(config, self.rng)
         self.subs = SubstitutionManager(config, self.rng)
         self.physics = Physics(config, self.rng)
+        self.pitcher_ai = PitcherAI(config, self.rng)
         self.debug_log: List[str] = []
 
     # ------------------------------------------------------------------
@@ -150,6 +152,10 @@ class GameSimulation:
 
         pitcher_state.pitches_thrown += 1
         batter_state.at_bats += 1
+
+        # Determine pitch type and objective for the at-bat.  The information is
+        # currently only tracked for inspection in tests.
+        self.pitcher_ai.select_pitch(pitcher_state.player)
 
         outs = 0
 
