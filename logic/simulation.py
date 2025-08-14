@@ -10,6 +10,7 @@ from logic.defensive_manager import DefensiveManager
 from logic.offensive_manager import OffensiveManager
 from logic.substitution_manager import SubstitutionManager
 from logic.playbalance_config import PlayBalanceConfig
+from logic.physics import Physics
 
 
 @dataclass
@@ -78,6 +79,7 @@ class GameSimulation:
         self.defense = DefensiveManager(config, self.rng)
         self.offense = OffensiveManager(config, self.rng)
         self.subs = SubstitutionManager(config, self.rng)
+        self.physics = Physics(config, self.rng)
         self.debug_log: List[str] = []
 
     # ------------------------------------------------------------------
@@ -224,23 +226,44 @@ class GameSimulation:
     # Swing outcome
     # ------------------------------------------------------------------
     def _swing_result(self, batter: Player, pitcher: Pitcher) -> bool:
-        base = self.config.get("swingSpeedBase", 50)
-        pct = self.config.get("swingSpeedPHPct", 0)
-        swing_speed = base + pct * batter.ph / 100.0
-        hit_prob = max(0.0, min(0.95, swing_speed / 100.0))
+        bat_speed = self.physics.bat_speed(batter.ph)
+        # The angle is calculated for completeness even though the simplified
+        # simulation does not yet use it for the outcome.
+        self.physics.swing_angle(batter.gf)
+        hit_prob = max(0.0, min(0.95, bat_speed / 100.0))
         return self.rng.random() < hit_prob
 
     def _advance_runners(self, team: TeamState, batter_state: BatterState) -> None:
         b = team.bases
+        new_bases: List[Optional[BatterState]] = [None, None, None]
+
+        # Runner on third always scores
         if b[2]:
             team.runs += 1
-            b[2] = None
+
+        # Runner on second may score depending on speed
         if b[1]:
-            b[2] = b[1]
-            b[1] = None
+            spd = self.physics.player_speed(b[1].player.sp)
+            if spd >= 25:
+                team.runs += 1
+            else:
+                new_bases[2] = b[1]
+
+        # Runner on first may take two bases if fast enough
         if b[0]:
-            b[1] = b[0]
-        b[0] = batter_state
+            spd = self.physics.player_speed(b[0].player.sp)
+            if spd >= 25:
+                if new_bases[2] is None:
+                    new_bases[2] = b[0]
+                else:
+                    # Third base occupied, runner stops at second
+                    new_bases[1] = b[0]
+            else:
+                new_bases[1] = b[0]
+
+        # Batter to first
+        new_bases[0] = batter_state
+        team.bases = new_bases
 
     # ------------------------------------------------------------------
     # Steal attempts
