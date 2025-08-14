@@ -16,6 +16,12 @@ class MockRandom(random.Random):
 
     def random(self):  # type: ignore[override]
         return self.values.pop(0)
+
+    def randint(self, a, b):  # type: ignore[override]
+        # ``PitcherAI`` uses ``randint`` for pitch variation which is irrelevant
+        # for these tests.  Always return the lower bound without consuming the
+        # predefined sequence.
+        return a
 def make_player(pid: str, ph: int = 50, sp: int = 50, ch: int = 50) -> Player:
     return Player(
         player_id=pid,
