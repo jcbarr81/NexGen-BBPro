@@ -91,7 +91,7 @@ def test_pinch_hitter_used():
     sim.play_at_bat(away, home)
     assert away.lineup[0].player_id == "bench"
     stats = away.lineup_stats["bench"]
-    assert stats.at_bats == 1
+    assert stats.ab == 1
 
 
 def test_pinch_hitter_not_used():
@@ -105,7 +105,7 @@ def test_pinch_hitter_not_used():
     sim.play_at_bat(away, home)
     assert away.lineup[0].player_id == "start"
     stats = away.lineup_stats["start"]
-    assert stats.walks == 1
+    assert stats.bb == 1
 
 
 def test_steal_attempt_success():
@@ -119,7 +119,7 @@ def test_steal_attempt_success():
     outs = sim.play_at_bat(away, home)
     assert outs == 0
     stats = away.lineup_stats["run"]
-    assert stats.steals == 1
+    assert stats.sb == 1
     assert away.bases[1] is stats
 
 
@@ -193,6 +193,10 @@ def test_run_tracking_and_boxscore():
     assert outs == 3
     assert away.runs == 1
     assert away.inning_runs == [1]
+    runner_stats = away.lineup_stats[runner.player_id]
+    batter_stats = away.lineup_stats[batter.player_id]
+    assert runner_stats.r == 1
+    assert batter_stats.rbi == 1
     box = generate_boxscore(home, away)
     assert box["away"]["score"] == 1
     assert box["home"]["score"] == 0
@@ -212,7 +216,8 @@ def test_walk_records_stats():
     assert outs == 0
     stats = away.lineup_stats[batter.player_id]
     pstats = home.current_pitcher_state
-    assert stats.walks == 1
-    assert stats.at_bats == 0
+    assert stats.bb == 1
+    assert stats.ab == 0
+    assert stats.pa == 1
     assert pstats.walks == 1
     assert pstats.pitches_thrown == 4
