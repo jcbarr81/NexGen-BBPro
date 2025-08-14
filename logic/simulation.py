@@ -53,9 +53,52 @@ class PitcherState:
     """Tracks state for a pitcher."""
 
     player: Pitcher
-    pitches_thrown: int = 0
-    walks: int = 0
-    strikeouts: int = 0
+    g: int = 0  # Games pitched
+    gs: int = 0  # Games started
+    bf: int = 0  # Batters faced
+    outs: int = 0  # Outs recorded
+    r: int = 0  # Runs allowed
+    er: int = 0  # Earned runs allowed
+    h: int = 0  # Hits allowed
+    b1: int = 0  # Singles allowed
+    b2: int = 0  # Doubles allowed
+    b3: int = 0  # Triples allowed
+    hr: int = 0  # Home runs allowed
+    bb: int = 0  # Walks issued
+    ibb: int = 0  # Intentional walks issued
+    hbp: int = 0  # Hit batters
+    so: int = 0  # Strikeouts
+    wp: int = 0  # Wild pitches
+    bk: int = 0  # Balks
+    pk: int = 0  # Pickoffs
+    ir: int = 0  # Inherited runners
+    irs: int = 0  # Inherited runners scored
+    gf: int = 0  # Games finished
+    sv: int = 0  # Saves
+    bs: int = 0  # Blown saves
+    hld: int = 0  # Holds
+    svo: int = 0  # Save opportunities
+    pitches_thrown: int = 0  # Total pitches
+    strikes_thrown: int = 0  # Strikes thrown
+    balls_thrown: int = 0  # Balls thrown
+    in_save_situation: bool = False  # Internal flag tracking save opp
+
+    # Backwards compatibility accessors
+    @property
+    def walks(self) -> int:  # pragma: no cover - simple alias
+        return self.bb
+
+    @walks.setter
+    def walks(self, value: int) -> None:  # pragma: no cover - simple alias
+        self.bb = value
+
+    @property
+    def strikeouts(self) -> int:  # pragma: no cover - simple alias
+        return self.so
+
+    @strikeouts.setter
+    def strikeouts(self, value: int) -> None:  # pragma: no cover - simple alias
+        self.so = value
 
 
 @dataclass
@@ -69,6 +112,9 @@ class TeamState:
     pitcher_stats: Dict[str, PitcherState] = field(default_factory=dict)
     batting_index: int = 0
     bases: List[Optional[BatterState]] = field(default_factory=lambda: [None, None, None])
+    base_pitchers: List[Optional[PitcherState]] = field(
+        default_factory=lambda: [None, None, None]
+    )
     runs: int = 0
     inning_runs: List[int] = field(default_factory=list)
 
@@ -78,6 +124,8 @@ class TeamState:
             state = PitcherState(starter)
             self.pitcher_stats[starter.player_id] = state
             self.current_pitcher_state = state
+            state.g += 1
+            state.gs += 1
         else:
             self.current_pitcher_state = None
 
@@ -125,6 +173,75 @@ class GameSimulation:
         season[attr] = season.get(attr, 0) + amount
 
     # ------------------------------------------------------------------
+    # Pitcher state helpers
+    # ------------------------------------------------------------------
+    def _on_pitcher_enter(
+        self, offense: TeamState, defense: TeamState, *, starting: bool = False
+    ) -> None:
+        """Record statistics when a pitcher enters the game."""
+
+        ps = defense.current_pitcher_state
+        if ps is None:
+            return
+        ps.g += 1
+        if starting:
+            ps.gs += 1
+        ps.ir += sum(1 for b in offense.bases if b is not None)
+        lead = defense.runs - offense.runs
+        if lead > 0 and lead <= 3:
+            ps.svo += 1
+            ps.in_save_situation = True
+        else:
+            ps.in_save_situation = False
+
+    def _on_pitcher_exit(
+        self,
+        ps: PitcherState | None,
+        offense: TeamState,
+        defense: TeamState,
+        *,
+        game_finished: bool = False,
+    ) -> None:
+        """Update save/hold/blown save on pitcher exit."""
+
+        if ps is None:
+            return
+        lead = defense.runs - offense.runs
+        if ps.in_save_situation:
+            if lead > 0:
+                if game_finished:
+                    ps.sv += 1
+                    ps.gf += 1
+                else:
+                    if ps.outs > 0:
+                        ps.hld += 1
+            else:
+                ps.bs += 1
+        if game_finished and not ps.gf:
+            ps.gf += 1
+        ps.in_save_situation = False
+
+    def _score_runner(
+        self, offense: TeamState, defense: TeamState, base_idx: int
+    ) -> None:
+        """Handle a runner scoring from ``base_idx``."""
+
+        runner = offense.bases[base_idx]
+        if runner is None:
+            return
+        offense.runs += 1
+        self._add_stat(runner, "r")
+        pitcher_for_runner = offense.base_pitchers[base_idx]
+        if pitcher_for_runner is not None:
+            pitcher_for_runner.r += 1
+            pitcher_for_runner.er += 1
+            current = defense.current_pitcher_state
+            if current is not None and current is not pitcher_for_runner:
+                current.irs += 1
+        offense.bases[base_idx] = None
+        offense.base_pitchers[base_idx] = None
+
+    # ------------------------------------------------------------------
     # Core loop helpers
     # ------------------------------------------------------------------
     def simulate_game(self, innings: int = 9) -> None:
@@ -137,6 +254,10 @@ class GameSimulation:
         for _ in range(innings):
             self._play_half(self.away, self.home)  # Top half
             self._play_half(self.home, self.away)  # Bottom half
+
+        # Finalize pitching stats for pitchers who finished the game
+        self._on_pitcher_exit(self.home.current_pitcher_state, self.away, self.home, game_finished=True)
+        self._on_pitcher_exit(self.away.current_pitcher_state, self.home, self.away, game_finished=True)
 
         for team in (self.home, self.away):
             for bs in team.lineup_stats.values():
@@ -162,12 +283,16 @@ class GameSimulation:
             if runner is not None:
                 self._add_stat(runner, "lob")
         offense.bases = [None, None, None]
+        offense.base_pitchers = [None, None, None]
         offense.inning_runs.append(offense.runs - start_runs)
 
     def play_at_bat(self, offense: TeamState, defense: TeamState) -> int:
         """Play a single at-bat.  Returns the number of outs recorded."""
-
-        self.subs.maybe_change_pitcher(defense, self.debug_log)
+        old_pitcher = defense.current_pitcher_state
+        changed = self.subs.maybe_change_pitcher(defense, self.debug_log)
+        if changed:
+            self._on_pitcher_exit(old_pitcher, offense, defense)
+            self._on_pitcher_enter(offense, defense)
 
         # Check if any existing runner should be replaced with a pinch runner
         self.subs.maybe_pinch_run(offense, log=self.debug_log)
@@ -191,10 +316,14 @@ class GameSimulation:
             self.debug_log.append("Pitch around")
 
         batter_idx = offense.batting_index % len(offense.lineup)
+        old_pitcher = defense.current_pitcher_state
         batter = self.subs.maybe_double_switch(
             offense, defense, batter_idx, self.debug_log
         )
-        if batter is None:
+        if batter is not None:
+            self._on_pitcher_exit(old_pitcher, offense, defense)
+            self._on_pitcher_enter(offense, defense)
+        else:
             batter = self.subs.maybe_pinch_hit(offense, batter_idx, self.debug_log)
         offense.batting_index += 1
 
@@ -205,6 +334,7 @@ class GameSimulation:
         if pitcher_state is None:
             raise RuntimeError("Defense has no available pitcher")
 
+        pitcher_state.bf += 1
         start_pitches = pitcher_state.pitches_thrown
 
         # Record plate appearance
@@ -220,11 +350,13 @@ class GameSimulation:
         if ibb:
             self._add_stat(batter_state, "bb")
             self._add_stat(batter_state, "ibb")
-            pitcher_state.walks += 1
-            self._advance_walk(offense, batter_state)
+            pitcher_state.bb += 1
+            pitcher_state.ibb += 1
+            self._advance_walk(offense, defense, batter_state)
             self._add_stat(
                 batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
             )
+            pitcher_state.outs += outs
             return outs
 
         runner_state = offense.bases[0]
@@ -255,18 +387,21 @@ class GameSimulation:
             ):
                 self.debug_log.append("Sacrifice bunt")
                 b = offense.bases
+                bp = offense.base_pitchers
                 runs_scored = 0
                 if b[2]:
-                    offense.runs += 1
-                    self._add_stat(b[2], "r")
+                    self._score_runner(offense, defense, 2)
                     runs_scored += 1
-                    b[2] = None
                 if b[1]:
-                    b[2] = b[1]
-                    b[1] = None
+                    offense.bases[2] = b[1]
+                    offense.base_pitchers[2] = bp[1]
+                    offense.bases[1] = None
+                    offense.base_pitchers[1] = None
                 if b[0]:
-                    b[1] = b[0]
-                    b[0] = None
+                    offense.bases[1] = b[0]
+                    offense.base_pitchers[1] = bp[0]
+                    offense.bases[0] = None
+                    offense.base_pitchers[0] = None
                 self._add_stat(batter_state, "sh")
                 if runs_scored:
                     self._add_stat(batter_state, "rbi", runs_scored)
@@ -274,6 +409,7 @@ class GameSimulation:
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
+                pitcher_state.outs += outs
                 return outs
 
         if offense.bases[2] and self.offense.maybe_suicide_squeeze(
@@ -284,17 +420,15 @@ class GameSimulation:
             runner_on_third_sp=offense.bases[2].player.sp,
         ):
             self.debug_log.append("Suicide squeeze")
-            offense.runs += 1
-            runner = offense.bases[2]
-            if runner:
-                self._add_stat(runner, "r")
-            offense.bases[2] = None
+            if offense.bases[2]:
+                self._score_runner(offense, defense, 2)
             self._add_stat(batter_state, "sh")
             self._add_stat(batter_state, "rbi")
             outs += 1
             self._add_stat(
                 batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
             )
+            pitcher_state.outs += outs
             return outs
 
         while True:
@@ -319,10 +453,13 @@ class GameSimulation:
                 if self._swing_result(
                     batter, pitcher_state.player, rand=dec_r, contact_quality=contact
                 ):
+                    pitcher_state.strikes_thrown += 1
+                    pitcher_state.h += 1
+                    pitcher_state.b1 += 1
                     self._add_stat(batter_state, "ab")
                     self._add_stat(batter_state, "h")
                     self._add_stat(batter_state, "b1")
-                    self._advance_runners(offense, batter_state)
+                    self._advance_runners(offense, defense, batter_state)
                     steal_result = self._attempt_steal(
                         offense, pitcher_state.player, batter=batter
                     )
@@ -333,32 +470,36 @@ class GameSimulation:
                         "pitches",
                         pitcher_state.pitches_thrown - start_pitches,
                     )
+                    pitcher_state.outs += outs
                     return outs
                 strikes += 1
+                pitcher_state.strikes_thrown += 1
             else:
                 if dist <= 3:
                     strikes += 1
+                    pitcher_state.strikes_thrown += 1
                 else:
                     balls += 1
+                    pitcher_state.balls_thrown += 1
 
             if balls >= 4:
                 self._add_stat(batter_state, "bb")
-                if ibb:
-                    self._add_stat(batter_state, "ibb")
-                pitcher_state.walks += 1
-                self._advance_walk(offense, batter_state)
+                pitcher_state.bb += 1
+                self._advance_walk(offense, defense, batter_state)
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
+                pitcher_state.outs += outs
                 return outs
             if strikes >= 3:
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
-                pitcher_state.strikeouts += 1
+                pitcher_state.so += 1
                 outs += 1
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
+                pitcher_state.outs += outs
                 return outs
 
 
@@ -383,57 +524,70 @@ class GameSimulation:
         hit_prob = max(0.0, min(0.95, (bat_speed / 100.0) * contact_quality))
         return rand < hit_prob
 
-    def _advance_runners(self, team: TeamState, batter_state: BatterState) -> None:
-        b = team.bases
+    def _advance_runners(
+        self, offense: TeamState, defense: TeamState, batter_state: BatterState
+    ) -> None:
+        b = offense.bases
+        bp = offense.base_pitchers
         new_bases: List[Optional[BatterState]] = [None, None, None]
+        new_bp: List[Optional[PitcherState]] = [None, None, None]
         runs_scored = 0
 
-        # Runner on third always scores
         if b[2]:
-            team.runs += 1
-            self._add_stat(b[2], "r")
+            self._score_runner(offense, defense, 2)
             runs_scored += 1
-
-        # Runner on second may score depending on speed
         if b[1]:
             spd = self.physics.player_speed(b[1].player.sp)
             if spd >= 25:
-                team.runs += 1
-                self._add_stat(b[1], "r")
+                self._score_runner(offense, defense, 1)
                 runs_scored += 1
             else:
                 new_bases[2] = b[1]
-
-        # Runner on first may take two bases if fast enough
+                new_bp[2] = bp[1]
         if b[0]:
             spd = self.physics.player_speed(b[0].player.sp)
             if spd >= 25:
                 if new_bases[2] is None:
                     new_bases[2] = b[0]
+                    new_bp[2] = bp[0]
                 else:
-                    # Third base occupied, runner stops at second
                     new_bases[1] = b[0]
+                    new_bp[1] = bp[0]
             else:
                 new_bases[1] = b[0]
+                new_bp[1] = bp[0]
 
-        # Batter to first
         new_bases[0] = batter_state
-        team.bases = new_bases
+        new_bp[0] = defense.current_pitcher_state
+        offense.bases = new_bases
+        offense.base_pitchers = new_bp
         if runs_scored:
             self._add_stat(batter_state, "rbi", runs_scored)
 
-    def _advance_walk(self, team: TeamState, batter_state: BatterState) -> None:
-        b = team.bases
+    def _advance_walk(
+        self, offense: TeamState, defense: TeamState, batter_state: BatterState
+    ) -> None:
+        b = offense.bases
+        bp = offense.base_pitchers
+        new_bases: List[Optional[BatterState]] = [None, None, None]
+        new_bp: List[Optional[PitcherState]] = [None, None, None]
         runs_scored = 0
         if b[2] and b[1] and b[0]:
-            team.runs += 1
-            self._add_stat(b[2], "r")
+            self._score_runner(offense, defense, 2)
             runs_scored += 1
         if b[1] and b[0]:
-            b[2] = b[1]
+            new_bases[2] = b[1]
+            new_bp[2] = bp[1]
+        elif b[2]:
+            new_bases[2] = b[2]
+            new_bp[2] = bp[2]
         if b[0]:
-            b[1] = b[0]
-        b[0] = batter_state
+            new_bases[1] = b[0]
+            new_bp[1] = bp[0]
+        new_bases[0] = batter_state
+        new_bp[0] = defense.current_pitcher_state
+        offense.bases = new_bases
+        offense.base_pitchers = new_bp
         if runs_scored:
             self._add_stat(batter_state, "rbi", runs_scored)
 
@@ -464,11 +618,15 @@ class GameSimulation:
         if attempt:
             success_prob = 0.7
             if self.rng.random() < success_prob:
+                ps_runner = offense.base_pitchers[0]
                 offense.bases[0] = None
+                offense.base_pitchers[0] = None
                 offense.bases[1] = runner_state
+                offense.base_pitchers[1] = ps_runner
                 self._add_stat(runner_state, "sb")
                 return True
             offense.bases[0] = None
+            offense.base_pitchers[0] = None
             self._add_stat(runner_state, "cs")
             return False
         return None
@@ -515,9 +673,34 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
         pitching = [
             {
                 "player": ps.player,
+                "g": ps.g,
+                "gs": ps.gs,
+                "bf": ps.bf,
+                "outs": ps.outs,
+                "r": ps.r,
+                "er": ps.er,
+                "h": ps.h,
+                "1b": ps.b1,
+                "2b": ps.b2,
+                "3b": ps.b3,
+                "hr": ps.hr,
+                "bb": ps.bb,
+                "ibb": ps.ibb,
+                "hbp": ps.hbp,
+                "so": ps.so,
+                "wp": ps.wp,
+                "bk": ps.bk,
+                "pk": ps.pk,
+                "ir": ps.ir,
+                "irs": ps.irs,
+                "gf": ps.gf,
+                "sv": ps.sv,
+                "bs": ps.bs,
+                "hld": ps.hld,
+                "svo": ps.svo,
                 "pitches": ps.pitches_thrown,
-                "bb": ps.walks,
-                "so": ps.strikeouts,
+                "strikes": ps.strikes_thrown,
+                "balls": ps.balls_thrown,
             }
             for ps in team.pitcher_stats.values()
         ]
@@ -578,7 +761,7 @@ def render_boxscore_html(
             for entry in box[key]["pitching"]:
                 p = entry["player"]
                 lines.append(
-                    f"{p.first_name} {p.last_name}: {entry['pitches']} pitches, BB {entry['bb']}, SO {entry['so']}"
+                    f"{p.first_name} {p.last_name}: BF {entry['bf']}, R {entry['r']}, ER {entry['er']}, H {entry['h']}, BB {entry['bb']}, SO {entry['so']}, P {entry['pitches']}, S {entry['strikes']}"
                 )
         lines.append("")
 
