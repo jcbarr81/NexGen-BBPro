@@ -23,6 +23,8 @@ class BatterState:
     at_bats: int = 0
     hits: int = 0
     steals: int = 0
+    walks: int = 0
+    strikeouts: int = 0
 
 
 @dataclass
@@ -31,6 +33,8 @@ class PitcherState:
 
     player: Pitcher
     pitches_thrown: int = 0
+    walks: int = 0
+    strikeouts: int = 0
 
 
 @dataclass
@@ -152,14 +156,9 @@ class GameSimulation:
         if pitcher_state is None:
             raise RuntimeError("Defense has no available pitcher")
 
-        pitcher_state.pitches_thrown += 1
-        batter_state.at_bats += 1
-
-        # Determine pitch type and objective for the at-bat.  The information is
-        # currently only tracked for inspection in tests.
-        self.pitcher_ai.select_pitch(pitcher_state.player)
-
         outs = 0
+        balls = 0
+        strikes = 0
 
         runner_state = offense.bases[0]
         inning = len(offense.inning_runs) + 1
@@ -204,8 +203,8 @@ class GameSimulation:
         if offense.bases[2] and self.offense.maybe_suicide_squeeze(
             batter_ch=batter.ch,
             batter_ph=batter.ph,
-            balls=0,
-            strikes=0,
+            balls=balls,
+            strikes=strikes,
             runner_on_third_sp=offense.bases[2].player.sp,
         ):
             self.debug_log.append("Suicide squeeze")
@@ -214,30 +213,56 @@ class GameSimulation:
             outs += 1
             return outs
 
-        pitch_type, _ = self.pitcher_ai.last_selection or ("fb", "establish")
-        r = self.rng.random()
-        swing, contact = self.batter_ai.decide_swing(
-            batter,
-            pitcher_state.player,
-            pitch_type=pitch_type,
-            balls=0,
-            strikes=0,
-            dist=0,
-            random_value=r,
-        )
-
-        if swing and self._swing_result(batter, pitcher_state.player, rand=r, contact_quality=contact):
-            batter_state.hits += 1
-            self._advance_runners(offense, batter_state)
-            steal_result = self._attempt_steal(
-                offense, pitcher_state.player, batter=batter
+        while True:
+            pitcher_state.pitches_thrown += 1
+            pitch_type, _ = self.pitcher_ai.select_pitch(
+                pitcher_state.player, balls=balls, strikes=strikes
             )
-            if steal_result is False:  # Runner thrown out
-                outs += 1
-        else:
-            outs += 1
+            loc_r = self.rng.random()
+            dist = 0 if loc_r < 0.5 else 5
+            dec_r = self.rng.random()
+            swing, contact = self.batter_ai.decide_swing(
+                batter,
+                pitcher_state.player,
+                pitch_type=pitch_type,
+                balls=balls,
+                strikes=strikes,
+                dist=dist,
+                random_value=dec_r,
+            )
 
-        return outs
+            if swing:
+                if self._swing_result(
+                    batter, pitcher_state.player, rand=dec_r, contact_quality=contact
+                ):
+                    batter_state.at_bats += 1
+                    batter_state.hits += 1
+                    self._advance_runners(offense, batter_state)
+                    steal_result = self._attempt_steal(
+                        offense, pitcher_state.player, batter=batter
+                    )
+                    if steal_result is False:
+                        outs += 1
+                    return outs
+                strikes += 1
+            else:
+                if dist <= 3:
+                    strikes += 1
+                else:
+                    balls += 1
+
+            if balls >= 4:
+                batter_state.walks += 1
+                pitcher_state.walks += 1
+                self._advance_walk(offense, batter_state)
+                return outs
+            if strikes >= 3:
+                batter_state.at_bats += 1
+                batter_state.strikeouts += 1
+                pitcher_state.strikeouts += 1
+                outs += 1
+                return outs
+
 
     # ------------------------------------------------------------------
     # Pinch hitting
@@ -292,6 +317,16 @@ class GameSimulation:
         new_bases[0] = batter_state
         team.bases = new_bases
 
+    def _advance_walk(self, team: TeamState, batter_state: BatterState) -> None:
+        b = team.bases
+        if b[2] and b[1] and b[0]:
+            team.runs += 1
+        if b[1] and b[0]:
+            b[2] = b[1]
+        if b[0]:
+            b[1] = b[0]
+        b[0] = batter_state
+
     # ------------------------------------------------------------------
     # Steal attempts
     # ------------------------------------------------------------------
@@ -340,12 +375,19 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
                 "player": bs.player,
                 "ab": bs.at_bats,
                 "h": bs.hits,
+                "bb": bs.walks,
+                "so": bs.strikeouts,
                 "sb": bs.steals,
             }
             for bs in team.lineup_stats.values()
         ]
         pitching = [
-            {"player": ps.player, "pitches": ps.pitches_thrown}
+            {
+                "player": ps.player,
+                "pitches": ps.pitches_thrown,
+                "bb": ps.walks,
+                "so": ps.strikeouts,
+            }
             for ps in team.pitcher_stats.values()
         ]
         return {

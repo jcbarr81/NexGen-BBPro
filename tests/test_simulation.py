@@ -86,7 +86,7 @@ def test_pinch_hitter_used():
     starter = make_player("start", ph=10)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[starter], bench=[bench], pitchers=[make_pitcher("ap")])
-    rng = MockRandom([0.0, 0.0, 1.0])  # pinch, swing(hit), steal attempt none
+    rng = MockRandom([0.0, 0.0, 0.0, 1.0])  # pinch, pitch strike, swing(hit), steal attempt none
     sim = GameSimulation(home, away, cfg, rng)
     sim.play_at_bat(away, home)
     assert away.lineup[0].player_id == "bench"
@@ -100,12 +100,12 @@ def test_pinch_hitter_not_used():
     starter = make_player("start", ph=80)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[starter], bench=[bench], pitchers=[make_pitcher("ap")])
-    rng = MockRandom([0.9])  # swing(out)
+    rng = MockRandom([0.9] + [0.9, 0.9] * 4)  # no pinch, four balls -> walk
     sim = GameSimulation(home, away, cfg, rng)
     sim.play_at_bat(away, home)
     assert away.lineup[0].player_id == "start"
     stats = away.lineup_stats["start"]
-    assert stats.at_bats == 1
+    assert stats.walks == 1
 
 
 def test_steal_attempt_success():
@@ -113,8 +113,8 @@ def test_steal_attempt_success():
     runner = make_player("run", ph=80, sp=90)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
-    # swing hit -> 0, steal attempt -> 0, steal success -> 0
-    rng = MockRandom([0.0, 0.0, 0.0])
+    # pitch strike ->0, swing hit ->0, steal attempt ->0, steal success ->0
+    rng = MockRandom([0.0, 0.0, 0.0, 0.0])
     sim = GameSimulation(home, away, cfg, rng)
     outs = sim.play_at_bat(away, home)
     assert outs == 0
@@ -133,8 +133,8 @@ def test_steal_attempt_failure():
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
     cfg.values.update({"pitchOutChanceBase": 0})
-    # hnr success -> 0.0, steal failure -> 0.9, swing hit -> 0.0, post-hit steal attempt fails -> 1.0
-    rng = MockRandom([0.0, 0.9, 0.0, 1.0])
+    # hnr success ->0.0, steal failure ->0.9, pitch strike ->0.0, swing hit ->0.0, post-hit steal attempt fails ->1.0
+    rng = MockRandom([0.0, 0.9, 0.0, 0.0, 1.0])
     sim = GameSimulation(home, away, cfg, rng)
     outs = sim.play_at_bat(away, home)
     assert outs == 1
@@ -149,7 +149,7 @@ def test_pitcher_change_when_tired():
         pitchers=[make_pitcher("start", endurance=5), make_pitcher("relief")],
     )
     away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
-    rng = MockRandom([0.0, 1.0])  # swing result etc.
+    rng = MockRandom([0.0, 0.0, 1.0])  # pitch strike, swing hit, no steal attempt
     sim = GameSimulation(home, away, cfg, rng)
     sim.play_at_bat(away, home)
     assert home.current_pitcher_state.player.player_id == "relief"
@@ -163,7 +163,7 @@ def test_pitcher_not_changed():
         pitchers=[make_pitcher("start", endurance=30), make_pitcher("relief")],
     )
     away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
-    rng = MockRandom([0.9])  # swing(out)
+    rng = MockRandom([0.0, 0.0, 1.0])  # pitch strike, swing hit, no steal
     sim = GameSimulation(home, away, cfg, rng)
     original_state = home.current_pitcher_state
     sim.play_at_bat(away, home)
@@ -180,11 +180,39 @@ def test_run_tracking_and_boxscore():
     runner_state = BatterState(runner)
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[2] = runner_state
-    rng = MockRandom([0.0] + [1.0] * 10)
-    sim = GameSimulation(home, away, cfg, rng)
-    sim._play_half(away, home)
+
+    sim = GameSimulation(home, away, cfg, MockRandom([0.0, 0.0, 0.0, 0.9]))
+    outs = sim.play_at_bat(away, home)  # run scores, runner thrown out
+    strike_seq = [0.0, 0.9, 0.0, 0.9, 0.0, 0.9]
+    sim = GameSimulation(home, away, cfg, MockRandom(strike_seq))
+    outs += sim.play_at_bat(away, home)  # strikeout
+    sim = GameSimulation(home, away, cfg, MockRandom(strike_seq))
+    outs += sim.play_at_bat(away, home)  # strikeout
+    away.bases = [None, None, None]
+    away.inning_runs.append(away.runs)
+    assert outs == 3
     assert away.runs == 1
     assert away.inning_runs == [1]
     box = generate_boxscore(home, away)
     assert box["away"]["score"] == 1
     assert box["home"]["score"] == 0
+    assert box["away"]["batting"][1]["so"] == 2
+    assert box["home"]["pitching"][0]["pitches"] == 7
+
+
+def test_walk_records_stats():
+    cfg = load_config()
+    batter = make_player("bat")
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    # four balls
+    rng = MockRandom([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
+    sim = GameSimulation(home, away, cfg, rng)
+    outs = sim.play_at_bat(away, home)
+    assert outs == 0
+    stats = away.lineup_stats[batter.player_id]
+    pstats = home.current_pitcher_state
+    assert stats.walks == 1
+    assert stats.at_bats == 0
+    assert pstats.walks == 1
+    assert pstats.pitches_thrown == 4

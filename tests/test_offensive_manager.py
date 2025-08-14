@@ -125,7 +125,7 @@ def test_hit_and_run_chance_and_advance():
     runner_state = BatterState(runner)
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
-    sim = GameSimulation(home, away, full, MockRandom([0.0, 0.0, 1.0]))
+    sim = GameSimulation(home, away, full, MockRandom([0.0, 0.0, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9]))
     outs = sim.play_at_bat(away, home)
     assert outs == 1
     assert away.bases[1] is runner_state

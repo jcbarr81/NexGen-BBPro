@@ -145,13 +145,15 @@ class ExhibitionGameDialog(QDialog):
             for entry in box[key]["batting"]:
                 p = entry["player"]
                 lines.append(
-                    f"{p.first_name} {p.last_name}: {entry['h']}-{entry['ab']}, SB {entry['sb']}"
+                    f"{p.first_name} {p.last_name}: {entry['h']}-{entry['ab']}, BB {entry['bb']}, SO {entry['so']}, SB {entry['sb']}"
                 )
             if box[key]["pitching"]:
                 lines.append("PITCHING")
                 for entry in box[key]["pitching"]:
                     p = entry["player"]
-                    lines.append(f"{p.first_name} {p.last_name}: {entry['pitches']} pitches")
+                    lines.append(
+                        f"{p.first_name} {p.last_name}: {entry['pitches']} pitches, BB {entry['bb']}, SO {entry['so']}"
+                    )
             lines.append("")
 
         team_section(f"Away - {self._teams.get(away_id, away_id)}", "away")
