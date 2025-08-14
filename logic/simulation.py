@@ -13,7 +13,12 @@ from logic.playbalance_config import PlayBalanceConfig
 from logic.physics import Physics
 from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
-from .stats import compute_batting_derived, compute_batting_rates
+from .stats import (
+    compute_batting_derived,
+    compute_batting_rates,
+    compute_pitching_derived,
+    compute_pitching_rates,
+)
 
 
 @dataclass
@@ -81,6 +86,12 @@ class PitcherState:
     pitches_thrown: int = 0  # Total pitches
     strikes_thrown: int = 0  # Strikes thrown
     balls_thrown: int = 0  # Balls thrown
+    first_pitch_strikes: int = 0  # First-pitch strikes
+    zone_pitches: int = 0  # Pitches in the strike zone
+    zone_swings: int = 0  # Swings at pitches in the zone
+    zone_contacts: int = 0  # Contact on zone swings
+    o_zone_swings: int = 0  # Swings at pitches outside the zone
+    o_zone_contacts: int = 0  # Contact on outside-zone swings
     in_save_situation: bool = False  # Internal flag tracking save opp
 
     # Backwards compatibility accessors
@@ -270,6 +281,21 @@ class GameSimulation:
                 season.update(compute_batting_derived(season_state))
                 season.update(compute_batting_rates(season_state))
                 bs.player.season_stats = season
+
+            for ps in team.pitcher_stats.values():
+                season = getattr(ps.player, "season_stats", {})
+                for f in fields(PitcherState):
+                    if f.name in {"player", "in_save_situation"}:
+                        continue
+                    season[f.name] = season.get(f.name, 0) + getattr(ps, f.name)
+                season_state = PitcherState(ps.player)
+                for f in fields(PitcherState):
+                    if f.name in {"player", "in_save_situation"}:
+                        continue
+                    setattr(season_state, f.name, season.get(f.name, 0))
+                season.update(compute_pitching_derived(season_state))
+                season.update(compute_pitching_rates(season_state))
+                ps.player.season_stats = season
 
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
@@ -670,8 +696,9 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
             line.update(compute_batting_derived(bs))
             line.update(compute_batting_rates(bs))
             batting.append(line)
-        pitching = [
-            {
+        pitching = []
+        for ps in team.pitcher_stats.values():
+            line = {
                 "player": ps.player,
                 "g": ps.g,
                 "gs": ps.gs,
@@ -702,8 +729,9 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
                 "strikes": ps.strikes_thrown,
                 "balls": ps.balls_thrown,
             }
-            for ps in team.pitcher_stats.values()
-        ]
+            line.update(compute_pitching_derived(ps))
+            line.update(compute_pitching_rates(ps))
+            pitching.append(line)
         return {
             "score": team.runs,
             "batting": batting,
