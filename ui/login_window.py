@@ -90,10 +90,11 @@ class LoginWindow(QWidget):
         self.dashboard.raise_()
         self.dashboard.activateWindow()
 
-        # Hide the splash screen so the dashboard takes focus.
-        if self.splash:
-            self.splash.hide()
 
+        # Keep the splash screen visible while the dashboard is open so it
+        # behaves the same way it does when the login window is shown.  This
+        # allows the splash screen to remain in the background while users
+        # interact with the dashboard.
         # Close the login window now that the dashboard is displayed.
         self.close()
 
