@@ -35,12 +35,14 @@ from ui.transactions_window import TransactionsWindow
 from ui.team_settings_dialog import TeamSettingsDialog
 from ui.standings_window import StandingsWindow
 from ui.schedule_window import ScheduleWindow
+from ui.trade_dialog import TradeDialog
 from utils.roster_loader import load_roster, save_roster
 from utils.player_loader import load_players_from_csv
 from utils.news_reader import read_latest_news
 from utils.free_agent_finder import find_free_agents
 from utils.team_loader import load_teams, save_team_settings
 from utils.pitcher_role import get_role
+from utils.trade_utils import get_pending_trades
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -207,6 +209,13 @@ class OwnerDashboard(QWidget):
         self.load_news_feed()
         self.update_roster_count_display()
         self.update_window_title()
+        pending = get_pending_trades(self.team_id)
+        if pending:
+            QMessageBox.information(
+                self,
+                "Pending Trades",
+                f"You have {len(pending)} pending trade(s). Open Trade Center to respond.",
+            )
 
     def apply_team_colors(self):
         """Apply the team's color scheme to the dashboard."""
@@ -376,7 +385,7 @@ class OwnerDashboard(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to save roster: {e}")
 
     def open_trade_dialog(self):
-        QMessageBox.information(self, "Trade", "Open trade dialog (placeholder).")
+        TradeDialog(self.team_id, self).exec()
 
     def sign_free_agent(self):
         try:

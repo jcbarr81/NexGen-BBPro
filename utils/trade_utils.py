@@ -21,18 +21,41 @@ def load_trades(file_path="data/trades_pending.csv"):
     return trades
 
 def save_trade(trade: Trade, file_path="data/trades_pending.csv"):
-    existing = load_trades(file_path)
+    """Save ``trade`` to ``file_path`` replacing any existing entry.
+
+    The previous implementation always appended a trade, which caused
+    duplicates whenever a trade was updated (e.g. when an owner accepted or
+    rejected a proposal).  We now remove any trade with the same ``trade_id``
+    before writing the updated list back to disk.
+    """
+
+    existing = [t for t in load_trades(file_path) if t.trade_id != trade.trade_id]
     existing.append(trade)
     with open(file_path, "w", newline="") as f:
-        fieldnames = ["trade_id", "from_team", "to_team", "give_player_ids", "receive_player_ids", "status"]
+        fieldnames = [
+            "trade_id",
+            "from_team",
+            "to_team",
+            "give_player_ids",
+            "receive_player_ids",
+            "status",
+        ]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for t in existing:
-            writer.writerow({
-                "trade_id": t.trade_id,
-                "from_team": t.from_team,
-                "to_team": t.to_team,
-                "give_player_ids": "|".join(t.give_player_ids),
-                "receive_player_ids": "|".join(t.receive_player_ids),
-                "status": t.status
-            })
+            writer.writerow(
+                {
+                    "trade_id": t.trade_id,
+                    "from_team": t.from_team,
+                    "to_team": t.to_team,
+                    "give_player_ids": "|".join(t.give_player_ids),
+                    "receive_player_ids": "|".join(t.receive_player_ids),
+                    "status": t.status,
+                }
+            )
+
+
+def get_pending_trades(team_id: str, file_path="data/trades_pending.csv"):
+    """Return trades awaiting response for ``team_id``."""
+
+    return [t for t in load_trades(file_path) if t.to_team == team_id and t.status == "pending"]
