@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 
 from models.player import Player
 from models.pitcher import Pitcher
+from models.team import Team
 from logic.defensive_manager import DefensiveManager
 from logic.offensive_manager import OffensiveManager
 from logic.substitution_manager import SubstitutionManager
@@ -20,6 +21,8 @@ from .stats import (
     compute_pitching_rates,
     compute_fielding_derived,
     compute_fielding_rates,
+    compute_team_derived,
+    compute_team_rates,
 )
 
 
@@ -140,6 +143,7 @@ class TeamState:
     lineup: List[Player]
     bench: List[Player]
     pitchers: List[Pitcher]
+    team: Team | None = None
     lineup_stats: Dict[str, BatterState] = field(default_factory=dict)
     pitcher_stats: Dict[str, PitcherState] = field(default_factory=dict)
     fielding_stats: Dict[str, FieldingState] = field(default_factory=dict)
@@ -150,6 +154,10 @@ class TeamState:
     )
     runs: int = 0
     inning_runs: List[int] = field(default_factory=list)
+    lob: int = 0
+    inning_lob: List[int] = field(default_factory=list)
+    inning_events: List[List[str]] = field(default_factory=list)
+    team_stats: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.pitchers:
@@ -368,17 +376,45 @@ class GameSimulation:
                 season.update(compute_fielding_rates(season_state))
                 fs.player.season_stats = season
 
+        for team, opp in ((self.home, self.away), (self.away, self.home)):
+            derived = compute_team_derived(team, opp)
+            season = team.team_stats
+            season["g"] = season.get("g", 0) + 1
+            season["r"] = season.get("r", 0) + team.runs
+            season["ra"] = season.get("ra", 0) + opp.runs
+            season["lob"] = season.get("lob", 0) + team.lob
+            for key in (
+                "opp_pa",
+                "opp_h",
+                "opp_bb",
+                "opp_so",
+                "opp_hbp",
+                "opp_hr",
+                "opp_roe",
+            ):
+                season[key] = season.get(key, 0) + derived[key]
+            season.update(compute_team_rates(season))
+            team.team_stats = season
+            if team.team is not None:
+                team.team.season_stats = season
+
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
         self.subs.maybe_defensive_sub(defense, self.debug_log)
 
         start_runs = offense.runs
+        start_log = len(self.debug_log)
         outs = 0
         while outs < 3:
             outs += self.play_at_bat(offense, defense)
+        inning_events = self.debug_log[start_log:]
         for runner in offense.bases:
             if runner is not None:
                 self._add_stat(runner, "lob")
+        lob = sum(1 for r in offense.bases if r is not None)
+        offense.lob += lob
+        offense.inning_lob.append(lob)
+        offense.inning_events.append(inning_events)
         offense.bases = [None, None, None]
         offense.base_pitchers = [None, None, None]
         offense.inning_runs.append(offense.runs - start_runs)
