@@ -1,4 +1,5 @@
 from avatars import generate_player_headshot, pil_to_qpixmap
+from PIL import Image
 
 img = generate_player_headshot(
     player_name="Brian Pleasant",
