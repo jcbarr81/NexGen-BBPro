@@ -10,9 +10,66 @@ from .pbini_loader import load_pbini
 # simplified game logic.  Missing keys will fall back to these values when
 # accessed as attributes.  The majority of values default to ``0`` which keeps
 # related behaviour disabled unless explicitly enabled by a test case.  A small
-# number have different sensible defaults, e.g. ``swingSpeedBase`` which mirrors
-# the behaviour of the original game engine.
+# number have different sensible defaults, e.g. ``speedBase`` and
+# ``swingSpeedBase`` which mirror the behaviour of the original game engine.
 _DEFAULTS: Dict[str, Any] = {
+    # Physics --------------------------------------------------------
+    "speedBase": 19,
+    "speedPct": 5,
+    "swingSpeedBase": 61,
+    "swingSpeedPHPct": 10,
+    "swingSpeedPowerAdjust": 5,
+    "swingSpeedNormalAdjust": 0,
+    "swingSpeedContactAdjust": -5,
+    "swingSpeedBuntAdjust": -70,
+    "swingAngleTenthDegreesBase": 44,
+    "swingAngleTenthDegreesRange": 0,
+    "swingAngleTenthDegreesGFPct": 95,
+    "swingAngleTenthDegreesPowerAdjust": 0,
+    "swingAngleTenthDegreesContactAdjust": 0,
+    "swingAngleTenthDegreesHighAdjust": 20,
+    "swingAngleTenthDegreesLowAdjust": -20,
+    "swingAngleTenthDegreesOutsideAdjust": 0,
+    # Pitcher AI ------------------------------------------------------
+    "pitchRatVariationCount": 1,
+    "pitchRatVariationFaces": 3,
+    "pitchRatVariationBase": -2,
+    "nonEstablishedPitchTypeAdjust": 0,
+    "primaryPitchTypeAdjust": 50,
+    "pitchObj00CountEstablishWeight": 0,
+    "pitchObj00CountOutsideWeight": 40,
+    "pitchObj00CountBestWeight": 0,
+    "pitchObj00CountBestCenterWeight": 0,
+    "pitchObj00CountFastCenterWeight": 0,
+    "pitchObj00CountPlusWeight": 60,
+    # Batter AI -------------------------------------------------------
+    "sureStrikeDist": 3,
+    "closeStrikeDist": 4,
+    "closeBallDist": 5,
+    "lookPrimaryType00CountAdjust": 0,
+    "lookPrimaryType01CountAdjust": 0,
+    "lookPrimaryType02CountAdjust": 0,
+    "lookPrimaryType10CountAdjust": 0,
+    "lookPrimaryType11CountAdjust": 0,
+    "lookPrimaryType12CountAdjust": 0,
+    "lookPrimaryType20CountAdjust": 0,
+    "lookPrimaryType21CountAdjust": 0,
+    "lookPrimaryType22CountAdjust": 0,
+    "lookPrimaryType30CountAdjust": 0,
+    "lookPrimaryType31CountAdjust": 0,
+    "lookPrimaryType32CountAdjust": 0,
+    "lookBestType00CountAdjust": 0,
+    "lookBestType01CountAdjust": 0,
+    "lookBestType02CountAdjust": 0,
+    "lookBestType10CountAdjust": 0,
+    "lookBestType11CountAdjust": 0,
+    "lookBestType12CountAdjust": 0,
+    "lookBestType20CountAdjust": 0,
+    "lookBestType21CountAdjust": 0,
+    "lookBestType22CountAdjust": 0,
+    "lookBestType30CountAdjust": 15,
+    "lookBestType31CountAdjust": 15,
+    "lookBestType32CountAdjust": 0,
     # Offensive manager ----------------------------------------------------
     "offManStealChancePct": 0,
     "stealChanceVerySlowThresh": 0,
@@ -106,8 +163,6 @@ _DEFAULTS: Dict[str, Any] = {
     "squeezeChanceMedCountAdjust": 0,
     "squeezeChanceThirdFastSPThresh": 0,
     "squeezeChanceThirdFastAdjust": 0,
-    "swingSpeedBase": 50,
-    "swingSpeedPHPct": 0,
     # Defensive manager ----------------------------------------------------
     "chargeChanceBaseThird": 0,
     "chargeChanceSacChanceAdjust": 0,
