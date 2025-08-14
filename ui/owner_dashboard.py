@@ -79,7 +79,9 @@ class OwnerDashboard(QWidget):
         self.team = teams.get(team_id)
 
         # Window
-        self.setGeometry(200, 200, 900, 650)
+        # Open slightly smaller than full screen so multiple windows can be
+        # visible at once.
+        self.setGeometry(200, 200, 1000, 700)
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
 
         bold = QFont()
