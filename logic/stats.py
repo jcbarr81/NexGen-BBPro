@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .simulation import BatterState
+    from .simulation import BatterState, PitcherState
 
 
 def compute_batting_derived(stats: 'BatterState') -> Dict[str, float]:
@@ -57,4 +57,76 @@ def compute_batting_rates(stats: 'BatterState') -> Dict[str, float]:
         "k_pct": k_pct,
         "bb_k": bb_k,
         "sb_pct": sb_pct,
+    }
+
+
+def compute_pitching_derived(stats: 'PitcherState') -> Dict[str, float]:
+    """Return derived pitching statistics from counting stats."""
+
+    ip = stats.outs / 3.0
+    cg = 1 if stats.gs and stats.gf and stats.outs >= 27 else 0
+    sho = 1 if cg and stats.r == 0 else 0
+    qs = 1 if stats.gs and stats.outs >= 18 and stats.er <= 3 else 0
+    k_minus_bb = stats.so - stats.bb
+    return {
+        "ip": ip,
+        "cg": cg,
+        "sho": sho,
+        "qs": qs,
+        "k_minus_bb": k_minus_bb,
+    }
+
+
+def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
+    """Return rate-based pitching metrics."""
+
+    ip = stats.outs / 3.0
+    h9 = (stats.h * 9 / ip) if ip else 0.0
+    hr9 = (stats.hr * 9 / ip) if ip else 0.0
+    k9 = (stats.so * 9 / ip) if ip else 0.0
+    bb9 = (stats.bb * 9 / ip) if ip else 0.0
+    era = (stats.er * 9 / ip) if ip else 0.0
+    whip = ((stats.bb + stats.h) / ip) if ip else 0.0
+    k_bb = (stats.so / stats.bb) if stats.bb else 0.0
+    fip = (
+        ((13 * stats.hr) + 3 * (stats.bb + stats.hbp) - 2 * stats.so) / ip + 3.2
+        if ip
+        else 0.0
+    )
+    lob_den = stats.h + stats.bb + stats.hbp - 1.4 * stats.hr
+    lob_pct = (
+        (stats.h + stats.bb + stats.hbp - stats.r) / lob_den if lob_den else 0.0
+    )
+    fps_pct = stats.first_pitch_strikes / stats.bf if stats.bf else 0.0
+    zone_pct = stats.zone_pitches / stats.pitches_thrown if stats.pitches_thrown else 0.0
+    z_swing_pct = stats.zone_swings / stats.zone_pitches if stats.zone_pitches else 0.0
+    z_contact_pct = (
+        stats.zone_contacts / stats.zone_swings if stats.zone_swings else 0.0
+    )
+    o_zone_pitches = stats.pitches_thrown - stats.zone_pitches
+    ozone_swing_pct = (
+        stats.o_zone_swings / o_zone_pitches if o_zone_pitches else 0.0
+    )
+    ozone_contact_pct = (
+        stats.o_zone_contacts / stats.o_zone_swings if stats.o_zone_swings else 0.0
+    )
+    ozone_pct = o_zone_pitches / stats.pitches_thrown if stats.pitches_thrown else 0.0
+
+    return {
+        "h9": h9,
+        "hr9": hr9,
+        "k9": k9,
+        "bb9": bb9,
+        "era": era,
+        "whip": whip,
+        "k_bb": k_bb,
+        "fip": fip,
+        "lob_pct": lob_pct,
+        "fps_pct": fps_pct,
+        "zone_pct": zone_pct,
+        "z_swing_pct": z_swing_pct,
+        "z_contact_pct": z_contact_pct,
+        "ozone_pct": ozone_pct,
+        "ozone_swing_pct": ozone_swing_pct,
+        "ozone_contact_pct": ozone_contact_pct,
     }
