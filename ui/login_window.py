@@ -78,14 +78,33 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Error", "Unrecognized role.")
             return
 
+        # When the dashboard window is closed, restore the splash screen and
+        # re-enable the start button so another session can be launched.
+        self.dashboard.closeEvent = self.dashboard_closed
+
         # Show the dashboard at its default size rather than maximized so it
         # doesn't dominate the entire screen.
         self.dashboard.show()
 
-        # Keep the splash screen visible in the background until the
-        # application exits.
+        # Hide the splash screen while the dashboard is active.
+        if self.splash:
+            self.splash.hide()
 
+        # Close the login window now that the dashboard is displayed.
         self.close()
+
+    def dashboard_closed(self, event):
+        """Handle a dashboard being closed by returning to the splash."""
+        if self.splash:
+            self.splash.show()
+            self.splash.login_button.setEnabled(True)
+        event.accept()
+
+    def closeEvent(self, event):
+        """Ensure the splash button is re-enabled if login is cancelled."""
+        if self.dashboard is None and self.splash:
+            self.splash.login_button.setEnabled(True)
+        event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
