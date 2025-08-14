@@ -91,7 +91,7 @@ class LoginWindow(QWidget):
 
         # Keep the splash screen visible above the dashboard.
         if self.splash:
-            self.splash.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+            self.splash.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
             self.splash.show()
 
         # Close the login window now that the dashboard is displayed.
