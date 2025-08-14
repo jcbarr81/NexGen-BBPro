@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit,
     QPushButton, QVBoxLayout, QMessageBox
 )
+from PyQt6.QtCore import Qt
 import sys
 import os
 
@@ -88,10 +89,10 @@ class LoginWindow(QWidget):
         self.dashboard.show()
         self.dashboard.activateWindow()
 
-        # Keep the splash screen visible but send it behind the dashboard so
-        # it doesn't obstruct the main window.
+        # Keep the splash screen visible above the dashboard.
         if self.splash:
-            self.splash.lower()
+            self.splash.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+            self.splash.show()
 
         # Close the login window now that the dashboard is displayed.
         self.close()
