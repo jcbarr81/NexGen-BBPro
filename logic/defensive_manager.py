@@ -74,10 +74,12 @@ class DefensiveManager:
             chance += cfg.get("holdChanceAdjust", 0)
         return self._roll(chance)
 
-    def maybe_pickoff(self, lead: int = 0, pitches_since: int = 0) -> bool:
+    def maybe_pickoff(
+        self, steal_chance: int = 0, lead: int = 0, pitches_since: int = 0
+    ) -> bool:
         cfg = self.config
         chance = cfg.get("pickoffChanceBase", 0)
-        chance += cfg.get("pickoffChanceStealChanceAdjust", 0)
+        chance += steal_chance + cfg.get("pickoffChanceStealChanceAdjust", 0)
         chance += cfg.get("pickoffChanceLeadMult", 0) * lead
         chance += cfg.get("pickoffChancePitchesMult", 0) * pitches_since
         return self._roll(chance)
