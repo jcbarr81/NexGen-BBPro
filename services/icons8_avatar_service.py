@@ -96,7 +96,6 @@ def fetch_icons8_avatar(
         "size": str(size),
         "clothesColor": primary_hex.lstrip("#"),
         "background": secondary_hex.lstrip("#"),
-        "key": api_key,
     }
     url = (
         "https://avatars.icons8.com/api/iconsets/avatar?"
@@ -107,7 +106,7 @@ def fetch_icons8_avatar(
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {"User-Agent": "Mozilla/5.0", "X-API-Key": api_key}
     request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=10, context=ssl_context) as response:
