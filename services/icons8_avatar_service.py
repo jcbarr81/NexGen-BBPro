@@ -122,11 +122,18 @@ def fetch_icons8_avatar(
             data = response.read()
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="ignore")
-        snippet = body[:200]
-        raise RuntimeError(
-            f"Icons8 API HTTP {exc.code}: {exc.reason}. "
-            f"Response: {snippet}"
-        ) from exc
+        parsed = urllib.parse.urlparse(url)
+        params = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+        params = [(k, v) for k, v in params if k != "token"]
+        sanitized_url = urllib.parse.urlunparse(
+            parsed._replace(query=urllib.parse.urlencode(params))
+        )
+        message = (
+            f"Icons8 API HTTP {exc.code}: {exc.reason}. URL: {sanitized_url}. "
+            f"Response: {body}"
+        )
+        log.error(message)
+        raise RuntimeError(message) from exc
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, ssl.SSLCertVerificationError):
             hint = (
