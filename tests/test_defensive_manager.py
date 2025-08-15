@@ -116,16 +116,39 @@ def test_pitch_out_innings_and_home():
 def test_pitch_around_chance():
     cfg = make_cfg(
         pitchAroundChanceNoInn=0,
-        pitchAroundChanceBase=30,
+        pitchAroundChanceBase=10,
         pitchAroundChanceInn7Adjust=5,
+        pitchAroundChanceOut2=20,
+        pitchAroundChancePH1BatAdjust=20,
         defManPitchAroundToIBBPct=50,
     )
     rng = MockRandom([0.2, 0.1, 0.4])
     dm = DefensiveManager(cfg, rng)
-    pa, ibb = dm.maybe_pitch_around(inning=7)
+    pa, ibb = dm.maybe_pitch_around(
+        inning=7,
+        outs=2,
+        batter_ph=50,
+        on_deck_ph=30,
+    )
     assert pa is True and ibb is True
-    pa2, ibb2 = dm.maybe_pitch_around(inning=7)
+    pa2, ibb2 = dm.maybe_pitch_around(
+        inning=7,
+        outs=2,
+        batter_ph=30,
+        on_deck_ph=50,
+    )
     assert pa2 is False and ibb2 is False
+
+
+def test_pitch_around_inning_threshold():
+    cfg = make_cfg(
+        pitchAroundChanceNoInn=3,
+        pitchAroundChanceBase=100,
+        pitchAroundChanceInn7Adjust=50,
+    )
+    dm = DefensiveManager(cfg, MockRandom([0.0]))
+    pa, ibb = dm.maybe_pitch_around(inning=2, outs=1)
+    assert pa is False and ibb is False
 
 
 def test_pitch_around_ph_ch_levels():
