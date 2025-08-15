@@ -125,6 +125,7 @@ class DefensiveManager:
         on_deck_ph: int = 0,
         on_deck_ch: int = 0,
         batter_gf: int = 50,
+        on_deck_gf: int = 50,
         outs: int = 0,
         on_first: bool = False,
         on_second: bool = False,

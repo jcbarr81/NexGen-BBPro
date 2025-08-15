@@ -510,6 +510,7 @@ class GameSimulation:
             on_deck_ph=on_deck.ph,
             on_deck_ch=on_deck.ch,
             batter_gf=batter.gf,
+            on_deck_gf=on_deck.gf,
             outs=outs_before,
             on_first=on_first,
             on_second=on_second,
