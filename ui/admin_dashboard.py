@@ -215,6 +215,26 @@ class AdminDashboard(QWidget):
         return
 
     def generate_player_avatars(self):
+        first = QMessageBox.question(
+            self,
+            "Download Avatars",
+            "The system will connect to the internet to download player avatars. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if first != QMessageBox.StandardButton.Yes:
+            return
+
+        second = QMessageBox.question(
+            self,
+            "Download Avatars",
+            "Downloading avatars may take a few minutes. Do you still want to generate avatars?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if second != QMessageBox.StandardButton.Yes:
+            return
+
         players = {p.player_id: p for p in load_players_from_csv("data/players.csv")}
         teams = load_teams("data/teams.csv")
 
