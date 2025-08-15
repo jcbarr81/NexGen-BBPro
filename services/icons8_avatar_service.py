@@ -9,6 +9,11 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+import ssl
+try:
+    import certifi
+except ImportError:  # pragma: no cover - fallback if certifi missing
+    certifi = None
 from typing import Tuple
 
 from PIL import Image
@@ -85,8 +90,11 @@ def fetch_icons8_avatar(
         params["key"] = api_key
     url = "https://avatars.icons8.com/api/iconsets/avatar" + "?" + urllib.parse.urlencode(params)
 
+    ssl_context = ssl.create_default_context(
+        cafile=certifi.where() if certifi else None
+    )
     try:
-        with urllib.request.urlopen(url, timeout=10) as response:
+        with urllib.request.urlopen(url, timeout=10, context=ssl_context) as response:
             if response.status != 200:
                 raise RuntimeError(
                     f"Icons8 API returned status {response.status}"
