@@ -69,3 +69,8 @@ def test_icons8_request_includes_token_param(monkeypatch, tmp_path):
         )
 
     assert "token=dummy" in captured["url"]
+
+
+def test_get_api_key_strips_whitespace(monkeypatch):
+    monkeypatch.setenv("ICONS8_API_KEY", "dummy\n")
+    assert icons8_avatar_service._get_api_key() == "dummy"
