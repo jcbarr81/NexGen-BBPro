@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import configparser
 import io
+import logging
 import os
 import re
 import urllib.error
@@ -13,6 +14,8 @@ import ssl
 from typing import Tuple
 
 from PIL import Image
+
+log = logging.getLogger(__name__)
 
 
 def _get_api_key() -> str | None:
@@ -27,7 +30,13 @@ def _get_api_key() -> str | None:
     if os.path.exists(cfg_path):
         parser = configparser.ConfigParser()
         parser.read(cfg_path)
-        return parser.get("icons8", "api_key", fallback=None)
+        key = parser.get("icons8", "api_key", fallback=None)
+        if key:
+            return key
+
+    log.warning(
+        "Icons8 API key not found; requests will fail with HTTP 403"
+    )
     return None
 
 
@@ -75,16 +84,24 @@ def fetch_icons8_avatar(
         return avatar_path, thumb_path
 
     api_key = _get_api_key()
+    if not api_key:
+        raise RuntimeError(
+            "Icons8 API key is missing. Set the ICONS8_API_KEY environment "
+            "variable or add an [icons8] section with api_key to config.ini."
+        )
+
     params = {
         "name": name,
         "ethnicity": ethnicity,
         "size": str(size),
         "clothesColor": primary_hex.lstrip("#"),
         "background": secondary_hex.lstrip("#"),
+        "key": api_key,
     }
-    if api_key:
-        params["key"] = api_key
-    url = "https://avatars.icons8.com/api/iconsets/avatar" + "?" + urllib.parse.urlencode(params)
+    url = (
+        "https://avatars.icons8.com/api/iconsets/avatar?"
+        + urllib.parse.urlencode(params)
+    )
 
     # WARNING: This disables certificate checks and must not be enabled in production.
     ssl_context = ssl.create_default_context()
