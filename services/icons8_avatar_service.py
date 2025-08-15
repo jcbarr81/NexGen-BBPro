@@ -88,10 +88,21 @@ def fetch_icons8_avatar(
     try:
         with urllib.request.urlopen(url, timeout=10) as response:
             if response.status != 200:
-                raise RuntimeError(f"Icons8 API returned status {response.status}")
+                raise RuntimeError(
+                    f"Icons8 API returned status {response.status}"
+                )
             data = response.read()
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        snippet = body[:200]
+        raise RuntimeError(
+            f"Icons8 API HTTP {exc.code}: {exc.reason}. "
+            f"Response: {snippet}"
+        ) from exc
     except urllib.error.URLError as exc:
-        raise RuntimeError("Failed to fetch avatar from Icons8") from exc
+        raise RuntimeError(
+            f"Failed to fetch avatar from Icons8: {exc.reason}"
+        ) from exc
 
     img = Image.open(io.BytesIO(data))
     if img.size != (size, size):
