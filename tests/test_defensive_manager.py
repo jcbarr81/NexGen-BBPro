@@ -197,3 +197,34 @@ def test_pitch_around_gf_outs_and_bases():
     assert pa2 is True
     pa3, _ = dm.maybe_pitch_around()
     assert pa3 is False
+
+
+def test_outfield_position_shifts():
+    cfg = make_cfg(
+        defPosHighPull=80,
+        defPosHighPullExtra=60,
+        defPosLowPull=20,
+        defPosLowPullExtra=40,
+        defPosHighPower=80,
+        defPosLowPower=30,
+        normalPosLFPct=69,
+        normalPosLFAngle=25,
+        normalPosCFPct=69,
+        normalPosCFAngle=0,
+        normalPosRFPct=69,
+        normalPosRFAngle=-25,
+        outfieldPosPctNormal=70,
+        outfieldPosPctDeep=80,
+        outfieldPosPctShallow=60,
+    )
+    dm = DefensiveManager(cfg)
+
+    high = dm.set_field_positions(pull=85, power=90)["outfield"]
+    assert high["LF"] == (79, 35)
+    assert high["CF"] == (79, 10)
+    assert high["RF"] == (79, -15)
+
+    low = dm.set_field_positions(pull=15, power=20)["outfield"]
+    assert low["LF"] == (59, 15)
+    assert low["CF"] == (59, -10)
+    assert low["RF"] == (59, -35)
