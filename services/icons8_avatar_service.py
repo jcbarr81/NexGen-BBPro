@@ -86,7 +86,10 @@ def fetch_icons8_avatar(
         params["key"] = api_key
     url = "https://avatars.icons8.com/api/iconsets/avatar" + "?" + urllib.parse.urlencode(params)
 
+    # WARNING: This disables certificate checks and must not be enabled in production.
     ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
     try:
         with urllib.request.urlopen(url, timeout=10, context=ssl_context) as response:
             if response.status != 200:
