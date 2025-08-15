@@ -1,3 +1,4 @@
+import colorsys
 import os
 import csv
 import shutil
@@ -18,6 +19,29 @@ def _abbr(city: str, name: str, existing: set) -> str:
         i += 1
     existing.add(candidate)
     return candidate
+
+
+def _unique_color_pair(used: set) -> tuple[str, str]:
+    """Generate a pair of contrasting hex colors not already in *used*.
+
+    Colors are generated deterministically using evenly distributed hues. The
+    secondary color is the complement of the primary. Both colors are added to
+    *used* before returning.
+    """
+    idx = len(used) // 2
+    while True:
+        hue = (idx * 0.618033988749895) % 1.0
+        r, g, b = colorsys.hsv_to_rgb(hue, 0.6, 0.95)
+        primary = f"#{int(r * 255):02X}{int(g * 255):02X}{int(b * 255):02X}"
+
+        comp_hue = (hue + 0.5) % 1.0
+        r2, g2, b2 = colorsys.hsv_to_rgb(comp_hue, 0.6, 0.95)
+        secondary = f"#{int(r2 * 255):02X}{int(g2 * 255):02X}{int(b2 * 255):02X}"
+
+        if primary not in used and secondary not in used:
+            used.update({primary, secondary})
+            return primary, secondary
+        idx += 1
 
 
 def _dict_to_model(data: dict):
@@ -89,6 +113,7 @@ def create_league(base_dir: str, divisions: Dict[str, List[Tuple[str, str]]], le
     team_rows = []
     all_players = []
     existing_abbr = set()
+    used_colors: set[str] = set()
 
     def generate_roster(num_pitchers: int, num_hitters: int, age_range: Tuple[int, int], ensure_positions: bool = False):
         players = []
@@ -114,17 +139,20 @@ def create_league(base_dir: str, divisions: Dict[str, List[Tuple[str, str]]], le
     for division, teams in divisions.items():
         for city, name in teams:
             abbr = _abbr(city, name, existing_abbr)
-            team_rows.append({
-                "team_id": abbr,
-                "name": name,
-                "city": city,
-                "abbreviation": abbr,
-                "division": division,
-                "stadium": f"{name} Stadium",
-                "primary_color": "#0000FF",
-                "secondary_color": "#FFFFFF",
-                "owner_id": "",
-            })
+            primary, secondary = _unique_color_pair(used_colors)
+            team_rows.append(
+                {
+                    "team_id": abbr,
+                    "name": name,
+                    "city": city,
+                    "abbreviation": abbr,
+                    "division": division,
+                    "stadium": f"{name} Stadium",
+                    "primary_color": primary,
+                    "secondary_color": secondary,
+                    "owner_id": "",
+                }
+            )
 
             act_players = generate_roster(11, 14, (21, 38), ensure_positions=True)
             aaa_players = generate_roster(7, 8, (21, 38))
