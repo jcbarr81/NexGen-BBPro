@@ -65,11 +65,12 @@ def test_pickoff_chance():
         pickoffChanceBase=10,
         pickoffChanceStealChanceAdjust=10,
         pickoffChanceLeadMult=5,
+        pickoffChancePitchesMult=10,
     )
-    rng = MockRandom([0.25, 0.35])
+    rng = MockRandom([0.25, 0.9])
     dm = DefensiveManager(cfg, rng)
-    assert dm.maybe_pickoff(steal_chance=5, lead=2) is True
-    assert dm.maybe_pickoff(steal_chance=5, lead=2) is False
+    assert dm.maybe_pickoff(steal_chance=5, lead=2, pitches_since=0) is True
+    assert dm.maybe_pickoff(steal_chance=5, lead=2, pitches_since=4) is False
 
 
 def test_pitch_out_chance():
