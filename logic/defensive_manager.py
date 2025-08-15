@@ -36,13 +36,36 @@ class DefensiveManager:
     # ------------------------------------------------------------------
     # Defensive decisions
     # ------------------------------------------------------------------
-    def maybe_charge_bunt(self) -> bool:
+    def maybe_charge_bunt(
+        self,
+        pitcher_fa: int = 0,
+        first_fa: int = 0,
+        third_fa: int = 0,
+        on_first: bool = False,
+        on_second: bool = False,
+        on_third: bool = False,
+    ) -> Tuple[bool, bool]:
         cfg = self.config
-        base = cfg.get("chargeChanceBaseThird", 0) + cfg.get(
-            "chargeChanceSacChanceAdjust", 0
-        )
-        chance = base * cfg.get("defManChargeChancePct", 100) / 100.0
-        return self._roll(chance)
+
+        def calc(base: float, fielder_fa: int, situational: float = 0.0) -> bool:
+            chance = base + cfg.get("chargeChanceSacChanceAdjust", 0) + situational
+            chance += (
+                cfg.get("chargeChancePitcherFAPct", 0) * pitcher_fa / 100.0
+            )
+            chance += cfg.get("chargeChanceFAPct", 0) * fielder_fa / 100.0
+            chance *= cfg.get("defManChargeChancePct", 100) / 100.0
+            return self._roll(chance)
+
+        first = calc(cfg.get("chargeChanceBaseFirst", 0), first_fa)
+
+        situational = 0.0
+        if on_first and on_second:
+            situational += cfg.get("chargeChanceThirdOnFirstSecond", 0)
+        if on_third:
+            situational += cfg.get("chargeChanceThirdOnThird", 0)
+        third = calc(cfg.get("chargeChanceBaseThird", 0), third_fa, situational)
+
+        return first, third
 
     def maybe_hold_runner(self, runner_speed: int) -> bool:
         cfg = self.config
