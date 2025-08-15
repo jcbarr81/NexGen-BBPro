@@ -26,11 +26,8 @@ def _worker(queue: Queue, players: Any, teams: Any) -> None:
 
         out_dir = gen_avatars(
             progress_callback=cb,
-            use_sdxl=True,
             players=players,
             teams=teams,
-            controlnet_path=None,
-            ip_adapter_path=None,
         )
         queue.put(("finished", out_dir))
     except Exception as exc:  # pragma: no cover - propagated via queue

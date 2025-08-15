@@ -1,17 +1,16 @@
 """Utilities for generating player avatar images.
 
-Creates simple illustrated headshots for each player using the
-:mod:`images.avatars` module. Avatars are written to ``images/avatars``
-relative to the repository root and named after the player's ID.
+Downloads headshots for each player using the Icons8 avatar service.
+Avatars are written to ``images/avatars`` relative to the repository
+root and named after the player's ID.
 """
 from __future__ import annotations
 
 import os
 from typing import Callable, Dict, Optional
 
-from PIL import Image
-
-from images.avatars import generate_player_headshot
+from services.icons8_avatar_service import fetch_icons8_avatar
+from utils.ethnicity import infer_ethnicity
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.roster_loader import load_roster
@@ -88,16 +87,20 @@ def generate_player_avatars(
         if not team:
             continue
         name = f"{player.first_name} {player.last_name}"
-        img = generate_player_headshot(
-            player_name=name,
-            team_primary_hex=team.primary_color,
-            team_secondary_hex=team.secondary_color,
+        ethnicity = infer_ethnicity(player.first_name, player.last_name)
+        avatar_path, thumb_path = fetch_icons8_avatar(
+            name=name,
+            ethnicity=ethnicity,
+            primary_hex=team.primary_color,
+            secondary_hex=team.secondary_color,
             size=size,
         )
-        img.save(os.path.join(out_dir, f"{pid}.png"))
-        # Smaller version for UI thumbnails
-        thumb = img.resize((150, 150), resample=Image.LANCZOS)
-        thumb.save(os.path.join(out_dir, f"{pid}_150.png"))
+        avatar_dst = os.path.join(out_dir, f"{pid}.png")
+        thumb_dst = os.path.join(out_dir, f"{pid}_150.png")
+        if avatar_path != avatar_dst:
+            os.replace(avatar_path, avatar_dst)
+        if thumb_path != thumb_dst:
+            os.replace(thumb_path, thumb_dst)
 
         completed += 1
         if progress_callback:
