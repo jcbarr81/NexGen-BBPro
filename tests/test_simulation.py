@@ -52,7 +52,12 @@ def make_player(pid: str, ph: int = 50, sp: int = 50, ch: int = 50) -> Player:
 
 
 def make_pitcher(
-    pid: str, endurance: int = 100, hold_runner: int = 50, role: str = "SP"
+    pid: str,
+    endurance: int = 100,
+    hold_runner: int = 50,
+    role: str = "SP",
+    control: int = 50,
+    movement: int = 50,
 ) -> Pitcher:
     return Pitcher(
         player_id=pid,
@@ -66,8 +71,8 @@ def make_pitcher(
         other_positions=[],
         gf=50,
         endurance=endurance,
-        control=50,
-        movement=50,
+        control=control,
+        movement=movement,
         hold_runner=hold_runner,
         fb=50,
         cu=0,
@@ -221,6 +226,31 @@ def test_walk_records_stats():
     assert stats.pa == 1
     assert pstats.walks == 1
     assert pstats.pitches_thrown == 4
+
+
+def test_pitch_control_affects_location():
+    cfg = load_config()
+    batter1 = make_player("bat1")
+    home_high = TeamState(
+        lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=70)]
+    )
+    away_high = TeamState(lineup=[batter1], bench=[], pitchers=[make_pitcher("ap")])
+    rng_high = MockRandom([0.4, 0.9, 0.4, 0.9, 0.4, 0.9])
+    sim_high = GameSimulation(home_high, away_high, cfg, rng_high)
+    outs_high = sim_high.play_at_bat(away_high, home_high)
+    assert outs_high == 1
+
+    batter2 = make_player("bat2")
+    home_low = TeamState(
+        lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=30)]
+    )
+    away_low = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap")])
+    rng_low = MockRandom([0.4, 0.9, 0.4, 0.9, 0.4, 0.9, 0.4, 0.9])
+    sim_low = GameSimulation(home_low, away_low, cfg, rng_low)
+    outs_low = sim_low.play_at_bat(away_low, home_low)
+    stats_low = away_low.lineup_stats[batter2.player_id]
+    assert outs_low == 0
+    assert stats_low.bb == 1
 
 
 def test_fielding_stats_tracking():

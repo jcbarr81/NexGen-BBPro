@@ -570,7 +570,8 @@ class GameSimulation:
                 pitcher_state.player, balls=balls, strikes=strikes
             )
             loc_r = self.rng.random()
-            dist = 0 if loc_r < 0.5 else 5
+            control_chance = pitcher_state.player.control / 100.0
+            dist = 0 if loc_r < control_chance else 5
             dec_r = self.rng.random()
             swing, contact = self.batter_ai.decide_swing(
                 batter,
@@ -660,7 +661,11 @@ class GameSimulation:
         # The angle is calculated for completeness even though the simplified
         # simulation does not yet use it for the outcome.
         self.physics.swing_angle(batter.gf)
-        hit_prob = max(0.0, min(0.95, (bat_speed / 100.0) * contact_quality))
+        movement_factor = max(0.05, (100 - pitcher.movement) / 100.0)
+        hit_prob = max(
+            0.0,
+            min(0.95, (bat_speed / 100.0) * contact_quality * movement_factor),
+        )
         return rand < hit_prob
 
     def _advance_runners(
