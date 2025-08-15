@@ -14,10 +14,7 @@ from PyQt6.QtWidgets import (
     QApplication,
     QProgressDialog,
 )
-from PyQt6.QtCore import Qt, QTimer
-from queue import Empty
-
-from services.avatar_process_worker import start_avatar_generation
+from PyQt6.QtCore import Qt
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from utils.trade_utils import load_trades, save_trade
@@ -26,7 +23,6 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
-from utils.ubl_avatar_generator import INIT_STEPS
 from models.trade import Trade
 import csv
 import os
@@ -80,9 +76,6 @@ class AdminDashboard(QWidget):
         self.generate_logos_button.clicked.connect(self.generate_team_logos)
         button_layout.addWidget(self.generate_logos_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        self.generate_avatars_button = QPushButton("Generate Player Avatars")
-        self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
-        button_layout.addWidget(self.generate_avatars_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
@@ -212,108 +205,6 @@ class AdminDashboard(QWidget):
             QMessageBox.warning(self, "Error", f"Failed to generate logos: {e}")
         finally:
             progress.close()
-        return
-
-    def generate_player_avatars(self):
-        first = QMessageBox.question(
-            self,
-            "Download Avatars",
-            "The system will connect to the internet to download player avatars. Continue?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if first != QMessageBox.StandardButton.Yes:
-            return
-
-        second = QMessageBox.question(
-            self,
-            "Download Avatars",
-            "Downloading avatars may take a few minutes. Do you still want to generate avatars?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if second != QMessageBox.StandardButton.Yes:
-            return
-
-        players = {p.player_id: p for p in load_players_from_csv("data/players.csv")}
-        teams = load_teams("data/teams.csv")
-
-        player_ids = set()
-        for t in teams:
-            try:
-                roster = load_roster(t.team_id)
-            except FileNotFoundError:
-                continue
-            player_ids.update(roster.act + roster.aaa + roster.low)
-
-        total = sum(1 for pid in player_ids if pid in players)
-        overall_total = total + INIT_STEPS
-        progress = QProgressDialog(
-            "Generating player avatars...",
-            "Cancel",
-            0,
-            overall_total,
-            self,
-        )
-        progress.setWindowTitle("Generating Avatars")
-        progress.setWindowModality(Qt.WindowModality.WindowModal)
-        progress.setValue(0)
-        progress.setAutoClose(False)
-        progress.setAutoReset(False)
-
-        process, queue = start_avatar_generation(players, teams)
-
-        timer = QTimer(self)
-
-        def poll_queue():
-            try:
-                while True:
-                    msg = queue.get_nowait()
-                    kind = msg[0]
-                    if kind == "progress":
-                        progress.setValue(msg[1])
-                    elif kind == "finished":
-                        timer.stop()
-                        process.join()
-                        progress.close()
-                        QMessageBox.information(
-                            self,
-                            "Avatars Generated",
-                            f"Player avatars created in: {msg[1]}",
-                        )
-                        return
-                    elif kind == "error":
-                        timer.stop()
-                        process.join()
-                        progress.close()
-                        QMessageBox.warning(
-                            self, "Error", f"Failed to generate avatars: {msg[1]}"
-                        )
-                        return
-            except Empty:
-                pass
-
-        timer.timeout.connect(poll_queue)
-        timer.start(100)
-
-        def cancel() -> None:
-            timer.stop()
-            if process.is_alive():
-                process.terminate()
-                process.join()
-            QMessageBox.information(
-                self, "Cancelled", "Avatar generation was cancelled."
-            )
-            progress.close()
-
-        progress.canceled.connect(cancel)
-
-        progress.exec()
-
-        timer.stop()
-        if process.is_alive():
-            process.terminate()
-            process.join()
         return
 
     def open_exhibition_dialog(self):
