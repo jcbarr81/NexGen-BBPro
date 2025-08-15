@@ -204,73 +204,101 @@ class DefensiveManager:
     # ------------------------------------------------------------------
     # Field positioning
     # ------------------------------------------------------------------
-    def _outfield_positions(self, pull: int, power: int) -> Dict[str, Tuple[int, int]]:
-        """Return adjusted outfield positions based on pull and power ratings."""
+    def _outfield_situation(
+        self, situation: str, pull: int = 50, power: int = 50
+    ) -> Dict[str, Tuple[float, float]]:
+        """Return outfield positions for ``situation``.
+
+        ``situation`` should be one of ``"normal"``, ``"guardLeft"`` or
+        ``"guardRight"``.  For ``"normal"`` positions the batter's ``pull`` and
+        ``power`` ratings influence the angle and depth respectively.
+        """
 
         cfg = self.config
-        positions: Dict[str, Tuple[int, int]] = {}
+        positions: Dict[str, Tuple[float, float]] = {}
 
-        # Determine horizontal shift from pull rating
-        high_pull = cfg.get("defPosHighPull")
-        high_pull_extra = cfg.get("defPosHighPullExtra")
-        low_pull = cfg.get("defPosLowPull")
-        low_pull_extra = cfg.get("defPosLowPullExtra")
+        depth_mult = cfg.get("outfieldPosPctNormal", 0)
+        angle_shift = 0
 
-        shift_steps = 0
-        if high_pull and pull >= high_pull:
-            shift_steps = 2
-        elif high_pull_extra and pull >= high_pull_extra:
-            shift_steps = 1
-        elif low_pull and pull <= low_pull:
-            shift_steps = -2
-        elif low_pull_extra and pull <= low_pull_extra:
-            shift_steps = -1
+        if situation == "normal":
+            high_pull = cfg.get("defPosHighPull")
+            high_pull_extra = cfg.get("defPosHighPullExtra")
+            low_pull = cfg.get("defPosLowPull")
+            low_pull_extra = cfg.get("defPosLowPullExtra")
 
-        angle_shift = 5 * shift_steps
+            shift_steps = 0
+            if high_pull and pull >= high_pull:
+                shift_steps = 2
+            elif high_pull_extra and pull >= high_pull_extra:
+                shift_steps = 1
+            elif low_pull and pull <= low_pull:
+                shift_steps = -2
+            elif low_pull_extra and pull <= low_pull_extra:
+                shift_steps = -1
 
-        # Determine depth adjustment from power rating
-        pct_normal = cfg.get("outfieldPosPctNormal", 0)
-        pct_deep = cfg.get("outfieldPosPctDeep", pct_normal)
-        pct_shallow = cfg.get("outfieldPosPctShallow", pct_normal)
+            angle_shift = 5 * shift_steps
 
-        depth_shift = 0
-        if cfg.get("defPosHighPower") and power >= cfg.get("defPosHighPower"):
-            depth_shift = pct_deep - pct_normal
-        elif cfg.get("defPosLowPower") and power <= cfg.get("defPosLowPower"):
-            depth_shift = pct_shallow - pct_normal
+            if cfg.get("defPosHighPower") and power >= cfg.get("defPosHighPower"):
+                depth_mult = cfg.get("outfieldPosPctDeep", depth_mult)
+            elif cfg.get("defPosLowPower") and power <= cfg.get("defPosLowPower"):
+                depth_mult = cfg.get("outfieldPosPctShallow", depth_mult)
 
         for f in ("LF", "CF", "RF"):
-            pct_key = f"normalPos{f}Pct"
-            angle_key = f"normalPos{f}Angle"
+            pct_key = f"{situation}Pos{f}Pct"
+            angle_key = f"{situation}Pos{f}Angle"
             pct = cfg.get(pct_key)
             angle = cfg.get(angle_key)
             if pct is None or angle is None:
                 continue
-            positions[f] = (pct + depth_shift, angle + angle_shift)
+            dist = pct * depth_mult / 100.0
+            positions[f] = (dist, angle + angle_shift)
+
         return positions
 
     def set_field_positions(
         self, pull: int = 50, power: int = 50
-    ) -> Dict[str, Dict[str, tuple]]:
+    ) -> Dict[str, Dict[str, Dict[str, Tuple[float, float]]]]:
         cfg = self.config
-        situations = ["normal", "guardLines"]
         fielders = ["1B", "2B", "SS", "3B"]
-        positions: Dict[str, Dict[str, tuple]] = {}
-        for sit in situations:
-            sit_dict: Dict[str, tuple] = {}
+        feet_per_depth = cfg.get("infieldPosFeetPerDepth", 0)
+
+        positions: Dict[str, Dict[str, Dict[str, Tuple[float, float]]]] = {
+            "infield": {},
+            "outfield": {},
+        }
+
+        infield_situations = ["normal", "guardLines", "cutoffRun", "doublePlay"]
+        for sit in infield_situations:
+            sit_dict: Dict[str, Tuple[float, float]] = {}
             for f in fielders:
                 dist_key = f"{sit}Pos{f}Dist"
                 angle_key = f"{sit}Pos{f}Angle"
                 dist = cfg.get(dist_key)
                 angle = cfg.get(angle_key)
-                if dist is not None and angle is not None:
-                    sit_dict[f] = (dist, angle)
+                if dist is None or angle is None:
+                    continue
+                feet = dist / 10.0 * feet_per_depth
+                sit_dict[f] = (feet, angle)
             if sit_dict:
-                positions[sit] = sit_dict
+                positions["infield"][sit] = sit_dict
 
-        of_pos = self._outfield_positions(pull, power)
-        if of_pos:
-            positions["outfield"] = of_pos
+        positions["outfield"]["normal"] = self._outfield_situation(
+            "normal", pull, power
+        )
+        positions["outfield"]["guardLeft"] = self._outfield_situation("guardLeft")
+        positions["outfield"]["guardRight"] = self._outfield_situation("guardRight")
+
+        # Remove empty sections
+        if not positions["infield"]:
+            del positions["infield"]
+        if not positions["outfield"]["normal"]:
+            del positions["outfield"]["normal"]
+        if not positions["outfield"]["guardLeft"]:
+            del positions["outfield"]["guardLeft"]
+        if not positions["outfield"]["guardRight"]:
+            del positions["outfield"]["guardRight"]
+        if not positions["outfield"]:
+            del positions["outfield"]
 
         return positions
 

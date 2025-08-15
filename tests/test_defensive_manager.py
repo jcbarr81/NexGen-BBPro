@@ -1,4 +1,5 @@
 import random
+import pytest
 
 from logic.defensive_manager import DefensiveManager
 from tests.util.pbini_factory import make_cfg
@@ -219,12 +220,35 @@ def test_outfield_position_shifts():
     )
     dm = DefensiveManager(cfg)
 
-    high = dm.set_field_positions(pull=85, power=90)["outfield"]
-    assert high["LF"] == (79, 35)
-    assert high["CF"] == (79, 10)
-    assert high["RF"] == (79, -15)
+    high = dm.set_field_positions(pull=85, power=90)["outfield"]["normal"]
+    assert high["LF"] == pytest.approx((55.2, 35))
+    assert high["CF"] == pytest.approx((55.2, 10))
+    assert high["RF"] == pytest.approx((55.2, -15))
 
-    low = dm.set_field_positions(pull=15, power=20)["outfield"]
-    assert low["LF"] == (59, 15)
-    assert low["CF"] == (59, -10)
-    assert low["RF"] == (59, -35)
+    low = dm.set_field_positions(pull=15, power=20)["outfield"]["normal"]
+    assert low["LF"] == pytest.approx((41.4, 15))
+    assert low["CF"] == pytest.approx((41.4, -10))
+    assert low["RF"] == pytest.approx((41.4, -35))
+
+
+def test_field_position_parsing():
+    cfg = make_cfg(
+        infieldPosFeetPerDepth=10,
+        cutoffRunPos1BDist=90,
+        cutoffRunPos1BAngle=-35,
+        doublePlayPos2BDist=135,
+        doublePlayPos2BAngle=-12,
+        guardLeftPosLFPct=65,
+        guardLeftPosLFAngle=30,
+        guardRightPosRFPct=65,
+        guardRightPosRFAngle=30,
+        outfieldPosPctNormal=70,
+    )
+    dm = DefensiveManager(cfg)
+    pos = dm.set_field_positions()
+    assert pos["infield"]["cutoffRun"]["1B"] == (90.0, -35)
+    assert pos["infield"]["doublePlay"]["2B"] == (135.0, -12)
+    gl = pos["outfield"]["guardLeft"]["LF"]
+    assert gl == pytest.approx((45.5, 30))
+    gr = pos["outfield"]["guardRight"]["RF"]
+    assert gr == pytest.approx((45.5, 30))
