@@ -42,42 +42,6 @@ Install the dependencies (see `requirements.txt`) then run:
 python main.py
 ```
 
-The `requirements.txt` file includes optional machine learning libraries used for
-advanced SDXL avatar generation (`diffusers`, `transformers`, `torch`,
-`opencv-python`, `diskcache`). If you only need the basic features you may omit
-those packages.
-
-### Icons8 API Key
-Avatar images are downloaded from the Icons8 service. Set the
-`ICONS8_API_KEY` environment variable or place an API key under the `[icons8]`
-section of a `config.ini` file so requests are authenticated. If the key is
-missing or invalid, the API responds with HTTP 403.
-
-> **Note:** HTTPS downloads may fail if your system's certificate authorities
-> or the Python `certifi` package are outdated. Keep them up to date using
-> commands such as:
->
-> ```bash
-> # Debian/Ubuntu
-> sudo apt-get update && sudo apt-get install --only-upgrade ca-certificates
-> # macOS (Homebrew)
-> brew update && brew upgrade ca-certificates
-> # pip
-> pip install --upgrade certifi
-> # conda
-> conda update certifi
-> ```
-
-### Icons8 avatar service diagnostics
-To verify that the API key is configured and the Icons8 service is reachable,
-run the diagnostic module:
-
-```bash
-python -m services.icons8_avatar_service "Player Name" black "#aabbcc" "#ddeeff"
-```
-
-The command prints the paths to the downloaded avatar image and thumbnail or an
-error message if the request fails.
 
 ### Running tests
 Tests are located in the `tests/` directory and can be executed with:
