@@ -68,6 +68,17 @@ missing or invalid, the API responds with HTTP 403.
 > conda update certifi
 > ```
 
+### Icons8 avatar service diagnostics
+To verify that the API key is configured and the Icons8 service is reachable,
+run the diagnostic module:
+
+```bash
+python -m services.icons8_avatar_service "Player Name" black "#aabbcc" "#ddeeff"
+```
+
+The command prints the paths to the downloaded avatar image and thumbnail or an
+error message if the request fails.
+
 ### Running tests
 Tests are located in the `tests/` directory and can be executed with:
 
