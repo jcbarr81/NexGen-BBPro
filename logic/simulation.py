@@ -437,6 +437,8 @@ class GameSimulation:
         # simplified simulation does not yet modify gameplay based on them.
         runner_state = offense.bases[0]
         runner = runner_state.player if runner_state else None
+        holding_runner = False
+        steal_chance = 0
         pitcher_fa = (
             defense.current_pitcher_state.player.fa
             if defense.current_pitcher_state
@@ -459,8 +461,8 @@ class GameSimulation:
         if charge_first or charge_third:
             self.debug_log.append("Defense charges bunt")
         if runner_state and self.defense.maybe_hold_runner(runner.sp):
+            holding_runner = True
             self.debug_log.append("Defense holds runner")
-            steal_chance = 0
             pitcher_state = defense.current_pitcher_state
             if pitcher_state is not None:
                 pitcher = pitcher_state.player
@@ -479,8 +481,6 @@ class GameSimulation:
             ):
                 self.debug_log.append("Pickoff attempt")
                 self.pitches_since_pickoff = 0
-            if self.defense.maybe_pitch_out(steal_chance=steal_chance):
-                self.debug_log.append("Pitch out")
         pitch_around, ibb = self.defense.maybe_pitch_around()
         if ibb:
             self.debug_log.append("Intentional walk issued")
@@ -536,10 +536,36 @@ class GameSimulation:
         run_diff = offense.runs - defense.runs
 
         if runner_state:
+            hit_run_chance = int(
+                self.offense.calculate_hit_and_run_chance(
+                    runner_sp=runner_state.player.sp,
+                    batter_ch=batter.ch,
+                    batter_ph=batter.ph,
+                    balls=balls,
+                    strikes=strikes,
+                    run_diff=run_diff,
+                    runners_on_first_and_second=(offense.bases[1] is not None),
+                    pitcher_wild=pitcher_state.player.control <= 30,
+                )
+                * 100
+            )
+            if holding_runner and self.defense.maybe_pitch_out(
+                steal_chance=steal_chance,
+                hit_run_chance=hit_run_chance,
+                ball_count=balls,
+                inning=inning,
+                is_home_team=(defense is self.home),
+            ):
+                self.debug_log.append("Pitch out")
             if self.offense.maybe_hit_and_run(
                 runner_sp=runner_state.player.sp,
                 batter_ch=batter.ch,
                 batter_ph=batter.ph,
+                balls=balls,
+                strikes=strikes,
+                run_diff=run_diff,
+                runners_on_first_and_second=(offense.bases[1] is not None),
+                pitcher_wild=pitcher_state.player.control <= 30,
             ):
                 self.debug_log.append("Hit and run")
                 steal_result = self._attempt_steal(
