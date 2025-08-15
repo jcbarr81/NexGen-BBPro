@@ -10,10 +10,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import ssl
-try:
-    import certifi
-except ImportError:  # pragma: no cover - fallback if certifi missing
-    certifi = None
 from typing import Tuple
 
 from PIL import Image
@@ -90,9 +86,7 @@ def fetch_icons8_avatar(
         params["key"] = api_key
     url = "https://avatars.icons8.com/api/iconsets/avatar" + "?" + urllib.parse.urlencode(params)
 
-    ssl_context = ssl.create_default_context(
-        cafile=certifi.where() if certifi else None
-    )
+    ssl_context = ssl.create_default_context()
     try:
         with urllib.request.urlopen(url, timeout=10, context=ssl_context) as response:
             if response.status != 200:
@@ -110,16 +104,9 @@ def fetch_icons8_avatar(
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, ssl.SSLCertVerificationError):
             hint = (
-                "certificate verify failed. Update CA certificates "
-                "(sudo update-ca-certificates)"
+                "certificate verify failed. Update your OS certificate store "
+                "(e.g. sudo update-ca-certificates)"
             )
-            if certifi:
-                hint += (
-                    " or update certifi "
-                    "(python -m pip install --upgrade certifi)"
-                )
-            else:
-                hint += " or install certifi (python -m pip install certifi)"
             raise RuntimeError(
                 f"Failed to fetch avatar from Icons8: {hint}"
             ) from exc
