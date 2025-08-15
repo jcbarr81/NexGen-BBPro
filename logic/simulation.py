@@ -208,6 +208,7 @@ class GameSimulation:
         self.batter_ai = BatterAI(config)
         self.debug_log: List[str] = []
         self.pitches_since_pickoff = 4
+        self.current_outs = 0
 
     # ------------------------------------------------------------------
     # Stat helpers
@@ -408,6 +409,7 @@ class GameSimulation:
         start_log = len(self.debug_log)
         outs = 0
         while outs < 3:
+            self.current_outs = outs
             outs += self.play_at_bat(offense, defense)
         inning_events = self.debug_log[start_log:]
         for runner in offense.bases:
@@ -460,6 +462,7 @@ class GameSimulation:
         )
         if charge_first or charge_third:
             self.debug_log.append("Defense charges bunt")
+        outs_before = self.current_outs
         if runner_state and self.defense.maybe_hold_runner(runner.sp):
             holding_runner = True
             self.debug_log.append("Defense holds runner")
@@ -481,11 +484,6 @@ class GameSimulation:
             ):
                 self.debug_log.append("Pickoff attempt")
                 self.pitches_since_pickoff = 0
-        pitch_around, ibb = self.defense.maybe_pitch_around()
-        if ibb:
-            self.debug_log.append("Intentional walk issued")
-        elif pitch_around:
-            self.debug_log.append("Pitch around")
 
         batter_idx = offense.batting_index % len(offense.lineup)
         old_pitcher = defense.current_pitcher_state
@@ -498,6 +496,29 @@ class GameSimulation:
         else:
             batter = self.subs.maybe_pinch_hit(offense, batter_idx, self.debug_log)
         offense.batting_index += 1
+        on_deck_idx = offense.batting_index % len(offense.lineup)
+        on_deck = offense.lineup[on_deck_idx]
+
+        inning = len(offense.inning_runs) + 1
+        on_first = offense.bases[0] is not None
+        on_second = offense.bases[1] is not None
+        on_third = offense.bases[2] is not None
+        pitch_around, ibb = self.defense.maybe_pitch_around(
+            inning=inning,
+            batter_ph=batter.ph,
+            batter_ch=batter.ch,
+            on_deck_ph=on_deck.ph,
+            on_deck_ch=on_deck.ch,
+            batter_gf=batter.gf,
+            outs=outs_before,
+            on_first=on_first,
+            on_second=on_second,
+            on_third=on_third,
+        )
+        if ibb:
+            self.debug_log.append("Intentional walk issued")
+        elif pitch_around:
+            self.debug_log.append("Pitch around")
 
         batter_state = offense.lineup_stats.setdefault(
             batter.player_id, BatterState(batter)

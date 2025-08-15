@@ -8,7 +8,7 @@ from logic.simulation import (
 )
 from models.player import Player
 from models.pitcher import Pitcher
-from tests.util.pbini_factory import load_config
+from tests.util.pbini_factory import load_config, make_cfg
 
 
 class MockRandom(random.Random):
@@ -28,7 +28,9 @@ class MockRandom(random.Random):
         return a
 
 
-def make_player(pid: str, ph: int = 50, sp: int = 50, ch: int = 50) -> Player:
+def make_player(
+    pid: str, ph: int = 50, sp: int = 50, ch: int = 50, gf: int = 50
+) -> Player:
     return Player(
         player_id=pid,
         first_name="F" + pid,
@@ -39,7 +41,7 @@ def make_player(pid: str, ph: int = 50, sp: int = 50, ch: int = 50) -> Player:
         bats="R",
         primary_position="1B",
         other_positions=[],
-        gf=50,
+        gf=gf,
         ch=ch,
         ph=ph,
         sp=sp,
@@ -252,6 +254,31 @@ def test_pitch_control_affects_location():
     stats_low = away_low.lineup_stats[batter2.player_id]
     assert outs_low == 0
     assert stats_low.bb == 1
+
+
+def test_pitch_around_ibb_in_simulation():
+    cfg = make_cfg(
+        pitchAroundChanceNoInn=0,
+        pitchAroundChanceBase=0,
+        pitchAroundChanceInn7Adjust=20,
+        pitchAroundChanceOut2=20,
+        pitchAroundChancePH2BatAdjust=40,
+        pitchAroundChanceLowGFThresh=40,
+        pitchAroundChanceLowGFAdjust=10,
+        defManPitchAroundToIBBPct=100,
+    )
+    rng = MockRandom([0.0, 0.0])
+    batter1 = make_player("b1", ph=90, gf=30)
+    batter2 = make_player("b2", ph=10)
+    away = TeamState(lineup=[batter1, batter2], bench=[], pitchers=[make_pitcher("ap")])
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away.inning_runs = [0] * 6
+    away.bases[1] = BatterState(make_player("r2"))
+    away.bases[2] = BatterState(make_player("r3"))
+    sim = GameSimulation(home, away, cfg, rng)
+    sim.current_outs = 2
+    sim.play_at_bat(away, home)
+    assert any("Intentional walk issued" in ev for ev in sim.debug_log)
 
 
 def test_fielding_stats_tracking():
