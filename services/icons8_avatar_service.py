@@ -110,11 +110,16 @@ def fetch_icons8_avatar(
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, ssl.SSLCertVerificationError):
             hint = (
-                "certificate verify failed. Ensure your CA certificates are "
-                "up to date"
+                "certificate verify failed. Update CA certificates "
+                "(sudo update-ca-certificates)"
             )
-            if not certifi:
-                hint += " or install the 'certifi' package"
+            if certifi:
+                hint += (
+                    " or update certifi "
+                    "(python -m pip install --upgrade certifi)"
+                )
+            else:
+                hint += " or install certifi (python -m pip install certifi)"
             raise RuntimeError(
                 f"Failed to fetch avatar from Icons8: {hint}"
             ) from exc
