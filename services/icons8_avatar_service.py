@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import configparser
 import io
 import os
 import re
@@ -11,6 +12,22 @@ import urllib.request
 from typing import Tuple
 
 from PIL import Image
+
+
+def _get_api_key() -> str | None:
+    """Return the Icons8 API key from environment or config file if present."""
+
+    key = os.getenv("ICONS8_API_KEY")
+    if key:
+        return key
+
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    cfg_path = os.path.join(base_dir, "config.ini")
+    if os.path.exists(cfg_path):
+        parser = configparser.ConfigParser()
+        parser.read(cfg_path)
+        return parser.get("icons8", "api_key", fallback=None)
+    return None
 
 
 def fetch_icons8_avatar(
@@ -56,6 +73,7 @@ def fetch_icons8_avatar(
     if os.path.exists(avatar_path) and os.path.exists(thumb_path):
         return avatar_path, thumb_path
 
+    api_key = _get_api_key()
     params = {
         "name": name,
         "ethnicity": ethnicity,
@@ -63,6 +81,8 @@ def fetch_icons8_avatar(
         "clothesColor": primary_hex.lstrip("#"),
         "background": secondary_hex.lstrip("#"),
     }
+    if api_key:
+        params["key"] = api_key
     url = "https://avatars.icons8.com/api/iconsets/avatar" + "?" + urllib.parse.urlencode(params)
 
     try:
