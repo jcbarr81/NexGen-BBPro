@@ -157,3 +157,33 @@ def fetch_icons8_avatar(
 
 
 __all__ = ["fetch_icons8_avatar"]
+
+
+if __name__ == "__main__":  # pragma: no cover - simple CLI wrapper
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Fetch an avatar from Icons8 for diagnostic purposes."
+    )
+    parser.add_argument("name", help="Display name for the avatar")
+    parser.add_argument(
+        "ethnicity",
+        help="Skin tone keyword accepted by Icons8, e.g. 'black' or 'asian'",
+    )
+    parser.add_argument(
+        "primary_hex", help="Jersey colour in '#RRGGBB' format"
+    )
+    parser.add_argument(
+        "secondary_hex", help="Background colour in '#RRGGBB' format"
+    )
+    args = parser.parse_args()
+
+    try:
+        avatar, thumb = fetch_icons8_avatar(
+            args.name, args.ethnicity, args.primary_hex, args.secondary_hex
+        )
+    except Exception as exc:  # pragma: no cover - CLI display
+        print(f"Error: {exc}")
+    else:
+        print(avatar)
+        print(thumb)
