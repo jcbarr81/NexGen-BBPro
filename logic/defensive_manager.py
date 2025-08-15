@@ -117,15 +117,83 @@ class DefensiveManager:
             chance += cfg.get("pitchOutChanceHomeAdjust", 0)
         return self._roll(chance)
 
-    def maybe_pitch_around(self, inning: int = 1) -> Tuple[bool, bool]:
+    def maybe_pitch_around(
+        self,
+        inning: int = 1,
+        batter_ph: int = 0,
+        batter_ch: int = 0,
+        on_deck_ph: int = 0,
+        on_deck_ch: int = 0,
+        batter_gf: int = 50,
+        outs: int = 0,
+        on_first: bool = False,
+        on_second: bool = False,
+        on_third: bool = False,
+    ) -> Tuple[bool, bool]:
         cfg = self.config
         if inning <= cfg.get("pitchAroundChanceNoInn", 0):
             return False, False
+
+        def level(val: int) -> int:
+            if val >= 80:
+                return 4
+            if val >= 60:
+                return 3
+            if val >= 40:
+                return 2
+            if val >= 20:
+                return 1
+            return 0
+
         chance = cfg.get("pitchAroundChanceBase", 0)
         if inning in (7, 8):
             chance += cfg.get("pitchAroundChanceInn7Adjust", 0)
         elif inning >= 9:
             chance += cfg.get("pitchAroundChanceInn9Adjust", 0)
+
+        ph_diff = level(batter_ph) - level(on_deck_ph)
+        if ph_diff >= 2:
+            chance += cfg.get("pitchAroundChancePH2BatAdjust", 0)
+        elif ph_diff == 1:
+            chance += cfg.get("pitchAroundChancePH1BatAdjust", 0)
+        elif ph_diff == 0:
+            if batter_ph > on_deck_ph:
+                chance += cfg.get("pitchAroundChancePHBatAdjust", 0)
+            elif batter_ph < on_deck_ph:
+                chance += cfg.get("pitchAroundChancePHODAdjust", 0)
+        elif ph_diff == -1:
+            chance += cfg.get("pitchAroundChancePH1ODAdjust", 0)
+        else:
+            chance += cfg.get("pitchAroundChancePH2ODAdjust", 0)
+
+        ch_diff = level(batter_ch) - level(on_deck_ch)
+        if ch_diff >= 2:
+            chance += cfg.get("pitchAroundChanceCH2BatAdjust", 0)
+        elif ch_diff == 1:
+            chance += cfg.get("pitchAroundChanceCH1BatAdjust", 0)
+        elif ch_diff == 0:
+            if batter_ch > on_deck_ch:
+                chance += cfg.get("pitchAroundChanceCHBatAdjust", 0)
+            elif batter_ch < on_deck_ch:
+                chance += cfg.get("pitchAroundChanceCHODAdjust", 0)
+        elif ch_diff == -1:
+            chance += cfg.get("pitchAroundChanceCH1ODAdjust", 0)
+        else:
+            chance += cfg.get("pitchAroundChanceCH2ODAdjust", 0)
+
+        if batter_gf < cfg.get("pitchAroundChanceLowGFThresh", 0):
+            chance += cfg.get("pitchAroundChanceLowGFAdjust", 0)
+
+        if outs == 0:
+            chance += cfg.get("pitchAroundChanceOut0", 0)
+        elif outs == 1:
+            chance += cfg.get("pitchAroundChanceOut1", 0)
+        else:
+            chance += cfg.get("pitchAroundChanceOut2", 0)
+
+        if on_second and on_third:
+            chance += cfg.get("pitchAroundChanceOn23", 0)
+
         pitch_around = self._roll(chance)
         ibb = False
         if pitch_around:

@@ -126,3 +126,51 @@ def test_pitch_around_chance():
     assert pa is True and ibb is True
     pa2, ibb2 = dm.maybe_pitch_around(inning=7)
     assert pa2 is False and ibb2 is False
+
+
+def test_pitch_around_ph_ch_levels():
+    cfg = make_cfg(
+        pitchAroundChanceBase=10,
+        pitchAroundChancePH1BatAdjust=20,
+        pitchAroundChanceCH1ODAdjust=-10,
+    )
+    rng = MockRandom([0.15, 0.15])
+    dm = DefensiveManager(cfg, rng)
+    pa1, _ = dm.maybe_pitch_around(
+        batter_ph=50,
+        on_deck_ph=30,
+        batter_ch=30,
+        on_deck_ch=55,
+    )
+    assert pa1 is True
+    pa2, _ = dm.maybe_pitch_around(
+        batter_ph=30,
+        on_deck_ph=50,
+        batter_ch=55,
+        on_deck_ch=30,
+    )
+    assert pa2 is False
+
+
+def test_pitch_around_gf_outs_and_bases():
+    cfg = make_cfg(
+        pitchAroundChanceBase=10,
+        pitchAroundChanceLowGFThresh=40,
+        pitchAroundChanceLowGFAdjust=15,
+        pitchAroundChanceOut1=10,
+        pitchAroundChanceOut2=20,
+        pitchAroundChanceOn23=25,
+    )
+    rng = MockRandom([0.65, 0.15, 0.15])
+    dm = DefensiveManager(cfg, rng)
+    pa1, _ = dm.maybe_pitch_around(
+        batter_gf=30,
+        outs=2,
+        on_second=True,
+        on_third=True,
+    )
+    assert pa1 is True
+    pa2, _ = dm.maybe_pitch_around(outs=1)
+    assert pa2 is True
+    pa3, _ = dm.maybe_pitch_around()
+    assert pa3 is False
