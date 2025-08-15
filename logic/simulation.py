@@ -56,6 +56,7 @@ class BatterState:
     pocs: int = 0  # Pickoff caught stealing
     pitches: int = 0  # Pitches seen
     lob: int = 0  # Left on base
+    lead: int = 0  # Lead level
 
 
 @dataclass
@@ -206,6 +207,7 @@ class GameSimulation:
         self.pitcher_ai = PitcherAI(config, self.rng)
         self.batter_ai = BatterAI(config)
         self.debug_log: List[str] = []
+        self.pitches_since_pickoff = 4
 
     # ------------------------------------------------------------------
     # Stat helpers
@@ -433,7 +435,8 @@ class GameSimulation:
         # Defensive decisions prior to the at-bat.  These mostly log the
         # outcome for manual inspection in the exhibition dialog.  The
         # simplified simulation does not yet modify gameplay based on them.
-        runner = offense.bases[0].player if offense.bases[0] else None
+        runner_state = offense.bases[0]
+        runner = runner_state.player if runner_state else None
         pitcher_fa = (
             defense.current_pitcher_state.player.fa
             if defense.current_pitcher_state
@@ -455,7 +458,7 @@ class GameSimulation:
         )
         if charge_first or charge_third:
             self.debug_log.append("Defense charges bunt")
-        if runner and self.defense.maybe_hold_runner(runner.sp):
+        if runner_state and self.defense.maybe_hold_runner(runner.sp):
             self.debug_log.append("Defense holds runner")
             steal_chance = 0
             pitcher_state = defense.current_pitcher_state
@@ -469,8 +472,13 @@ class GameSimulation:
                     )
                     * 100
                 )
-            if self.defense.maybe_pickoff(steal_chance=steal_chance):
+            if self.defense.maybe_pickoff(
+                steal_chance=steal_chance,
+                lead=runner_state.lead,
+                pitches_since=self.pitches_since_pickoff,
+            ):
                 self.debug_log.append("Pickoff attempt")
+                self.pitches_since_pickoff = 0
             if self.defense.maybe_pitch_out(steal_chance=steal_chance):
                 self.debug_log.append("Pitch out")
         pitch_around, ibb = self.defense.maybe_pitch_around()
@@ -597,6 +605,7 @@ class GameSimulation:
 
         while True:
             pitcher_state.pitches_thrown += 1
+            self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
             pitch_type, _ = self.pitcher_ai.select_pitch(
                 pitcher_state.player, balls=balls, strikes=strikes
             )

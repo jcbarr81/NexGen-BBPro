@@ -81,7 +81,9 @@ class DefensiveManager:
         chance = cfg.get("pickoffChanceBase", 0)
         chance += steal_chance + cfg.get("pickoffChanceStealChanceAdjust", 0)
         chance += cfg.get("pickoffChanceLeadMult", 0) * lead
-        chance += cfg.get("pickoffChancePitchesMult", 0) * pitches_since
+        chance += cfg.get("pickoffChancePitchesMult", 0) * (
+            4 - min(pitches_since, 4)
+        )
         return self._roll(chance)
 
     def maybe_pitch_out(
