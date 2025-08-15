@@ -6,8 +6,11 @@ root and named after the player's ID.
 """
 from __future__ import annotations
 
+import logging
 import os
 from typing import Callable, Dict, Optional
+
+from PIL import Image
 
 from services.icons8_avatar_service import fetch_icons8_avatar
 from utils.ethnicity import infer_ethnicity
@@ -88,19 +91,32 @@ def generate_player_avatars(
             continue
         name = f"{player.first_name} {player.last_name}"
         ethnicity = infer_ethnicity(player.first_name, player.last_name)
-        avatar_path, thumb_path = fetch_icons8_avatar(
-            name=name,
-            ethnicity=ethnicity,
-            primary_hex=team.primary_color,
-            secondary_hex=team.secondary_color,
-            size=size,
-        )
         avatar_dst = os.path.join(out_dir, f"{pid}.png")
         thumb_dst = os.path.join(out_dir, f"{pid}_150.png")
-        if avatar_path != avatar_dst:
-            os.replace(avatar_path, avatar_dst)
-        if thumb_path != thumb_dst:
-            os.replace(thumb_path, thumb_dst)
+        try:
+            avatar_path, thumb_path = fetch_icons8_avatar(
+                name=name,
+                ethnicity=ethnicity,
+                primary_hex=team.primary_color,
+                secondary_hex=team.secondary_color,
+                size=size,
+            )
+            if avatar_path != avatar_dst:
+                os.replace(avatar_path, avatar_dst)
+            if thumb_path != thumb_dst:
+                os.replace(thumb_path, thumb_dst)
+        except Exception as exc:  # pragma: no cover - network failures
+            logging.error("Failed to fetch avatar for %s: %s", name, exc)
+            placeholder_file = os.path.join(
+                os.path.dirname(__file__), "..", "assets", "placeholder_avatar.png"
+            )
+            if os.path.exists(placeholder_file):
+                placeholder_img = Image.open(placeholder_file)
+                placeholder_img.resize((size, size)).save(avatar_dst)
+                placeholder_img.resize((150, 150)).save(thumb_dst)
+            else:
+                Image.new("RGBA", (size, size), (128, 128, 128, 255)).save(avatar_dst)
+                Image.new("RGBA", (150, 150), (128, 128, 128, 255)).save(thumb_dst)
 
         completed += 1
         if progress_callback:
