@@ -47,6 +47,11 @@ advanced SDXL avatar generation (`diffusers`, `transformers`, `torch`,
 `opencv-python`, `diskcache`). If you only need the basic features you may omit
 those packages.
 
+### Icons8 API Key
+Avatar images are downloaded from the Icons8 service. Set the
+`ICONS8_API_KEY` environment variable or place an API key under the `[icons8]`
+section of a `config.ini` file so requests are authenticated.
+
 ### Running tests
 Tests are located in the `tests/` directory and can be executed with:
 
