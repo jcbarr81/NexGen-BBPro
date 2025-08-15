@@ -108,6 +108,16 @@ def fetch_icons8_avatar(
             f"Response: {snippet}"
         ) from exc
     except urllib.error.URLError as exc:
+        if isinstance(exc.reason, ssl.SSLCertVerificationError):
+            hint = (
+                "certificate verify failed. Ensure your CA certificates are "
+                "up to date"
+            )
+            if not certifi:
+                hint += " or install the 'certifi' package"
+            raise RuntimeError(
+                f"Failed to fetch avatar from Icons8: {hint}"
+            ) from exc
         raise RuntimeError(
             f"Failed to fetch avatar from Icons8: {exc.reason}"
         ) from exc
