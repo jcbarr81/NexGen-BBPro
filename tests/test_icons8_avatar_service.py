@@ -40,3 +40,32 @@ def test_icons8_request_includes_user_agent(monkeypatch, tmp_path):
         icons8_avatar_service.fetch_icons8_avatar(
             "Test Player", "white", "#123456", "#654321"
         )
+
+
+def test_icons8_request_includes_token_param(monkeypatch, tmp_path):
+    monkeypatch.setenv("ICONS8_API_KEY", "dummy")
+
+    expected_base = os.path.join(os.path.dirname(icons8_avatar_service.__file__), "..")
+    orig_abspath = os.path.abspath
+
+    def fake_abspath(path):
+        if path == expected_base:
+            return str(tmp_path)
+        return orig_abspath(path)
+
+    monkeypatch.setattr(icons8_avatar_service.os.path, "abspath", fake_abspath)
+
+    captured: dict[str, str] = {}
+
+    def fake_urlopen(request, timeout=10, context=None):
+        captured["url"] = request.full_url
+        raise urllib.error.URLError("boom")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    with pytest.raises(RuntimeError):
+        icons8_avatar_service.fetch_icons8_avatar(
+            "Test Player", "white", "#123456", "#654321"
+        )
+
+    assert "token=dummy" in captured["url"]
