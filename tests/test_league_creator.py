@@ -4,6 +4,7 @@ from datetime import date
 from logic.league_creator import create_league, _dict_to_model
 from models.pitcher import Pitcher
 from logic.player_generator import reset_name_cache
+from utils.team_loader import load_teams
 import random
 
 
@@ -58,6 +59,20 @@ def test_create_league_generates_files(tmp_path):
                 assert 18 <= age <= 21
     with open(league_path) as f:
         assert f.read() == "Test League"
+
+
+def test_create_league_assigns_unique_color_pairs(tmp_path):
+    random.seed(0)
+    divisions = {
+        "East": [("CityA", "Cats"), ("CityB", "Dogs")],
+        "West": [("CityC", "Rats"), ("CityD", "Bats")],
+    }
+    create_league(str(tmp_path), divisions, "Test League")
+
+    teams = load_teams(str(tmp_path / "teams.csv"))
+    assert len(teams) == 4
+    color_pairs = {(t.primary_color, t.secondary_color) for t in teams}
+    assert len(color_pairs) == len(teams)
 
 
 def test_create_league_uses_unique_names(tmp_path):
