@@ -52,6 +52,21 @@ Avatar images are downloaded from the Icons8 service. Set the
 `ICONS8_API_KEY` environment variable or place an API key under the `[icons8]`
 section of a `config.ini` file so requests are authenticated.
 
+> **Note:** HTTPS downloads may fail if your system's certificate authorities
+> or the Python `certifi` package are outdated. Keep them up to date using
+> commands such as:
+>
+> ```bash
+> # Debian/Ubuntu
+> sudo apt-get update && sudo apt-get install --only-upgrade ca-certificates
+> # macOS (Homebrew)
+> brew update && brew upgrade ca-certificates
+> # pip
+> pip install --upgrade certifi
+> # conda
+> conda update certifi
+> ```
+
 ### Running tests
 Tests are located in the `tests/` directory and can be executed with:
 
