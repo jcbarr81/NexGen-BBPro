@@ -57,6 +57,16 @@ for example:
 pytest tests/test_simulation.py::test_run_tracking_and_boxscore -q
 ```
 
+### Building an executable
+Install PyInstaller and create a standalone binary with:
+
+```bash
+pip install -r requirements-dev.txt
+python build_exe.py
+```
+
+The executable will be written to the `dist/` directory.
+
 ### Default Admin Credentials
 When a new league is created or user accounts are cleared, the system rewrites
 `data/users.txt` to contain a single administrator account. Use these fallback
