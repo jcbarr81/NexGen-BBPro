@@ -116,6 +116,11 @@ def test_hit_and_run_chance_and_advance():
         "pitchAroundChanceBase": 0,
         "pickoffChanceBase": 0,
         "chargeChanceBaseThird": 0,
+        "chargeChancePitcherFAPct": 0,
+        "chargeChanceFAPct": 0,
+        "chargeChanceThirdOnFirstSecond": 0,
+        "chargeChanceThirdOnThird": 0,
+        "chargeChanceSacChanceAdjust": 0,
         "holdChanceBase": 0,
     })
     runner = make_player("r")
@@ -125,7 +130,12 @@ def test_hit_and_run_chance_and_advance():
     runner_state = BatterState(runner)
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
-    sim = GameSimulation(home, away, full, MockRandom([0.0, 0.0, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9]))
+    sim = GameSimulation(
+        home,
+        away,
+        full,
+        MockRandom([0.0, 0.0, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9]),
+    )
     outs = sim.play_at_bat(away, home)
     assert outs == 1
     assert away.bases[1] is runner_state
@@ -166,6 +176,11 @@ def test_sacrifice_bunt_chance_and_advance():
         "pitchAroundChanceBase": 0,
         "pickoffChanceBase": 0,
         "chargeChanceBaseThird": 0,
+        "chargeChancePitcherFAPct": 0,
+        "chargeChanceFAPct": 0,
+        "chargeChanceThirdOnFirstSecond": 0,
+        "chargeChanceThirdOnThird": 0,
+        "chargeChanceSacChanceAdjust": 0,
         "holdChanceBase": 0,
     })
     runner = make_player("r")
@@ -206,6 +221,11 @@ def test_suicide_squeeze_chance_and_score():
         "pitchAroundChanceBase": 0,
         "pickoffChanceBase": 0,
         "chargeChanceBaseThird": 0,
+        "chargeChancePitcherFAPct": 0,
+        "chargeChanceFAPct": 0,
+        "chargeChanceThirdOnFirstSecond": 0,
+        "chargeChanceThirdOnThird": 0,
+        "chargeChanceSacChanceAdjust": 0,
         "holdChanceBase": 0,
     })
     runner = make_player("r")

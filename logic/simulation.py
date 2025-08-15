@@ -434,7 +434,26 @@ class GameSimulation:
         # outcome for manual inspection in the exhibition dialog.  The
         # simplified simulation does not yet modify gameplay based on them.
         runner = offense.bases[0].player if offense.bases[0] else None
-        if self.defense.maybe_charge_bunt():
+        pitcher_fa = (
+            defense.current_pitcher_state.player.fa
+            if defense.current_pitcher_state
+            else 0
+        )
+        first_fa = next(
+            (p.fa for p in defense.lineup if p.primary_position == "1B"), 0
+        )
+        third_fa = next(
+            (p.fa for p in defense.lineup if p.primary_position == "3B"), 0
+        )
+        charge_first, charge_third = self.defense.maybe_charge_bunt(
+            pitcher_fa=pitcher_fa,
+            first_fa=first_fa,
+            third_fa=third_fa,
+            on_first=offense.bases[0] is not None,
+            on_second=offense.bases[1] is not None,
+            on_third=offense.bases[2] is not None,
+        )
+        if charge_first or charge_third:
             self.debug_log.append("Defense charges bunt")
         if runner and self.defense.maybe_hold_runner(runner.sp):
             self.debug_log.append("Defense holds runner")

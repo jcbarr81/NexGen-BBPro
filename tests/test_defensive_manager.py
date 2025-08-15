@@ -17,14 +17,35 @@ class MockRandom(random.Random):
 
 def test_charge_bunt_chance():
     cfg = make_cfg(
+        chargeChanceBaseFirst=10,
         chargeChanceBaseThird=20,
-        chargeChanceSacChanceAdjust=10,
+        chargeChanceSacChanceAdjust=5,
+        chargeChancePitcherFAPct=10,
+        chargeChanceFAPct=10,
+        chargeChanceThirdOnFirstSecond=15,
+        chargeChanceThirdOnThird=25,
         defManChargeChancePct=50,
     )
-    rng = MockRandom([0.1, 0.2])
+    rng = MockRandom([0.1, 0.3, 0.9, 0.05])
     dm = DefensiveManager(cfg, rng)
-    assert dm.maybe_charge_bunt() is True
-    assert dm.maybe_charge_bunt() is False
+    res = dm.maybe_charge_bunt(
+        pitcher_fa=40,
+        first_fa=30,
+        third_fa=60,
+        on_first=True,
+        on_second=True,
+        on_third=False,
+    )
+    assert res == (True, False)
+    res = dm.maybe_charge_bunt(
+        pitcher_fa=40,
+        first_fa=30,
+        third_fa=60,
+        on_first=False,
+        on_second=False,
+        on_third=True,
+    )
+    assert res == (False, True)
 
 
 def test_hold_runner_chance():
