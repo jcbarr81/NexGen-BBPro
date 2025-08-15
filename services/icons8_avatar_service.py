@@ -107,8 +107,10 @@ def fetch_icons8_avatar(
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
+    headers = {"User-Agent": "Mozilla/5.0"}
+    request = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(url, timeout=10, context=ssl_context) as response:
+        with urllib.request.urlopen(request, timeout=10, context=ssl_context) as response:
             if response.status != 200:
                 raise RuntimeError(
                     f"Icons8 API returned status {response.status}"
