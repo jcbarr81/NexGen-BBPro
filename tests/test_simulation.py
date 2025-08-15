@@ -281,6 +281,28 @@ def test_pitch_around_ibb_in_simulation():
     assert any("Intentional walk issued" in ev for ev in sim.debug_log)
 
 
+def test_no_pitch_around_with_early_inning_or_outs():
+    cfg = make_cfg(
+        pitchAroundChanceNoInn=0,
+        pitchAroundChanceBase=0,
+        pitchAroundChanceInn7Adjust=40,
+        pitchAroundChanceOut2=40,
+        pitchAroundChanceOut0=-40,
+        pitchAroundChancePH1BatAdjust=40,
+        defManPitchAroundToIBBPct=100,
+    )
+    rng = MockRandom([0.0] * 40)
+    batter1 = make_player("b1", ph=90)
+    batter2 = make_player("b2", ph=10)
+    away = TeamState(lineup=[batter1, batter2], bench=[], pitchers=[make_pitcher("ap")])
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    sim = GameSimulation(home, away, cfg, rng)
+    sim.current_outs = 0  # Early in inning with no outs
+    sim.play_at_bat(away, home)
+    assert all("Intentional walk issued" not in ev for ev in sim.debug_log)
+    assert all("Pitch around" not in ev for ev in sim.debug_log)
+
+
 def test_fielding_stats_tracking():
     cfg = load_config()
     catcher = make_player("c")
