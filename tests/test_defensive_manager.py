@@ -85,6 +85,34 @@ def test_pitch_out_chance():
     assert dm.maybe_pitch_out(steal_chance=15, ball_count=0) is False
 
 
+def test_pitch_out_ball_counts():
+    cfg = make_cfg(
+        pitchOutChanceStealThresh=10,
+        pitchOutChanceBase=20,
+        pitchOutChanceBall0Adjust=10,
+        pitchOutChanceBall1Adjust=-10,
+    )
+    rng = MockRandom([0.25, 0.25])
+    dm = DefensiveManager(cfg, rng)
+    assert dm.maybe_pitch_out(steal_chance=15, ball_count=0) is True
+    assert dm.maybe_pitch_out(steal_chance=15, ball_count=1) is False
+
+
+def test_pitch_out_innings_and_home():
+    cfg = make_cfg(
+        pitchOutChanceStealThresh=10,
+        pitchOutChanceBase=20,
+        pitchOutChanceInn8Adjust=30,
+        pitchOutChanceInn9Adjust=50,
+        pitchOutChanceHomeAdjust=10,
+    )
+    rng = MockRandom([0.4, 0.8, 0.15])
+    dm = DefensiveManager(cfg, rng)
+    assert dm.maybe_pitch_out(steal_chance=15, inning=8, is_home_team=True) is True
+    assert dm.maybe_pitch_out(steal_chance=15, inning=5, is_home_team=False) is False
+    assert dm.maybe_pitch_out(steal_chance=15, inning=9) is True
+
+
 def test_pitch_around_chance():
     cfg = make_cfg(
         pitchAroundChanceNoInn=0,

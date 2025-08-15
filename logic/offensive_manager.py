@@ -120,7 +120,7 @@ class OffensiveManager:
     # ------------------------------------------------------------------
     # Hit and run
     # ------------------------------------------------------------------
-    def maybe_hit_and_run(
+    def calculate_hit_and_run_chance(
         self,
         *,
         runner_sp: int,
@@ -131,7 +131,8 @@ class OffensiveManager:
         run_diff: int = 0,
         runners_on_first_and_second: bool = False,
         pitcher_wild: bool = False,
-    ) -> bool:
+    ) -> float:
+        """Return probability that a hit and run will be attempted."""
         cfg = self.config
         chance = cfg.get("hnrChanceBase", 0)
         if run_diff <= -3:
@@ -187,7 +188,32 @@ class OffensiveManager:
             chance += cfg.get("hnrChanceVeryHighPHAdjust", 0)
 
         chance *= cfg.get("offManHNRChancePct", 100) / 100.0
-        return self._roll(chance)
+        chance = max(0.0, min(100.0, chance))
+        return chance / 100.0
+
+    def maybe_hit_and_run(
+        self,
+        *,
+        runner_sp: int,
+        batter_ch: int,
+        batter_ph: int,
+        balls: int = 0,
+        strikes: int = 0,
+        run_diff: int = 0,
+        runners_on_first_and_second: bool = False,
+        pitcher_wild: bool = False,
+    ) -> bool:
+        chance = self.calculate_hit_and_run_chance(
+            runner_sp=runner_sp,
+            batter_ch=batter_ch,
+            batter_ph=batter_ph,
+            balls=balls,
+            strikes=strikes,
+            run_diff=run_diff,
+            runners_on_first_and_second=runners_on_first_and_second,
+            pitcher_wild=pitcher_wild,
+        )
+        return self._roll(chance * 100)
 
     # ------------------------------------------------------------------
     # Sacrifice bunt

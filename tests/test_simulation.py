@@ -138,9 +138,9 @@ def test_steal_attempt_failure():
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
     cfg.values.update({"pitchOutChanceBase": 0})
-    # pickoff attempt ->0.0, pitch out ->0.9, hnr success ->0.0, steal failure ->0.9,
+    # pickoff attempt ->0.0, hnr success ->0.0, steal failure ->0.9,
     # pitch strike ->0.0, swing hit ->0.0, post-hit steal attempt fails ->1.0
-    rng = MockRandom([0.0, 0.9, 0.0, 0.9, 0.0, 0.0, 1.0])
+    rng = MockRandom([0.0, 0.0, 0.9, 0.0, 0.0, 1.0])
     sim = GameSimulation(home, away, cfg, rng)
     outs = sim.play_at_bat(away, home)
     assert outs == 1
