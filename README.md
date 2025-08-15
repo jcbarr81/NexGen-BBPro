@@ -50,7 +50,8 @@ those packages.
 ### Icons8 API Key
 Avatar images are downloaded from the Icons8 service. Set the
 `ICONS8_API_KEY` environment variable or place an API key under the `[icons8]`
-section of a `config.ini` file so requests are authenticated.
+section of a `config.ini` file so requests are authenticated. If the key is
+missing or invalid, the API responds with HTTP 403.
 
 > **Note:** HTTPS downloads may fail if your system's certificate authorities
 > or the Python `certifi` package are outdated. Keep them up to date using
