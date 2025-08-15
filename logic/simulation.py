@@ -457,9 +457,21 @@ class GameSimulation:
             self.debug_log.append("Defense charges bunt")
         if runner and self.defense.maybe_hold_runner(runner.sp):
             self.debug_log.append("Defense holds runner")
-            if self.defense.maybe_pickoff():
+            steal_chance = 0
+            pitcher_state = defense.current_pitcher_state
+            if pitcher_state is not None:
+                pitcher = pitcher_state.player
+                steal_chance = int(
+                    self.offense.calculate_steal_chance(
+                        runner_sp=runner.sp,
+                        pitcher_hold=pitcher.hold_runner,
+                        pitcher_is_left=pitcher.bats == "L",
+                    )
+                    * 100
+                )
+            if self.defense.maybe_pickoff(steal_chance=steal_chance):
                 self.debug_log.append("Pickoff attempt")
-            if self.defense.maybe_pitch_out():
+            if self.defense.maybe_pitch_out(steal_chance=steal_chance):
                 self.debug_log.append("Pitch out")
         pitch_around, ibb = self.defense.maybe_pitch_around()
         if ibb:

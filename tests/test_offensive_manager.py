@@ -122,6 +122,7 @@ def test_hit_and_run_chance_and_advance():
         "chargeChanceThirdOnThird": 0,
         "chargeChanceSacChanceAdjust": 0,
         "holdChanceBase": 0,
+        "holdChanceAdjust": 0,
     })
     runner = make_player("r")
     batter = make_player("b", ch=10, ph=10)
@@ -182,6 +183,7 @@ def test_sacrifice_bunt_chance_and_advance():
         "chargeChanceThirdOnThird": 0,
         "chargeChanceSacChanceAdjust": 0,
         "holdChanceBase": 0,
+        "holdChanceAdjust": 0,
     })
     runner = make_player("r")
     batter = make_player("b", ch=10, ph=10)
@@ -227,6 +229,7 @@ def test_suicide_squeeze_chance_and_score():
         "chargeChanceThirdOnThird": 0,
         "chargeChanceSacChanceAdjust": 0,
         "holdChanceBase": 0,
+        "holdChanceAdjust": 0,
     })
     runner = make_player("r")
     batter = make_player("b")
