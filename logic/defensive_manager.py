@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from pathlib import Path
-from typing import Tuple
+from typing import Dict, Tuple
 
 from .playbalance_config import PlayBalanceConfig
 
@@ -204,7 +204,54 @@ class DefensiveManager:
     # ------------------------------------------------------------------
     # Field positioning
     # ------------------------------------------------------------------
-    def set_field_positions(self) -> Dict[str, Dict[str, tuple]]:
+    def _outfield_positions(self, pull: int, power: int) -> Dict[str, Tuple[int, int]]:
+        """Return adjusted outfield positions based on pull and power ratings."""
+
+        cfg = self.config
+        positions: Dict[str, Tuple[int, int]] = {}
+
+        # Determine horizontal shift from pull rating
+        high_pull = cfg.get("defPosHighPull")
+        high_pull_extra = cfg.get("defPosHighPullExtra")
+        low_pull = cfg.get("defPosLowPull")
+        low_pull_extra = cfg.get("defPosLowPullExtra")
+
+        shift_steps = 0
+        if high_pull and pull >= high_pull:
+            shift_steps = 2
+        elif high_pull_extra and pull >= high_pull_extra:
+            shift_steps = 1
+        elif low_pull and pull <= low_pull:
+            shift_steps = -2
+        elif low_pull_extra and pull <= low_pull_extra:
+            shift_steps = -1
+
+        angle_shift = 5 * shift_steps
+
+        # Determine depth adjustment from power rating
+        pct_normal = cfg.get("outfieldPosPctNormal", 0)
+        pct_deep = cfg.get("outfieldPosPctDeep", pct_normal)
+        pct_shallow = cfg.get("outfieldPosPctShallow", pct_normal)
+
+        depth_shift = 0
+        if cfg.get("defPosHighPower") and power >= cfg.get("defPosHighPower"):
+            depth_shift = pct_deep - pct_normal
+        elif cfg.get("defPosLowPower") and power <= cfg.get("defPosLowPower"):
+            depth_shift = pct_shallow - pct_normal
+
+        for f in ("LF", "CF", "RF"):
+            pct_key = f"normalPos{f}Pct"
+            angle_key = f"normalPos{f}Angle"
+            pct = cfg.get(pct_key)
+            angle = cfg.get(angle_key)
+            if pct is None or angle is None:
+                continue
+            positions[f] = (pct + depth_shift, angle + angle_shift)
+        return positions
+
+    def set_field_positions(
+        self, pull: int = 50, power: int = 50
+    ) -> Dict[str, Dict[str, tuple]]:
         cfg = self.config
         situations = ["normal", "guardLines"]
         fielders = ["1B", "2B", "SS", "3B"]
@@ -220,6 +267,11 @@ class DefensiveManager:
                     sit_dict[f] = (dist, angle)
             if sit_dict:
                 positions[sit] = sit_dict
+
+        of_pos = self._outfield_positions(pull, power)
+        if of_pos:
+            positions["outfield"] = of_pos
+
         return positions
 
 
