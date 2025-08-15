@@ -23,7 +23,9 @@ def _get_api_key() -> str | None:
 
     key = os.getenv("ICONS8_API_KEY")
     if key:
-        return key
+        key = key.strip()
+        if key:
+            return key
 
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     cfg_path = os.path.join(base_dir, "config.ini")
@@ -32,7 +34,9 @@ def _get_api_key() -> str | None:
         parser.read(cfg_path)
         key = parser.get("icons8", "api_key", fallback=None)
         if key:
-            return key
+            key = key.strip()
+            if key:
+                return key
 
     log.warning(
         "Icons8 API key not found; requests will fail with HTTP 403"
