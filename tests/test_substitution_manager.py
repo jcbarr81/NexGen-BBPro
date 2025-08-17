@@ -143,3 +143,50 @@ def test_change_pitcher():
     assert mgr.maybe_change_pitcher(defense, log=[])
     assert defense.current_pitcher_state.player.player_id == "p2"
 
+
+def test_pinch_hit_for_pitcher():
+    cfg = load_config()
+    cfg.values.update(
+        {
+            "phForPitcherBase": 100,
+            "phForPitcherEarlyInnAdjust": 0,
+            "phForPitcherMiddleInnAdjust": 0,
+            "phForPitcherLateInnAdjust": 0,
+            "phForPitcherInn9Adjust": 0,
+            "phForPitcherExtraInnAdjust": 0,
+            "phForPitcherPerOutAdjust": 0,
+            "phForPitcherPerBPPitcherAdjust": 0,
+            "phForPitcherPerBenchPlayerAdjust": 0,
+            "phForPitcherBigLeadAdjust": 0,
+            "phForPitcherLeadAdjust": 0,
+            "phForPitcherWinRunInScoringPosAdjust": 0,
+            "phForPitcherWinRunOnFirstAdjust": 0,
+            "phForPitcherWinRunAtBatAdjust": 0,
+            "phForPitcherWinRunOnDeckAdjust": 0,
+            "phForPitcherWinRunInDugoutAdjust": 0,
+            "phForPitcherExhaustedAdjust": 0,
+            "phForPitcherTiredAdjust": 0,
+            "phForPitcherRestedAdjust": 0,
+            "phForPitcherShutoutAdjust": 0,
+            "phForPitcherNoHitterAdjust": 0,
+            "phForPitcherPerInjuryPointAdjust": 0,
+            "pitcherTiredThresh": 0,
+        }
+    )
+    starter = make_pitcher("p1")
+    reliever = make_pitcher("p2")
+    bench_hitter = make_player("b", ph=80)
+    offense = TeamState(
+        lineup=[starter], bench=[bench_hitter], pitchers=[starter, reliever]
+    )
+    defense = TeamState(
+        lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("dp")]
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_pinch_hit_for_pitcher(
+        offense, defense, 0, inning=1, outs=0, log=[]
+    )
+    assert player.player_id == "b"
+    assert offense.lineup[0].player_id == "b"
+    assert offense.current_pitcher_state.player.player_id == "p2"
+
