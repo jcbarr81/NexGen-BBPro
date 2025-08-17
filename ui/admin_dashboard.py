@@ -23,6 +23,7 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
+from utils.avatar_generator import generate_avatar
 from models.trade import Trade
 import csv
 import os
@@ -76,6 +77,10 @@ class AdminDashboard(QWidget):
         self.generate_logos_button.clicked.connect(self.generate_team_logos)
         button_layout.addWidget(self.generate_logos_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
+
+        self.generate_avatars_button = QPushButton("Generate Player Avatars")
+        self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
+        button_layout.addWidget(self.generate_avatars_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
@@ -203,6 +208,50 @@ class AdminDashboard(QWidget):
             )
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Failed to generate logos: {e}")
+        finally:
+            progress.close()
+        return
+
+    def generate_player_avatars(self):
+        players = load_players_from_csv("data/players.csv")
+
+        roster_dir = os.path.join("data", "rosters")
+        player_teams = {}
+        for fname in os.listdir(roster_dir):
+            if not fname.endswith(".csv"):
+                continue
+            team_id = fname[:-4]
+            roster = load_roster(team_id, roster_dir)
+            for pid in roster.act + roster.aaa + roster.low:
+                player_teams[pid] = team_id
+
+        rostered_players = [p for p in players if p.player_id in player_teams]
+        progress = QProgressDialog(
+            "Generating player avatars...",
+            None,
+            0,
+            len(rostered_players),
+            self,
+        )
+        progress.setWindowTitle("Generating Avatars")
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setValue(0)
+        progress.show()
+
+        try:
+            for idx, player in enumerate(rostered_players, start=1):
+                team_id = player_teams[player.player_id]
+                out_path = os.path.join("images", "avatars", f"{player.player_id}.png")
+                generate_avatar(
+                    f"{player.first_name} {player.last_name}",
+                    team_id,
+                    out_path,
+                )
+                progress.setValue(idx)
+                QApplication.processEvents()
+            QMessageBox.information(self, "Avatars Generated", "Player avatars created.")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to generate avatars: {e}")
         finally:
             progress.close()
         return
