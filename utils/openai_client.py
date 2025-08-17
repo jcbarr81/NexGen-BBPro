@@ -22,29 +22,55 @@ def _read_api_key() -> Optional[str]:
     base_dir = Path(__file__).resolve().parent.parent
     config_path = base_dir / "config.ini"
     parser = configparser.ConfigParser()
-    parser.read(config_path)
+    try:
+        parser.read(config_path)
+    except configparser.Error:
+        parser = None
 
-    # Typical ``key=value`` entries
-    for opt in ("key", "api_key", "OPENAI_API_KEY"):
-        if parser.has_option("OpenAIkey", opt):
-            return parser.get("OpenAIkey", opt)
+    if parser:
+        # Typical ``key=value`` entries
+        for opt in ("key", "api_key", "OPENAI_API_KEY"):
+            if parser.has_option("OpenAIkey", opt):
+                return parser.get("OpenAIkey", opt)
 
-    # Handle a section containing only the raw key on following lines
-    if "OpenAIkey" in parser and not parser["OpenAIkey"]:
+        # Handle a section containing only the raw key on following lines
+        if "OpenAIkey" in parser and not parser["OpenAIkey"]:
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    lines = f.read().splitlines()
+            except OSError:
+                return None
+            inside = False
+            key_lines: list[str] = []
+            for line in lines:
+                if line.strip() == "[OpenAIkey]":
+                    inside = True
+                    continue
+                if inside:
+                    if line.startswith("["):
+                        break
+                    key_lines.append(line.strip())
+            if key_lines:
+                return "".join(key_lines).strip()
+
+    # Fallback manual parsing when ``ConfigParser`` fails entirely
+    try:
         with open(config_path, "r", encoding="utf-8") as f:
             lines = f.read().splitlines()
-        inside = False
-        key_lines: list[str] = []
-        for line in lines:
-            if line.strip() == "[OpenAIkey]":
-                inside = True
-                continue
-            if inside:
-                if line.startswith("["):
-                    break
-                key_lines.append(line.strip())
-        if key_lines:
-            return "".join(key_lines).strip()
+    except OSError:
+        return None
+    inside = False
+    key_lines: list[str] = []
+    for line in lines:
+        if line.strip() == "[OpenAIkey]":
+            inside = True
+            continue
+        if inside:
+            if line.startswith("["):
+                break
+            key_lines.append(line.strip())
+    if key_lines:
+        return "".join(key_lines).strip()
     return None
 
 
