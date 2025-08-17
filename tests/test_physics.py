@@ -1,6 +1,7 @@
 import random
 
 from logic.simulation import GameSimulation, TeamState, BatterState
+from logic.physics import Physics
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import make_cfg
@@ -129,3 +130,43 @@ def test_runner_advancement_respects_speed():
     outs2 = sim2.play_at_bat(away2, home2)
     assert outs2 == 0
     assert away2.bases[2] is runner_state2
+
+
+def test_roll_distance_respects_surface_friction():
+    cfg = make_cfg(
+        rollFrictionGrass=12,
+        rollFrictionTurf=6,
+        ballAirResistancePct=100,
+    )
+    physics = Physics(cfg)
+    grass = physics.ball_roll_distance(100, surface="grass")
+    turf = physics.ball_roll_distance(100, surface="turf")
+    assert grass < turf
+
+
+def test_bounce_wet_vs_dry():
+    cfg = make_cfg(
+        bounceVertGrassPct=50,
+        bounceHorizGrassPct=50,
+        bounceWetAdjust=-10,
+    )
+    physics = Physics(cfg)
+    dry_vert, dry_horiz = physics.ball_bounce(100, 100, surface="grass", wet=False)
+    wet_vert, wet_horiz = physics.ball_bounce(100, 100, surface="grass", wet=True)
+    assert wet_vert < dry_vert
+    assert wet_horiz < dry_horiz
+
+
+def test_roll_distance_altitude_and_wind():
+    cfg = make_cfg(
+        rollFrictionGrass=10,
+        ballAirResistancePct=100,
+        ballAltitudePct=10,
+        ballWindSpeedPct=10,
+    )
+    physics = Physics(cfg)
+    base = physics.ball_roll_distance(100, surface="grass", altitude=0, wind_speed=0)
+    altwind = physics.ball_roll_distance(
+        100, surface="grass", altitude=1000, wind_speed=10
+    )
+    assert altwind > base
