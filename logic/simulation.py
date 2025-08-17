@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from typing import Dict, List, Optional, Tuple
 
 from models.player import Player
@@ -24,6 +24,8 @@ from .stats import (
     compute_team_derived,
     compute_team_rates,
 )
+
+_PITCH_RATINGS = ["fb", "sl", "cu", "cb", "si", "scb", "kn"]
 
 
 @dataclass
@@ -232,6 +234,41 @@ class GameSimulation:
         self.altitude = altitude
         self.wind_speed = wind_speed
         self.last_batted_ball_angles: tuple[float, float] | None = None
+
+    # ------------------------------------------------------------------
+    # Fatigue helpers
+    # ------------------------------------------------------------------
+    def _update_fatigue(self, state: PitcherState) -> None:
+        remaining = state.player.endurance - state.pitches_thrown
+        exhausted = self.config.get("pitcherExhaustedThresh", 0)
+        tired = self.config.get("pitcherTiredThresh", 0)
+        if remaining <= exhausted:
+            state.player.fatigue = "exhausted"
+        elif remaining <= tired:
+            state.player.fatigue = "tired"
+        else:
+            state.player.fatigue = "fresh"
+
+    def _fatigued_pitcher(self, pitcher: Pitcher) -> Pitcher:
+        fatigue = getattr(pitcher, "fatigue", "fresh")
+        pitch_mult = as_mult = co_mult = mo_mult = 1.0
+        if fatigue == "tired":
+            pitch_mult = self.config.get("tiredPitchRatPct", 100) / 100.0
+            as_mult = self.config.get("tiredASPct", 100) / 100.0
+            co_mult = self.config.get("effCOPct", 100) / 100.0
+            mo_mult = self.config.get("effMOPct", 100) / 100.0
+        elif fatigue == "exhausted":
+            pitch_mult = self.config.get("exhaustedPitchRatPct", 100) / 100.0
+            as_mult = self.config.get("exhaustedASPct", 100) / 100.0
+            co_mult = self.config.get("effCOPct", 100) / 100.0
+            mo_mult = self.config.get("effMOPct", 100) / 100.0
+        scaled = replace(pitcher)
+        for attr in _PITCH_RATINGS:
+            setattr(scaled, attr, int(getattr(pitcher, attr) * pitch_mult))
+        scaled.arm = int(pitcher.arm * as_mult)
+        scaled.control = int(pitcher.control * co_mult)
+        scaled.movement = int(pitcher.movement * mo_mult)
+        return scaled
 
     # ------------------------------------------------------------------
     # Stat helpers
@@ -561,7 +598,8 @@ class GameSimulation:
             self.debug_log.append("Defense holds runner")
             pitcher_state = defense.current_pitcher_state
             if pitcher_state is not None:
-                pitcher = pitcher_state.player
+                self._update_fatigue(pitcher_state)
+                pitcher = self._fatigued_pitcher(pitcher_state.player)
                 steal_chance = int(
                     self.offense.calculate_steal_chance(
                         balls=0,
@@ -711,6 +749,8 @@ class GameSimulation:
         run_diff = offense.runs - defense.runs
 
         while True:
+            self._update_fatigue(pitcher_state)
+            pitcher = self._fatigued_pitcher(pitcher_state.player)
             runner_state = offense.bases[0]
             if runner_state:
                 hit_run_chance = int(
@@ -722,7 +762,7 @@ class GameSimulation:
                         strikes=strikes,
                         run_diff=run_diff,
                         runners_on_first_and_second=(offense.bases[1] is not None),
-                        pitcher_wild=pitcher_state.player.control <= 30,
+                        pitcher_wild=pitcher.control <= 30,
                     )
                     * 100
                 )
@@ -742,7 +782,7 @@ class GameSimulation:
                     strikes=strikes,
                     run_diff=run_diff,
                     runners_on_first_and_second=(offense.bases[1] is not None),
-                    pitcher_wild=pitcher_state.player.control <= 30,
+                    pitcher_wild=pitcher.control <= 30,
                 ):
                     self.debug_log.append("Hit and run")
                     steal_result = self._attempt_steal(
@@ -755,7 +795,7 @@ class GameSimulation:
                         outs=outs,
                         runner_on=1,
                         batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher_state.player.control <= 30,
+                        pitcher_is_wild=pitcher.control <= 30,
                         pitcher_in_windup=False,
                         run_diff=run_diff,
                     )
@@ -827,15 +867,15 @@ class GameSimulation:
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
             pitch_type, _ = self.pitcher_ai.select_pitch(
-                pitcher_state.player, balls=balls, strikes=strikes
+                pitcher, balls=balls, strikes=strikes
             )
             loc_r = self.rng.random()
-            control_chance = pitcher_state.player.control / 100.0
+            control_chance = pitcher.control / 100.0
             dist = 0 if loc_r < control_chance else 5
             dec_r = self.rng.random()
             swing, contact = self.batter_ai.decide_swing(
                 batter,
-                pitcher_state.player,
+                pitcher,
                 pitch_type=pitch_type,
                 balls=balls,
                 strikes=strikes,
@@ -845,7 +885,7 @@ class GameSimulation:
 
             if swing:
                 if self._swing_result(
-                    batter, pitcher_state.player, rand=dec_r, contact_quality=contact
+                    batter, pitcher, rand=dec_r, contact_quality=contact
                 ):
                     pitcher_state.strikes_thrown += 1
                     pitcher_state.h += 1
@@ -871,7 +911,7 @@ class GameSimulation:
                         outs=outs,
                         runner_on=2,
                         batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher_state.player.control <= 30,
+                        pitcher_is_wild=pitcher.control <= 30,
                         pitcher_in_windup=False,
                         run_diff=run_diff,
                     )
@@ -890,7 +930,7 @@ class GameSimulation:
                         outs=outs,
                         runner_on=1,
                         batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher_state.player.control <= 30,
+                        pitcher_is_wild=pitcher.control <= 30,
                         pitcher_in_windup=False,
                         run_diff=run_diff,
                     )

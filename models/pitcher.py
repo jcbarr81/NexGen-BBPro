@@ -9,6 +9,7 @@ class Pitcher(BasePlayer):
     movement: int = 0
     hold_runner: int = 0
     role: str = ""
+    fatigue: str = "fresh"
 
     fb: int = 0
     cu: int = 0
