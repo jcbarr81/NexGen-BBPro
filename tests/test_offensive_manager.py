@@ -229,6 +229,8 @@ def test_sacrifice_bunt_chance_and_advance():
         batter_is_pitcher=False,
         batter_ch=30,
         batter_ph=30,
+        on_deck_ch=0,
+        on_deck_ph=0,
         outs=0,
         inning=1,
         on_first=True,
@@ -239,6 +241,8 @@ def test_sacrifice_bunt_chance_and_advance():
         batter_is_pitcher=False,
         batter_ch=30,
         batter_ph=30,
+        on_deck_ch=0,
+        on_deck_ph=0,
         outs=0,
         inning=1,
         on_first=True,
@@ -272,6 +276,85 @@ def test_sacrifice_bunt_chance_and_advance():
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
     sim = GameSimulation(home, away, full, MockRandom([]))
+    outs = sim.play_at_bat(away, home)
+    assert outs == 1
+    assert away.bases[1] is runner_state
+    assert away.bases[0] is None
+
+
+def test_sacrifice_bunt_on_deck_high_close_late():
+    cfg = make_cfg(
+        sacChanceBase=0,
+        sacChanceCLAdjust=0,
+        sacChance1OutAdjust=0,
+        sacChanceCL1OutODHighCHThresh=50,
+        sacChanceCL1OutODHighPHThresh=50,
+        sacChanceCL1OutODHighAdjust=100,
+        offManSacChancePct=100,
+    )
+    om = OffensiveManager(cfg, MockRandom([]))
+    assert om.maybe_sacrifice_bunt(
+        batter_is_pitcher=False,
+        batter_ch=10,
+        batter_ph=10,
+        on_deck_ch=60,
+        on_deck_ph=10,
+        outs=1,
+        inning=7,
+        on_first=False,
+        on_second=False,
+        run_diff=0,
+    ) is True
+    assert om.maybe_sacrifice_bunt(
+        batter_is_pitcher=False,
+        batter_ch=10,
+        batter_ph=10,
+        on_deck_ch=40,
+        on_deck_ph=40,
+        outs=1,
+        inning=7,
+        on_first=False,
+        on_second=False,
+        run_diff=0,
+    ) is False
+
+    full = load_config()
+    full.values.update(
+        {
+            "hnrChanceBase": 0,
+            "offManHNRChancePct": 0,
+            "sacChanceBase": 0,
+            "sacChance1OutAdjust": 0,
+            "sacChanceCLAdjust": 0,
+            "sacChanceCL1OutODHighCHThresh": 50,
+            "sacChanceCL1OutODHighPHThresh": 50,
+            "sacChanceCL1OutODHighAdjust": 100,
+            "offManSacChancePct": 100,
+            "pitchOutChanceBase": 0,
+            "pitchAroundChanceBase": 0,
+            "pickoffChanceBase": 0,
+            "chargeChanceBaseThird": 0,
+            "chargeChancePitcherFAPct": 0,
+            "chargeChanceFAPct": 0,
+            "chargeChanceThirdOnFirstSecond": 0,
+            "chargeChanceThirdOnThird": 0,
+            "chargeChanceSacChanceAdjust": 0,
+            "holdChanceBase": 0,
+            "holdChanceAdjust": 0,
+        }
+    )
+    runner = make_player("r")
+    batter = make_player("b", ch=10, ph=10)
+    on_deck = make_player("d", ch=60, ph=60)
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter, on_deck], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[0] = runner_state
+    away.inning_runs = [0] * 6
+    home.inning_runs = [0] * 6
+    sim = GameSimulation(home, away, full, MockRandom([]))
+    sim.current_outs = 1
     outs = sim.play_at_bat(away, home)
     assert outs == 1
     assert away.bases[1] is runner_state

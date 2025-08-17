@@ -225,6 +225,8 @@ class OffensiveManager:
         batter_is_pitcher: bool,
         batter_ch: int,
         batter_ph: int,
+        on_deck_ch: int,
+        on_deck_ph: int,
         outs: int,
         inning: int,
         on_first: bool,
@@ -254,6 +256,11 @@ class OffensiveManager:
                 and batter_ph <= cfg.get("sacChanceCLLowPHThresh", 0)
             ):
                 chance += cfg.get("sacChanceCLLowCHPHAdjust", 0)
+            if outs == 1 and (
+                on_deck_ch >= cfg.get("sacChanceCL1OutODHighCHThresh", 0)
+                or on_deck_ph >= cfg.get("sacChanceCL1OutODHighPHThresh", 0)
+            ):
+                chance += cfg.get("sacChanceCL1OutODHighAdjust", 0)
 
         if batter_is_pitcher and (
             batter_ch <= cfg.get("sacChancePitcherLowCHThresh", 0)
