@@ -78,6 +78,44 @@ class Physics:
         return speed
 
     # ------------------------------------------------------------------
+    # Bat impact
+    # ------------------------------------------------------------------
+    def bat_impact(
+        self,
+        bat_speed: float,
+        *,
+        rand: float | None = None,
+        part: str | None = None,
+    ) -> tuple[float, str]:
+        """Return adjusted ``bat_speed`` based on contact point on the bat.
+
+        A bat can be struck with four distinct parts: ``"handle"``,
+        ``"dull"``, ``"sweet``" and ``"end"``.  Each part has a configured base
+        power percentage and optional random variation range.  When ``part`` is
+        not supplied it is chosen based on ``rand``.  The final power is the
+        bat speed scaled by ``batPower{Part}Base`` plus a variation within
+        ``batPower{Part}Range``.  The adjusted speed and the selected part are
+        returned.
+        """
+
+        parts = ["handle", "dull", "sweet", "end"]
+        if part is None:
+            if rand is None:
+                rand = self.rng.random()
+            idx = int(rand * len(parts))
+            part = parts[idx]
+            frac = rand * len(parts) - idx
+        else:
+            if rand is None:
+                rand = self.rng.random()
+            frac = rand
+
+        base = getattr(self.config, f"batPower{part.capitalize()}Base")
+        rng_range = getattr(self.config, f"batPower{part.capitalize()}Range")
+        pct = base + (frac * 2 - 1) * rng_range
+        return bat_speed * pct / 100.0, part
+
+    # ------------------------------------------------------------------
     # Swing angle
     # ------------------------------------------------------------------
     def swing_angle(
