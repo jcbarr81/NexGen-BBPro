@@ -90,7 +90,7 @@ def test_calculate_steal_chance():
         pitcher_hold=55,
         pitcher_is_left=False,
     )
-    assert chance == 0.85
+    assert chance == 0.175
 
 
 def test_hit_and_run_chance_and_advance():

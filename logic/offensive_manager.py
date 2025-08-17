@@ -52,7 +52,7 @@ class OffensiveManager:
     ) -> float:
         """Return probability that a steal will be attempted."""
         cfg = self.config
-        chance = cfg.get("offManStealChancePct", 0)
+        chance = 0.0
 
         count_key = f"stealChance{balls}{strikes}Count"
         chance += cfg.get(count_key, 0)
@@ -114,6 +114,7 @@ class OffensiveManager:
         if run_diff <= cfg.get("stealChanceWayBehindThresh", -9999):
             chance += cfg.get("stealChanceWayBehindAdjust", 0)
 
+        chance *= cfg.get("offManStealChancePct", 0) / 100.0
         chance = max(0.0, min(100.0, chance))
         return chance / 100.0
 
