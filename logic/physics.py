@@ -32,13 +32,24 @@ class Physics:
     # ------------------------------------------------------------------
     # Bat speed
     # ------------------------------------------------------------------
-    def bat_speed(self, ph: int, swing_type: str = "normal") -> float:
+    def bat_speed(
+        self,
+        ph: int,
+        swing_type: str = "normal",
+        *,
+        pitch_speed: float | None = None,
+    ) -> float:
         """Return bat speed for ``ph`` and ``swing_type``.
 
         ``swing_type`` may be ``"power"``, ``"normal"``, ``"contact"`` or
         ``"bunt"``.  Only the adjustment to the PH rating changes between the
         types.  The returned value is expressed in miles per hour just like in
         the original game engine.
+
+        ``pitch_speed`` represents the speed of the incoming pitch.  When
+        provided, the value is compared to the configured
+        ``averagePitchSpeed``.  Pitches faster than the average reduce the
+        resulting bat speed while slower pitches increase it.
         """
 
         base = getattr(self.config, "swingSpeedBase")
@@ -50,7 +61,21 @@ class Physics:
             "bunt": "swingSpeedBuntAdjust",
         }.get(swing_type, "swingSpeedNormalAdjust")
         ph_adj = ph + getattr(self.config, adjust_key)
-        return base + pct * ph_adj / 100.0
+        speed = base + pct * ph_adj / 100.0
+
+        if pitch_speed is None:
+            return speed
+
+        avg = getattr(self.config, "averagePitchSpeed")
+        diff = pitch_speed - avg
+        if diff > 0:
+            slowdown = getattr(self.config, "fastPitchBatSlowdownPct")
+            speed -= diff * slowdown / 100.0
+        elif diff < 0:
+            speedup = getattr(self.config, "slowPitchBatSpeedupPct")
+            speed += (-diff) * speedup / 100.0
+
+        return speed
 
     # ------------------------------------------------------------------
     # Swing angle

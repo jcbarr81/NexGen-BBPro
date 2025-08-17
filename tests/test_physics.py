@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 from logic.simulation import GameSimulation, TeamState, BatterState
 from logic.physics import Physics
 from models.player import Player
@@ -77,7 +79,7 @@ def make_pitcher(pid: str) -> Pitcher:
 
 def test_swing_result_respects_bat_speed():
     # Low bat speed -> out
-    cfg_slow = make_cfg(swingSpeedBase=10)
+    cfg_slow = make_cfg(swingSpeedBase=10, averagePitchSpeed=50)
     batter1 = make_player("b1")
     home1 = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp1")])
     away1 = TeamState(lineup=[batter1], bench=[], pitchers=[make_pitcher("ap1")])
@@ -88,7 +90,7 @@ def test_swing_result_respects_bat_speed():
     assert away1.lineup_stats["b1"].h == 0
 
     # High bat speed -> hit
-    cfg_fast = make_cfg(swingSpeedBase=80)
+    cfg_fast = make_cfg(swingSpeedBase=80, averagePitchSpeed=50)
     batter2 = make_player("b2")
     home2 = TeamState(lineup=[make_player("h2")], bench=[], pitchers=[make_pitcher("hp2")])
     away2 = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap2")])
@@ -108,7 +110,7 @@ def test_runner_advancement_respects_speed():
     away1.lineup_stats[runner1.player_id] = runner_state1
     away1.bases[0] = runner_state1
 
-    cfg_slow = make_cfg(speedBase=10)
+    cfg_slow = make_cfg(speedBase=10, averagePitchSpeed=50)
     rng1 = MockRandom([0.0, 0.0, 0.9, 0.9])
     sim1 = GameSimulation(home1, away1, cfg_slow, rng1)
     outs1 = sim1.play_at_bat(away1, home1)
@@ -124,7 +126,7 @@ def test_runner_advancement_respects_speed():
     away2.lineup_stats[runner2.player_id] = runner_state2
     away2.bases[0] = runner_state2
 
-    cfg_fast = make_cfg(speedBase=30)
+    cfg_fast = make_cfg(speedBase=30, averagePitchSpeed=50)
     rng2 = MockRandom([0.0, 0.0, 0.9, 0.9])
     sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
     outs2 = sim2.play_at_bat(away2, home2)
@@ -170,3 +172,18 @@ def test_roll_distance_altitude_and_wind():
         100, surface="grass", altitude=1000, wind_speed=10
     )
     assert altwind > base
+
+
+def test_bat_speed_adjusts_for_pitch_speed():
+    cfg = make_cfg(
+        averagePitchSpeed=90,
+        fastPitchBatSlowdownPct=50,
+        slowPitchBatSpeedupPct=50,
+    )
+    physics = Physics(cfg)
+    ph = 50
+    base = physics.bat_speed(ph, pitch_speed=90)
+    fast = physics.bat_speed(ph, pitch_speed=100)
+    slow = physics.bat_speed(ph, pitch_speed=80)
+    assert fast == pytest.approx(base - 5)
+    assert slow == pytest.approx(base + 5)
