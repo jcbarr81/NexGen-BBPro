@@ -333,3 +333,47 @@ def test_fielding_stats_tracking():
     assert c_fs.po == 1
     assert s_fs.po == 1
     assert p_fs.a == 1
+
+
+def test_defensive_alignment_normal():
+    cfg = load_config()
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
+    sim = GameSimulation(home, away, cfg, MockRandom([0.5]))
+    sim._set_defensive_alignment(away, home, outs=0)
+    assert sim.current_infield_situation == "normal"
+
+
+def test_defensive_alignment_double_play():
+    cfg = load_config()
+    runner = BatterState(make_player("r1"))
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
+    away.lineup_stats[runner.player.player_id] = runner
+    away.bases[0] = runner
+    sim = GameSimulation(home, away, cfg, MockRandom([0.5]))
+    sim._set_defensive_alignment(away, home, outs=0)
+    assert sim.current_infield_situation == "doublePlay"
+
+
+def test_defensive_alignment_guard_and_cutoff():
+    cfg = load_config()
+    runner = BatterState(make_player("r2"))
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
+    away.lineup_stats[runner.player.player_id] = runner
+    away.bases[2] = runner
+
+    # Close game -> guard lines
+    home.runs = 1
+    away.runs = 0
+    sim = GameSimulation(home, away, cfg, MockRandom([0.5]))
+    sim._set_defensive_alignment(away, home, outs=0)
+    assert sim.current_infield_situation == "guardLines"
+
+    # Not close -> cutoff run
+    home.runs = 3
+    away.runs = 0
+    sim = GameSimulation(home, away, cfg, MockRandom([0.5]))
+    sim._set_defensive_alignment(away, home, outs=0)
+    assert sim.current_infield_situation == "cutoffRun"

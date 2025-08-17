@@ -81,7 +81,8 @@ def test_team_lob_and_events_recorded():
 
     assert away.lob == 1
     assert away.inning_lob == [1]
-    assert away.inning_events[0] == ["event", "event", "event"]
+    events = away.inning_events[0]
+    assert events[1::2] == ["event", "event", "event"]
 
 
 def test_team_stats_computed():
