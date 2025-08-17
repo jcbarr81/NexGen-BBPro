@@ -290,7 +290,7 @@ class OffensiveManager:
         ):
             return False
 
-        chance = cfg.get("offManSqueezeChancePct", 0)
+        chance = 0.0
         if (balls, strikes) in [(0, 0), (1, 0), (0, 1)]:
             chance += cfg.get("squeezeChanceLowCountAdjust", 0)
         elif (balls, strikes) in [(1, 1), (2, 0)]:
@@ -298,6 +298,8 @@ class OffensiveManager:
 
         if runner_on_third_sp >= cfg.get("squeezeChanceThirdFastSPThresh", 0):
             chance += cfg.get("squeezeChanceThirdFastAdjust", 0)
+
+        chance *= cfg.get("offManSqueezeChancePct", 100) / 100.0
 
         return self._roll(chance)
 

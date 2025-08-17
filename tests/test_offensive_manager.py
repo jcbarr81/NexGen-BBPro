@@ -362,11 +362,37 @@ def test_sacrifice_bunt_on_deck_high_close_late():
 
 
 def test_suicide_squeeze_chance_and_score():
-    cfg = make_cfg(offManSqueezeChancePct=50, squeezeChanceLowCountAdjust=0, squeezeChanceMedCountAdjust=0, squeezeChanceThirdFastSPThresh=0, squeezeChanceThirdFastAdjust=0, squeezeChanceMaxCH=100, squeezeChanceMaxPH=100)
+    cfg = make_cfg(
+        offManSqueezeChancePct=50,
+        squeezeChanceLowCountAdjust=100,
+        squeezeChanceMedCountAdjust=0,
+        squeezeChanceThirdFastSPThresh=0,
+        squeezeChanceThirdFastAdjust=0,
+        squeezeChanceMaxCH=100,
+        squeezeChanceMaxPH=100,
+    )
     rng = MockRandom([0.4, 0.6])
     om = OffensiveManager(cfg, rng)
-    assert om.maybe_suicide_squeeze(batter_ch=50, batter_ph=50, balls=0, strikes=0, runner_on_third_sp=50) is True
-    assert om.maybe_suicide_squeeze(batter_ch=50, batter_ph=50, balls=0, strikes=0, runner_on_third_sp=50) is False
+    assert (
+        om.maybe_suicide_squeeze(
+            batter_ch=50,
+            batter_ph=50,
+            balls=0,
+            strikes=0,
+            runner_on_third_sp=50,
+        )
+        is True
+    )
+    assert (
+        om.maybe_suicide_squeeze(
+            batter_ch=50,
+            batter_ph=50,
+            balls=0,
+            strikes=0,
+            runner_on_third_sp=50,
+        )
+        is False
+    )
 
     full = load_config()
     full.values.update({
@@ -375,7 +401,7 @@ def test_suicide_squeeze_chance_and_score():
         "sacChanceBase": 0,
         "offManSacChancePct": 0,
         "offManSqueezeChancePct": 100,
-        "squeezeChanceLowCountAdjust": 0,
+        "squeezeChanceLowCountAdjust": 100,
         "squeezeChanceMedCountAdjust": 0,
         "squeezeChanceThirdFastSPThresh": 0,
         "squeezeChanceThirdFastAdjust": 0,
