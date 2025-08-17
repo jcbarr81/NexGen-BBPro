@@ -149,6 +149,60 @@ def test_steal_attempt_failure():
     assert away.bases[0] is not None
 
 
+def test_steal_count_and_situational_modifiers():
+    cfg = make_cfg(
+        offManStealChancePct=100,
+        stealChance10Count=30,
+        stealChanceOnFirst01OutHighCHThresh=70,
+        stealChanceOnFirst01OutHighCHAdjust=20,
+        stealChanceWayBehindThresh=-2,
+        stealChanceWayBehindAdjust=25,
+    )
+    runner = make_player("run", sp=80)
+    batter = make_player("bat", ch=80)
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[0] = runner_state
+    sim = GameSimulation(home, away, cfg, MockRandom([0.0, 0.0]))
+    res = sim._attempt_steal(
+        away,
+        home,
+        home.current_pitcher_state.player,
+        balls=1,
+        strikes=0,
+        outs=1,
+        runner_on=1,
+        batter_ch=80,
+        pitcher_is_wild=False,
+        pitcher_in_windup=False,
+        run_diff=-3,
+    )
+    assert res is True
+
+    runner2 = make_player("run2", sp=80)
+    offense2 = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state2 = BatterState(runner2)
+    offense2.lineup_stats[runner2.player_id] = runner_state2
+    offense2.bases[0] = runner_state2
+    sim2 = GameSimulation(home, offense2, cfg, MockRandom([0.0]))
+    res2 = sim2._attempt_steal(
+        offense2,
+        home,
+        home.current_pitcher_state.player,
+        balls=0,
+        strikes=1,
+        outs=1,
+        runner_on=1,
+        batter_ch=50,
+        pitcher_is_wild=False,
+        pitcher_in_windup=False,
+        run_diff=0,
+    )
+    assert res2 is None
+
+
 def test_pitcher_change_when_tired():
     cfg = load_config()
     home = TeamState(
