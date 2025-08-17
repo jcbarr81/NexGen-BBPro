@@ -19,7 +19,13 @@ class MockRandom(random.Random):
 
 
 def make_player(
-    pid: str, ph: int = 50, sp: int = 50, gf: int = 50, ch: int = 50
+    pid: str,
+    ph: int = 50,
+    sp: int = 50,
+    gf: int = 50,
+    ch: int = 50,
+    fa: int = 0,
+    arm: int = 0,
 ) -> Player:
     return Player(
         player_id=pid,
@@ -38,8 +44,8 @@ def make_player(
         pl=0,
         vl=0,
         sc=0,
-        fa=0,
-        arm=0,
+        fa=fa,
+        arm=arm,
     )
 
 
@@ -100,8 +106,8 @@ def test_pinch_run():
 def test_defensive_sub():
     cfg = load_config()
     cfg.values.update({"defSubChance": 100})
-    weak = make_player("weak", gf=10)
-    strong = make_player("strong", gf=90)
+    weak = make_player("weak", fa=10, arm=10)
+    strong = make_player("strong", fa=90, arm=90)
     team = TeamState(lineup=[weak], bench=[strong], pitchers=[make_pitcher("p")])
     mgr = SubstitutionManager(cfg, MockRandom([0.0]))
     mgr.maybe_defensive_sub(team, log=[])
