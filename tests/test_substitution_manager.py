@@ -199,14 +199,80 @@ def test_pinch_run_insignificant():
     assert team.lineup[0].player_id == "slow"
 
 
-def test_defensive_sub():
+def test_defensive_sub_injury_inning():
     cfg = load_config()
-    cfg.values.update({"defSubChance": 100})
+    cfg.values.update(
+        {
+            "defSubBase": 0,
+            "defSubAfterInn8Adjust": 50,
+            "defSubPerInjuryPointAdjust": 50,
+            "defSubBeforeInn7Adjust": 0,
+            "defSubInn7Adjust": 0,
+            "defSubInn8Adjust": 0,
+            # Disable rating based adjustments to focus on modifiers
+            "defSubVeryHighCurrDefAdjust": 0,
+            "defSubHighCurrDefAdjust": 0,
+            "defSubMedCurrDefAdjust": 0,
+            "defSubLowCurrDefAdjust": 0,
+            "defSubVeryLowCurrDefAdjust": 0,
+            "defSubVeryHighNewDefAdjust": 0,
+            "defSubHighNewDefAdjust": 0,
+            "defSubMedNewDefAdjust": 0,
+            "defSubLowNewDefAdjust": 0,
+            "defSubVeryLowNewDefAdjust": 0,
+        }
+    )
+    weak = make_player("weak", fa=10, arm=10)
+    weak.injured = True
+    strong = make_player("strong", fa=90, arm=90)
+    team = TeamState(lineup=[weak], bench=[strong], pitchers=[make_pitcher("p")])
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    mgr.maybe_defensive_sub(team, inning=9, log=[])
+    assert team.lineup[0].player_id == "strong"
+
+
+def test_defensive_sub_position_qualification():
+    cfg = load_config()
+    cfg.values.update(
+        {
+            "defSubBase": 0,
+            "defSubVeryLowCurrDefAdjust": 50,
+            "defSubVeryHighNewDefAdjust": 50,
+            "defSubNoQualifiedPosAdjust": -100,
+            "defSubBeforeInn7Adjust": 0,
+            "defSubInn7Adjust": 0,
+            "defSubInn8Adjust": 0,
+            "defSubAfterInn8Adjust": 0,
+        }
+    )
+    weak = make_player("weak", fa=10, arm=10)
+    strong = make_player("strong", fa=90, arm=90)
+    strong.primary_position = "2B"
+    strong.other_positions = []
+    team = TeamState(lineup=[weak], bench=[strong], pitchers=[make_pitcher("p")])
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    mgr.maybe_defensive_sub(team, inning=9, log=[])
+    assert team.lineup[0].player_id == "weak"
+
+
+def test_defensive_sub_defense_thresholds():
+    cfg = load_config()
+    cfg.values.update(
+        {
+            "defSubBase": 0,
+            "defSubBeforeInn7Adjust": 0,
+            "defSubInn7Adjust": 0,
+            "defSubInn8Adjust": 0,
+            "defSubAfterInn8Adjust": 0,
+            "defSubVeryLowCurrDefAdjust": 50,
+            "defSubVeryHighNewDefAdjust": 50,
+        }
+    )
     weak = make_player("weak", fa=10, arm=10)
     strong = make_player("strong", fa=90, arm=90)
     team = TeamState(lineup=[weak], bench=[strong], pitchers=[make_pitcher("p")])
     mgr = SubstitutionManager(cfg, MockRandom([0.0]))
-    mgr.maybe_defensive_sub(team, log=[])
+    mgr.maybe_defensive_sub(team, inning=9, log=[])
     assert team.lineup[0].player_id == "strong"
 
 

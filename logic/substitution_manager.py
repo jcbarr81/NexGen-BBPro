@@ -584,18 +584,20 @@ class SubstitutionManager:
     # Defensive substitution
     # ------------------------------------------------------------------
     def maybe_defensive_sub(
-        self, team: "TeamState", log: Optional[list[str]] = None
+        self, team: "TeamState", inning: int, log: Optional[list[str]] = None
     ) -> None:
         """Swap in a better defensive player from the bench.
 
-        The player in the lineup with the lowest combined defense rating is
-        replaced by the best bench defender when a random roll – controlled by
-        ``defSubChance`` – succeeds.
+        ``defSubBase`` provides the base chance for a defensive substitution.
+        This value is then modified by a number of situational adjustments such
+        as inning, position qualification and the defensive ratings of the
+        current and potential players.  The final chance is clamped to ``0-100``
+        and interpreted as a percentage.
         """
 
-        chance = self.config.get("defSubChance", 0) / 100.0
-        if not team.bench or chance <= 0:
+        if not team.bench:
             return
+
         worst_idx, worst = min(
             enumerate(team.lineup),
             key=lambda x: self._defense_rating(x[1]),
@@ -603,18 +605,74 @@ class SubstitutionManager:
         )
         best = max(team.bench, key=self._defense_rating, default=None)
         if (
-            worst is not None
-            and best
-            and self._defense_rating(best) > self._defense_rating(worst)
-            and self.rng.random() < chance
+            worst is None
+            or best is None
+            or self._defense_rating(best) <= self._defense_rating(worst)
         ):
-            team.bench.remove(best)
-            team.bench.append(worst)
-            team.lineup[worst_idx] = best
-            if log is not None:
-                log.append(
-                    f"Defensive sub {best.first_name} {best.last_name} for {worst.first_name} {worst.last_name}"
-                )
+            return
+
+        cfg = self.config
+
+        # Base chance and inning adjustments
+        chance = cfg.get("defSubBase", 0)
+        if inning <= 6:
+            chance += cfg.get("defSubBeforeInn7Adjust", 0)
+        elif inning == 7:
+            chance += cfg.get("defSubInn7Adjust", 0)
+        elif inning == 8:
+            chance += cfg.get("defSubInn8Adjust", 0)
+        else:
+            chance += cfg.get("defSubAfterInn8Adjust", 0)
+
+        # Position qualification adjustments
+        target_pos = worst.primary_position
+        if best.primary_position != target_pos:
+            if target_pos in getattr(best, "other_positions", []):
+                chance += cfg.get("defSubNoPrimaryPosAdjust", 0)
+            else:
+                chance += cfg.get("defSubNoQualifiedPosAdjust", 0)
+
+        # Injury adjustment on current player
+        if getattr(worst, "injured", False):
+            chance += cfg.get("defSubPerInjuryPointAdjust", 0)
+
+        # Current defender rating adjustments
+        curr_def = self._defense_rating(worst)
+        if curr_def >= cfg.get("defSubVeryHighCurrDefThresh", 0):
+            chance += cfg.get("defSubVeryHighCurrDefAdjust", 0)
+        elif curr_def >= cfg.get("defSubHighCurrDefThresh", 0):
+            chance += cfg.get("defSubHighCurrDefAdjust", 0)
+        elif curr_def >= cfg.get("defSubMedCurrDefThresh", 0):
+            chance += cfg.get("defSubMedCurrDefAdjust", 0)
+        elif curr_def >= cfg.get("defSubLowCurrDefThresh", 0):
+            chance += cfg.get("defSubLowCurrDefAdjust", 0)
+        else:
+            chance += cfg.get("defSubVeryLowCurrDefAdjust", 0)
+
+        # Potential new defender rating adjustments
+        new_def = self._defense_rating(best)
+        if new_def >= cfg.get("defSubVeryHighNewDefThresh", 0):
+            chance += cfg.get("defSubVeryHighNewDefAdjust", 0)
+        elif new_def >= cfg.get("defSubHighNewDefThresh", 0):
+            chance += cfg.get("defSubHighNewDefAdjust", 0)
+        elif new_def >= cfg.get("defSubMedNewDefThresh", 0):
+            chance += cfg.get("defSubMedNewDefAdjust", 0)
+        elif new_def >= cfg.get("defSubLowNewDefThresh", 0):
+            chance += cfg.get("defSubLowNewDefAdjust", 0)
+        else:
+            chance += cfg.get("defSubVeryLowNewDefAdjust", 0)
+
+        chance = max(0.0, min(100.0, chance))
+        if self.rng.random() >= chance / 100.0:
+            return
+
+        team.bench.remove(best)
+        team.bench.append(worst)
+        team.lineup[worst_idx] = best
+        if log is not None:
+            log.append(
+                f"Defensive sub {best.first_name} {best.last_name} for {worst.first_name} {worst.last_name}"
+            )
 
     # ------------------------------------------------------------------
     # Double switch

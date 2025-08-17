@@ -440,7 +440,8 @@ class GameSimulation:
 
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
-        self.subs.maybe_defensive_sub(defense, self.debug_log)
+        inning = len(offense.inning_runs) + 1
+        self.subs.maybe_defensive_sub(defense, inning, self.debug_log)
 
         start_runs = offense.runs
         start_log = len(self.debug_log)
