@@ -14,6 +14,7 @@ from logic.playbalance_config import PlayBalanceConfig
 from logic.physics import Physics
 from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
+from logic.bullpen import WarmupTracker
 from .stats import (
     compute_batting_derived,
     compute_batting_rates,
@@ -167,6 +168,7 @@ class TeamState:
     inning_events: List[List[str]] = field(default_factory=list)
     team_stats: Dict[str, float] = field(default_factory=dict)
     warming_reliever: bool = False
+    bullpen_warmups: Dict[str, WarmupTracker] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.pitchers:

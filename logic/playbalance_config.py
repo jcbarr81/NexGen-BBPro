@@ -297,6 +297,12 @@ _DEFAULTS: Dict[str, Any] = {
     "defSubLowNewDefAdjust": 0,
     "defSubVeryLowNewDefAdjust": 0,
     "doubleSwitchChance": 0,
+    "warmupPitchCount": 0,
+    "warmupSecsPerWarmPitch": 30,
+    "warmupSecsPerQuickPitch": 20,
+    "warmupSecsPerMaintPitch": 120,
+    "warmupSecsPerCoolPitch": 60,
+    "warmupSecsBeforeCool": 1800,
     "pitcherTiredThresh": 0,
     # Pitcher substitution thresholds and scoring
     "pitchScoringOut": 0,

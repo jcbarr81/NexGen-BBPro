@@ -20,6 +20,7 @@ from typing import Optional, TYPE_CHECKING
 from models.player import Player
 from models.pitcher import Pitcher
 from .playbalance_config import PlayBalanceConfig
+from .bullpen import WarmupTracker
 
 if TYPE_CHECKING:  # pragma: no cover - used only for type checking
     from .simulation import BatterState, PitcherState, TeamState
@@ -813,6 +814,11 @@ class SubstitutionManager:
         if state is None or len(defense.pitchers) <= 1:
             return False
         cfg = self.config
+        # Progress cooldown for any bullpen pitchers
+        step = cfg.get("warmupSecsPerWarmPitch", 0)
+        for tracker in defense.bullpen_warmups.values():
+            tracker.advance(step)
+
         remaining = state.player.endurance - state.pitches_thrown
         tired_thresh = cfg.get("pitcherTiredThresh", 0)
         warmed = False
@@ -841,6 +847,15 @@ class SubstitutionManager:
             ):
                 defense.warming_reliever = True
                 warmed = True
+
+        # If warming, record a warmup pitch for the next reliever
+        if defense.warming_reliever and len(defense.pitchers) > 1:
+            next_pitcher = defense.pitchers[1]
+            tracker = defense.bullpen_warmups.setdefault(
+                next_pitcher.player_id, WarmupTracker(cfg)
+            )
+            tracker.warm_pitch()
+
         return warmed
 
     def maybe_replace_pitcher(
@@ -882,6 +897,14 @@ class SubstitutionManager:
                 change = True
         if not change:
             return False
+        # Ensure next reliever has completed warmup
+        if len(defense.pitchers) > 1:
+            req = cfg.get("warmupPitchCount", 0)
+            if req > 0:
+                next_pitcher = defense.pitchers[1]
+                tracker = defense.bullpen_warmups.get(next_pitcher.player_id)
+                if tracker is None or not tracker.is_ready():
+                    return False
         from .simulation import PitcherState  # local import to avoid cycle
         defense.pitchers.pop(0)
         if defense.pitchers:
@@ -925,6 +948,7 @@ class SubstitutionManager:
         )
         defense.current_pitcher_state = state
         defense.warming_reliever = False
+        defense.bullpen_warmups.pop(new_pitcher.player_id, None)
         if log is not None:
             log.append(
                 f"Pitching change: {new_pitcher.first_name} {new_pitcher.last_name} enters"
