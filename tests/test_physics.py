@@ -201,3 +201,14 @@ def test_bat_speed_adjusts_for_pitch_speed():
     slow = physics.bat_speed(ph, pitch_speed=80)
     assert fast == pytest.approx(base - 5)
     assert slow == pytest.approx(base + 5)
+
+
+def test_bat_impact_sweet_spot_more_power():
+    cfg = make_cfg()
+    physics = Physics(cfg)
+    bat_speed = 100.0
+    sweet, _ = physics.bat_impact(bat_speed, part="sweet", rand=0.5)
+    handle, _ = physics.bat_impact(bat_speed, part="handle", rand=0.5)
+    end, _ = physics.bat_impact(bat_speed, part="end", rand=0.5)
+    assert sweet > handle
+    assert sweet > end
