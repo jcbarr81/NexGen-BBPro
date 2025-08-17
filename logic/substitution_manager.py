@@ -42,6 +42,36 @@ class SubstitutionManager:
         self.rng = rng or random.Random()
 
     # ------------------------------------------------------------------
+    # Rating helpers
+    # ------------------------------------------------------------------
+    def _offense_rating(self, player: Player) -> float:
+        """Compute the combined Offense rating for ``player``."""
+
+        ch_mult = self.config.get("offRatCHPct", 100) / 100.0
+        ph_mult = self.config.get("offRatPHPct", 100) / 100.0
+        ch = player.ch * ch_mult
+        ph = player.ph * ph_mult
+        return ((2 * ch * ph) + (ch * ch)) / (ph + 2 * ch + 1)
+
+    def _slugging_rating(self, player: Player) -> float:
+        """Compute the combined Slugging rating for ``player``."""
+
+        ch_mult = self.config.get("slugRatCHPct", 100) / 100.0
+        ph_mult = self.config.get("slugRatPHPct", 100) / 100.0
+        ch = player.ch * ch_mult
+        ph = player.ph * ph_mult
+        return ((2 * ph * ch) + (ph * ph)) / (ch + 2 * ph + 1)
+
+    def _defense_rating(self, player: Player) -> float:
+        """Compute the combined Defense rating for ``player``."""
+
+        fa_mult = self.config.get("defRatFAPct", 100) / 100.0
+        arm_mult = self.config.get("defRatASPct", 100) / 100.0
+        fa = player.fa * fa_mult
+        arm = player.arm * arm_mult
+        return ((2 * fa * arm) + (fa * fa)) / (arm + 2 * fa + 1)
+
+    # ------------------------------------------------------------------
     # Pinch hitting
     # ------------------------------------------------------------------
     def maybe_pinch_hit(
@@ -50,7 +80,7 @@ class SubstitutionManager:
         """Possibly replace ``team.lineup[idx]`` with a bench player.
 
         The best pinch hitter on the bench replaces the current batter if his
-        ``PH`` rating is higher and a random roll succeeds.  The chance is
+        combined slugging rating is higher and a random roll succeeds.  The chance is
         controlled by ``doubleSwitchPHAdjust`` to mirror the behaviour that was
         previously implemented directly in ``GameSimulation``.
         """
@@ -59,10 +89,11 @@ class SubstitutionManager:
             return team.lineup[idx]
         chance = self.config.get("doubleSwitchPHAdjust", 0) / 100.0
         starter = team.lineup[idx]
-        best = max(team.bench, key=lambda p: p.ph, default=None)
+        starter_rating = self._slugging_rating(starter)
+        best = max(team.bench, key=self._slugging_rating, default=None)
         if (
             best
-            and best.ph > starter.ph
+            and self._slugging_rating(best) > starter_rating
             and chance > 0
             and self.rng.random() < chance
         ):
@@ -118,8 +149,8 @@ class SubstitutionManager:
     ) -> None:
         """Swap in a better defensive player from the bench.
 
-        The player in the lineup with the lowest ``GF`` rating is replaced by
-        the best bench defender when a random roll – controlled by
+        The player in the lineup with the lowest combined defense rating is
+        replaced by the best bench defender when a random roll – controlled by
         ``defSubChance`` – succeeds.
         """
 
@@ -127,13 +158,15 @@ class SubstitutionManager:
         if not team.bench or chance <= 0:
             return
         worst_idx, worst = min(
-            enumerate(team.lineup), key=lambda x: x[1].gf, default=(None, None)
+            enumerate(team.lineup),
+            key=lambda x: self._defense_rating(x[1]),
+            default=(None, None),
         )
-        best = max(team.bench, key=lambda p: p.gf, default=None)
+        best = max(team.bench, key=self._defense_rating, default=None)
         if (
             worst is not None
             and best
-            and best.gf > worst.gf
+            and self._defense_rating(best) > self._defense_rating(worst)
             and self.rng.random() < chance
         ):
             team.bench.remove(best)
@@ -184,8 +217,9 @@ class SubstitutionManager:
 
         # Pinch hit
         starter = offense.lineup[idx]
-        best = max(offense.bench, key=lambda p: p.ph, default=None)
-        if best and best.ph > starter.ph:
+        starter_rating = self._slugging_rating(starter)
+        best = max(offense.bench, key=self._slugging_rating, default=None)
+        if best and self._slugging_rating(best) > starter_rating:
             offense.bench.remove(best)
             offense.lineup[idx] = best
             if log is not None:
