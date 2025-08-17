@@ -212,7 +212,7 @@ def test_defensive_sub():
 
 def test_double_switch():
     cfg = load_config()
-    cfg.values.update({"doubleSwitchChance": 100, "doubleSwitchPHAdjust": 100})
+    cfg.values.update({"doubleSwitchBase": 0, "doubleSwitchPHAdjust": 100})
     bench_hitter = make_player("bench", ph=80)
     starter = make_player("start", ph=10)
     offense = TeamState(lineup=[starter], bench=[bench_hitter], pitchers=[make_pitcher("op")])
@@ -223,7 +223,98 @@ def test_double_switch():
     )
     mgr = SubstitutionManager(cfg, MockRandom([0.0]))
     player = mgr.maybe_double_switch(offense, defense, 0, log=[])
-    assert player.player_id == "bench"
+    assert player and player.player_id == "bench"
+    assert offense.lineup[0].player_id == "bench"
+    assert defense.current_pitcher_state.player.player_id == "p2"
+
+
+def test_double_switch_pitcher_due():
+    cfg = load_config()
+    cfg.values.update({"doubleSwitchBase": 0, "doubleSwitchPitcherDueAdjust": 100})
+    bench_hitter = make_player("bench", ph=80)
+    starter = make_player("start", ph=10)
+    offense = TeamState(lineup=[starter], bench=[bench_hitter], pitchers=[make_pitcher("op")])
+    defense = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("p1", endurance=5), make_pitcher("p2")],
+        batting_index=1,
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_double_switch(offense, defense, 0, log=[])
+    assert player and player.player_id == "bench"
+    assert offense.lineup[0].player_id == "bench"
+    assert defense.current_pitcher_state.player.player_id == "p2"
+
+
+def test_double_switch_position_qualification():
+    cfg = load_config()
+    cfg.values.update(
+        {
+            "doubleSwitchBase": 100,
+            "doubleSwitchNoQualifiedPosAdjust": -100,
+        }
+    )
+    bench_hitter = make_player("bench", ph=80)
+    bench_hitter.primary_position = "2B"
+    starter = make_player("start", ph=10)
+    offense = TeamState(lineup=[starter], bench=[bench_hitter], pitchers=[make_pitcher("op")])
+    defense = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("p1", endurance=5), make_pitcher("p2")],
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_double_switch(offense, defense, 0, log=[])
+    assert player is None
+    assert offense.lineup[0].player_id == "start"
+    assert defense.current_pitcher_state.player.player_id == "p1"
+
+
+def test_double_switch_curr_def_blocks():
+    cfg = load_config()
+    cfg.values.update(
+        {
+            "doubleSwitchBase": 50,
+            "doubleSwitchVeryHighCurrDefThresh": 0,
+            "doubleSwitchVeryHighCurrDefAdjust": -100,
+        }
+    )
+    bench_hitter = make_player("bench", ph=80, fa=10, arm=10)
+    starter = make_player("start", ph=10, fa=90, arm=90)
+    offense = TeamState(lineup=[starter], bench=[bench_hitter], pitchers=[make_pitcher("op")])
+    defense = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("p1", endurance=5), make_pitcher("p2")],
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_double_switch(offense, defense, 0, log=[])
+    assert player is None
+    assert offense.lineup[0].player_id == "start"
+    assert defense.current_pitcher_state.player.player_id == "p1"
+
+
+def test_double_switch_new_def_bonus():
+    cfg = load_config()
+    cfg.values.update(
+        {
+            "doubleSwitchBase": 0,
+            "doubleSwitchVeryHighNewDefThresh": 0,
+            "doubleSwitchVeryHighNewDefAdjust": 100,
+        }
+    )
+    bench_hitter = make_player("bench", ph=80, fa=90, arm=90)
+    starter = make_player("start", ph=10, fa=10, arm=10)
+    offense = TeamState(lineup=[starter], bench=[bench_hitter], pitchers=[make_pitcher("op")])
+    defense = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("p1", endurance=5), make_pitcher("p2")],
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_double_switch(offense, defense, 0, log=[])
+    assert player and player.player_id == "bench"
     assert offense.lineup[0].player_id == "bench"
     assert defense.current_pitcher_state.player.player_id == "p2"
 

@@ -628,20 +628,68 @@ class SubstitutionManager:
     ) -> Optional[Player]:
         """Perform a double switch – pinch hitter and new pitcher.
 
-        When triggered a new pitcher is brought in for the defensive team and a
-        pinch hitter replaces the batter at ``idx`` for the offensive team.  The
-        likelihood is controlled by ``doubleSwitchChance``.
+        A number of heuristics based on ``PB.INI`` parameters influence the
+        likelihood of the move.  ``doubleSwitchBase`` provides the base chance
+        which is then modified by a variety of adjustments such as whether the
+        current pitcher is due to bat or how well the involved players defend.
+        The final value is clamped to ``0-100`` and interpreted as a percentage
+        chance.  ``None`` is returned if the double switch is not attempted.
         """
 
-        chance = self.config.get("doubleSwitchChance", 0) / 100.0
-        if (
-            chance <= 0
-            or not offense.bench
-            or len(defense.pitchers) <= 1
-        ):
+        if not offense.bench or len(defense.pitchers) <= 1:
             return None
 
-        if self.rng.random() >= chance:
+        starter = offense.lineup[idx]
+        starter_rating = self._slugging_rating(starter)
+        best = max(offense.bench, key=self._slugging_rating, default=None)
+        if not best or self._slugging_rating(best) <= starter_rating:
+            return None
+
+        # Base chance and simple adjustments
+        chance_pct = self.config.get("doubleSwitchBase", 0)
+
+        # Pitcher due to bat next half inning?
+        if defense.batting_index == len(defense.lineup):
+            chance_pct += self.config.get("doubleSwitchPitcherDueAdjust", 0)
+
+        # Pinch hitter is being used
+        chance_pct += self.config.get("doubleSwitchPHAdjust", 0)
+
+        # Position related adjustments
+        target_pos = starter.primary_position
+        if best.primary_position != target_pos:
+            chance_pct += self.config.get("doubleSwitchNoPrimaryPosAdjust", 0)
+        if target_pos not in [best.primary_position] + getattr(best, "other_positions", []):
+            chance_pct += self.config.get("doubleSwitchNoQualifiedPosAdjust", 0)
+
+        # Defensive rating thresholds for the current player
+        curr_def = self._defense_rating(starter)
+        if curr_def > self.config.get("doubleSwitchVeryHighCurrDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchVeryHighCurrDefAdjust", 0)
+        elif curr_def > self.config.get("doubleSwitchHighCurrDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchHighCurrDefAdjust", 0)
+        elif curr_def > self.config.get("doubleSwitchMedCurrDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchMedCurrDefAdjust", 0)
+        elif curr_def > self.config.get("doubleSwitchLowCurrDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchLowCurrDefAdjust", 0)
+        else:
+            chance_pct += self.config.get("doubleSwitchVeryLowCurrDefAdjust", 0)
+
+        # Defensive rating thresholds for the potential substitute
+        new_def = self._defense_rating(best)
+        if new_def > self.config.get("doubleSwitchVeryHighNewDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchVeryHighNewDefAdjust", 0)
+        elif new_def > self.config.get("doubleSwitchHighNewDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchHighNewDefAdjust", 0)
+        elif new_def > self.config.get("doubleSwitchMedNewDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchMedNewDefAdjust", 0)
+        elif new_def > self.config.get("doubleSwitchLowNewDefThresh", 0):
+            chance_pct += self.config.get("doubleSwitchLowNewDefAdjust", 0)
+        else:
+            chance_pct += self.config.get("doubleSwitchVeryLowNewDefAdjust", 0)
+
+        chance_pct = max(0, min(100, chance_pct))
+        if self.rng.random() >= chance_pct / 100.0:
             return None
 
         # Change pitcher first
@@ -655,19 +703,13 @@ class SubstitutionManager:
         defense.current_pitcher_state = state
 
         # Pinch hit
-        starter = offense.lineup[idx]
-        starter_rating = self._slugging_rating(starter)
-        best = max(offense.bench, key=self._slugging_rating, default=None)
-        if best and self._slugging_rating(best) > starter_rating:
-            offense.bench.remove(best)
-            offense.lineup[idx] = best
-            if log is not None:
-                log.append(
-                    f"Double switch: {best.first_name} {best.last_name} for {starter.first_name} {starter.last_name}"
-                )
-            return best
-
-        return starter
+        offense.bench.remove(best)
+        offense.lineup[idx] = best
+        if log is not None:
+            log.append(
+                f"Double switch: {best.first_name} {best.last_name} for {starter.first_name} {starter.last_name}"
+            )
+        return best
 
     # ------------------------------------------------------------------
     # Standard pitcher change when tired
