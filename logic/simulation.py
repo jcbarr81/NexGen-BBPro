@@ -603,13 +603,34 @@ class GameSimulation:
             pitcher_state.outs += outs
             return outs
 
-        runner_state = offense.bases[0]
         inning = len(offense.inning_runs) + 1
         run_diff = offense.runs - defense.runs
 
-        if runner_state:
-            hit_run_chance = int(
-                self.offense.calculate_hit_and_run_chance(
+        while True:
+            runner_state = offense.bases[0]
+            if runner_state:
+                hit_run_chance = int(
+                    self.offense.calculate_hit_and_run_chance(
+                        runner_sp=runner_state.player.sp,
+                        batter_ch=batter.ch,
+                        batter_ph=batter.ph,
+                        balls=balls,
+                        strikes=strikes,
+                        run_diff=run_diff,
+                        runners_on_first_and_second=(offense.bases[1] is not None),
+                        pitcher_wild=pitcher_state.player.control <= 30,
+                    )
+                    * 100
+                )
+                if holding_runner and self.defense.maybe_pitch_out(
+                    steal_chance=steal_chance,
+                    hit_run_chance=hit_run_chance,
+                    ball_count=balls,
+                    inning=inning,
+                    is_home_team=(defense is self.home),
+                ):
+                    self.debug_log.append("Pitch out")
+                if self.offense.maybe_hit_and_run(
                     runner_sp=runner_state.player.sp,
                     batter_ch=batter.ch,
                     batter_ph=batter.ph,
@@ -618,74 +639,78 @@ class GameSimulation:
                     run_diff=run_diff,
                     runners_on_first_and_second=(offense.bases[1] is not None),
                     pitcher_wild=pitcher_state.player.control <= 30,
-                )
-                * 100
-            )
-            if holding_runner and self.defense.maybe_pitch_out(
-                steal_chance=steal_chance,
-                hit_run_chance=hit_run_chance,
-                ball_count=balls,
-                inning=inning,
-                is_home_team=(defense is self.home),
-            ):
-                self.debug_log.append("Pitch out")
-            if self.offense.maybe_hit_and_run(
-                runner_sp=runner_state.player.sp,
-                batter_ch=batter.ch,
-                batter_ph=batter.ph,
-                balls=balls,
-                strikes=strikes,
-                run_diff=run_diff,
-                runners_on_first_and_second=(offense.bases[1] is not None),
-                pitcher_wild=pitcher_state.player.control <= 30,
-            ):
-                self.debug_log.append("Hit and run")
-                steal_result = self._attempt_steal(
-                    offense,
-                    defense,
-                    pitcher_state.player,
-                    force=True,
+                ):
+                    self.debug_log.append("Hit and run")
+                    steal_result = self._attempt_steal(
+                        offense,
+                        defense,
+                        pitcher_state.player,
+                        force=True,
+                        balls=balls,
+                        strikes=strikes,
+                        outs=outs,
+                        runner_on=1,
+                        batter_ch=batter.ch,
+                        pitcher_is_wild=pitcher_state.player.control <= 30,
+                        pitcher_in_windup=False,
+                        run_diff=run_diff,
+                    )
+                    if steal_result is False:
+                        outs += 1
+                elif balls == 0 and strikes == 0 and self.offense.maybe_sacrifice_bunt(
+                    batter_is_pitcher=batter.primary_position == "P",
+                    batter_ch=batter.ch,
+                    batter_ph=batter.ph,
+                    outs=outs,
+                    inning=inning,
+                    on_first=offense.bases[0] is not None,
+                    on_second=offense.bases[1] is not None,
+                    run_diff=run_diff,
+                ):
+                    self.debug_log.append("Sacrifice bunt")
+                    b = offense.bases
+                    bp = offense.base_pitchers
+                    runs_scored = 0
+                    if b[2]:
+                        self._score_runner(offense, defense, 2)
+                        runs_scored += 1
+                    if b[1]:
+                        offense.bases[2] = b[1]
+                        offense.base_pitchers[2] = bp[1]
+                        offense.bases[1] = None
+                        offense.base_pitchers[1] = None
+                    if b[0]:
+                        offense.bases[1] = b[0]
+                        offense.base_pitchers[1] = bp[0]
+                        offense.bases[0] = None
+                        offense.base_pitchers[0] = None
+                    self._add_stat(batter_state, "sh")
+                    if runs_scored:
+                        self._add_stat(batter_state, "rbi", runs_scored)
+                    outs += 1
+                    self._add_stat(
+                        batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+                    )
+                    pitcher_state.outs += outs
+                    return outs
+
+            if (
+                offense.bases[2]
+                and balls == 0
+                and strikes == 0
+                and self.offense.maybe_suicide_squeeze(
+                    batter_ch=batter.ch,
+                    batter_ph=batter.ph,
                     balls=balls,
                     strikes=strikes,
-                    outs=outs,
-                    runner_on=1,
-                    batter_ch=batter.ch,
-                    pitcher_is_wild=pitcher_state.player.control <= 30,
-                    pitcher_in_windup=False,
-                    run_diff=run_diff,
+                    runner_on_third_sp=offense.bases[2].player.sp,
                 )
-                if steal_result is False:
-                    outs += 1
-            elif self.offense.maybe_sacrifice_bunt(
-                batter_is_pitcher=batter.primary_position == "P",
-                batter_ch=batter.ch,
-                batter_ph=batter.ph,
-                outs=outs,
-                inning=inning,
-                on_first=offense.bases[0] is not None,
-                on_second=offense.bases[1] is not None,
-                run_diff=run_diff,
             ):
-                self.debug_log.append("Sacrifice bunt")
-                b = offense.bases
-                bp = offense.base_pitchers
-                runs_scored = 0
-                if b[2]:
+                self.debug_log.append("Suicide squeeze")
+                if offense.bases[2]:
                     self._score_runner(offense, defense, 2)
-                    runs_scored += 1
-                if b[1]:
-                    offense.bases[2] = b[1]
-                    offense.base_pitchers[2] = bp[1]
-                    offense.bases[1] = None
-                    offense.base_pitchers[1] = None
-                if b[0]:
-                    offense.bases[1] = b[0]
-                    offense.base_pitchers[1] = bp[0]
-                    offense.bases[0] = None
-                    offense.base_pitchers[0] = None
                 self._add_stat(batter_state, "sh")
-                if runs_scored:
-                    self._add_stat(batter_state, "rbi", runs_scored)
+                self._add_stat(batter_state, "rbi")
                 outs += 1
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
@@ -693,26 +718,6 @@ class GameSimulation:
                 pitcher_state.outs += outs
                 return outs
 
-        if offense.bases[2] and self.offense.maybe_suicide_squeeze(
-            batter_ch=batter.ch,
-            batter_ph=batter.ph,
-            balls=balls,
-            strikes=strikes,
-            runner_on_third_sp=offense.bases[2].player.sp,
-        ):
-            self.debug_log.append("Suicide squeeze")
-            if offense.bases[2]:
-                self._score_runner(offense, defense, 2)
-            self._add_stat(batter_state, "sh")
-            self._add_stat(batter_state, "rbi")
-            outs += 1
-            self._add_stat(
-                batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
-            )
-            pitcher_state.outs += outs
-            return outs
-
-        while True:
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
             pitch_type, _ = self.pitcher_ai.select_pitch(

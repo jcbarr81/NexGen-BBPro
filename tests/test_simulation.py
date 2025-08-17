@@ -225,6 +225,86 @@ def test_second_base_steal_attempt_success():
     assert runner_state.sb == 1
 
 
+def test_hit_and_run_count_adjust():
+    cfg = make_cfg(
+        offManHNRChancePct=100,
+        hnrChanceBase=0,
+        hnrChance3BallsAdjust=100,
+        pitchOutChanceBase=0,
+        pitchOutChanceStealThresh=100,
+        pitchOutChanceHitRunThresh=100,
+        sacChanceBase=0,
+    )
+    runner = make_player("run")
+    batter = make_player("bat")
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[0] = runner_state
+    rng_vals = [
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.0,
+        0.0,
+        0.9,
+        0.0,
+        0.9,
+        0.0,
+        0.9,
+    ]
+    sim = GameSimulation(home, away, cfg, MockRandom(rng_vals))
+    sim.play_at_bat(away, home)
+    assert any("Hit and run" in ev for ev in sim.debug_log)
+    assert runner_state.sb == 1
+
+
+def test_pitch_out_count_adjust():
+    cfg = make_cfg(
+        offManHNRChancePct=100,
+        hnrChanceBase=0,
+        hnrChance3BallsAdjust=60,
+        pitchOutChanceBase=100,
+        pitchOutChanceHitRunThresh=50,
+        pitchOutChanceStealThresh=100,
+        holdChanceBase=100,
+        holdChanceMinRunnerSpeed=0,
+        sacChanceBase=0,
+    )
+    runner = make_player("run")
+    batter = make_player("bat")
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[0] = runner_state
+    rng_vals = [
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.9,
+        0.0,
+        0.9,
+        0.9,
+        0.0,
+        0.9,
+        0.9,
+        0.0,
+        0.9,
+    ]
+    sim = GameSimulation(home, away, cfg, MockRandom(rng_vals))
+    sim.play_at_bat(away, home)
+    assert any("Pitch out" in ev for ev in sim.debug_log)
+    assert all("Hit and run" not in ev for ev in sim.debug_log)
+
+
 def test_pitcher_change_when_tired():
     cfg = load_config()
     home = TeamState(
