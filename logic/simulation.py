@@ -751,6 +751,22 @@ class GameSimulation:
                         balls=balls,
                         strikes=strikes,
                         outs=outs,
+                        runner_on=2,
+                        batter_ch=batter.ch,
+                        pitcher_is_wild=pitcher_state.player.control <= 30,
+                        pitcher_in_windup=False,
+                        run_diff=run_diff,
+                    )
+                    if steal_result is False:
+                        outs += 1
+                    steal_result = self._attempt_steal(
+                        offense,
+                        defense,
+                        pitcher_state.player,
+                        batter=batter,
+                        balls=balls,
+                        strikes=strikes,
+                        outs=outs,
                         runner_on=1,
                         batter_ch=batter.ch,
                         pitcher_is_wild=pitcher_state.player.control <= 30,
@@ -929,8 +945,13 @@ class GameSimulation:
         pitcher_in_windup: bool = False,
         run_diff: int = 0,
     ) -> Optional[bool]:
-        runner_state = offense.bases[0]
+        base_idx = runner_on - 1
+        if base_idx not in (0, 1):
+            return None
+        runner_state = offense.bases[base_idx]
         if not runner_state:
+            return None
+        if runner_on == 2 and offense.bases[2] is not None:
             return None
         attempt = force
         if not attempt:
@@ -954,23 +975,26 @@ class GameSimulation:
             success_prob = 0.7
             catcher_fs = self._get_fielder(defense, "C")
             if self.rng.random() < success_prob:
-                ps_runner = offense.base_pitchers[0]
-                offense.bases[0] = None
-                offense.base_pitchers[0] = None
-                offense.bases[1] = runner_state
-                offense.base_pitchers[1] = ps_runner
+                ps_runner = offense.base_pitchers[base_idx]
+                offense.bases[base_idx] = None
+                offense.base_pitchers[base_idx] = None
+                offense.bases[base_idx + 1] = runner_state
+                offense.base_pitchers[base_idx + 1] = ps_runner
                 self._add_stat(runner_state, "sb")
                 if catcher_fs:
                     self._add_fielding_stat(catcher_fs, "sba")
                 return True
-            offense.bases[0] = None
-            offense.base_pitchers[0] = None
+            offense.bases[base_idx] = None
+            offense.base_pitchers[base_idx] = None
             self._add_stat(runner_state, "cs")
             if catcher_fs:
                 self._add_fielding_stat(catcher_fs, "sba")
                 self._add_fielding_stat(catcher_fs, "cs")
                 self._add_fielding_stat(catcher_fs, "a")
-            tagger = self._get_fielder(defense, "2B") or self._get_fielder(defense, "SS")
+            if runner_on == 1:
+                tagger = self._get_fielder(defense, "2B") or self._get_fielder(defense, "SS")
+            else:
+                tagger = self._get_fielder(defense, "3B")
             if tagger:
                 self._add_fielding_stat(tagger, "po")
             return False

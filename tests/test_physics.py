@@ -108,7 +108,7 @@ def test_runner_advancement_respects_speed():
     away1.bases[0] = runner_state1
 
     cfg_slow = make_cfg(speedBase=10)
-    rng1 = MockRandom([0.0, 0.0, 0.9])
+    rng1 = MockRandom([0.0, 0.0, 0.9, 0.9])
     sim1 = GameSimulation(home1, away1, cfg_slow, rng1)
     outs1 = sim1.play_at_bat(away1, home1)
     assert outs1 == 0
@@ -124,7 +124,7 @@ def test_runner_advancement_respects_speed():
     away2.bases[0] = runner_state2
 
     cfg_fast = make_cfg(speedBase=30)
-    rng2 = MockRandom([0.0, 0.0, 0.9])
+    rng2 = MockRandom([0.0, 0.0, 0.9, 0.9])
     sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
     outs2 = sim2.play_at_bat(away2, home2)
     assert outs2 == 0
