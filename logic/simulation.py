@@ -975,7 +975,10 @@ class GameSimulation:
         rand: float,
         contact_quality: float = 1.0,
     ) -> bool:
-        bat_speed = self.physics.bat_speed(batter.ph)
+        pitch_speed = getattr(
+            pitcher, "fb", getattr(self.physics.config, "averagePitchSpeed")
+        )
+        bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
         # The angle is calculated for completeness even though the simplified
         # simulation does not yet use it for the outcome.
         self.physics.swing_angle(batter.gf)
