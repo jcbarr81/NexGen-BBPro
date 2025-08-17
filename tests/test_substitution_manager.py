@@ -171,7 +171,7 @@ def test_pinch_hit_need_run_platoon():
 
 def test_pinch_run():
     cfg = load_config()
-    cfg.values.update({"pinchRunChance": 100})
+    cfg.values.update({"prChanceOnFirstBase": 100})
     runner = make_player("slow", sp=10)
     fast = make_player("fast", sp=90)
     team = TeamState(lineup=[runner], bench=[fast], pitchers=[make_pitcher("p")])
@@ -179,9 +179,24 @@ def test_pinch_run():
     team.bases[0] = state
     team.lineup_stats[runner.player_id] = state
     mgr = SubstitutionManager(cfg, MockRandom([0.0]))
-    mgr.maybe_pinch_run(team, log=[])
+    mgr.maybe_pinch_run(team, base=0, inning=1, outs=0, run_diff=0, log=[])
     assert team.bases[0].player.player_id == "fast"
     assert team.lineup[0].player_id == "fast"
+
+
+def test_pinch_run_insignificant():
+    cfg = load_config()
+    cfg.values.update({"prChanceOnFirstBase": 100, "prChanceInsignificant": -100})
+    runner = make_player("slow", sp=10)
+    fast = make_player("fast", sp=90)
+    team = TeamState(lineup=[runner], bench=[fast], pitchers=[make_pitcher("p")])
+    state = BatterState(runner)
+    team.bases[0] = state
+    team.lineup_stats[runner.player_id] = state
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    mgr.maybe_pinch_run(team, base=0, inning=1, outs=0, run_diff=-2, log=[])
+    assert team.bases[0].player.player_id == "slow"
+    assert team.lineup[0].player_id == "slow"
 
 
 def test_defensive_sub():

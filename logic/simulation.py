@@ -470,7 +470,18 @@ class GameSimulation:
             self._on_pitcher_enter(offense, defense)
 
         # Check if any existing runner should be replaced with a pinch runner
-        self.subs.maybe_pinch_run(offense, log=self.debug_log)
+        inning = len(offense.inning_runs) + 1
+        run_diff = offense.runs - defense.runs
+        for base_idx, runner in enumerate(offense.bases):
+            if runner is not None:
+                self.subs.maybe_pinch_run(
+                    offense,
+                    base=base_idx,
+                    inning=inning,
+                    outs=self.current_outs,
+                    run_diff=run_diff,
+                    log=self.debug_log,
+                )
 
         # Defensive decisions prior to the at-bat.  These mostly log the
         # outcome for manual inspection in the exhibition dialog.  The

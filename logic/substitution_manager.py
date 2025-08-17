@@ -475,36 +475,110 @@ class SubstitutionManager:
     # Pinch running
     # ------------------------------------------------------------------
     def maybe_pinch_run(
-        self, team: "TeamState", base: int = 0, log: Optional[list[str]] = None
+        self,
+        team: "TeamState",
+        base: int = 0,
+        *,
+        inning: int,
+        outs: int,
+        run_diff: int,
+        log: Optional[list[str]] = None,
     ) -> None:
         """Replace the runner on ``base`` with a faster bench player.
 
-        Only base 0 (first base) is considered in the tests.  ``pinchRunChance``
-        from the config controls the likelihood of the move.
+        ``run_diff`` should be the offensive team's runs minus the defensive
+        team's runs.
         """
 
-        chance = self.config.get("pinchRunChance", 0) / 100.0
         runner_state = team.bases[base] if base < len(team.bases) else None
-        if not team.bench or runner_state is None or chance <= 0:
+        if not team.bench or runner_state is None:
             return
 
         best = max(team.bench, key=lambda p: p.sp, default=None)
-        if best and best.sp > runner_state.player.sp and self.rng.random() < chance:
-            from .simulation import BatterState  # local import to avoid cycle
+        if best is None or best.sp <= runner_state.player.sp:
+            return
 
-            team.bench.remove(best)
-            # Replace in batting order
-            for i, p in enumerate(team.lineup):
-                if p.player_id == runner_state.player.player_id:
-                    team.lineup[i] = best
-                    break
-            state = BatterState(best)
-            team.lineup_stats[best.player_id] = state
-            team.bases[base] = state
-            if log is not None:
-                log.append(
-                    f"Pinch runner {best.first_name} {best.last_name} for {runner_state.player.first_name} {runner_state.player.last_name}"
-                )
+        cfg = self.config
+
+        # Base chance depending on occupied base
+        if base == 0:
+            chance = cfg.get("prChanceOnFirstBase", 0)
+        elif base == 1:
+            chance = cfg.get("prChanceOnSecondBase", 0)
+        else:
+            chance = cfg.get("prChanceOnThirdBase", 0)
+
+        # Run situation adjustments
+        if run_diff == 0:
+            chance += cfg.get("prChanceWinningRun", 0)
+        elif run_diff == -1:
+            chance += cfg.get("prChanceTyingRun", 0)
+        else:
+            chance += cfg.get("prChanceInsignificant", 0)
+
+        # Outs and inning adjustments
+        chance += outs * cfg.get("prChancePerOutAdjust", 0)
+        if inning <= 3:
+            chance += cfg.get("prChanceEarlyInnAdjust", 0)
+        elif inning <= 6:
+            chance += cfg.get("prChanceMidInnAdjust", 0)
+        else:
+            chance += cfg.get("prChanceLateInnAdjust", 0)
+        if inning == 9:
+            chance += cfg.get("prChanceInn9Adjust", 0)
+        elif inning > 9:
+            chance += cfg.get("prChanceExtraInnAdjust", 0)
+
+        # Bench and injury adjustments
+        chance += len(team.bench) * cfg.get("prChancePerBenchPlayerAdjust", 0)
+        if getattr(runner_state.player, "injured", False):
+            chance += cfg.get("prChancePerInjuryPointAdjust", 0)
+
+        # Current runner speed adjustments
+        sp = runner_state.player.sp
+        if sp >= cfg.get("prChanceVeryFastSPThresh", 0):
+            chance += cfg.get("prChanceVeryFastSPAdjust", 0)
+        elif sp >= cfg.get("prChanceFastSPThresh", 0):
+            chance += cfg.get("prChanceFastSPAdjust", 0)
+        elif sp >= cfg.get("prChanceMedSPThresh", 0):
+            chance += cfg.get("prChanceMedSPAdjust", 0)
+        elif sp >= cfg.get("prChanceSlowSPThresh", 0):
+            chance += cfg.get("prChanceSlowSPAdjust", 0)
+        else:
+            chance += cfg.get("prChanceVerySlowSPAdjust", 0)
+
+        # Candidate pinch runner speed adjustments
+        pr_sp = best.sp
+        if pr_sp >= cfg.get("prChanceVeryFastPRThresh", 0):
+            chance += cfg.get("prChanceVeryFastPRAdjust", 0)
+        elif pr_sp >= cfg.get("prChanceFastPRThresh", 0):
+            chance += cfg.get("prChanceFastPRAdjust", 0)
+        elif pr_sp >= cfg.get("prChanceMedPRThresh", 0):
+            chance += cfg.get("prChanceMedPRAdjust", 0)
+        elif pr_sp >= cfg.get("prChanceSlowPRThresh", 0):
+            chance += cfg.get("prChanceSlowPRAdjust", 0)
+        else:
+            chance += cfg.get("prChanceVerySlowPRAdjust", 0)
+
+        chance = max(0.0, min(100.0, chance))
+        if self.rng.random() >= chance / 100.0:
+            return
+
+        from .simulation import BatterState  # local import to avoid cycle
+
+        team.bench.remove(best)
+        # Replace in batting order
+        for i, p in enumerate(team.lineup):
+            if p.player_id == runner_state.player.player_id:
+                team.lineup[i] = best
+                break
+        state = BatterState(best)
+        team.lineup_stats[best.player_id] = state
+        team.bases[base] = state
+        if log is not None:
+            log.append(
+                f"Pinch runner {best.first_name} {best.last_name} for {runner_state.player.first_name} {runner_state.player.last_name}"
+            )
 
     # ------------------------------------------------------------------
     # Defensive substitution
