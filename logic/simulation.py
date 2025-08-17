@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field, fields
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from models.player import Player
 from models.pitcher import Pitcher
@@ -209,6 +209,11 @@ class GameSimulation:
         self.debug_log: List[str] = []
         self.pitches_since_pickoff = 4
         self.current_outs = 0
+        self.current_field_positions: Dict[
+            str, Dict[str, Dict[str, Tuple[float, float]]]
+        ] = {}
+        self.current_infield_situation = "normal"
+        self.current_outfield_situation = "normal"
 
     # ------------------------------------------------------------------
     # Stat helpers
@@ -245,6 +250,38 @@ class GameSimulation:
                     player.player_id, FieldingState(player)
                 )
         return None
+
+    def _determine_infield_situation(
+        self, offense: TeamState, defense: TeamState, outs: int
+    ) -> str:
+        """Return the infield alignment for the current situation."""
+
+        if offense.bases[2] is not None:
+            if abs(defense.runs - offense.runs) <= 1:
+                return "guardLines"
+            return "cutoffRun"
+        if offense.bases[0] is not None and outs < 2:
+            return "doublePlay"
+        return "normal"
+
+    def _set_defensive_alignment(
+        self, offense: TeamState, defense: TeamState, outs: int
+    ) -> None:
+        """Determine and store the defensive alignment and positions."""
+
+        batter = offense.lineup[offense.batting_index % len(offense.lineup)]
+        self.current_infield_situation = self._determine_infield_situation(
+            offense, defense, outs
+        )
+        self.current_outfield_situation = "normal"
+        self.current_field_positions = self.defense.set_field_positions(
+            pull=getattr(batter, "pl", 50), power=getattr(batter, "ph", 50)
+        )
+        self.debug_log.append(
+            "Defensive alignment: infield="
+            f"{self.current_infield_situation}, outfield="
+            f"{self.current_outfield_situation}"
+        )
 
     # ------------------------------------------------------------------
     # Pitcher state helpers
@@ -410,6 +447,7 @@ class GameSimulation:
         outs = 0
         while outs < 3:
             self.current_outs = outs
+            self._set_defensive_alignment(offense, defense, outs)
             outs += self.play_at_bat(offense, defense)
         inning_events = self.debug_log[start_log:]
         for runner in offense.bases:
@@ -754,6 +792,20 @@ class GameSimulation:
             0.0,
             min(0.95, (bat_speed / 100.0) * contact_quality * movement_factor),
         )
+        # Modify hit probability based on current defensive alignment.
+        infield_pos = self.current_field_positions.get("infield", {})
+        if (
+            self.current_infield_situation in infield_pos
+            and "normal" in infield_pos
+            and infield_pos["normal"]
+        ):
+            def _avg_depth(pos: Dict[str, Tuple[float, float]]) -> float:
+                return sum(d for d, _ in pos.values()) / len(pos)
+
+            normal_depth = _avg_depth(infield_pos["normal"])
+            cur_depth = _avg_depth(infield_pos[self.current_infield_situation])
+            if normal_depth > 0:
+                hit_prob *= cur_depth / normal_depth
         return rand < hit_prob
 
     def _advance_runners(
