@@ -156,6 +156,33 @@ class Physics:
         return angle / 10.0
 
     # ------------------------------------------------------------------
+    # Vertical hit angle
+    # ------------------------------------------------------------------
+    def vertical_hit_angle(self, swing_type: str = "normal") -> float:
+        """Return vertical launch angle offset for ``swing_type``.
+
+        The original game determines the vertical angle of the ball off the bat
+        by rolling a configurable number of dice.  Each swing type uses its own
+        ``hitAngleCount*``, ``hitAngleFaces*`` and ``hitAngleBase*`` values from
+        :class:`PlayBalanceConfig`.  The dice results are summed, adjusted by the
+        base value and then converted into an angle between ``-90`` and ``+90``
+        degrees.  Values below ``1`` or above ``59`` are clamped to the nearest
+        valid range before conversion.
+        """
+
+        cap = swing_type.capitalize()
+        count = getattr(self.config, f"hitAngleCount{cap}")
+        faces = getattr(self.config, f"hitAngleFaces{cap}")
+        base = getattr(self.config, f"hitAngleBase{cap}")
+
+        roll = base
+        for _ in range(max(0, count)):
+            roll += self.rng.randint(1, max(1, faces))
+
+        roll = max(1, min(59, roll))
+        return (roll - 30) * (180.0 / 58.0)
+
+    # ------------------------------------------------------------------
     # Ball physics
     # ------------------------------------------------------------------
     def ball_roll_distance(

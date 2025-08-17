@@ -91,6 +91,22 @@ def test_swing_angle_varies_with_range():
     assert angle1 != angle2
 
 
+def test_vertical_hit_angle_power_vs_contact():
+    cfg = make_cfg(
+        hitAngleCountPower=1,
+        hitAngleFacesPower=59,
+        hitAngleBasePower=0,
+        hitAngleCountContact=1,
+        hitAngleFacesContact=39,
+        hitAngleBaseContact=0,
+    )
+    power_phys = Physics(cfg, random.Random(0))
+    contact_phys = Physics(cfg, random.Random(0))
+    power_angles = [power_phys.vertical_hit_angle("power") for _ in range(1000)]
+    contact_angles = [contact_phys.vertical_hit_angle("contact") for _ in range(1000)]
+    assert sum(power_angles) / len(power_angles) > sum(contact_angles) / len(contact_angles)
+
+
 def test_swing_result_respects_bat_speed():
     # Low bat speed -> out
     cfg_slow = make_cfg(swingSpeedBase=10, averagePitchSpeed=50)
