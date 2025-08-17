@@ -229,6 +229,116 @@ class SubstitutionManager:
         return best
 
     # ------------------------------------------------------------------
+    # Pinch hitting when a hit is required
+    # ------------------------------------------------------------------
+    def maybe_pinch_hit_need_hit(
+        self,
+        team: "TeamState",
+        idx: int,
+        on_deck_idx: int,
+        *,
+        inning: int,
+        outs: int,
+        run_diff: int,
+        home_team: bool,
+        log: Optional[list[str]] = None,
+    ) -> Player:
+        """Possibly pinch hit when a hit is needed to tie or win.
+
+        The decision is controlled by various ``phForHit*`` configuration
+        values.  ``run_diff`` should be the offensive team's runs minus the
+        defensive team's runs.
+        """
+
+        if not team.bench:
+            return team.lineup[idx]
+
+        cfg = self.config
+        chance = cfg.get("phForHitBase", 0)
+
+        if inning >= 7:
+            chance += cfg.get("phForHitLateInnAdjust", 0)
+        if inning == 9:
+            chance += cfg.get("phForHitInn9Adjust", 0)
+        elif inning > 9:
+            chance += cfg.get("phForHitExtraInnAdjust", 0)
+
+        chance += outs * cfg.get("phForHitPerOutAdjust", 0)
+        chance += len(team.bench) * cfg.get("phForHitPerBenchPlayerAdjust", 0)
+
+        if home_team:
+            chance += cfg.get("phForHitHomeAdjust", 0)
+        else:
+            chance += cfg.get("phForHitAwayAdjust", 0)
+
+        if run_diff >= 5:
+            chance += cfg.get("phForHitBigLeadAdjust", 0)
+        elif run_diff >= 1:
+            chance += cfg.get("phForHitLeadAdjust", 0)
+        elif run_diff < 0:
+            deficit = -run_diff
+            needed = deficit + 1
+            count = 0
+            for base_idx, loc in ((2, "scoring"), (1, "scoring"), (0, "first")):
+                if team.bases[base_idx] is not None:
+                    count += 1
+                    if count == needed:
+                        if loc == "scoring":
+                            chance += cfg.get("phForHitWinRunInScoringPosAdjust", 0)
+                        else:
+                            chance += cfg.get("phForHitWinRunOnFirstAdjust", 0)
+                        break
+            else:
+                count += 1
+                if count == needed:
+                    chance += cfg.get("phForHitWinRunAtBatAdjust", 0)
+                else:
+                    count += 1
+                    if count == needed:
+                        chance += cfg.get("phForHitWinRunOnDeckAdjust", 0)
+                    else:
+                        chance += cfg.get("phForHitWinRunInDugoutAdjust", 0)
+
+        starter = team.lineup[idx]
+        starter_rating = self._offense_rating(starter)
+        on_deck = team.lineup[on_deck_idx]
+        on_deck_rating = self._offense_rating(on_deck)
+        best = max(team.bench, key=self._offense_rating, default=None)
+        if best is None:
+            return starter
+
+        best_rating = self._offense_rating(best)
+        ph_diff = best_rating - starter_rating
+
+        def _apply_rating_adjust(value: float, thresh_suffix: str, adjust_suffix: str) -> int:
+            if value >= cfg.get(f"phForHitVeryHigh{thresh_suffix}", 0):
+                return cfg.get(f"phForHitVeryHigh{adjust_suffix}", 0)
+            if value >= cfg.get(f"phForHitHigh{thresh_suffix}", 0):
+                return cfg.get(f"phForHitHigh{adjust_suffix}", 0)
+            if value >= cfg.get(f"phForHitMed{thresh_suffix}", 0):
+                return cfg.get(f"phForHitMed{adjust_suffix}", 0)
+            if value >= cfg.get(f"phForHitLow{thresh_suffix}", 0):
+                return cfg.get(f"phForHitLow{adjust_suffix}", 0)
+            return cfg.get(f"phForHitVeryLow{adjust_suffix}", 0)
+
+        chance += _apply_rating_adjust(starter_rating, "BatRatThresh", "BatRatAdjust")
+        chance += _apply_rating_adjust(on_deck_rating, "ODRatThresh", "ODRatAdjust")
+        chance += _apply_rating_adjust(ph_diff, "PHBatDiffRatThresh", "PHBatDiffRatAdjust")
+
+        chance = max(0.0, min(100.0, chance))
+
+        if best_rating > starter_rating and self.rng.random() < chance / 100.0:
+            team.bench.remove(best)
+            team.lineup[idx] = best
+            if log is not None:
+                log.append(
+                    f"Pinch hitter {best.first_name} {best.last_name} for {starter.first_name} {starter.last_name}"
+                )
+            return best
+
+        return starter
+
+    # ------------------------------------------------------------------
     # Pinch running
     # ------------------------------------------------------------------
     def maybe_pinch_run(

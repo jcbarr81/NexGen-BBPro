@@ -565,9 +565,25 @@ class GameSimulation:
                 self._on_pitcher_exit(old_pitcher, offense, defense)
                 self._on_pitcher_enter(offense, defense)
             else:
-                batter = self.subs.maybe_pinch_hit(
-                    offense, batter_idx, self.debug_log
-                )
+                starter = offense.lineup[batter_idx]
+                if run_diff < 0:
+                    on_deck_idx = (batter_idx + 1) % len(offense.lineup)
+                    batter = self.subs.maybe_pinch_hit_need_hit(
+                        offense,
+                        batter_idx,
+                        on_deck_idx,
+                        inning=inning,
+                        outs=outs_before,
+                        run_diff=run_diff,
+                        home_team=offense is self.home,
+                        log=self.debug_log,
+                    )
+                else:
+                    batter = starter
+                if batter is starter:
+                    batter = self.subs.maybe_pinch_hit(
+                        offense, batter_idx, self.debug_log
+                    )
             offense.batting_index += 1
         on_deck_idx = offense.batting_index % len(offense.lineup)
         on_deck = offense.lineup[on_deck_idx]
