@@ -203,6 +203,28 @@ def test_steal_count_and_situational_modifiers():
     assert res2 is None
 
 
+def test_second_base_steal_attempt_success():
+    cfg = load_config()
+    runner = make_player("run", sp=80)
+    batter = make_player("bat")
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[1] = runner_state
+    sim = GameSimulation(home, away, cfg, MockRandom([0.0]))
+    res = sim._attempt_steal(
+        away,
+        home,
+        home.current_pitcher_state.player,
+        force=True,
+        runner_on=2,
+    )
+    assert res is True
+    assert away.bases[2] is runner_state
+    assert runner_state.sb == 1
+
+
 def test_pitcher_change_when_tired():
     cfg = load_config()
     home = TeamState(
