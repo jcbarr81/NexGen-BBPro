@@ -93,5 +93,81 @@ class Physics:
 
         return angle / 10.0
 
+    # ------------------------------------------------------------------
+    # Ball physics
+    # ------------------------------------------------------------------
+    def ball_roll_distance(
+        self,
+        initial_speed: float,
+        surface: str = "grass",
+        *,
+        altitude: float = 0.0,
+        temperature: float = 70.0,
+        wind_speed: float = 0.0,
+    ) -> float:
+        """Return the roll distance for a ball given the environment.
+
+        The calculation intentionally keeps the numbers small and deterministic.
+        Configuration entries from :class:`PlayBalanceConfig` influence the
+        result.  ``surface`` may be ``"grass"`` or ``"turf"`` which selects the
+        appropriate friction factor.
+        """
+
+        friction_key = f"rollFriction{surface.capitalize()}"
+        friction = getattr(self.config, friction_key)
+        distance = initial_speed / max(1.0, friction)
+
+        air = getattr(self.config, "ballAirResistancePct")
+        distance *= air / 100.0
+
+        alt_pct = getattr(self.config, "ballAltitudePct")
+        base_alt = getattr(self.config, "ballBaseAltitude")
+        distance += distance * ((altitude + base_alt) * alt_pct) / 100000.0
+
+        temp_pct = getattr(self.config, "ballTempPct")
+        distance += distance * ((temperature - 70.0) * temp_pct) / 1000.0
+
+        wind_pct = getattr(self.config, "ballWindSpeedPct")
+        distance += distance * (wind_speed * wind_pct) / 1000.0
+
+        return max(0.0, distance)
+
+    def ball_bounce(
+        self,
+        vert_speed: float,
+        horiz_speed: float,
+        surface: str = "grass",
+        *,
+        wet: bool = False,
+        temperature: float = 70.0,
+    ) -> tuple[float, float]:
+        """Return the vertical and horizontal bounce speeds for the ball.
+
+        ``surface`` may be ``"grass"``, ``"turf"`` or ``"dirt"``.  ``wet`` and
+        ``temperature`` apply additional modifiers.  The returned tuple contains
+        the resulting vertical and horizontal speeds after the bounce.
+        """
+
+        vert_key = f"bounceVert{surface.capitalize()}Pct"
+        horiz_key = f"bounceHoriz{surface.capitalize()}Pct"
+        vert_pct = getattr(self.config, vert_key)
+        horiz_pct = getattr(self.config, horiz_key)
+
+        adjust = 0.0
+        if wet:
+            adjust += getattr(self.config, "bounceWetAdjust")
+        if temperature >= 85:
+            adjust += getattr(self.config, "bounceHotAdjust")
+        elif temperature <= 50:
+            adjust += getattr(self.config, "bounceColdAdjust")
+
+        vert_pct = max(0.0, vert_pct + adjust)
+        horiz_pct = max(0.0, horiz_pct + adjust)
+
+        return (
+            vert_speed * vert_pct / 100.0,
+            horiz_speed * horiz_pct / 100.0,
+        )
+
 
 __all__ = ["Physics"]

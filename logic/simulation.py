@@ -201,6 +201,12 @@ class GameSimulation:
         away: TeamState,
         config: PlayBalanceConfig,
         rng: Optional[random.Random] = None,
+        *,
+        surface: str = "grass",
+        wet: bool = False,
+        temperature: float = 70.0,
+        altitude: float = 0.0,
+        wind_speed: float = 0.0,
     ) -> None:
         self.home = home
         self.away = away
@@ -220,6 +226,11 @@ class GameSimulation:
         ] = {}
         self.current_infield_situation = "normal"
         self.current_outfield_situation = "normal"
+        self.surface = surface
+        self.wet = wet
+        self.temperature = temperature
+        self.altitude = altitude
+        self.wind_speed = wind_speed
 
     # ------------------------------------------------------------------
     # Stat helpers
@@ -968,6 +979,22 @@ class GameSimulation:
         # The angle is calculated for completeness even though the simplified
         # simulation does not yet use it for the outcome.
         self.physics.swing_angle(batter.gf)
+        # Simulate ball contact with surface and air; results are unused but the
+        # calls ensure PBINI driven physics influence the simulation.
+        self.physics.ball_roll_distance(
+            bat_speed,
+            self.surface,
+            altitude=self.altitude,
+            temperature=self.temperature,
+            wind_speed=self.wind_speed,
+        )
+        self.physics.ball_bounce(
+            bat_speed / 2.0,
+            bat_speed / 2.0,
+            self.surface,
+            wet=self.wet,
+            temperature=self.temperature,
+        )
         movement_factor = max(0.05, (100 - pitcher.movement) / 100.0)
         hit_prob = max(
             0.0,
@@ -1003,6 +1030,13 @@ class GameSimulation:
             runs_scored += 1
         if b[1]:
             spd = self.physics.player_speed(b[1].player.sp)
+            self.physics.ball_roll_distance(
+                spd,
+                self.surface,
+                altitude=self.altitude,
+                temperature=self.temperature,
+                wind_speed=self.wind_speed,
+            )
             if spd >= 25:
                 self._score_runner(offense, defense, 1)
                 runs_scored += 1
@@ -1011,6 +1045,13 @@ class GameSimulation:
                 new_bp[2] = bp[1]
         if b[0]:
             spd = self.physics.player_speed(b[0].player.sp)
+            self.physics.ball_roll_distance(
+                spd,
+                self.surface,
+                altitude=self.altitude,
+                temperature=self.temperature,
+                wind_speed=self.wind_speed,
+            )
             if spd >= 25:
                 if new_bases[2] is None:
                     new_bases[2] = b[0]
