@@ -77,6 +77,20 @@ def make_pitcher(pid: str) -> Pitcher:
     )
 
 
+def test_swing_angle_varies_with_range():
+    cfg = make_cfg(
+        swingAngleTenthDegreesBase=100,
+        swingAngleTenthDegreesRange=20,
+    )
+    rng = MockRandom([0.0, 0.9])
+    physics = Physics(cfg, rng)
+    angle1 = physics.swing_angle(50)
+    angle2 = physics.swing_angle(50)
+    assert angle1 == pytest.approx(10.0)
+    assert angle2 == pytest.approx(11.8)
+    assert angle1 != angle2
+
+
 def test_swing_result_respects_bat_speed():
     # Low bat speed -> out
     cfg_slow = make_cfg(swingSpeedBase=10, averagePitchSpeed=50)

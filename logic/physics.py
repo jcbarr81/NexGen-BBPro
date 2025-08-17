@@ -89,17 +89,16 @@ class Physics:
     ) -> float:
         """Return the swing angle in degrees for a player.
 
-        ``gf`` is the batter's ground/fly rating.  ``swing_type`` and
+        ``gf`` is the batter's ground/fly rating. ``swing_type`` and
         ``pitch_loc`` can influence the result by applying configuration based
-        adjustments.  A deterministic value is returned which keeps unit tests
-        simple and reproducible.
+        adjustments. The angle is randomized within the configured range using
+        the RNG supplied to :class:`Physics`. Supplying a seeded RNG keeps unit
+        tests reproducible.
         """
 
         base = getattr(self.config, "swingAngleTenthDegreesBase")
         rng_range = getattr(self.config, "swingAngleTenthDegreesRange")
-        # Keep deterministic: use the mid point of the range rather than a
-        # random pick.
-        angle = base + rng_range / 2.0
+        angle = self.rng.uniform(base, base + rng_range) if rng_range else base
 
         gf_pct = getattr(self.config, "swingAngleTenthDegreesGFPct")
         angle += (gf - 50) * gf_pct / 100.0
