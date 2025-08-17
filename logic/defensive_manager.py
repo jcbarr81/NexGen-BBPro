@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import re
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -264,15 +265,22 @@ class DefensiveManager:
             angle_shift = 0
             depth_mult = cfg.get("outfieldPosPctNormal", 0)
 
-        for f in ("LF", "CF", "RF"):
-            pct_key = f"{situation}Pos{f}Pct"
-            angle_key = f"{situation}Pos{f}Angle"
-            pct = cfg.get(pct_key)
-            angle = cfg.get(angle_key)
+        pattern = re.compile(rf"{situation}Pos([A-Za-z0-9]+)(Pct|Angle)")
+        temp: Dict[str, Dict[str, float]] = {}
+        for key, value in cfg.values.items():
+            m = pattern.fullmatch(key)
+            if not m:
+                continue
+            fielder, kind = m.groups()
+            temp.setdefault(fielder, {})[kind] = value
+
+        for fielder, vals in temp.items():
+            pct = vals.get("Pct")
+            angle = vals.get("Angle")
             if pct is None or angle is None:
                 continue
             dist = pct * depth_mult / 100.0
-            positions[f] = (dist, angle + angle_shift)
+            positions[fielder] = (dist, angle + angle_shift)
 
         return positions
 
@@ -282,7 +290,6 @@ class DefensiveManager:
         """Return fielding positions, adjusting the outfield for pull/power."""
 
         cfg = self.config
-        fielders = ["1B", "2B", "SS", "3B"]
         feet_per_depth = cfg.get("infieldPosFeetPerDepth", 0)
 
         positions: Dict[str, Dict[str, Dict[str, Tuple[float, float]]]] = {
@@ -290,18 +297,26 @@ class DefensiveManager:
             "outfield": {},
         }
 
-        infield_situations = ["normal", "guardLines", "cutoffRun", "doublePlay"]
-        for sit in infield_situations:
+        infield_pattern = re.compile(
+            r"(normal|guardLines|cutoffRun|doublePlay)Pos([A-Za-z0-9]+)(Dist|Angle)"
+        )
+        temp_infield: Dict[str, Dict[str, Dict[str, float]]] = {}
+        for key, value in cfg.values.items():
+            m = infield_pattern.fullmatch(key)
+            if not m:
+                continue
+            sit, fielder, kind = m.groups()
+            temp_infield.setdefault(sit, {}).setdefault(fielder, {})[kind] = value
+
+        for sit, fielders in temp_infield.items():
             sit_dict: Dict[str, Tuple[float, float]] = {}
-            for f in fielders:
-                dist_key = f"{sit}Pos{f}Dist"
-                angle_key = f"{sit}Pos{f}Angle"
-                dist = cfg.get(dist_key)
-                angle = cfg.get(angle_key)
+            for fielder, vals in fielders.items():
+                dist = vals.get("Dist")
+                angle = vals.get("Angle")
                 if dist is None or angle is None:
                     continue
                 feet = dist / 10.0 * feet_per_depth
-                sit_dict[f] = (feet, angle)
+                sit_dict[fielder] = (feet, angle)
             if sit_dict:
                 positions["infield"][sit] = sit_dict
 
