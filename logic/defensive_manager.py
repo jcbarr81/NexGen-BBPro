@@ -205,6 +205,46 @@ class DefensiveManager:
     # ------------------------------------------------------------------
     # Field positioning
     # ------------------------------------------------------------------
+    def _outfield_adjustments(
+        self, pull: int, power: int
+    ) -> Tuple[int, float]:
+        """Return angle shift and depth multiplier for outfielders.
+
+        ``pull`` and ``power`` are batter ratings (0-100) used to determine
+        horizontal shifts and how deep the outfield should play.
+        """
+
+        cfg = self.config
+
+        depth_mult = cfg.get("outfieldPosPctNormal", 0)
+        angle_shift = 0
+
+        high_pull = cfg.get("defPosHighPull")
+        high_pull_extra = cfg.get("defPosHighPullExtra")
+        low_pull = cfg.get("defPosLowPull")
+        low_pull_extra = cfg.get("defPosLowPullExtra")
+
+        shift_steps = 0
+        if high_pull is not None and pull >= high_pull:
+            shift_steps = 2
+        elif high_pull_extra is not None and pull >= high_pull_extra:
+            shift_steps = 1
+        elif low_pull is not None and pull <= low_pull:
+            shift_steps = -2
+        elif low_pull_extra is not None and pull <= low_pull_extra:
+            shift_steps = -1
+
+        angle_shift = 5 * shift_steps
+
+        high_power = cfg.get("defPosHighPower")
+        low_power = cfg.get("defPosLowPower")
+        if high_power is not None and power >= high_power:
+            depth_mult = cfg.get("outfieldPosPctDeep", depth_mult)
+        elif low_power is not None and power <= low_power:
+            depth_mult = cfg.get("outfieldPosPctShallow", depth_mult)
+
+        return angle_shift, depth_mult
+
     def _outfield_situation(
         self, situation: str, pull: int = 50, power: int = 50
     ) -> Dict[str, Tuple[float, float]]:
@@ -218,31 +258,11 @@ class DefensiveManager:
         cfg = self.config
         positions: Dict[str, Tuple[float, float]] = {}
 
-        depth_mult = cfg.get("outfieldPosPctNormal", 0)
-        angle_shift = 0
-
         if situation == "normal":
-            high_pull = cfg.get("defPosHighPull")
-            high_pull_extra = cfg.get("defPosHighPullExtra")
-            low_pull = cfg.get("defPosLowPull")
-            low_pull_extra = cfg.get("defPosLowPullExtra")
-
-            shift_steps = 0
-            if high_pull and pull >= high_pull:
-                shift_steps = 2
-            elif high_pull_extra and pull >= high_pull_extra:
-                shift_steps = 1
-            elif low_pull and pull <= low_pull:
-                shift_steps = -2
-            elif low_pull_extra and pull <= low_pull_extra:
-                shift_steps = -1
-
-            angle_shift = 5 * shift_steps
-
-            if cfg.get("defPosHighPower") and power >= cfg.get("defPosHighPower"):
-                depth_mult = cfg.get("outfieldPosPctDeep", depth_mult)
-            elif cfg.get("defPosLowPower") and power <= cfg.get("defPosLowPower"):
-                depth_mult = cfg.get("outfieldPosPctShallow", depth_mult)
+            angle_shift, depth_mult = self._outfield_adjustments(pull, power)
+        else:
+            angle_shift = 0
+            depth_mult = cfg.get("outfieldPosPctNormal", 0)
 
         for f in ("LF", "CF", "RF"):
             pct_key = f"{situation}Pos{f}Pct"
@@ -259,6 +279,8 @@ class DefensiveManager:
     def set_field_positions(
         self, pull: int = 50, power: int = 50
     ) -> Dict[str, Dict[str, Dict[str, Tuple[float, float]]]]:
+        """Return fielding positions, adjusting the outfield for pull/power."""
+
         cfg = self.config
         fielders = ["1B", "2B", "SS", "3B"]
         feet_per_depth = cfg.get("infieldPosFeetPerDepth", 0)
