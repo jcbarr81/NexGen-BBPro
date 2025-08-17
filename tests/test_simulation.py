@@ -123,6 +123,22 @@ def test_pinch_hit_need_hit_used():
     away = TeamState(lineup=[starter], bench=[bench], pitchers=[make_pitcher("ap")])
     home.runs = 1
     away.runs = 0
+    rng = MockRandom([0.0, 0.0, 0.0, 0.0, 1.0])
+    sim = GameSimulation(home, away, cfg, rng)
+    sim.play_at_bat(away, home)
+    assert away.lineup[0].player_id == "bench"
+    stats = away.lineup_stats["bench"]
+    assert stats.ab == 1
+
+
+def test_pinch_hit_need_run_used():
+    cfg = make_cfg(phForRunBase=100)
+    bench = make_player("bench", ph=80, ch=80)
+    starter = make_player("start", ph=10, ch=10)
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[starter], bench=[bench], pitchers=[make_pitcher("ap")])
+    home.runs = 1
+    away.runs = 0
     rng = MockRandom([0.0, 0.0, 0.0, 1.0])
     sim = GameSimulation(home, away, cfg, rng)
     sim.play_at_bat(away, home)
