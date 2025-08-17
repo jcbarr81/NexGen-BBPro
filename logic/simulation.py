@@ -535,21 +535,43 @@ class GameSimulation:
                 self.debug_log.append("Pickoff attempt")
                 self.pitches_since_pickoff = 0
 
+        inning = len(offense.inning_runs) + 1
         batter_idx = offense.batting_index % len(offense.lineup)
-        old_pitcher = defense.current_pitcher_state
-        batter = self.subs.maybe_double_switch(
-            offense, defense, batter_idx, self.debug_log
+        pitcher_batting = (
+            offense.current_pitcher_state is not None
+            and offense.lineup[batter_idx].player_id
+            == offense.current_pitcher_state.player.player_id
         )
-        if batter is not None:
-            self._on_pitcher_exit(old_pitcher, offense, defense)
-            self._on_pitcher_enter(offense, defense)
+        if pitcher_batting:
+            old_off_pitcher = offense.current_pitcher_state
+            batter = self.subs.maybe_pinch_hit_for_pitcher(
+                offense,
+                defense,
+                batter_idx,
+                inning=inning,
+                outs=outs_before,
+                log=self.debug_log,
+            )
+            offense.batting_index += 1
+            if batter.player_id != old_off_pitcher.player.player_id:
+                self._on_pitcher_exit(old_off_pitcher, defense, offense)
+                self._on_pitcher_enter(defense, offense)
         else:
-            batter = self.subs.maybe_pinch_hit(offense, batter_idx, self.debug_log)
-        offense.batting_index += 1
+            old_pitcher = defense.current_pitcher_state
+            batter = self.subs.maybe_double_switch(
+                offense, defense, batter_idx, self.debug_log
+            )
+            if batter is not None:
+                self._on_pitcher_exit(old_pitcher, offense, defense)
+                self._on_pitcher_enter(offense, defense)
+            else:
+                batter = self.subs.maybe_pinch_hit(
+                    offense, batter_idx, self.debug_log
+                )
+            offense.batting_index += 1
         on_deck_idx = offense.batting_index % len(offense.lineup)
         on_deck = offense.lineup[on_deck_idx]
 
-        inning = len(offense.inning_runs) + 1
         on_first = offense.bases[0] is not None
         on_second = offense.bases[1] is not None
         on_third = offense.bases[2] is not None

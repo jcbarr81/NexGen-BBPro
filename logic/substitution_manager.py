@@ -107,6 +107,128 @@ class SubstitutionManager:
         return starter
 
     # ------------------------------------------------------------------
+    # Pinch hitting for the current pitcher
+    # ------------------------------------------------------------------
+    def maybe_pinch_hit_for_pitcher(
+        self,
+        offense: "TeamState",
+        defense: "TeamState",
+        idx: int,
+        *,
+        inning: int,
+        outs: int,
+        log: Optional[list[str]] = None,
+    ) -> Player:
+        """Possibly pinch hit for ``offense``'s current pitcher.
+
+        Returns the player who will bat at ``idx``.  If a pinch hitter is used
+        the next pitcher from the bullpen becomes the new current pitcher.
+        """
+
+        if (
+            not offense.bench
+            or len(offense.pitchers) <= 1
+            or offense.current_pitcher_state is None
+        ):
+            return offense.lineup[idx]
+
+        cfg = self.config
+        chance = cfg.get("phForPitcherBase", 0)
+        if inning <= 3:
+            chance += cfg.get("phForPitcherEarlyInnAdjust", 0)
+        elif inning <= 6:
+            chance += cfg.get("phForPitcherMiddleInnAdjust", 0)
+        else:
+            chance += cfg.get("phForPitcherLateInnAdjust", 0)
+        if inning == 9:
+            chance += cfg.get("phForPitcherInn9Adjust", 0)
+        elif inning > 9:
+            chance += cfg.get("phForPitcherExtraInnAdjust", 0)
+        chance += outs * cfg.get("phForPitcherPerOutAdjust", 0)
+        bullpen = max(0, len(offense.pitchers) - 1)
+        chance += bullpen * cfg.get("phForPitcherPerBPPitcherAdjust", 0)
+        bench = len(offense.bench)
+        chance += bench * cfg.get("phForPitcherPerBenchPlayerAdjust", 0)
+
+        run_diff = offense.runs - defense.runs
+        if run_diff >= 5:
+            chance += cfg.get("phForPitcherBigLeadAdjust", 0)
+        elif run_diff >= 1:
+            chance += cfg.get("phForPitcherLeadAdjust", 0)
+        elif run_diff < 0:
+            deficit = -run_diff
+            needed = deficit + 1
+            count = 0
+            for base_idx, loc in ((2, "scoring"), (1, "scoring"), (0, "first")):
+                if offense.bases[base_idx] is not None:
+                    count += 1
+                    if count == needed:
+                        if loc == "scoring":
+                            chance += cfg.get(
+                                "phForPitcherWinRunInScoringPosAdjust", 0
+                            )
+                        else:
+                            chance += cfg.get(
+                                "phForPitcherWinRunOnFirstAdjust", 0
+                            )
+                        break
+            else:
+                count += 1
+                if count == needed:
+                    chance += cfg.get("phForPitcherWinRunAtBatAdjust", 0)
+                else:
+                    count += 1
+                    if count == needed:
+                        chance += cfg.get("phForPitcherWinRunOnDeckAdjust", 0)
+                    else:
+                        chance += cfg.get("phForPitcherWinRunInDugoutAdjust", 0)
+
+        state = offense.current_pitcher_state
+        remaining = state.player.endurance - state.pitches_thrown
+        tired_thresh = cfg.get("pitcherTiredThresh", 0)
+        if remaining <= 0:
+            chance += cfg.get("phForPitcherExhaustedAdjust", 0)
+        elif remaining <= tired_thresh:
+            chance += cfg.get("phForPitcherTiredAdjust", 0)
+        else:
+            chance += cfg.get("phForPitcherRestedAdjust", 0)
+        if state.r == 0:
+            chance += cfg.get("phForPitcherShutoutAdjust", 0)
+        if state.h == 0:
+            chance += cfg.get("phForPitcherNoHitterAdjust", 0)
+        if getattr(state.player, "injured", False):
+            chance += cfg.get("phForPitcherPerInjuryPointAdjust", 0)
+
+        chance = max(0.0, min(100.0, chance))
+        if self.rng.random() >= chance / 100.0:
+            return offense.lineup[idx]
+
+        starter = offense.lineup[idx]
+        best = max(offense.bench, key=self._slugging_rating, default=None)
+        if best is None:
+            return starter
+
+        offense.bench.remove(best)
+        offense.lineup[idx] = best
+
+        from .simulation import PitcherState  # local import to avoid cycle
+
+        offense.pitchers.pop(0)
+        new_pitcher = offense.pitchers[0]
+        state = offense.pitcher_stats.setdefault(
+            new_pitcher.player_id, PitcherState(new_pitcher)
+        )
+        offense.current_pitcher_state = state
+
+        if log is not None:
+            log.append(
+                "Pinch hitter "
+                f"{best.first_name} {best.last_name} for pitcher "
+                f"{starter.first_name} {starter.last_name}"
+            )
+        return best
+
+    # ------------------------------------------------------------------
     # Pinch running
     # ------------------------------------------------------------------
     def maybe_pinch_run(
