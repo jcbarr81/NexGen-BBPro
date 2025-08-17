@@ -312,11 +312,15 @@ class SubstitutionManager:
         starter_rating = self._slugging_rating(starter)
         on_deck = team.lineup[on_deck_idx]
         on_deck_rating = self._slugging_rating(on_deck)
-        best = max(team.bench, key=self._slugging_rating, default=None)
+
+        best, best_rating = max(
+            ((p, self._slugging_rating(p)) for p in team.bench),
+            key=lambda pr: pr[1],
+            default=(None, 0.0),
+        )
         if best is None:
             return starter
 
-        best_rating = self._slugging_rating(best)
         ph_diff = best_rating - starter_rating
 
         def _apply_rating_adjust(value: float, thresh_suffix: str, adjust_suffix: str) -> int:
@@ -436,11 +440,15 @@ class SubstitutionManager:
         starter_rating = self._offense_rating(starter)
         on_deck = team.lineup[on_deck_idx]
         on_deck_rating = self._offense_rating(on_deck)
-        best = max(team.bench, key=self._offense_rating, default=None)
+
+        best, best_rating = max(
+            ((p, self._offense_rating(p)) for p in team.bench),
+            key=lambda pr: pr[1],
+            default=(None, 0.0),
+        )
         if best is None:
             return starter
 
-        best_rating = self._offense_rating(best)
         ph_diff = best_rating - starter_rating
 
         def _apply_rating_adjust(value: float, thresh_suffix: str, adjust_suffix: str) -> int:
