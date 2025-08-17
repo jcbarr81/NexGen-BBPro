@@ -231,6 +231,7 @@ class GameSimulation:
         self.temperature = temperature
         self.altitude = altitude
         self.wind_speed = wind_speed
+        self.last_batted_ball_angles: tuple[float, float] | None = None
 
     # ------------------------------------------------------------------
     # Stat helpers
@@ -980,9 +981,10 @@ class GameSimulation:
         )
         bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
-        # The angle is calculated for completeness even though the simplified
-        # simulation does not yet use it for the outcome.
-        self.physics.swing_angle(batter.gf)
+        # Calculate and store angles for potential future physics steps.
+        swing_angle = self.physics.swing_angle(batter.gf)
+        vert_angle = self.physics.vertical_hit_angle()
+        self.last_batted_ball_angles = (swing_angle, vert_angle)
         # Simulate ball contact with surface and air; results are unused but the
         # calls ensure PBINI driven physics influence the simulation.
         self.physics.ball_roll_distance(
