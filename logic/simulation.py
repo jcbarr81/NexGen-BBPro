@@ -99,6 +99,11 @@ class PitcherState:
     o_zone_swings: int = 0  # Swings at pitches outside the zone
     o_zone_contacts: int = 0  # Contact on outside-zone swings
     in_save_situation: bool = False  # Internal flag tracking save opp
+    toast: int = 0  # Accumulated toast points
+    consecutive_hits: int = 0  # Consecutive hits allowed
+    consecutive_baserunners: int = 0  # Consecutive batters reaching base
+    is_toast: bool = False  # Reliever toast flag
+    allowed_hr: bool = False  # True if last batter hit a home run
 
     # Backwards compatibility accessors
     @property
@@ -159,6 +164,7 @@ class TeamState:
     inning_lob: List[int] = field(default_factory=list)
     inning_events: List[List[str]] = field(default_factory=list)
     team_stats: Dict[str, float] = field(default_factory=dict)
+    warming_reliever: bool = False
 
     def __post_init__(self) -> None:
         if self.pitchers:
@@ -346,10 +352,16 @@ class GameSimulation:
             return
         offense.runs += 1
         self._add_stat(runner, "r")
+        # Pitcher on scoring team receives positive toast points
+        scoring_pitcher = offense.current_pitcher_state
+        if scoring_pitcher is not None:
+            scoring_pitcher.toast += self.config.get("pitchScoringOffRun", 0)
         pitcher_for_runner = offense.base_pitchers[base_idx]
         if pitcher_for_runner is not None:
             pitcher_for_runner.r += 1
             pitcher_for_runner.er += 1
+            pitcher_for_runner.toast += self.config.get("pitchScoringRun", 0)
+            pitcher_for_runner.toast += self.config.get("pitchScoringER", 0)
             current = defense.current_pitcher_state
             if current is not None and current is not pitcher_for_runner:
                 current.irs += 1
@@ -461,18 +473,33 @@ class GameSimulation:
         offense.bases = [None, None, None]
         offense.base_pitchers = [None, None, None]
         offense.inning_runs.append(offense.runs - start_runs)
+        # Award toast points for completing innings after the 4th
+        if inning > 4 and defense.current_pitcher_state is not None:
+            defense.current_pitcher_state.toast += self.config.get(
+                "pitchScoringInnsAfter4", 0
+            )
 
     def play_at_bat(self, offense: TeamState, defense: TeamState) -> int:
         """Play a single at-bat.  Returns the number of outs recorded."""
+        inning = len(offense.inning_runs) + 1
+        run_diff = offense.runs - defense.runs
+        home_team = defense is self.home
+        self.subs.maybe_warm_reliever(
+            defense, inning=inning, run_diff=run_diff, home_team=home_team
+        )
         old_pitcher = defense.current_pitcher_state
-        changed = self.subs.maybe_change_pitcher(defense, self.debug_log)
+        changed = self.subs.maybe_replace_pitcher(
+            defense,
+            inning=inning,
+            run_diff=run_diff,
+            home_team=home_team,
+            log=self.debug_log,
+        )
         if changed:
             self._on_pitcher_exit(old_pitcher, offense, defense)
             self._on_pitcher_enter(offense, defense)
 
         # Check if any existing runner should be replaced with a pinch runner
-        inning = len(offense.inning_runs) + 1
-        run_diff = offense.runs - defense.runs
         for base_idx, runner in enumerate(offense.bases):
             if runner is not None:
                 self.subs.maybe_pinch_run(
@@ -658,6 +685,9 @@ class GameSimulation:
             self._add_stat(batter_state, "ibb")
             pitcher_state.bb += 1
             pitcher_state.ibb += 1
+            pitcher_state.toast += self.config.get("pitchScoringWalk", 0)
+            pitcher_state.consecutive_hits = 0
+            pitcher_state.consecutive_baserunners += 1
             self._advance_walk(offense, defense, batter_state)
             self._add_stat(
                 batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
@@ -811,6 +841,13 @@ class GameSimulation:
                     self._add_stat(batter_state, "ab")
                     self._add_stat(batter_state, "h")
                     self._add_stat(batter_state, "b1")
+                    pitcher_state.toast += self.config.get("pitchScoringHit", 0)
+                    if pitcher_state.consecutive_hits:
+                        pitcher_state.toast += self.config.get(
+                            "pitchScoringConsHit", 0
+                        )
+                    pitcher_state.consecutive_hits += 1
+                    pitcher_state.consecutive_baserunners += 1
                     self._advance_runners(offense, defense, batter_state)
                     steal_result = self._attempt_steal(
                         offense,
@@ -828,6 +865,9 @@ class GameSimulation:
                     )
                     if steal_result is False:
                         outs += 1
+                        pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                        pitcher_state.consecutive_hits = 0
+                        pitcher_state.consecutive_baserunners = 0
                     steal_result = self._attempt_steal(
                         offense,
                         defense,
@@ -844,12 +884,19 @@ class GameSimulation:
                     )
                     if steal_result is False:
                         outs += 1
+                        pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                        pitcher_state.consecutive_hits = 0
+                        pitcher_state.consecutive_baserunners = 0
                     self._add_stat(
                         batter_state,
                         "pitches",
                         pitcher_state.pitches_thrown - start_pitches,
                     )
                     pitcher_state.outs += outs
+                    run_diff = offense.runs - defense.runs
+                    self.subs.maybe_warm_reliever(
+                        defense, inning=inning, run_diff=run_diff, home_team=home_team
+                    )
                     return outs
                 strikes += 1
                 pitcher_state.strikes_thrown += 1
@@ -864,17 +911,28 @@ class GameSimulation:
             if balls >= 4:
                 self._add_stat(batter_state, "bb")
                 pitcher_state.bb += 1
+                pitcher_state.toast += self.config.get("pitchScoringWalk", 0)
+                pitcher_state.consecutive_hits = 0
+                pitcher_state.consecutive_baserunners += 1
                 self._advance_walk(offense, defense, batter_state)
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
                 pitcher_state.outs += outs
+                run_diff = offense.runs - defense.runs
+                self.subs.maybe_warm_reliever(
+                    defense, inning=inning, run_diff=run_diff, home_team=home_team
+                )
                 return outs
             if strikes >= 3:
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
                 pitcher_state.so += 1
                 outs += 1
+                pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                pitcher_state.toast += self.config.get("pitchScoringStrikeOut", 0)
+                pitcher_state.consecutive_hits = 0
+                pitcher_state.consecutive_baserunners = 0
                 catcher_fs = self._get_fielder(defense, "C")
                 if catcher_fs:
                     self._add_fielding_stat(catcher_fs, "po")
@@ -885,6 +943,10 @@ class GameSimulation:
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
                 pitcher_state.outs += outs
+                run_diff = offense.runs - defense.runs
+                self.subs.maybe_warm_reliever(
+                    defense, inning=inning, run_diff=run_diff, home_team=home_team
+                )
                 return outs
 
 
