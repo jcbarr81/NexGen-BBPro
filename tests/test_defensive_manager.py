@@ -236,18 +236,31 @@ def test_field_position_parsing():
         infieldPosFeetPerDepth=10,
         cutoffRunPos1BDist=90,
         cutoffRunPos1BAngle=-35,
+        cutoffRunPos2BDist=105,
+        cutoffRunPos2BAngle=-15,
         doublePlayPos2BDist=135,
         doublePlayPos2BAngle=-12,
         guardLeftPosLFPct=65,
         guardLeftPosLFAngle=30,
         guardRightPosRFPct=65,
         guardRightPosRFAngle=30,
+        normalPosCFPct=69,
+        normalPosCFAngle=0,
         outfieldPosPctNormal=70,
+        defPosHighPull=101,
+        defPosHighPullExtra=101,
+        defPosLowPull=-1,
+        defPosLowPullExtra=-1,
+        defPosHighPower=101,
+        defPosLowPower=-1,
     )
     dm = DefensiveManager(cfg)
     pos = dm.set_field_positions()
     assert pos["infield"]["cutoffRun"]["1B"] == (90.0, -35)
+    assert pos["infield"]["cutoffRun"]["2B"] == (105.0, -15)
     assert pos["infield"]["doublePlay"]["2B"] == (135.0, -12)
+    cf = pos["outfield"]["normal"]["CF"]
+    assert cf == pytest.approx((48.3, 0))
     gl = pos["outfield"]["guardLeft"]["LF"]
     assert gl == pytest.approx((45.5, 30))
     gr = pos["outfield"]["guardRight"]["RF"]
