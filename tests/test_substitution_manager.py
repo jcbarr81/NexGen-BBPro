@@ -540,3 +540,31 @@ def test_position_player_mopup():
     assert team.current_pitcher_state.player.player_id == bench_player.player_id
     assert bench_player not in team.bench
 
+
+def test_reliever_requires_warmup():
+    cfg = make_cfg(
+        pitcherTiredThresh=0,
+        pitcherExhaustedThresh=0,
+        warmupPitchCount=2,
+    )
+    team = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("p1"), make_pitcher("p2", role="RP")],
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([]))
+    state = team.current_pitcher_state
+    state.pitches_thrown = state.player.endurance
+    team.warming_reliever = True
+    assert not mgr.maybe_replace_pitcher(
+        team, inning=1, run_diff=0, home_team=True
+    )
+    mgr.maybe_warm_reliever(team, inning=1, run_diff=0, home_team=True)
+    assert not mgr.maybe_replace_pitcher(
+        team, inning=1, run_diff=0, home_team=True
+    )
+    mgr.maybe_warm_reliever(team, inning=1, run_diff=0, home_team=True)
+    assert mgr.maybe_replace_pitcher(
+        team, inning=1, run_diff=0, home_team=True
+    )
+
