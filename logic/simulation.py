@@ -501,6 +501,10 @@ class GameSimulation:
         if charge_first or charge_third:
             self.debug_log.append("Defense charges bunt")
         outs_before = self.current_outs
+        next_batter_ch = offense.lineup[
+            offense.batting_index % len(offense.lineup)
+        ].ch
+        run_diff = offense.runs - defense.runs
         if runner_state and self.defense.maybe_hold_runner(runner.sp):
             holding_runner = True
             self.debug_log.append("Defense holds runner")
@@ -509,9 +513,17 @@ class GameSimulation:
                 pitcher = pitcher_state.player
                 steal_chance = int(
                     self.offense.calculate_steal_chance(
+                        balls=0,
+                        strikes=0,
                         runner_sp=runner.sp,
                         pitcher_hold=pitcher.hold_runner,
                         pitcher_is_left=pitcher.bats == "L",
+                        pitcher_is_wild=pitcher.control <= 30,
+                        pitcher_in_windup=False,
+                        outs=outs_before,
+                        runner_on=1,
+                        batter_ch=next_batter_ch,
+                        run_diff=run_diff,
                     )
                     * 100
                 )
@@ -629,7 +641,18 @@ class GameSimulation:
             ):
                 self.debug_log.append("Hit and run")
                 steal_result = self._attempt_steal(
-                    offense, defense, pitcher_state.player, force=True
+                    offense,
+                    defense,
+                    pitcher_state.player,
+                    force=True,
+                    balls=balls,
+                    strikes=strikes,
+                    outs=outs,
+                    runner_on=1,
+                    batter_ch=batter.ch,
+                    pitcher_is_wild=pitcher_state.player.control <= 30,
+                    pitcher_in_windup=False,
+                    run_diff=run_diff,
                 )
                 if steal_result is False:
                     outs += 1
@@ -721,7 +744,18 @@ class GameSimulation:
                     self._add_stat(batter_state, "b1")
                     self._advance_runners(offense, defense, batter_state)
                     steal_result = self._attempt_steal(
-                        offense, defense, pitcher_state.player, batter=batter
+                        offense,
+                        defense,
+                        pitcher_state.player,
+                        batter=batter,
+                        balls=balls,
+                        strikes=strikes,
+                        outs=outs,
+                        runner_on=1,
+                        batter_ch=batter.ch,
+                        pitcher_is_wild=pitcher_state.player.control <= 30,
+                        pitcher_in_windup=False,
+                        run_diff=run_diff,
                     )
                     if steal_result is False:
                         outs += 1
@@ -886,18 +920,34 @@ class GameSimulation:
         *,
         force: bool = False,
         batter: Player | None = None,
+        balls: int = 0,
+        strikes: int = 0,
+        outs: int = 0,
+        runner_on: int = 1,
+        batter_ch: int = 50,
+        pitcher_is_wild: bool = False,
+        pitcher_in_windup: bool = False,
+        run_diff: int = 0,
     ) -> Optional[bool]:
         runner_state = offense.bases[0]
         if not runner_state:
             return None
         attempt = force
         if not attempt:
-            batter_ch = batter.ch if batter else 50
+            if batter is not None:
+                batter_ch = batter.ch
             chance = self.offense.calculate_steal_chance(
+                balls=balls,
+                strikes=strikes,
                 runner_sp=runner_state.player.sp,
                 pitcher_hold=pitcher.hold_runner,
                 pitcher_is_left=pitcher.bats == "L",
+                pitcher_is_wild=pitcher_is_wild,
+                pitcher_in_windup=pitcher_in_windup,
+                outs=outs,
+                runner_on=runner_on,
                 batter_ch=batter_ch,
+                run_diff=run_diff,
             )
             attempt = self.rng.random() < chance
         if attempt:

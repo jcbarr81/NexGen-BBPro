@@ -93,6 +93,41 @@ def test_calculate_steal_chance():
     assert chance == 0.175
 
 
+def test_calculate_steal_chance_situational_modifiers():
+    cfg = make_cfg(
+        offManStealChancePct=100,
+        stealChance10Count=10,
+        stealChanceOnFirst01OutHighCHThresh=70,
+        stealChanceOnFirst01OutHighCHAdjust=20,
+        stealChanceWayBehindThresh=-2,
+        stealChanceWayBehindAdjust=30,
+    )
+    om = OffensiveManager(cfg, MockRandom([]))
+    good = om.calculate_steal_chance(
+        balls=1,
+        strikes=0,
+        runner_sp=50,
+        pitcher_hold=50,
+        pitcher_is_left=False,
+        outs=1,
+        runner_on=1,
+        batter_ch=80,
+        run_diff=-3,
+    )
+    bad = om.calculate_steal_chance(
+        balls=0,
+        strikes=1,
+        runner_sp=50,
+        pitcher_hold=50,
+        pitcher_is_left=False,
+        outs=1,
+        runner_on=1,
+        batter_ch=50,
+        run_diff=0,
+    )
+    assert good > bad
+
+
 def test_hit_and_run_chance_and_advance():
     cfg = make_cfg(
         hnrChanceBase=30,
