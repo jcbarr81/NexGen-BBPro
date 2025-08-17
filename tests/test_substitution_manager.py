@@ -49,7 +49,7 @@ def make_player(
     )
 
 
-def make_pitcher(pid: str, endurance: int = 100) -> Pitcher:
+def make_pitcher(pid: str, endurance: int = 100, role: str = "SP") -> Pitcher:
     return Pitcher(
         player_id=pid,
         first_name="PF" + pid,
@@ -74,7 +74,7 @@ def make_pitcher(pid: str, endurance: int = 100) -> Pitcher:
         kn=0,
         arm=50,
         fa=50,
-        role="SP",
+        role=role,
     )
 def test_pinch_hit():
     cfg = load_config()
@@ -506,4 +506,37 @@ def test_pinch_hit_for_pitcher():
     assert player.player_id == "b"
     assert offense.lineup[0].player_id == "b"
     assert offense.current_pitcher_state.player.player_id == "p2"
+
+
+def test_reliever_toast_replaced():
+    cfg = make_cfg(pitcherTiredThresh=0)
+    team = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("rp1", role="RP"), make_pitcher("rp2", role="RP")],
+    )
+    state = team.current_pitcher_state
+    state.consecutive_baserunners = 2
+    mgr = SubstitutionManager(cfg, MockRandom([]))
+    assert mgr.maybe_warm_reliever(team, inning=1, run_diff=0, home_team=True)
+    assert mgr.maybe_replace_pitcher(team, inning=1, run_diff=0, home_team=True, log=[])
+    assert team.current_pitcher_state.player.player_id == "rp2"
+
+
+def test_position_player_mopup():
+    cfg = make_cfg(posPlayerPitchingRuns=5, pitcherExhaustedThresh=0)
+    bench_player = make_player("b1")
+    team = TeamState(
+        lineup=[make_player("d")],
+        bench=[bench_player],
+        pitchers=[make_pitcher("p1", endurance=5, role="RP")],
+    )
+    state = team.current_pitcher_state
+    state.pitches_thrown = 5
+    mgr = SubstitutionManager(cfg, MockRandom([]))
+    assert mgr.maybe_replace_pitcher(
+        team, inning=7, run_diff=-6, home_team=True, log=[]
+    )
+    assert team.current_pitcher_state.player.player_id == bench_player.player_id
+    assert bench_player not in team.bench
 

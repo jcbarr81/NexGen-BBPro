@@ -367,6 +367,29 @@ def test_pitcher_not_changed():
     assert home.current_pitcher_state.player.player_id == "start"
 
 
+def test_starter_replaced_when_toast():
+    cfg = make_cfg(
+        starterToastThreshInn1=0,
+        starterToastThreshPerInn=0,
+        pitchScoringHit=-2,
+        pitcherTiredThresh=0,
+        pitcherExhaustedThresh=0,
+    )
+    home = TeamState(
+        lineup=[make_player("h1")],
+        bench=[],
+        pitchers=[make_pitcher("start"), make_pitcher("relief", role="RP")],
+    )
+    away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
+    rng = MockRandom([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
+    sim = GameSimulation(home, away, cfg, rng)
+    sim.play_at_bat(away, home)
+    assert home.current_pitcher_state.player.player_id == "start"
+    assert home.warming_reliever
+    sim.play_at_bat(away, home)
+    assert home.current_pitcher_state.player.player_id == "relief"
+
+
 def test_run_tracking_and_boxscore():
     cfg = load_config()
     runner = make_player("run")

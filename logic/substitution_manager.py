@@ -778,37 +778,168 @@ class SubstitutionManager:
         return best
 
     # ------------------------------------------------------------------
-    # Standard pitcher change when tired
+    # Pitcher toast helpers
     # ------------------------------------------------------------------
-    def maybe_change_pitcher(
-        self, defense: "TeamState", log: Optional[list[str]] = None
+    def _starter_toast_threshold(
+        self, team: "TeamState", inning: int, home_team: bool
+    ) -> int:
+        cfg = self.config
+        if inning <= 9:
+            base = cfg.get(f"starterToastThreshInn{inning}", 0)
+        else:
+            base = cfg.get("starterToastThreshInn9", 0) + (
+                inning - 9
+            ) * cfg.get("starterToastThreshPerInn", 0)
+        if not home_team:
+            base += cfg.get("starterToastThreshAwayAdjust", 0)
+        bullpen_pitches = sum(p.endurance for p in team.pitchers[1:])
+        innings_left = max(1, min(8, 9 - inning))
+        per_inn = bullpen_pitches / innings_left if innings_left > 0 else bullpen_pitches
+        if per_inn < 50:
+            base += cfg.get("starterToastThreshFewBullpenPitchesAdjust", 0)
+        elif per_inn > 100:
+            base += cfg.get("starterToastThreshManyBullpenPitchesAdjust", 0)
+        return base
+
+    def maybe_warm_reliever(
+        self,
+        defense: "TeamState",
+        *,
+        inning: int,
+        run_diff: int,
+        home_team: bool,
     ) -> bool:
-        """Replace the current pitcher when fatigued.
+        state = defense.current_pitcher_state
+        if state is None or len(defense.pitchers) <= 1:
+            return False
+        cfg = self.config
+        remaining = state.player.endurance - state.pitches_thrown
+        tired_thresh = cfg.get("pitcherTiredThresh", 0)
+        warmed = False
+        if state.player.role == "SP":
+            thresh = self._starter_toast_threshold(defense, inning, home_team)
+            if state.toast < thresh or remaining <= tired_thresh:
+                defense.warming_reliever = True
+                warmed = True
+        else:
+            pct_left = (
+                (remaining / state.player.endurance) * 100
+                if state.player.endurance
+                else 0
+            )
+            max_lead = cfg.get("pitcherToastMaxLead", 0)
+            min_lead = cfg.get("pitcherToastMinLead", 0)
+            if state.consecutive_baserunners >= 2:
+                state.is_toast = True
+            if state.allowed_hr and min_lead <= run_diff <= max_lead:
+                state.is_toast = True
+            state.allowed_hr = False
+            if (
+                state.is_toast
+                or pct_left <= cfg.get("pitcherToastPctPitchesLeft", 0)
+                or remaining <= tired_thresh
+            ):
+                defense.warming_reliever = True
+                warmed = True
+        return warmed
 
-        Returns ``True`` if a change was made, ``False`` otherwise.
-        """
-
+    def maybe_replace_pitcher(
+        self,
+        defense: "TeamState",
+        *,
+        inning: int,
+        run_diff: int,
+        home_team: bool,
+        log: Optional[list[str]] = None,
+    ) -> bool:
         state = defense.current_pitcher_state
         if state is None:
             return False
-
+        cfg = self.config
         remaining = state.player.endurance - state.pitches_thrown
-        thresh = self.config.get("pitcherTiredThresh", 0)
-        if remaining <= thresh and len(defense.pitchers) > 1:
-            from .simulation import PitcherState  # local import to avoid cycle
-
-            defense.pitchers.pop(0)
-            new_pitcher = defense.pitchers[0]
-            state = defense.pitcher_stats.setdefault(
-                new_pitcher.player_id, PitcherState(new_pitcher)
+        exhausted = cfg.get("pitcherExhaustedThresh", 0)
+        tired = cfg.get("pitcherTiredThresh", 0)
+        if remaining <= exhausted:
+            defense.warming_reliever = True
+        if not defense.warming_reliever:
+            return False
+        change = False
+        if state.player.role == "SP":
+            thresh = self._starter_toast_threshold(defense, inning, home_team)
+            if state.toast < thresh or remaining <= tired:
+                change = True
+        else:
+            pct_left = (
+                (remaining / state.player.endurance) * 100
+                if state.player.endurance
+                else 0
             )
-            defense.current_pitcher_state = state
-            if log is not None:
-                log.append(
-                    f"Pitching change: {new_pitcher.first_name} {new_pitcher.last_name} enters"
-                )
-            return True
-        return False
+            if (
+                state.is_toast
+                or pct_left <= cfg.get("pitcherToastPctPitchesLeft", 0)
+                or remaining <= tired
+            ):
+                change = True
+        if not change:
+            return False
+        from .simulation import PitcherState  # local import to avoid cycle
+        defense.pitchers.pop(0)
+        if defense.pitchers:
+            new_pitcher = defense.pitchers[0]
+        elif run_diff <= -cfg.get("posPlayerPitchingRuns", 0) and defense.bench:
+            from models.pitcher import Pitcher
+
+            player = defense.bench.pop(0)
+            new_pitcher = Pitcher(
+                player_id=player.player_id,
+                first_name=player.first_name,
+                last_name=player.last_name,
+                birthdate=player.birthdate,
+                height=player.height,
+                weight=player.weight,
+                bats=player.bats,
+                primary_position=player.primary_position,
+                other_positions=player.other_positions,
+                gf=player.gf,
+                endurance=0,
+                control=50,
+                movement=50,
+                hold_runner=50,
+                fb=50,
+                cu=0,
+                cb=0,
+                sl=0,
+                si=0,
+                scb=0,
+                kn=0,
+                arm=player.arm,
+                fa=player.fa,
+                role="RP",
+            )
+            defense.pitchers.insert(0, new_pitcher)
+        else:
+            defense.warming_reliever = False
+            return False
+        state = defense.pitcher_stats.setdefault(
+            new_pitcher.player_id, PitcherState(new_pitcher)
+        )
+        defense.current_pitcher_state = state
+        defense.warming_reliever = False
+        if log is not None:
+            log.append(
+                f"Pitching change: {new_pitcher.first_name} {new_pitcher.last_name} enters"
+            )
+        return True
+
+    def maybe_change_pitcher(
+        self, defense: "TeamState", log: Optional[list[str]] = None
+    ) -> bool:
+        self.maybe_warm_reliever(
+            defense, inning=1, run_diff=0, home_team=True
+        )
+        return self.maybe_replace_pitcher(
+            defense, inning=1, run_diff=0, home_team=True, log=log
+        )
 
 
 __all__ = ["SubstitutionManager"]
