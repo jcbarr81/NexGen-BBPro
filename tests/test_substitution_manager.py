@@ -110,6 +110,65 @@ def test_pinch_hit_need_hit():
     assert team.lineup[0].player_id == "bench"
 
 
+def test_pinch_hit_need_run():
+    cfg = load_config()
+    cfg.values.update({"phForRunBase": 100})
+    bench = make_player("bench", ph=80, ch=80)
+    starter = make_player("start", ph=10, ch=10)
+    deck = make_player("deck")
+    team = TeamState(
+        lineup=[starter, deck], bench=[bench], pitchers=[make_pitcher("p1")]
+    )
+    defense = TeamState(
+        lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("p2")]
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_pinch_hit_need_run(
+        team,
+        defense,
+        0,
+        1,
+        inning=9,
+        outs=1,
+        run_diff=-1,
+        home_team=False,
+        log=[],
+    )
+    assert player.player_id == "bench"
+    assert team.lineup[0].player_id == "bench"
+
+
+def test_pinch_hit_need_run_platoon():
+    cfg = load_config()
+    cfg.values.update({"phForRunPHPlatAdvAdjust": 100})
+    bench = make_player("bench", ph=80, ch=80)
+    bench.bats = "L"
+    starter = make_player("start", ph=10, ch=10)
+    starter.bats = "R"
+    deck = make_player("deck")
+    team = TeamState(
+        lineup=[starter, deck], bench=[bench], pitchers=[make_pitcher("p1")]
+    )
+    defense = TeamState(
+        lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("p2")]
+    )
+    defense.pitchers[0].bats = "R"
+    mgr = SubstitutionManager(cfg, MockRandom([0.0]))
+    player = mgr.maybe_pinch_hit_need_run(
+        team,
+        defense,
+        0,
+        1,
+        inning=9,
+        outs=1,
+        run_diff=-1,
+        home_team=False,
+        log=[],
+    )
+    assert player.player_id == "bench"
+    assert team.lineup[0].player_id == "bench"
+
+
 def test_pinch_run():
     cfg = load_config()
     cfg.values.update({"pinchRunChance": 100})
