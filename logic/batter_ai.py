@@ -77,6 +77,24 @@ class BatterAI:
     # ------------------------------------------------------------------
     # Decision making
     # ------------------------------------------------------------------
+    def pitch_class(self, dist: int) -> str:
+        """Return pitch classification based on distance from the zone centre."""
+
+        sure_strike = self.config.get("sureStrikeDist", 3)
+        close_strike = self.config.get("closeStrikeDist", sure_strike + 1)
+        close_ball = self.config.get("closeBallDist", close_strike + 1)
+
+        if dist <= sure_strike:
+            return "sure strike"
+        if dist <= close_strike:
+            return "close strike"
+        if dist <= close_ball:
+            return "close ball"
+        return "sure ball"
+
+    # ------------------------------------------------------------------
+    # Main decision method
+    # ------------------------------------------------------------------
     def decide_swing(
         self,
         batter: Player,
@@ -95,8 +113,8 @@ class BatterAI:
         of RNG rolls deterministic for the tests.
         """
 
-        sure_strike = self.config.get("sureStrikeDist", 3)
-        is_strike = dist <= sure_strike
+        p_class = self.pitch_class(dist)
+        is_strike = p_class in {"sure strike", "close strike"}
 
         # Chance to correctly identify the pitch type
         id_base = self.config.get("idRatingBase", 0)
@@ -109,7 +127,13 @@ class BatterAI:
         if identified:
             swing = is_strike
         else:
-            swing = random_value < 0.5
+            swing_probs = {
+                "sure strike": 0.75,
+                "close strike": 0.5,
+                "close ball": 0.25,
+                "sure ball": 0.0,
+            }
+            swing = random_value < swing_probs[p_class]
 
         contact = 1.0 if identified else 0.5 if swing else 0.0
         self.last_decision = (swing, contact)

@@ -58,3 +58,14 @@ def test_primary_look_adjust_increases_swings():
     )
     assert swing is True
     assert contact == 1.0
+
+
+def test_pitch_classification():
+    cfg = load_config()
+    ai = BatterAI(cfg)
+
+    assert ai.pitch_class(0) == "sure strike"
+    assert ai.pitch_class(3) == "sure strike"
+    assert ai.pitch_class(4) == "close strike"
+    assert ai.pitch_class(5) == "close ball"
+    assert ai.pitch_class(6) == "sure ball"
