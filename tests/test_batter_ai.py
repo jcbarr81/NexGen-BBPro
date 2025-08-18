@@ -1,7 +1,7 @@
 import pytest
 
 from logic.batter_ai import BatterAI
-from tests.util.pbini_factory import load_config
+from tests.util.pbini_factory import load_config, make_cfg
 from tests.test_simulation import make_player, make_pitcher
 
 
@@ -286,3 +286,18 @@ def test_contact_quality_variability():
         random_value=0.2,
     )
     assert contact1 != contact2
+
+
+def test_large_adjustment_fails_small_succeeds():
+    cfg = make_cfg(
+        adjustUnitsCHPct=100,
+        adjustUnitsPowerPct=75,
+        adjustUnitsContactPct=150,
+        adjustUnitsDiag=2,
+        adjustUnitsHoriz=3,
+        adjustUnitsVert=2,
+    )
+    ai = BatterAI(cfg)
+    batter = make_player("b1", ch=40)
+    assert ai.can_adjust_swing(batter, 20, 20, swing_type="power") is False
+    assert ai.can_adjust_swing(batter, 1, 0, swing_type="contact") is True

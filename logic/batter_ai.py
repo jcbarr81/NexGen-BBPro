@@ -112,6 +112,44 @@ class BatterAI:
             return "close ball"
         return "sure ball"
 
+    def can_adjust_swing(
+        self,
+        batter: Player,
+        dx: int,
+        dy: int,
+        swing_type: str = "normal",
+    ) -> bool:
+        """Return ``True`` if the batter can adjust the swing location.
+
+        ``dx`` and ``dy`` are the difference in squares between the batter's
+        initial swing location and the actual pitch location.  The cost of the
+        adjustment is calculated using ``adjustUnitsDiag``,
+        ``adjustUnitsHoriz`` and ``adjustUnitsVert`` from the
+        :class:`~logic.playbalance_config.PlayBalanceConfig`.  Available units
+        are based on the batter's ``CH`` rating scaled by
+        ``adjustUnitsCHPct`` and modified by the swing type specific
+        multipliers.
+        """
+
+        cfg = self.config
+        ch = getattr(batter, "ch", 0)
+        units = ch * cfg.get("adjustUnitsCHPct", 0) / 100.0
+        units *= {
+            "power": cfg.get("adjustUnitsPowerPct", 100) / 100.0,
+            "contact": cfg.get("adjustUnitsContactPct", 100) / 100.0,
+        }.get(swing_type, 1.0)
+
+        diag = min(abs(dx), abs(dy))
+        horiz = abs(dx) - diag
+        vert = abs(dy) - diag
+        required = (
+            diag * cfg.get("adjustUnitsDiag", 0)
+            + horiz * cfg.get("adjustUnitsHoriz", 0)
+            + vert * cfg.get("adjustUnitsVert", 0)
+        )
+
+        return units >= required
+
     # ------------------------------------------------------------------
     # Main decision method
     # ------------------------------------------------------------------
