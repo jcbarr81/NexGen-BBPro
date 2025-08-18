@@ -144,22 +144,29 @@ class PitcherAI:
         pitch_type = max(scored.items(), key=lambda kv: (kv[1], -_PITCH_RATINGS.index(kv[0])))[0]
         established.add(pitch_type)
 
-        # Determine the pitch objective based on count specific weights
+        # Determine the pitch objective based on count specific weights. The
+        # real game uses weighted randomness for this selection so we gather the
+        # weights for all objectives and perform a single weighted roll.
         prefix = f"pitchObj{balls}{strikes}Count"
-        weights = {
-            "establish": self.config.get(prefix + "EstablishWeight", 0),
-            "outside": self.config.get(prefix + "OutsideWeight", 0),
-            "best": self.config.get(prefix + "BestWeight", 0),
-            "best_center": self.config.get(prefix + "BestCenterWeight", 0),
-            "fast_center": self.config.get(prefix + "FastCenterWeight", 0),
-            "plus": self.config.get(prefix + "PlusWeight", 0),
-        }
+        weights = [
+            ("establish", self.config.get(prefix + "EstablishWeight", 0)),
+            ("outside", self.config.get(prefix + "OutsideWeight", 0)),
+            ("best", self.config.get(prefix + "BestWeight", 0)),
+            ("best_center", self.config.get(prefix + "BestCenterWeight", 0)),
+            ("fast_center", self.config.get(prefix + "FastCenterWeight", 0)),
+            ("plus", self.config.get(prefix + "PlusWeight", 0)),
+        ]
+
+        total = sum(weight for _, weight in weights)
         objective = "establish"
-        max_weight = weights[objective]
-        for obj, weight in weights.items():
-            if weight > max_weight:
-                objective = obj
-                max_weight = weight
+        if total > 0:
+            roll = self.rng.random() * total
+            cumulative = 0
+            for obj, weight in weights:
+                cumulative += weight
+                if roll < cumulative:
+                    objective = obj
+                    break
 
         self.last_selection = (pitch_type, objective)
         return self.last_selection

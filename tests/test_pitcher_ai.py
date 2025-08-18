@@ -103,25 +103,21 @@ def test_pitch_objective_weights():
         pitchRatVariationCount=1,
         pitchRatVariationFaces=6,
         pitchRatVariationBase=0,
-        pitchObj00CountEstablishWeight=0,
-        pitchObj00CountOutsideWeight=10,
+        pitchObj00CountEstablishWeight=1,
+        pitchObj00CountOutsideWeight=2,
+        pitchObj00CountBestWeight=3,
     )
-    ai = PitcherAI(cfg, SeqRandom([1]))
+    # Three calls using deterministic floats to select each objective based on
+    # their relative weight: 1/6 establish, 2/6 outside, 3/6 best.
+    ai = PitcherAI(cfg, SeqRandom([1], floats=[0.0, 0.4, 0.9]))
     ai.new_game()
-    _, obj = ai.select_pitch(pitcher)
-    assert obj == "outside"
+    _, obj1 = ai.select_pitch(pitcher)
+    _, obj2 = ai.select_pitch(pitcher)
+    _, obj3 = ai.select_pitch(pitcher)
 
-    cfg2 = make_cfg(
-        pitchRatVariationCount=1,
-        pitchRatVariationFaces=6,
-        pitchRatVariationBase=0,
-        pitchObj00CountEstablishWeight=10,
-        pitchObj00CountOutsideWeight=0,
-    )
-    ai2 = PitcherAI(cfg2, SeqRandom([1]))
-    ai2.new_game()
-    _, obj2 = ai2.select_pitch(pitcher)
-    assert obj2 == "establish"
+    assert obj1 == "establish"
+    assert obj2 == "outside"
+    assert obj3 == "best"
 
 
 def test_pitch_variation_cached_per_game():
