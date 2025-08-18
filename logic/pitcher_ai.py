@@ -55,7 +55,25 @@ class PitcherAI:
         self._established: Dict[str, Set[str]] = {}
         # Cache of primary pitch type per pitcher
         self._primary_cache: Dict[str, str] = {}
+        # Per pitcher rating variation for the current game
+        self._variation_cache: Dict[str, Dict[str, int]] = {}
         self.last_selection: Tuple[str, str] | None = None
+
+    # ------------------------------------------------------------------
+    # Game lifecycle
+    # ------------------------------------------------------------------
+    def new_game(self) -> None:
+        """Reset caches that are specific to a single game.
+
+        The real game would call this when a new game starts.  Tests that want
+        to simulate multiple games can call it explicitly.  ``_primary_cache``
+        is left intact as a pitcher's primary pitch is independent of the game
+        state.
+        """
+
+        self._established.clear()
+        self._variation_cache.clear()
+        self.last_selection = None
 
     # ------------------------------------------------------------------
     # Helpers
@@ -99,13 +117,22 @@ class PitcherAI:
         established = self._established.setdefault(pitcher.player_id, set())
         primary = self._primary_pitch(pitcher)
 
+        # Apply pre-rolled rating variations for this pitcher.  When a pitcher
+        # appears in a new game the variation for all of their pitches is
+        # determined once and stored in ``_variation_cache``.
+        variations = self._variation_cache.setdefault(pitcher.player_id, {})
+        if not variations:
+            for name in available:
+                offset = 0
+                if var_count > 0 and var_faces > 0:
+                    offset = var_base
+                    for _ in range(var_count):
+                        offset += self.rng.randint(1, var_faces)
+                variations[name] = offset
+
         scored: Dict[str, int] = {}
         for name, base_rating in available.items():
-            score = base_rating
-            if var_count > 0 and var_faces > 0:
-                score += var_base
-                for _ in range(var_count):
-                    score += self.rng.randint(1, var_faces)
+            score = base_rating + variations.get(name, 0)
             if name not in established:
                 score += non_establish
             if name == primary:

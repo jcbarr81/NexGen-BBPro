@@ -86,11 +86,13 @@ def test_primary_pitch_adjust_affects_selection():
 
     cfg1 = make_cfg(**cfg_base, primaryPitchTypeAdjust=0)
     ai1 = PitcherAI(cfg1, SeqRandom([1, 6]))  # fb -> 1, sl -> 6
+    ai1.new_game()
     pitch1, _ = ai1.select_pitch(pitcher)
     assert pitch1 == "sl"
 
     cfg2 = make_cfg(**cfg_base, primaryPitchTypeAdjust=10)
     ai2 = PitcherAI(cfg2, SeqRandom([1, 6]))
+    ai2.new_game()
     pitch2, _ = ai2.select_pitch(pitcher)
     assert pitch2 == "fb"
 
@@ -105,6 +107,7 @@ def test_pitch_objective_weights():
         pitchObj00CountOutsideWeight=10,
     )
     ai = PitcherAI(cfg, SeqRandom([1]))
+    ai.new_game()
     _, obj = ai.select_pitch(pitcher)
     assert obj == "outside"
 
@@ -116,6 +119,31 @@ def test_pitch_objective_weights():
         pitchObj00CountOutsideWeight=0,
     )
     ai2 = PitcherAI(cfg2, SeqRandom([1]))
+    ai2.new_game()
     _, obj2 = ai2.select_pitch(pitcher)
     assert obj2 == "establish"
+
+
+def test_pitch_variation_cached_per_game():
+    pitcher = make_pitcher("p3")
+    cfg = make_cfg(
+        pitchRatVariationCount=1,
+        pitchRatVariationFaces=6,
+        pitchRatVariationBase=0,
+        nonEstablishedPitchTypeAdjust=0,
+    )
+    # Provide enough integers for two games. If variation was re-rolled every
+    # pitch the RNG would be exhausted before the second game begins.
+    rng = SeqRandom([1, 6, 5, 2])
+    ai = PitcherAI(cfg, rng)
+
+    ai.new_game()
+    pitch1, _ = ai.select_pitch(pitcher)
+    pitch2, _ = ai.select_pitch(pitcher)
+    assert pitch1 == pitch2 == "sl"
+
+    ai.new_game()
+    pitch3, _ = ai.select_pitch(pitcher)
+    pitch4, _ = ai.select_pitch(pitcher)
+    assert pitch3 == pitch4 == "fb"
 
