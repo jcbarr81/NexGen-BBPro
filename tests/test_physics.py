@@ -2,6 +2,7 @@ import random
 
 import pytest
 
+from logic.batter_ai import BatterAI
 from logic.simulation import GameSimulation, TeamState, BatterState
 from logic.physics import Physics
 from models.player import Player
@@ -253,3 +254,111 @@ def test_pitch_velocity_by_type(ptype, cfg_key):
     physics = Physics(cfg, MockRandom([0.5]))
     speed = physics.pitch_velocity(ptype, as_rating=50)
     assert speed == pytest.approx(60 + 5 + 10)
+
+
+class CaptureDist(Exception):
+    """Internal exception used to abort after a single pitch."""
+
+
+class TrackingBatterAI(BatterAI):
+    """Batter AI that records the last distance value passed in."""
+
+    last_dist: int | None = None
+
+    def decide_swing(
+        self,
+        batter,
+        pitcher,
+        *,
+        pitch_type: str,
+        balls: int = 0,
+        strikes: int = 0,
+        dist: int = 0,
+        random_value: float = 0.0,
+    ):
+        self.last_dist = dist
+        raise CaptureDist
+
+
+def make_pitcher_for_type(pid: str, pitch_type: str) -> Pitcher:
+    ratings = {p: 0 for p in ["fb", "sl", "cu", "cb", "si", "scb", "kn"]}
+    ratings[pitch_type] = 50
+    return Pitcher(
+        player_id=pid,
+        first_name="PF" + pid,
+        last_name="PL" + pid,
+        birthdate="2000-01-01",
+        height=72,
+        weight=180,
+        bats="R",
+        primary_position="P",
+        other_positions=[],
+        gf=50,
+        endurance=100,
+        control=100,
+        movement=50,
+        hold_runner=50,
+        fb=ratings["fb"],
+        cu=ratings["cu"],
+        cb=ratings["cb"],
+        sl=ratings["sl"],
+        si=ratings["si"],
+        scb=ratings["scb"],
+        kn=ratings["kn"],
+        arm=50,
+        fa=50,
+        role="SP",
+    )
+
+
+@pytest.mark.parametrize(
+    "ptype,cfg_key,width,height",
+    [
+        ("fb", "fb", 5, 1),
+        ("cb", "cb", 1, 6),
+        ("cu", "cu", 7, 3),
+        ("sl", "sl", 2, 8),
+        ("scb", "sb", 9, 4),
+        ("kn", "kb", 3, 10),
+        ("si", "si", 11, 5),
+    ],
+)
+def test_pitch_aim_uses_control_box_dimensions(ptype, cfg_key, width, height):
+    cfg = make_cfg(
+        **{
+            f"{cfg_key}ControlBoxWidth": width,
+            f"{cfg_key}ControlBoxHeight": height,
+        }
+    )
+    pitcher = make_pitcher_for_type("hp", ptype)
+    batter = make_player("b")
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[pitcher])
+    rng = MockRandom([0.9, 0.0])
+    sim = GameSimulation(home, away, cfg, rng)
+    tracker = TrackingBatterAI(cfg)
+    sim.batter_ai = tracker
+    with pytest.raises(CaptureDist):
+        sim.play_at_bat(away, home)
+    expected = int(round(0.8 * max(width, height)))
+    assert tracker.last_dist == expected
+
+
+@pytest.mark.parametrize(
+    "ptype,cfg_key",
+    [
+        ("fb", "fb"),
+        ("cb", "cb"),
+        ("cu", "cu"),
+        ("sl", "sl"),
+        ("scb", "sb"),
+        ("kn", "kb"),
+        ("si", "si"),
+    ],
+)
+def test_control_box_lookup(ptype, cfg_key):
+    cfg = make_cfg(
+        **{f"{cfg_key}ControlBoxWidth": 3, f"{cfg_key}ControlBoxHeight": 4}
+    )
+    physics = Physics(cfg)
+    assert physics.control_box(ptype) == (3, 4)

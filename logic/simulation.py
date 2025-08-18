@@ -878,7 +878,13 @@ class GameSimulation:
             )
             self.last_pitch_speed = pitch_speed
             control_chance = pitcher.control / 100.0
-            dist = 0 if loc_r < control_chance else 5
+            width, height = self.physics.control_box(pitch_type)
+            frac = loc_r
+            x_off = (frac * 2 - 1) * width
+            y_off = (frac * 2 - 1) * height
+            dist = int(round(max(abs(x_off), abs(y_off))))
+            if loc_r >= control_chance:
+                dist += 5
             dec_r = self.rng.random()
             swing, contact = self.batter_ai.decide_swing(
                 batter,
