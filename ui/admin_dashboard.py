@@ -239,6 +239,8 @@ class AdminDashboard(QWidget):
         progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setValue(0)
         progress.show()
+        # Allow the event loop to process the show event so the dialog appears
+        QApplication.processEvents()
 
         missing = []
 
