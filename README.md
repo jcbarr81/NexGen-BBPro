@@ -17,6 +17,11 @@ loaded into a dedicated :class:`PlayBalanceConfig` dataclass
 safe defaults.  The managers and `GameSimulation` consume this object instead
 of raw dictionaries.
 
+Pitch accuracy is influenced by control box dimensions configured via
+``{pitch}ControlBoxWidth`` and ``{pitch}ControlBoxHeight`` entries (e.g.
+``fbControlBoxWidth`` for fastballs).  Each value defaults to ``1`` when not
+specified, providing a minimal strike zone around the target.
+
 For tests and experimentation a helper factory is provided in
 `tests/util/pbini_factory.py` which can create minimal configurations:
 

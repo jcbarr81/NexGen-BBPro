@@ -54,6 +54,25 @@ class Physics:
         return base + rand * rng_range + as_rating * pct / 100.0
 
     # ------------------------------------------------------------------
+    # Pitch control box
+    # ------------------------------------------------------------------
+    def control_box(self, pitch_type: str) -> tuple[int, int]:
+        """Return ``(width, height)`` of the control box for ``pitch_type``.
+
+        Control boxes define the horizontal and vertical area a pitch may land
+        in when the pitcher has perfect control.  Values are sourced from
+        ``{pitch}ControlBoxWidth`` and ``{pitch}ControlBoxHeight`` entries in
+        :class:`PlayBalanceConfig`.  Pitch types that are aliases of the
+        configuration keys (e.g. ``kn`` -> ``kb``) are resolved automatically.
+        """
+
+        key_map = {"kn": "kb", "scb": "sb"}
+        key = key_map.get(pitch_type.lower(), pitch_type.lower())
+        width = getattr(self.config, f"{key}ControlBoxWidth")
+        height = getattr(self.config, f"{key}ControlBoxHeight")
+        return width, height
+
+    # ------------------------------------------------------------------
     # Bat speed
     # ------------------------------------------------------------------
     def bat_speed(
