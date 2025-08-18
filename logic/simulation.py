@@ -985,8 +985,40 @@ class GameSimulation:
                     strikes += 1
                     pitcher_state.strikes_thrown += 1
                 else:
-                    balls += 1
-                    pitcher_state.balls_thrown += 1
+                    hbp_dist = self.config.get("closeBallDist", 5) + 3
+                    if dist >= hbp_dist:
+                        step_out_chance = (
+                            self.config.get("hbpBatterStepOutChance", 0) / 100.0
+                        )
+                        if self.rng.random() < step_out_chance:
+                            balls += 1
+                            pitcher_state.balls_thrown += 1
+                        else:
+                            self._add_stat(batter_state, "hbp")
+                            pitcher_state.hbp += 1
+                            pitcher_state.toast += self.config.get(
+                                "pitchScoringWalk", 0
+                            )
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners += 1
+                            self._advance_walk(offense, defense, batter_state)
+                            self._add_stat(
+                                batter_state,
+                                "pitches",
+                                pitcher_state.pitches_thrown - start_pitches,
+                            )
+                            pitcher_state.outs += outs
+                            run_diff = offense.runs - defense.runs
+                            self.subs.maybe_warm_reliever(
+                                defense,
+                                inning=inning,
+                                run_diff=run_diff,
+                                home_team=home_team,
+                            )
+                            return outs
+                    else:
+                        balls += 1
+                        pitcher_state.balls_thrown += 1
 
             if balls >= 4:
                 self._add_stat(batter_state, "bb")
