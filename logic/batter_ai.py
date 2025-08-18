@@ -21,6 +21,13 @@ Only a handful of options are supported:
     for the primary pitch the adjustment increases the chance to correctly
     identify the pitch.
 
+``lookBestTypeXXCountAdjust``
+    Count specific adjustment applied when the batter is looking for the
+    pitcher's best (highest rated) pitch. ``XX`` represents the current
+    ``balls`` and ``strikes`` count. When the pitched type matches the
+    pitcher's best pitch the adjustment increases the chance to correctly
+    identify the pitch.
+
 ``idRatingBase``
     Base chance in percent to correctly identify the pitch type.  Higher values
     improve both swing decisions and contact quality.
@@ -55,6 +62,8 @@ class BatterAI:
 
     # Cache of primary pitch type per pitcher
     _primary_cache: Dict[str, str] = None  # type: ignore[assignment]
+    # Cache of best pitch (highest rated) per pitcher
+    _best_cache: Dict[str, str] = None  # type: ignore[assignment]
 
     # Last ``(swing, contact_quality)`` decision made.  Useful for tests.
     last_decision: Tuple[bool, float] | None = None
@@ -62,6 +71,8 @@ class BatterAI:
     def __post_init__(self) -> None:  # pragma: no cover - simple initialiser
         if self._primary_cache is None:
             self._primary_cache = {}
+        if self._best_cache is None:
+            self._best_cache = {}
 
     # ------------------------------------------------------------------
     # Helpers
@@ -73,6 +84,14 @@ class BatterAI:
             primary = max(ratings.items(), key=lambda kv: kv[1])[0]
             self._primary_cache[pid] = primary
         return self._primary_cache[pid]
+
+    def _best_pitch(self, pitcher: Pitcher) -> str:
+        pid = pitcher.player_id
+        if pid not in self._best_cache:
+            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            best = max(ratings.items(), key=lambda kv: kv[1])[0]
+            self._best_cache[pid] = best
+        return self._best_cache[pid]
 
     # ------------------------------------------------------------------
     # Decision making
@@ -119,8 +138,14 @@ class BatterAI:
         # Chance to correctly identify the pitch type
         id_base = self.config.get("idRatingBase", 0)
         primary = self._primary_pitch(pitcher)
-        look_key = f"lookPrimaryType{balls}{strikes}CountAdjust"
-        adjust = self.config.get(look_key, 0) if pitch_type == primary else 0
+        best = self._best_pitch(pitcher)
+        look_primary_key = f"lookPrimaryType{balls}{strikes}CountAdjust"
+        look_best_key = f"lookBestType{balls}{strikes}CountAdjust"
+        adjust = 0
+        if pitch_type == primary:
+            adjust += self.config.get(look_primary_key, 0)
+        if pitch_type == best:
+            adjust += self.config.get(look_best_key, 0)
         id_chance = max(0.0, min(1.0, (id_base + adjust) / 100.0))
         identified = random_value < id_chance
 
