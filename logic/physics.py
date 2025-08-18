@@ -73,6 +73,37 @@ class Physics:
         return width, height
 
     # ------------------------------------------------------------------
+    # Missed control adjustments
+    # ------------------------------------------------------------------
+    def expand_control_box(
+        self, width: float, height: float, miss_amt: float
+    ) -> tuple[float, float]:
+        """Return increased control box dimensions for a missed control check.
+
+        ``miss_amt`` is the amount the control check was missed by, expressed
+        on a 0-100 scale. ``controlBoxIncreaseEffCOPct`` determines how many
+        squares are added to both width and height.
+        """
+
+        inc_pct = getattr(self.config, "controlBoxIncreaseEffCOPct")
+        increase = miss_amt * inc_pct / 100.0
+        return width + increase, height + increase
+
+    def reduce_pitch_velocity_for_miss(
+        self, pitch_speed: float, miss_amt: float, *, rand: float | None = None
+    ) -> float:
+        """Return ``pitch_speed`` adjusted for a missed control check."""
+
+        base = getattr(self.config, "speedReductionBase")
+        rng_range = getattr(self.config, "speedReductionRange")
+        eff_pct = getattr(self.config, "speedReductionEffMOPct")
+        if rand is None:
+            rand = self.rng.random()
+        rand_int = int(rand * (rng_range + 1))
+        reduction = base + rand_int + miss_amt * eff_pct / 100.0
+        return max(0.0, pitch_speed - reduction)
+
+    # ------------------------------------------------------------------
     # Pitch break
     # ------------------------------------------------------------------
     def pitch_break(self, pitch_type: str, *, rand: float | None = None) -> tuple[float, float]:

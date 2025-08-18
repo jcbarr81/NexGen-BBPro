@@ -437,3 +437,36 @@ def test_pitch_break_affects_location(ptype, cfg_key, dx, dy):
     expected = int(round(max(abs(dx), abs(dy))))
     assert dist_non == expected
     assert dist_non != dist_fast
+
+
+def test_missed_control_expands_box_and_reduces_velocity():
+    cfg = make_cfg(
+        fbControlBoxWidth=2,
+        fbControlBoxHeight=3,
+        fbSpeedBase=10,
+        fbSpeedRange=0,
+        fbSpeedASPct=0,
+        controlBoxIncreaseEffCOPct=25,
+        speedReductionBase=3,
+        speedReductionRange=0,
+        speedReductionEffMOPct=5,
+    )
+    pitcher = make_pitcher_for_type("hp", "fb")
+    pitcher.control = 50
+    batter = make_player("b")
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[pitcher])
+    sim = GameSimulation(home, away, cfg, MockRandom([0.9, 0.0]))
+    tracker = TrackingBatterAI(cfg)
+    sim.batter_ai = tracker
+    with pytest.raises(CaptureDist):
+        sim.play_at_bat(away, home)
+    miss_amt = (0.9 - 0.5) * 100
+    inc = miss_amt * cfg.controlBoxIncreaseEffCOPct / 100
+    expected_dist = int(round((max(2, 3) + inc) * 0.8))
+    assert tracker.last_dist == expected_dist
+    reduction = (
+        cfg.speedReductionBase
+        + miss_amt * cfg.speedReductionEffMOPct / 100
+    )
+    assert sim.last_pitch_speed == pytest.approx(10 - reduction)
