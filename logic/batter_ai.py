@@ -43,6 +43,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Tuple
+import random
 
 from models.player import Player
 from models.pitcher import Pitcher
@@ -157,6 +158,28 @@ class BatterAI:
             + (100 - pitch_rating) / 2.0 * pitch_pct
         )
 
+        # Choose timing curve based on base identification chance
+        curves = [
+            ("VeryBad", self.config.get("timingVeryBadThresh", 0)),
+            ("Bad", self.config.get("timingBadThresh", 0)),
+            ("Med", self.config.get("timingMedThresh", 0)),
+            ("Good", self.config.get("timingGoodThresh", 0)),
+            ("VeryGood", 101),
+        ]
+        curve = "VeryGood"
+        for name, thresh in curves:
+            if base_percent < thresh:
+                curve = name
+                break
+        count = getattr(self.config, f"timing{curve}Count", 0)
+        faces = getattr(self.config, f"timing{curve}Faces", 0)
+        base_roll = getattr(self.config, f"timing{curve}Base", 0)
+        rng = random.Random(random_value)
+        timing_offset = base_roll
+        for _ in range(max(0, count)):
+            timing_offset += rng.randint(1, max(1, faces))
+        timing_quality = max(0.0, 1.0 - abs(timing_offset) / 100.0)
+
         # Weighting for the three recognition components
         type_percent = (
             base_percent * self.config.get("idRatingTypeWeight", 100) / 100.0
@@ -207,7 +230,7 @@ class BatterAI:
             swing = rand_type < swing_probs[p_class]
 
         contact = (
-            1.0
+            timing_quality
             if swing and type_id and time_id
             else 0.5 if swing else 0.0
         )
