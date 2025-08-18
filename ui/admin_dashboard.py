@@ -210,7 +210,6 @@ class AdminDashboard(QWidget):
             QMessageBox.warning(self, "Error", f"Failed to generate logos: {e}")
         finally:
             progress.close()
-        return
 
     def generate_player_avatars(self):
         players = load_players_from_csv("data/players.csv")
@@ -254,7 +253,6 @@ class AdminDashboard(QWidget):
             QMessageBox.warning(self, "Error", f"Failed to generate avatars: {e}")
         finally:
             progress.close()
-        return
 
     def open_exhibition_dialog(self):
         dialog = ExhibitionGameDialog(self)
