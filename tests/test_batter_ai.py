@@ -206,6 +206,55 @@ def test_pitch_classification():
     assert ai.pitch_class(6) == "sure ball"
 
 
+def test_discipline_ratings_increase_takes():
+    cfg = make_cfg(
+        idRatingBase=0,
+        idRatingCHPct=0,
+        idRatingExpPct=0,
+        idRatingPitchRatPct=0,
+        disciplineRatingBase=0,
+        disciplineRatingCHPct=150,
+        disciplineRatingExpPct=100,
+        disciplineRatingPct=100,
+    )
+    ai = BatterAI(cfg)
+    pitcher = make_pitcher("p1")
+
+    batter_low = make_player("low")
+    batter_low.ch = 0
+    batter_low.exp = 0
+    batter_high = make_player("high")
+    batter_high.ch = 100
+    batter_high.exp = 100
+
+    values = [0.0, 0.1, 0.2, 0.3, 0.4]
+    takes_low = 0
+    takes_high = 0
+    for rv in values:
+        swing_low, _ = ai.decide_swing(
+            batter_low,
+            pitcher,
+            pitch_type="fb",
+            balls=0,
+            strikes=0,
+            dist=5,
+            random_value=rv,
+        )
+        swing_high, _ = ai.decide_swing(
+            batter_high,
+            pitcher,
+            pitch_type="fb",
+            balls=0,
+            strikes=0,
+            dist=5,
+            random_value=rv,
+        )
+        takes_low += int(not swing_low)
+        takes_high += int(not swing_high)
+
+    assert takes_high > takes_low
+
+
 @pytest.mark.parametrize(
     "base,expected",
     [
