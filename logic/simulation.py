@@ -15,6 +15,7 @@ from logic.physics import Physics
 from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
 from logic.bullpen import WarmupTracker
+from logic.fielding_ai import FieldingAI
 from .stats import (
     compute_batting_derived,
     compute_batting_rates,
@@ -222,6 +223,7 @@ class GameSimulation:
         self.physics = Physics(config, self.rng)
         self.pitcher_ai = PitcherAI(config, self.rng)
         self.batter_ai = BatterAI(config)
+        self.fielding_ai = FieldingAI(config, self.rng)
         self.debug_log: List[str] = []
         self.pitches_since_pickoff = 4
         self.current_outs = 0
@@ -1214,7 +1216,8 @@ class GameSimulation:
             )
             attempt = self.rng.random() < chance
         if attempt:
-            success_prob = 0.7
+            tag_out = self.fielding_ai.should_tag_runner(10, 10)
+            success_prob = 0.3 if tag_out else 0.7
             catcher_fs = self._get_fielder(defense, "C")
             if self.rng.random() < success_prob:
                 ps_runner = offense.base_pitchers[base_idx]
