@@ -214,6 +214,20 @@ class AdminDashboard(QWidget):
 
     def generate_player_avatars(self):
         players = load_players_from_csv("data/players.csv")
+
+        roster_dir = os.path.join("data", "rosters")
+        player_teams = {}
+        for fname in os.listdir(roster_dir):
+            if not fname.endswith(".csv"):
+                continue
+            team_id = os.path.splitext(fname)[0]
+            try:
+                roster = load_roster(team_id, roster_dir)
+            except FileNotFoundError:
+                continue
+            for pid in roster.act + roster.aaa + roster.low:
+                player_teams[pid] = team_id
+
         progress = QProgressDialog(
             "Generating player avatars...",
             None,
@@ -226,13 +240,27 @@ class AdminDashboard(QWidget):
         progress.setValue(0)
         progress.show()
 
+        missing = []
+
         try:
             for idx, player in enumerate(players, start=1):
-                out_path = os.path.join("images", "avatars", f"{player.player_id}.png")
-                generate_avatar(f"{player.first_name} {player.last_name}", player.team_id, out_path)
+                team_id = player_teams.get(player.player_id, "")
+                if not team_id:
+                    missing.append(player.player_id)
+                out_path = os.path.join(
+                    "images",
+                    "avatars",
+                    f"{player.player_id}.png",
+                )
+                generate_avatar(
+                    f"{player.first_name} {player.last_name}", team_id, out_path
+                )
                 progress.setValue(idx)
                 QApplication.processEvents()
-            QMessageBox.information(self, "Avatars Generated", "Player avatars created.")
+            msg = "Player avatars created."
+            if missing:
+                msg += f" {len(missing)} players had no roster entry."
+            QMessageBox.information(self, "Avatars Generated", msg)
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Failed to generate avatars: {e}")
         finally:
