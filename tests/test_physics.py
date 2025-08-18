@@ -362,3 +362,78 @@ def test_control_box_lookup(ptype, cfg_key):
     )
     physics = Physics(cfg)
     assert physics.control_box(ptype) == (3, 4)
+
+
+@pytest.mark.parametrize(
+    "ptype,cfg_key",
+    [
+        ("fb", "fb"),
+        ("cb", "cb"),
+        ("cu", "cu"),
+        ("sl", "sl"),
+        ("scb", "sb"),
+        ("kn", "kb"),
+        ("si", "si"),
+    ],
+)
+def test_pitch_break_lookup(ptype, cfg_key):
+    cfg = make_cfg(
+        **{
+            f"{cfg_key}BreakBaseWidth": 1,
+            f"{cfg_key}BreakBaseHeight": 2,
+            f"{cfg_key}BreakRangeWidth": 3,
+            f"{cfg_key}BreakRangeHeight": 4,
+        }
+    )
+    physics = Physics(cfg)
+    dx, dy = physics.pitch_break(ptype, rand=0.5)
+    assert dx == pytest.approx(1 + 1.5)
+    assert dy == pytest.approx(2 + 2)
+
+
+def _throw_for_dist(ptype: str, cfg, rng_vals=None) -> int:
+    """Helper to throw a single pitch and capture ``dist``."""
+
+    rng_vals = rng_vals or [0.0, 0.0]
+    pitcher = make_pitcher_for_type("hp", ptype)
+    batter = make_player("b")
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[pitcher])
+    sim = GameSimulation(home, away, cfg, MockRandom(rng_vals))
+    tracker = TrackingBatterAI(cfg)
+    sim.batter_ai = tracker
+    with pytest.raises(CaptureDist):
+        sim.play_at_bat(away, home)
+    return tracker.last_dist  # type: ignore[return-value]
+
+
+@pytest.mark.parametrize(
+    "ptype,cfg_key,dx,dy",
+    [
+        ("cb", "cb", 2, -5),
+        ("scb", "sb", -2, -4),
+    ],
+)
+def test_pitch_break_affects_location(ptype, cfg_key, dx, dy):
+    cfg = make_cfg(
+        fbControlBoxWidth=0,
+        fbControlBoxHeight=0,
+        fbBreakBaseWidth=0,
+        fbBreakBaseHeight=0,
+        fbBreakRangeWidth=0,
+        fbBreakRangeHeight=0,
+        **{
+            f"{cfg_key}ControlBoxWidth": 0,
+            f"{cfg_key}ControlBoxHeight": 0,
+            f"{cfg_key}BreakBaseWidth": dx,
+            f"{cfg_key}BreakBaseHeight": dy,
+            f"{cfg_key}BreakRangeWidth": 0,
+            f"{cfg_key}BreakRangeHeight": 0,
+        },
+    )
+    dist_fast = _throw_for_dist("fb", cfg)
+    dist_non = _throw_for_dist(ptype, cfg)
+    assert dist_fast == 0
+    expected = int(round(max(abs(dx), abs(dy))))
+    assert dist_non == expected
+    assert dist_non != dist_fast

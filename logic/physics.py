@@ -73,6 +73,32 @@ class Physics:
         return width, height
 
     # ------------------------------------------------------------------
+    # Pitch break
+    # ------------------------------------------------------------------
+    def pitch_break(self, pitch_type: str, *, rand: float | None = None) -> tuple[float, float]:
+        """Return ``(dx, dy)`` break offsets for ``pitch_type``.
+
+        The offsets are derived from ``{pitch}BreakBaseWidth`` /
+        ``{pitch}BreakBaseHeight`` and their corresponding ``BreakRange``
+        entries in :class:`PlayBalanceConfig`.  ``rand`` allows tests to supply
+        a deterministic random value.  When omitted the RNG associated with
+        this instance is used.  The same random value influences both axes to
+        keep the number of RNG calls predictable for the simulation.
+        """
+
+        key_map = {"kn": "kb", "scb": "sb"}
+        key = key_map.get(pitch_type.lower(), pitch_type.lower())
+        base_w = getattr(self.config, f"{key}BreakBaseWidth")
+        base_h = getattr(self.config, f"{key}BreakBaseHeight")
+        range_w = getattr(self.config, f"{key}BreakRangeWidth")
+        range_h = getattr(self.config, f"{key}BreakRangeHeight")
+        if rand is None:
+            rand = self.rng.random()
+        dx = base_w + rand * range_w
+        dy = base_h + rand * range_h
+        return dx, dy
+
+    # ------------------------------------------------------------------
     # Bat speed
     # ------------------------------------------------------------------
     def bat_speed(

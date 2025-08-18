@@ -882,6 +882,9 @@ class GameSimulation:
             frac = loc_r
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
+            dx, dy = self.physics.pitch_break(pitch_type, rand=loc_r)
+            x_off += dx
+            y_off += dy
             dist = int(round(max(abs(x_off), abs(y_off))))
             if loc_r >= control_chance:
                 dist += 5
