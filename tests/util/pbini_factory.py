@@ -18,6 +18,21 @@ def make_cfg(**entries: int) -> PlayBalanceConfig:
 
 def load_config() -> PlayBalanceConfig:
     """Load the full test configuration from ``logic/PBINI.txt``."""
-
     pbini = load_pbini(Path("logic/PBINI.txt"))
-    return PlayBalanceConfig.from_dict(pbini)
+    cfg = PlayBalanceConfig.from_dict(pbini)
+    # The real configuration contains pitch objective weights which would
+    # introduce additional randomness via :class:`PitcherAI`.  Tests expect
+    # deterministic behaviour so clear all such weights.
+    for balls in range(4):
+        for strikes in range(3):
+            prefix = f"pitchObj{balls}{strikes}Count"
+            for suffix in [
+                "EstablishWeight",
+                "OutsideWeight",
+                "BestWeight",
+                "BestCenterWeight",
+                "FastCenterWeight",
+                "PlusWeight",
+            ]:
+                cfg.values[f"{prefix}{suffix}"] = 0
+    return cfg
