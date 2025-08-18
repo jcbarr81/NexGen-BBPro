@@ -94,6 +94,59 @@ class BatterAI:
             self._best_cache[pid] = best
         return self._best_cache[pid]
 
+    def _discipline_rating(
+        self,
+        batter: Player,
+        balls: int,
+        strikes: int,
+        *,
+        pitcher_pitches: int = 1,
+        scoring_pos: bool = False,
+        runner_third_lt_two_outs: bool = False,
+        plus_zone: bool = False,
+        minus_zone: bool = False,
+        next_to_look: bool = False,
+        fb_down_middle: bool = False,
+    ) -> float:
+        """Return the swing discipline rating for ``batter`` in percent.
+
+        The calculation mirrors the PB.INI specification combining ``CH`` and
+        ``EXP`` with various count and situational adjustments.  Only a subset of
+        situations are exposed as optional keyword arguments to keep the helper
+        flexible for tests.  The returned value is clamped to ``0-100``.
+        """
+
+        cfg = self.config
+        ch = getattr(batter, "ch", 0)
+        exp = getattr(batter, "exp", 0)
+
+        base = (
+            cfg.get("disciplineRatingBase", 0)
+            + ch * cfg.get("disciplineRatingCHPct", 0) / 100.0
+            + exp * cfg.get("disciplineRatingExpPct", 0) / 100.0
+        )
+
+        adjust = 0.0
+        if pitcher_pitches == 0:
+            adjust += cfg.get("disciplineRatingNoPitchesAdjust", 0)
+        if scoring_pos:
+            adjust += cfg.get("disciplineRatingScoringPosAdjust", 0)
+        if runner_third_lt_two_outs:
+            adjust += cfg.get("disciplineRatingOnThird01OutsAdjust", 0)
+        if plus_zone:
+            adjust += cfg.get("disciplineRatingPlusZoneAdjust", 0)
+        if minus_zone:
+            adjust += cfg.get("disciplineRatingMinusZoneAdjust", 0)
+        if next_to_look:
+            adjust += cfg.get("disciplineRatingLocNextToLookAdjust", 0)
+        if fb_down_middle:
+            adjust += cfg.get("disciplineRatingFBDownMiddleAdjust", 0)
+
+        adjust += cfg.get(f"disciplineRating{balls}{strikes}CountAdjust", 0)
+
+        rating = (base + adjust) * cfg.get("disciplineRatingPct", 100) / 100.0
+        return max(0.0, min(100.0, rating))
+
     # ------------------------------------------------------------------
     # Decision making
     # ------------------------------------------------------------------
@@ -266,6 +319,12 @@ class BatterAI:
                 "sure ball": 0.0,
             }
             swing = rand_type < swing_probs[p_class]
+
+        if swing and p_class in {"close ball", "sure ball"}:
+            disc_roll = (random_value + 0.99) % 1
+            rating = self._discipline_rating(batter, balls, strikes)
+            if disc_roll < rating / 100.0:
+                swing = False
 
         contact = (
             timing_quality
