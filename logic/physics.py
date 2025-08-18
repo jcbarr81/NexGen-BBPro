@@ -30,6 +30,30 @@ class Physics:
         return base + pct * sp / 100.0
 
     # ------------------------------------------------------------------
+    # Pitch velocity
+    # ------------------------------------------------------------------
+    def pitch_velocity(
+        self, pitch_type: str, as_rating: int, *, rand: float | None = None
+    ) -> float:
+        """Return the pitch speed for ``pitch_type`` and ``as_rating``.
+
+        The calculation mirrors the original game's behaviour by combining
+        ``{pitch}SpeedBase``, ``{pitch}SpeedRange`` and ``{pitch}SpeedASPct``
+        configuration entries.  ``rand`` allows tests to supply a deterministic
+        random value; when omitted the RNG associated with this instance is
+        used.
+        """
+
+        key_map = {"kn": "kb", "scb": "sb"}
+        key = key_map.get(pitch_type.lower(), pitch_type.lower())
+        base = getattr(self.config, f"{key}SpeedBase")
+        rng_range = getattr(self.config, f"{key}SpeedRange")
+        pct = getattr(self.config, f"{key}SpeedASPct")
+        if rand is None:
+            rand = self.rng.random()
+        return base + rand * rng_range + as_rating * pct / 100.0
+
+    # ------------------------------------------------------------------
     # Bat speed
     # ------------------------------------------------------------------
     def bat_speed(
