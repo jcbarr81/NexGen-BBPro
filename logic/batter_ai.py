@@ -135,21 +135,67 @@ class BatterAI:
         p_class = self.pitch_class(dist)
         is_strike = p_class in {"sure strike", "close strike"}
 
-        # Chance to correctly identify the pitch type
-        id_base = self.config.get("idRatingBase", 0)
+        # ------------------------------------------------------------------
+        # Identification chances
+        # ------------------------------------------------------------------
+        # Base identification chance taking batter ratings and pitch quality
+        # into account.  The real engine uses a formula documented in
+        # ``PBINI.txt`` which combines the batter's CH (contact) and EXP
+        # (experience) ratings with the difficulty of the pitch.
+        ch_pct = self.config.get("idRatingCHPct", 100) / 100.0
+        exp_pct = self.config.get("idRatingExpPct", 100) / 100.0
+        pitch_pct = self.config.get("idRatingPitchRatPct", 100) / 100.0
+
+        batter_ch = getattr(batter, "ch", 0)
+        batter_exp = getattr(batter, "exp", 0)
+        pitch_rating = getattr(pitcher, pitch_type, 50)
+
+        base_percent = (
+            self.config.get("idRatingBase", 0)
+            + batter_ch * ch_pct
+            + batter_exp * exp_pct
+            + (100 - pitch_rating) / 2.0 * pitch_pct
+        )
+
+        # Weighting for the three recognition components
+        type_percent = (
+            base_percent * self.config.get("idRatingTypeWeight", 100) / 100.0
+        )
+        loc_percent = (
+            base_percent * self.config.get("idRatingLocWeight", 100) / 100.0
+        )
+        time_percent = (
+            base_percent * self.config.get("idRatingTimingWeight", 100) / 100.0
+        )
+
+        # Count based adjustments only apply to type identification
         primary = self._primary_pitch(pitcher)
         best = self._best_pitch(pitcher)
         look_primary_key = f"lookPrimaryType{balls}{strikes}CountAdjust"
         look_best_key = f"lookBestType{balls}{strikes}CountAdjust"
-        adjust = 0
         if pitch_type == primary:
-            adjust += self.config.get(look_primary_key, 0)
+            type_percent += self.config.get(look_primary_key, 0)
         if pitch_type == best:
-            adjust += self.config.get(look_best_key, 0)
-        id_chance = max(0.0, min(1.0, (id_base + adjust) / 100.0))
-        identified = random_value < id_chance
+            type_percent += self.config.get(look_best_key, 0)
 
-        if identified:
+        # Convert to probabilities in the range [0.0, 1.0]
+        clamp = lambda v: max(0.0, min(1.0, v / 100.0))
+        type_chance = clamp(type_percent)
+        loc_chance = clamp(loc_percent)
+        time_chance = clamp(time_percent)
+
+        # Derive three deterministic random values from the single supplied
+        # ``random_value``.  This keeps the method signature simple while still
+        # providing independent rolls for type, location and timing checks.
+        rand_type = random_value
+        rand_loc = (random_value + 0.33) % 1
+        rand_time = (random_value + 0.66) % 1
+
+        type_id = rand_type < type_chance
+        loc_id = rand_loc < loc_chance
+        time_id = rand_time < time_chance
+
+        if type_id or loc_id:
             swing = is_strike
         else:
             swing_probs = {
@@ -158,9 +204,13 @@ class BatterAI:
                 "close ball": 0.25,
                 "sure ball": 0.0,
             }
-            swing = random_value < swing_probs[p_class]
+            swing = rand_type < swing_probs[p_class]
 
-        contact = 1.0 if identified else 0.5 if swing else 0.0
+        contact = (
+            1.0
+            if swing and type_id and time_id
+            else 0.5 if swing else 0.0
+        )
         self.last_decision = (swing, contact)
         return self.last_decision
 
