@@ -412,6 +412,15 @@ _DEFAULTS: Dict[str, Any] = {
     "prChanceMedPRAdjust": 0,
     "prChanceSlowPRAdjust": 0,
     "prChanceVerySlowPRAdjust": 0,
+    # Fielding AI -------------------------------------------------------
+    "couldBeCaughtSlop": -18,
+    "shouldBeCaughtSlop": 6,
+    "generalSlop": 9,
+    "relaySlop": 12,
+    "tagTimeSlop": 6,
+    "stepOnBagSlop": -5,
+    "tagAtBagSlop": 4,
+    "throwToBagSlop": 8,
 }
 
 
