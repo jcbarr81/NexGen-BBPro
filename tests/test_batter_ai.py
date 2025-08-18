@@ -60,6 +60,25 @@ def test_primary_look_adjust_increases_swings():
     assert contact == 1.0
 
 
+def test_best_look_adjust_increases_swings():
+    cfg = load_config()
+    cfg.values.update({"idRatingBase": 0, "lookBestType00CountAdjust": 50})
+    ai = BatterAI(cfg)
+    batter = make_player("b1")
+    pitcher = make_pitcher("p1")
+    swing, contact = ai.decide_swing(
+        batter,
+        pitcher,
+        pitch_type="fb",
+        balls=0,
+        strikes=0,
+        dist=0,
+        random_value=0.4,
+    )
+    assert swing is True
+    assert contact == 1.0
+
+
 def test_pitch_classification():
     cfg = load_config()
     ai = BatterAI(cfg)
