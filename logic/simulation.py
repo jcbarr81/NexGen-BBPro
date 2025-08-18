@@ -876,19 +876,25 @@ class GameSimulation:
             pitch_speed = self.physics.pitch_velocity(
                 pitch_type, pitcher.arm, rand=loc_r
             )
-            self.last_pitch_speed = pitch_speed
             control_chance = pitcher.control / 100.0
             width, height = self.physics.control_box(pitch_type)
             frac = loc_r
+            miss_amt = 0.0
+            if loc_r >= control_chance:
+                miss_amt = (loc_r - control_chance) * 100.0
+                width, height = self.physics.expand_control_box(width, height, miss_amt)
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
             dx, dy = self.physics.pitch_break(pitch_type, rand=loc_r)
             x_off += dx
             y_off += dy
             dist = int(round(max(abs(x_off), abs(y_off))))
-            if loc_r >= control_chance:
-                dist += 5
             dec_r = self.rng.random()
+            if miss_amt:
+                pitch_speed = self.physics.reduce_pitch_velocity_for_miss(
+                    pitch_speed, miss_amt, rand=dec_r
+                )
+            self.last_pitch_speed = pitch_speed
             swing, contact = self.batter_ai.decide_swing(
                 batter,
                 pitcher,

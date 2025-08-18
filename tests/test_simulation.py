@@ -459,7 +459,7 @@ def test_pitch_control_affects_location():
         lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=30)]
     )
     away_low = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap")])
-    rng_low = MockRandom([0.4, 0.9, 0.4, 0.9, 0.4, 0.9, 0.4, 0.9])
+    rng_low = MockRandom([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
     sim_low = GameSimulation(home_low, away_low, cfg, rng_low)
     outs_low = sim_low.play_at_bat(away_low, home_low)
     stats_low = away_low.lineup_stats[batter2.player_id]
