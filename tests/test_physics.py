@@ -228,3 +228,28 @@ def test_bat_impact_sweet_spot_more_power():
     end, _ = physics.bat_impact(bat_speed, part="end", rand=0.5)
     assert sweet > handle
     assert sweet > end
+
+
+@pytest.mark.parametrize(
+    "ptype, cfg_key",
+    [
+        ("fb", "fb"),
+        ("cb", "cb"),
+        ("cu", "cu"),
+        ("sl", "sl"),
+        ("si", "si"),
+        ("scb", "sb"),
+        ("kn", "kb"),
+    ],
+)
+def test_pitch_velocity_by_type(ptype, cfg_key):
+    cfg = make_cfg(
+        **{
+            f"{cfg_key}SpeedBase": 60,
+            f"{cfg_key}SpeedRange": 10,
+            f"{cfg_key}SpeedASPct": 20,
+        }
+    )
+    physics = Physics(cfg, MockRandom([0.5]))
+    speed = physics.pitch_velocity(ptype, as_rating=50)
+    assert speed == pytest.approx(60 + 5 + 10)

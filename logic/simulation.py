@@ -236,6 +236,7 @@ class GameSimulation:
         self.altitude = altitude
         self.wind_speed = wind_speed
         self.last_batted_ball_angles: tuple[float, float] | None = None
+        self.last_pitch_speed: float | None = None
 
     # ------------------------------------------------------------------
     # Fatigue helpers
@@ -872,6 +873,10 @@ class GameSimulation:
                 pitcher, balls=balls, strikes=strikes
             )
             loc_r = self.rng.random()
+            pitch_speed = self.physics.pitch_velocity(
+                pitch_type, pitcher.arm, rand=loc_r
+            )
+            self.last_pitch_speed = pitch_speed
             control_chance = pitcher.control / 100.0
             dist = 0 if loc_r < control_chance else 5
             dec_r = self.rng.random()
@@ -887,7 +892,11 @@ class GameSimulation:
 
             if swing:
                 if self._swing_result(
-                    batter, pitcher, rand=dec_r, contact_quality=contact
+                    batter,
+                    pitcher,
+                    pitch_speed=pitch_speed,
+                    rand=dec_r,
+                    contact_quality=contact,
                 ):
                     pitcher_state.strikes_thrown += 1
                     pitcher_state.h += 1
@@ -1015,12 +1024,10 @@ class GameSimulation:
         batter: Player,
         pitcher: Pitcher,
         *,
+        pitch_speed: float,
         rand: float,
         contact_quality: float = 1.0,
     ) -> bool:
-        pitch_speed = getattr(
-            pitcher, "fb", getattr(self.physics.config, "averagePitchSpeed")
-        )
         bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
         # Calculate and store angles for potential future physics steps.
