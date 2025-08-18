@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import base64
 import os
+from io import BytesIO
 from typing import Dict
+
+from PIL import Image
 
 from utils.openai_client import client
 from utils.team_loader import load_teams
@@ -43,12 +46,13 @@ def generate_avatar(name: str, team_id: str, out_file: str) -> str:
         f"Portrait of {name}, a {ethnicity} baseball player, wearing team colors "
         f"{colors['primary']} and {colors['secondary']}."
     )
-    result = client.images.generate(model="gpt-image-1", prompt=prompt, size="512x512")
+    result = client.images.generate(model="gpt-image-1", prompt=prompt, size="1024x1024")
     b64 = result.data[0].b64_json
     image_bytes = base64.b64decode(b64)
-    os.makedirs(os.path.dirname(out_file), exist_ok=True)
-    with open(out_file, "wb") as f:
-        f.write(image_bytes)
+    with Image.open(BytesIO(image_bytes)) as img:
+        img = img.resize((512, 512), Image.LANCZOS)
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        img.save(out_file, format="PNG")
     return out_file
 
 __all__ = ["generate_avatar"]
