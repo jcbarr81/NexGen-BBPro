@@ -215,13 +215,24 @@ class BatterAI:
         balls: int = 0,
         strikes: int = 0,
         dist: int = 0,
+        dx: int = 0,
+        dy: int = 0,
+        swing_type: str = "normal",
         random_value: float = 0.0,
+        check_random: float | None = None,
     ) -> Tuple[bool, float]:
         """Return ``(swing, contact_quality)`` for the next pitch.
 
         ``random_value`` is expected to be a floating point value in the range
         ``[0.0, 1.0)`` and is typically supplied by the caller to keep the number
         of RNG rolls deterministic for the tests.
+
+        ``dx`` and ``dy`` represent the distance between the batter's intended
+        swing location and the actual pitch location.  When the required
+        adjustment exceeds the batter's ability a check-swing roll is performed
+        using the ``checkChanceBase*`` and ``checkChanceCHPct*`` configuration
+        entries.  ``check_random`` can be supplied to deterministically control
+        the outcome of the check-swing roll.
         """
 
         p_class = self.pitch_class(dist)
@@ -331,6 +342,29 @@ class BatterAI:
             if swing and type_id and time_id
             else 0.5 if swing else 0.0
         )
+
+        if swing and not self.can_adjust_swing(
+            batter, dx, dy, swing_type=swing_type
+        ):
+            check_rv = (
+                (random_value + 0.77) % 1 if check_random is None else check_random
+            )
+            suffix = swing_type.capitalize()
+            base = self.config.get(f"checkChanceBase{suffix}", 0)
+            ch_pct = self.config.get(f"checkChanceCHPct{suffix}", 0)
+            chance = (
+                base + getattr(batter, "ch", 0) * ch_pct / 100.0
+            ) / 1000.0
+            if check_rv < chance:
+                swing = False
+                contact = 0.0
+            else:
+                acc_rv = (check_rv + 0.5) % 1
+                if acc_rv < self.config.get("failedCheckContactChance", 0) / 100.0:
+                    contact = 0.1
+                else:
+                    contact = 0.0
+
         self.last_decision = (swing, contact)
         return self.last_decision
 

@@ -350,3 +350,69 @@ def test_large_adjustment_fails_small_succeeds():
     batter = make_player("b1", ch=40)
     assert ai.can_adjust_swing(batter, 20, 20, swing_type="power") is False
     assert ai.can_adjust_swing(batter, 1, 0, swing_type="contact") is True
+
+
+def test_check_swing_probability_varies_with_swing_type():
+    cfg = make_cfg(
+        adjustUnitsCHPct=0,
+        adjustUnitsDiag=1,
+        checkChanceBasePower=100,
+        checkChanceCHPctPower=100,
+        checkChanceBaseContact=300,
+        checkChanceCHPctContact=100,
+    )
+    ai = BatterAI(cfg)
+    batter = make_player("b1", ch=50)
+    pitcher = make_pitcher("p1")
+
+    swing_power, contact_power = ai.decide_swing(
+        batter,
+        pitcher,
+        pitch_type="fb",
+        swing_type="power",
+        dx=1,
+        dy=1,
+        random_value=0.0,
+        check_random=0.2,
+    )
+
+    swing_contact, contact_contact = ai.decide_swing(
+        batter,
+        pitcher,
+        pitch_type="fb",
+        swing_type="contact",
+        dx=1,
+        dy=1,
+        random_value=0.0,
+        check_random=0.2,
+    )
+
+    assert swing_power is True and contact_power == 0.0
+    assert swing_contact is False and contact_contact == 0.0
+
+
+def test_failed_check_can_make_contact():
+    cfg = make_cfg(
+        adjustUnitsCHPct=0,
+        adjustUnitsDiag=1,
+        checkChanceBaseNormal=0,
+        checkChanceCHPctNormal=0,
+        failedCheckContactChance=50,
+    )
+    ai = BatterAI(cfg)
+    batter = make_player("b1", ch=50)
+    pitcher = make_pitcher("p1")
+
+    swing, contact = ai.decide_swing(
+        batter,
+        pitcher,
+        pitch_type="fb",
+        swing_type="normal",
+        dx=1,
+        dy=1,
+        random_value=0.0,
+        check_random=0.9,
+    )
+
+    assert swing is True
+    assert contact == 0.1
