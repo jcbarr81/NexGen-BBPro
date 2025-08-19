@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict
 
 from .pbini_loader import load_pbini
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+_OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # Default values for PlayBalance configuration entries used throughout the
 # simplified game logic.  Missing keys will fall back to these values when
@@ -432,6 +436,7 @@ _DEFAULTS: Dict[str, Any] = {
     "tagAtBagSlop": 4,
     "throwToBagSlop": 8,
 }
+_BASE_DEFAULTS = dict(_DEFAULTS)
 
 
 @dataclass
@@ -472,6 +477,44 @@ class PlayBalanceConfig:
         return cls.from_dict(pbini)
 
     # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+    @classmethod
+    def load_overrides(cls, path: Path | None = None) -> Dict[str, Any]:
+        """Merge overrides from ``path`` into the module defaults."""
+
+        path = _OVERRIDE_PATH if path is None else path
+        if path.exists():
+            try:
+                with path.open("r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+                if isinstance(data, dict):
+                    _DEFAULTS.update(data)
+                    return data
+            except (OSError, json.JSONDecodeError):
+                pass
+        return {}
+
+    def save_overrides(self, path: Path | None = None) -> None:
+        """Persist current values to ``path`` as overrides."""
+
+        path = _OVERRIDE_PATH if path is None else path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as fh:
+            json.dump(self.values, fh, indent=2, sort_keys=True)
+        _DEFAULTS.update(self.values)
+
+    def reset(self, path: Path | None = None) -> None:
+        """Reset configuration and remove any saved overrides."""
+
+        path = _OVERRIDE_PATH if path is None else path
+        self.values.clear()
+        _DEFAULTS.clear()
+        _DEFAULTS.update(_BASE_DEFAULTS)
+        if path.exists():
+            path.unlink()
+
+    # ------------------------------------------------------------------
     # Mapping style helpers
     # ------------------------------------------------------------------
     def get(self, key: str, default: Any = 0) -> Any:
@@ -487,6 +530,9 @@ class PlayBalanceConfig:
             super().__setattr__(key, value)
         else:
             self.values[key] = value
+
+
+PlayBalanceConfig.load_overrides()
 
 
 __all__ = ["PlayBalanceConfig"]
