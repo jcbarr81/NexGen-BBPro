@@ -666,3 +666,46 @@ def test_defensive_alignment_guard_and_cutoff():
     sim = GameSimulation(home, away, cfg, MockRandom([0.5]))
     sim._set_defensive_alignment(away, home, outs=0)
     assert sim.current_infield_situation == "cutoffRun"
+
+
+def test_simulate_game_skips_bottom_when_home_leads():
+    cfg = load_config()
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
+    sim = GameSimulation(home, away, cfg, random.Random())
+
+    calls = []
+
+    def fake_play_half(self, offense, defense):
+        offense.inning_runs.append(0)
+        calls.append(offense is self.home)
+
+    sim._play_half = fake_play_half.__get__(sim, GameSimulation)
+    home.runs = 1
+    sim.simulate_game()
+
+    assert calls.count(True) == 8
+    assert calls.count(False) == 9
+
+
+def test_simulate_game_goes_to_extra_innings_when_tied():
+    cfg = load_config()
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
+    sim = GameSimulation(home, away, cfg, random.Random())
+
+    def fake_play_half(self, offense, defense):
+        inning = len(offense.inning_runs)
+        if offense is self.away and inning == 9:
+            offense.runs += 1
+            offense.inning_runs.append(1)
+        else:
+            offense.inning_runs.append(0)
+
+    sim._play_half = fake_play_half.__get__(sim, GameSimulation)
+    sim.simulate_game()
+
+    assert len(home.inning_runs) == 10
+    assert len(away.inning_runs) == 10
+    assert away.runs == 1
+    assert home.runs == 0
