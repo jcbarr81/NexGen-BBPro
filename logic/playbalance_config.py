@@ -260,6 +260,8 @@ _DEFAULTS: Dict[str, Any] = {
     "pickoffChanceStealChanceAdjust": 0,
     "pickoffChanceLeadMult": 0,
     "pickoffChancePitchesMult": 0,
+    "longLeadSpeed": 0,
+    "pickoffScareSpeed": 0,
     "pitchOutChanceStealThresh": 0,
     "pitchOutChanceHitRunThresh": 0,
     "pitchOutChanceBase": 0,

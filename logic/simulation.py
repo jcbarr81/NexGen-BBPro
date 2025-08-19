@@ -298,6 +298,31 @@ class GameSimulation:
             state.player.season_stats = season
         season[attr] = season.get(attr, 0) + amount
 
+    def _set_runner_leads(self, offense: TeamState) -> None:
+        """Update lead state for runners on first or second base."""
+
+        long_speed = self.config.get("longLeadSpeed", 0)
+        for base in (0, 1):
+            runner = offense.bases[base]
+            if runner is None:
+                continue
+            runner.lead = 2 if runner.player.sp >= long_speed else 0
+
+    def _maybe_pickoff(self, runner_state: BatterState, steal_chance: int) -> None:
+        """Attempt a pickoff and handle near-success outcomes."""
+
+        if self.defense.maybe_pickoff(
+            steal_chance=steal_chance,
+            lead=runner_state.lead,
+            pitches_since=self.pitches_since_pickoff,
+        ):
+            self.debug_log.append("Pickoff attempt")
+            self.pitches_since_pickoff = 0
+            if self.rng.random() < 0.1:
+                self.debug_log.append("Pickoff nearly succeeds")
+                if runner_state.player.sp <= self.config.get("pickoffScareSpeed", 0):
+                    runner_state.lead = 0
+
     def _get_fielder(self, defense: TeamState, position: str) -> Optional[FieldingState]:
         """Return the ``FieldingState`` for ``position`` if present."""
 
@@ -565,6 +590,8 @@ class GameSimulation:
                     log=self.debug_log,
                 )
 
+        self._set_runner_leads(offense)
+
         # Defensive decisions prior to the at-bat.  These mostly log the
         # outcome for manual inspection in the exhibition dialog.  The
         # simplified simulation does not yet modify gameplay based on them.
@@ -621,13 +648,7 @@ class GameSimulation:
                     )
                     * 100
                 )
-            if self.defense.maybe_pickoff(
-                steal_chance=steal_chance,
-                lead=runner_state.lead,
-                pitches_since=self.pitches_since_pickoff,
-            ):
-                self.debug_log.append("Pickoff attempt")
-                self.pitches_since_pickoff = 0
+            self._maybe_pickoff(runner_state, steal_chance)
 
         inning = len(offense.inning_runs) + 1
         batter_idx = offense.batting_index % len(offense.lineup)
@@ -756,6 +777,7 @@ class GameSimulation:
         while True:
             self._update_fatigue(pitcher_state)
             pitcher = self._fatigued_pitcher(pitcher_state.player)
+            self._set_runner_leads(offense)
             runner_state = offense.bases[0]
             if runner_state:
                 hit_run_chance = int(
@@ -1225,7 +1247,7 @@ class GameSimulation:
         if base_idx not in (0, 1):
             return None
         runner_state = offense.bases[base_idx]
-        if not runner_state:
+        if not runner_state or runner_state.lead < 2:
             return None
         if runner_on == 2 and offense.bases[2] is not None:
             return None

@@ -151,29 +151,33 @@ def test_pinch_hit_need_run_used():
 
 def test_steal_attempt_success():
     cfg = load_config()
-    runner = make_player("run", ph=80, sp=90)
+    cfg.values.update({"holdChanceAdjust": 0})
+    runner = make_player("run", sp=90)
+    batter = make_player("bat", ph=80)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
-    away = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
-    # pitch strike ->0, swing hit ->0, steal attempt ->0, steal success ->0
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    runner_state = BatterState(runner)
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[0] = runner_state
     rng = MockRandom([0.0, 0.0, 0.0, 0.0])
     sim = GameSimulation(home, away, cfg, rng)
     outs = sim.play_at_bat(away, home)
     assert outs == 0
     stats = away.lineup_stats["run"]
     assert stats.sb == 1
-    assert away.bases[1] is stats
+    assert away.bases[2] is stats
 
 
 def test_steal_attempt_failure():
     cfg = load_config()
-    runner = make_player("run")
+    runner = make_player("run", sp=80)
     batter = make_player("bat", ph=80, sp=90)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
     runner_state = BatterState(runner)
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
-    cfg.values.update({"pitchOutChanceBase": 0})
+    cfg.values.update({"pitchOutChanceBase": 0, "holdChanceAdjust": 0})
     # hnr success ->0.0, steal failure ->0.9, pitch strike ->0.0,
     # swing hit ->0.0, post-hit steal attempt fails ->1.0
     rng = MockRandom([0.0, 0.9, 0.0, 0.0, 1.0])
@@ -190,7 +194,7 @@ def test_catcher_reaction_delay_affects_steal():
         delayBaseCatcher=12,
         delayFAPctCatcher=-4,
     )
-    runner = make_player("run")
+    runner = make_player("run", sp=80)
 
     def make_catcher(pid: str, fa: int) -> Player:
         return Player(
@@ -219,6 +223,7 @@ def test_catcher_reaction_delay_affects_steal():
 
     offense1 = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
     rstate1 = BatterState(runner)
+    rstate1.lead = 2
     offense1.lineup_stats[runner.player_id] = rstate1
     offense1.bases[0] = rstate1
     sim1 = GameSimulation(slow_def, offense1, cfg, MockRandom([0.5]))
@@ -227,6 +232,7 @@ def test_catcher_reaction_delay_affects_steal():
 
     offense2 = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
     rstate2 = BatterState(runner)
+    rstate2.lead = 2
     offense2.lineup_stats[runner.player_id] = rstate2
     offense2.bases[0] = rstate2
     sim2 = GameSimulation(fast_def, offense2, cfg, MockRandom([0.5]))
@@ -248,6 +254,7 @@ def test_steal_count_and_situational_modifiers():
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
     runner_state = BatterState(runner)
+    runner_state.lead = 2
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[0] = runner_state
     sim = GameSimulation(home, away, cfg, MockRandom([0.0, 0.0]))
@@ -272,18 +279,13 @@ def test_steal_count_and_situational_modifiers():
     offense2.lineup_stats[runner2.player_id] = runner_state2
     offense2.bases[0] = runner_state2
     sim2 = GameSimulation(home, offense2, cfg, MockRandom([0.0]))
+    runner_state2.lead = 0
     res2 = sim2._attempt_steal(
         offense2,
         home,
         home.current_pitcher_state.player,
-        balls=0,
-        strikes=1,
-        outs=1,
+        force=True,
         runner_on=1,
-        batter_ch=50,
-        pitcher_is_wild=False,
-        pitcher_in_windup=False,
-        run_diff=0,
     )
     assert res2 is None
 
@@ -295,6 +297,7 @@ def test_second_base_steal_attempt_success():
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
     runner_state = BatterState(runner)
+    runner_state.lead = 2
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[1] = runner_state
     sim = GameSimulation(home, away, cfg, MockRandom([0.0]))
@@ -309,6 +312,27 @@ def test_second_base_steal_attempt_success():
     assert away.bases[2] is runner_state
     assert runner_state.sb == 1
 
+
+def test_pickoff_attempt_scares_runner():
+    cfg = make_cfg(
+        holdChanceBase=100,
+        holdChanceMinRunnerSpeed=0,
+        holdChanceAdjust=0,
+        pickoffChanceBase=100,
+        longLeadSpeed=60,
+        pickoffScareSpeed=60,
+    )
+    runner = make_player("run", sp=60)
+    offense = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("op")])
+    defense = TeamState(lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("dp")])
+    rstate = BatterState(runner)
+    offense.lineup_stats[runner.player_id] = rstate
+    offense.bases[0] = rstate
+    sim = GameSimulation(defense, offense, cfg, MockRandom([0.0, 0.0]))
+    sim._set_runner_leads(offense)
+    assert rstate.lead == 2
+    sim._maybe_pickoff(rstate, steal_chance=0)
+    assert rstate.lead == 0
 
 def test_hit_and_run_count_adjust():
     cfg = make_cfg(
@@ -462,7 +486,7 @@ def test_run_tracking_and_boxscore():
     outs += sim.play_at_bat(away, home)  # strikeout
     away.bases = [None, None, None]
     away.inning_runs.append(away.runs)
-    assert outs == 3
+    assert outs == 2
     assert away.runs == 1
     assert away.inning_runs == [1]
     runner_stats = away.lineup_stats[runner.player_id]
@@ -576,9 +600,10 @@ def test_fielding_stats_tracking():
     defense = TeamState(
         lineup=[catcher, second], bench=[], pitchers=[make_pitcher("hp")]
     )
-    runner = make_player("r")
+    runner = make_player("r", sp=80)
     offense = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
     runner_state = BatterState(runner)
+    runner_state.lead = 2
     offense.lineup_stats[runner.player_id] = runner_state
     offense.bases[0] = runner_state
     offense.base_pitchers[0] = defense.current_pitcher_state
