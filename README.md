@@ -7,6 +7,19 @@ UBL (Ultimate Baseball League) Simulation is a Python project that models a smal
 - **League management:** classes for players, teams, trades and rosters in `models/` with supporting services and UI dialogs.
 - **Game simulation:** `logic/simulation.py` provides a minimal engine for at-bats, pitching changes and base running.
 - **Data files:** example data lives in the `data/` directory including rosters, lineups and configuration values.
+- **AI-generated logos:** `utils.logo_generator` can create team logos using OpenAI's image API.
+
+## OpenAI setup
+
+Utilities that generate images (avatars and team logos) require an OpenAI API
+key. Create a `[OpenAIkey]` section in `config.ini`:
+
+```
+[OpenAIkey]
+key=<your API key>
+```
+
+The key enables calls to OpenAI's `images.generate` endpoint.
 
 ### Play balance configuration
 
