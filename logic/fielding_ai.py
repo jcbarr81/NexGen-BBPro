@@ -73,6 +73,32 @@ class FieldingAI:
 
         return max(0.0, min(1.0, chance / 100))
 
+    def wild_pitch_catch_probability(
+        self, fa: int, *, glove_side: bool, high: bool
+    ) -> float:
+        """Return the probability of a catcher blocking a wild pitch."""
+
+        chance = (
+            self.config.wildCatchChanceBase
+            + self.config.wildCatchChanceFAPct * fa / 100
+        )
+        if not glove_side:
+            chance += self.config.wildCatchChanceOppMod
+        if high:
+            chance += self.config.wildCatchChanceHighMod
+        return max(0.0, min(1.0, chance / 100))
+
+    def resolve_wild_pitch(
+        self, fa: int, *, glove_side: bool, high: bool
+    ) -> bool:
+        """Return ``True`` if the wild pitch is blocked."""
+
+        prob = self.wild_pitch_catch_probability(
+            fa, glove_side=glove_side, high=high
+        )
+        rng = self.rng or Random()
+        return rng.random() < prob
+
     def good_throw_probability(self, position: str, fa: int) -> float:
         """Return the probability of making an accurate throw.
 
