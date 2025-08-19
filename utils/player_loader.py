@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 from models.player import Player
 from models.pitcher import Pitcher
 
@@ -18,8 +19,23 @@ def _optional_int(row, key, default=0):
 
 
 def load_players_from_csv(file_path):
+    """Load player objects from a CSV file.
+
+    Parameters
+    ----------
+    file_path : str or Path
+        Path to the CSV file. Relative paths are resolved with respect to the
+        project root so that callers can load data regardless of the current
+        working directory.
+    """
+
+    base_path = Path(__file__).resolve().parent.parent
+    csv_path = Path(file_path)
+    if not csv_path.is_absolute():
+        csv_path = base_path / csv_path
+
     players = []
-    with open(file_path, mode="r", newline="") as csvfile:
+    with csv_path.open(mode="r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             is_pitcher_value = row.get("is_pitcher", "").strip().lower()
