@@ -234,11 +234,33 @@ class AdminDashboard(QWidget):
             for pid in roster.act + roster.aaa + roster.low:
                 player_teams[pid] = team_id
 
+        missing = []
+        to_generate = []
+        for player in players:
+            team_id = player_teams.get(player.player_id, "")
+            if not team_id:
+                missing.append(player.player_id)
+            out_path = os.path.join(
+                "images",
+                "avatars",
+                f"{player.player_id}.png",
+            )
+            if os.path.exists(out_path):
+                continue
+            to_generate.append((player, team_id, out_path))
+
+        if not to_generate:
+            msg = "All player avatars already exist."
+            if missing:
+                msg += f" {len(missing)} players had no roster entry."
+            QMessageBox.information(self, "Avatars Generated", msg)
+            return
+
         progress = QProgressDialog(
             "Generating player avatars...",
             None,
             0,
-            len(players),
+            len(to_generate),
             self,
         )
         progress.setWindowTitle("Generating Avatars")
@@ -248,21 +270,11 @@ class AdminDashboard(QWidget):
         # Allow the event loop to process the show event so the dialog appears
         QApplication.processEvents()
 
-        missing = []
-
         try:
             max_workers = 5
             futures = []
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for player in players:
-                    team_id = player_teams.get(player.player_id, "")
-                    if not team_id:
-                        missing.append(player.player_id)
-                    out_path = os.path.join(
-                        "images",
-                        "avatars",
-                        f"{player.player_id}.png",
-                    )
+                for player, team_id, out_path in to_generate:
                     futures.append(
                         executor.submit(
                             generate_avatar,
