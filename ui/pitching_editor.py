@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QGridLayout, QComboBox, QPushButton, QMessageBox
-import os
 import csv
+
 from utils.pitcher_role import get_role
 from utils.pitching_autofill import autofill_pitching_staff
+from utils.path_utils import get_base_dir
 
 class PitchingEditor(QDialog):
     def __init__(self, team_id):
@@ -47,10 +48,10 @@ class PitchingEditor(QDialog):
         self.load_pitching_staff()
 
     def load_players_dict(self):
-        path = os.path.join("data", "players.csv")
+        path = get_base_dir() / "data" / "players.csv"
         players = {}
-        if os.path.exists(path):
-            with open(path, newline='', encoding="utf-8") as f:
+        if path.exists():
+            with path.open(newline='', encoding="utf-8") as f:
                 for row in csv.DictReader(f):
                     pid = row["player_id"].strip()
                     # Show the pitcher's role (SP/RP) instead of raw "P" when possible
@@ -67,9 +68,9 @@ class PitchingEditor(QDialog):
 
     def get_act_level_ids(self):
         act_ids = set()
-        path = os.path.join("data", "rosters", f"{self.team_id}.csv")
-        if os.path.exists(path):
-            with open(path, newline='', encoding="utf-8") as f:
+        path = get_base_dir() / "data" / "rosters" / f"{self.team_id}.csv"
+        if path.exists():
+            with path.open(newline='', encoding="utf-8") as f:
                 for row in csv.reader(f):
                     if len(row) >= 2 and row[1].strip().upper() == "ACT":
                         act_ids.add(row[0].strip())
@@ -84,8 +85,8 @@ class PitchingEditor(QDialog):
                 return
             if player_id:
                 used_ids.add(player_id)
-        path = os.path.join("data", "rosters", f"{self.team_id}_pitching.csv")
-        with open(path, "w", newline='', encoding="utf-8") as f:
+        path = get_base_dir() / "data" / "rosters" / f"{self.team_id}_pitching.csv"
+        with path.open("w", newline='', encoding="utf-8") as f:
             writer = csv.writer(f)
             for role, dropdown in self.pitcher_dropdowns.items():
                 player_id = dropdown.currentData()
@@ -94,9 +95,9 @@ class PitchingEditor(QDialog):
         QMessageBox.information(self, "Saved", "Pitching staff saved successfully.")
 
     def load_pitching_staff(self):
-        path = os.path.join("data", "rosters", f"{self.team_id}_pitching.csv")
-        if os.path.exists(path):
-            with open(path, newline='', encoding="utf-8") as f:
+        path = get_base_dir() / "data" / "rosters" / f"{self.team_id}_pitching.csv"
+        if path.exists():
+            with path.open(newline='', encoding="utf-8") as f:
                 for row in csv.reader(f):
                     if len(row) >= 2:
                         player_id, role = row[0], row[1]

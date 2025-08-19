@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 from collections import defaultdict
 from datetime import datetime
 
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
 
 from utils.team_loader import load_teams
+from utils.path_utils import get_base_dir
 
 
 class StandingsWindow(QDialog):
@@ -31,11 +31,11 @@ class StandingsWindow(QDialog):
 
     def _load_standings(self) -> None:
         """Load league, division and team names into the text viewer."""
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        league_path = os.path.join(base_dir, "data", "league.txt")
+        base_dir = get_base_dir()
+        league_path = base_dir / "data" / "league.txt"
 
         try:
-            with open(league_path, encoding="utf-8") as f:
+            with league_path.open(encoding="utf-8") as f:
                 league_name = f.read().strip() or "League"
         except OSError:
             league_name = "League"

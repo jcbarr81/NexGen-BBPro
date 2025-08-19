@@ -5,9 +5,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict
 
+from utils.path_utils import get_base_dir
+
 from .pbini_loader import load_pbini
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # Default values for PlayBalance configuration entries used throughout the

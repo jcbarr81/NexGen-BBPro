@@ -1,18 +1,30 @@
-import os
+from pathlib import Path
 from typing import List, Dict, Optional
 
+from utils.path_utils import get_base_dir
 
-def load_users(file_path: str = "data/users.txt") -> List[Dict[str, str]]:
+def _resolve(path: str | Path) -> Path:
+    p = Path(path)
+    if not p.is_absolute():
+        cwd_path = Path.cwd() / p
+        if cwd_path.exists() or not (get_base_dir() / p).exists():
+            return cwd_path
+        p = get_base_dir() / p
+    return p
+
+
+def load_users(file_path: str | Path = "data/users.txt") -> List[Dict[str, str]]:
     """Load users from a CSV-like text file.
 
     Each line in the file should have the format:
     username,password,role,team_id
     """
+    file_path = _resolve(file_path)
     users: List[Dict[str, str]] = []
-    if not os.path.exists(file_path):
+    if not file_path.exists():
         return users
 
-    with open(file_path, "r") as f:
+    with file_path.open("r") as f:
         for line in f:
             parts = line.strip().split(",")
             if len(parts) != 4:
@@ -34,7 +46,7 @@ def add_user(
     password: str,
     role: str,
     team_id: str = "",
-    file_path: str = "data/users.txt",
+    file_path: str | Path = "data/users.txt",
 ) -> None:
     """Add a new user to the users file.
 
@@ -47,6 +59,7 @@ def add_user(
     role = role.strip()
     team_id = team_id.strip()
 
+    file_path = _resolve(file_path)
     users = load_users(file_path)
 
     if any(u["username"] == username for u in users):
@@ -56,7 +69,7 @@ def add_user(
         if any(u["role"] == "owner" and u["team_id"] == team_id for u in users):
             raise ValueError("Team already has an owner")
 
-    with open(file_path, "a") as f:
+    with file_path.open("a") as f:
         f.write(f"{username},{password},{role},{team_id}\n")
 
 
@@ -64,7 +77,7 @@ def update_user(
     username: str,
     new_password: Optional[str] = None,
     new_team_id: Optional[str] = None,
-    file_path: str = "data/users.txt",
+    file_path: str | Path = "data/users.txt",
 ) -> None:
     """Update an existing user's password or team assignment.
 
@@ -93,6 +106,7 @@ def update_user(
     if new_team_id is not None:
         new_team_id = new_team_id.strip()
 
+    file_path = _resolve(file_path)
     users = load_users(file_path)
     user = next((u for u in users if u["username"] == username), None)
     if not user:
@@ -115,12 +129,12 @@ def update_user(
         user["password"] = new_password
 
     # Rewrite file with updated user data
-    with open(file_path, "w") as f:
+    with file_path.open("w") as f:
         for u in users:
             f.write(f"{u['username']},{u['password']},{u['role']},{u['team_id']}\n")
 
 
-def clear_users(file_path: str = "data/users.txt") -> None:
+def clear_users(file_path: str | Path = "data/users.txt") -> None:
     """Reset the users file to contain only the admin account.
 
     If ``file_path`` exists, any existing users are discarded and the file is
@@ -129,8 +143,9 @@ def clear_users(file_path: str = "data/users.txt") -> None:
     The directory for ``file_path`` is created if it does not already exist.
     """
     admin_line = None
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
+    file_path = _resolve(file_path)
+    if file_path.exists():
+        with file_path.open("r") as f:
             for line in f:
                 if line.startswith("admin,"):
                     admin_line = line.strip()
@@ -139,6 +154,6 @@ def clear_users(file_path: str = "data/users.txt") -> None:
     if admin_line is None:
         admin_line = "admin,pass,admin,"
 
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w") as f:
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open("w") as f:
         f.write(admin_line.rstrip("\n") + "\n")

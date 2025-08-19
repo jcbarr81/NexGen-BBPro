@@ -2,7 +2,9 @@ import colorsys
 import os
 import csv
 import shutil
+from pathlib import Path
 from typing import Dict, List, Tuple
+
 from models.player import Player
 from models.pitcher import Pitcher
 from utils.player_writer import save_players_to_csv
@@ -97,18 +99,19 @@ def _dict_to_model(data: dict):
         )
 
 
-def create_league(base_dir: str, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
-    os.makedirs(base_dir, exist_ok=True)
-    rosters_dir = os.path.join(base_dir, "rosters")
-    if os.path.exists(rosters_dir):
+def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    rosters_dir = base_dir / "rosters"
+    if rosters_dir.exists():
         shutil.rmtree(rosters_dir)
-    os.makedirs(rosters_dir, exist_ok=True)
+    rosters_dir.mkdir(parents=True, exist_ok=True)
 
     clear_users()
 
-    teams_path = os.path.join(base_dir, "teams.csv")
-    players_path = os.path.join(base_dir, "players.csv")
-    league_path = os.path.join(base_dir, "league.txt")
+    teams_path = base_dir / "teams.csv"
+    players_path = base_dir / "players.csv"
+    league_path = base_dir / "league.txt"
 
     team_rows = []
     all_players = []
@@ -163,8 +166,8 @@ def create_league(base_dir: str, divisions: Dict[str, List[Tuple[str, str]]], le
             for level_players in roster_levels.values():
                 all_players.extend(level_players)
 
-            roster_file = os.path.join(rosters_dir, f"{abbr}.csv")
-            with open(roster_file, "w", newline="") as f:
+            roster_file = rosters_dir / f"{abbr}.csv"
+            with roster_file.open("w", newline="") as f:
                 writer = csv.writer(f)
                 for level, players in roster_levels.items():
                     for p in players:

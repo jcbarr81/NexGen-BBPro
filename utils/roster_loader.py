@@ -1,14 +1,18 @@
 import csv
-import os
-from models.roster import Roster
+from pathlib import Path
 
-def load_roster(team_id, roster_dir="data/rosters"):
+from models.roster import Roster
+from utils.path_utils import get_base_dir
+def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
     act, aaa, low = [], [], []
-    file_path = os.path.join(roster_dir, f"{team_id}.csv")
-    if not os.path.exists(file_path):
+    roster_dir = Path(roster_dir)
+    if not roster_dir.is_absolute():
+        roster_dir = get_base_dir() / roster_dir
+    file_path = roster_dir / f"{team_id}.csv"
+    if not file_path.exists():
         raise FileNotFoundError(f"Roster file not found: {file_path}")
 
-    with open(file_path, mode="r", newline="") as csvfile:
+    with file_path.open(mode="r", newline="") as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
             if len(row) < 2:
@@ -24,9 +28,10 @@ def load_roster(team_id, roster_dir="data/rosters"):
 
     return Roster(team_id=team_id, act=act, aaa=aaa, low=low)
 
+
 def save_roster(team_id, roster: Roster):
-    filepath = os.path.join("data", "rosters", f"{team_id}.csv")
-    with open(filepath, mode="w", newline="") as f:
+    filepath = get_base_dir() / "data" / "rosters" / f"{team_id}.csv"
+    with filepath.open(mode="w", newline="") as f:
         writer = csv.writer(f)
         for level, group in [("ACT", roster.act), ("AAA", roster.aaa), ("LOW", roster.low)]:
             for player_id in group:

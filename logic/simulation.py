@@ -16,6 +16,7 @@ from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
 from logic.bullpen import WarmupTracker
 from logic.fielding_ai import FieldingAI
+from utils.path_utils import get_base_dir
 from .stats import (
     compute_batting_derived,
     compute_batting_rates,
@@ -1503,7 +1504,7 @@ def save_boxscore_html(game_type: str, html: str, game_id: str | None = None) ->
         Full path of the written file.
     """
 
-    base = Path(__file__).resolve().parent.parent / "data" / "boxscores" / game_type
+    base = get_base_dir() / "data" / "boxscores" / game_type
     base.mkdir(parents=True, exist_ok=True)
     if game_id is None:
         game_id = datetime.now().strftime("%Y%m%d_%H%M%S")

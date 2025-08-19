@@ -11,12 +11,14 @@ from __future__ import annotations
 import base64
 import os
 from io import BytesIO
+from pathlib import Path
 from typing import Callable, List, Optional
 
 from PIL import Image
 
 from utils.openai_client import client
 from utils.team_loader import load_teams
+from utils.path_utils import get_base_dir
 
 
 def _auto_logo_fallback(
@@ -83,9 +85,10 @@ def generate_team_logos(
     teams = load_teams("data/teams.csv")
 
     if out_dir is None:
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        out_dir = os.path.join(base_dir, "logo", "teams")
-    os.makedirs(out_dir, exist_ok=True)
+        out_dir = get_base_dir() / "logo" / "teams"
+    else:
+        out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     if client is None:
         if allow_auto_logo:
@@ -106,13 +109,13 @@ def generate_team_logos(
         )
         b64 = result.data[0].b64_json
         image_bytes = base64.b64decode(b64)
-        path = os.path.join(out_dir, f"{t.team_id.lower()}.png")
+        path = out_dir / f"{t.team_id.lower()}.png"
         with Image.open(BytesIO(image_bytes)) as img:
             img.save(path, format="PNG")
         if progress_callback:
             progress_callback(idx, total)
 
-    return out_dir
+    return str(out_dir)
 
 
 __all__ = ["generate_team_logos"]

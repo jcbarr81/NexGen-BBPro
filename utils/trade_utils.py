@@ -1,10 +1,22 @@
 import csv
-from models.trade import Trade
+from pathlib import Path
 
-def load_trades(file_path="data/trades_pending.csv"):
+from models.trade import Trade
+from utils.path_utils import get_base_dir
+
+
+def _resolve(file_path: str | Path) -> Path:
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = get_base_dir() / path
+    return path
+
+
+def load_trades(file_path: str | Path = "data/trades_pending.csv"):
+    path = _resolve(file_path)
     trades = []
     try:
-        with open(file_path, newline="") as f:
+        with path.open(newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 trade = Trade(
@@ -13,14 +25,15 @@ def load_trades(file_path="data/trades_pending.csv"):
                     to_team=row["to_team"],
                     give_player_ids=row["give_player_ids"].split("|"),
                     receive_player_ids=row["receive_player_ids"].split("|"),
-                    status=row["status"]
+                    status=row["status"],
                 )
                 trades.append(trade)
     except FileNotFoundError:
         pass
     return trades
 
-def save_trade(trade: Trade, file_path="data/trades_pending.csv"):
+
+def save_trade(trade: Trade, file_path: str | Path = "data/trades_pending.csv"):
     """Save ``trade`` to ``file_path`` replacing any existing entry.
 
     The previous implementation always appended a trade, which caused
@@ -29,9 +42,10 @@ def save_trade(trade: Trade, file_path="data/trades_pending.csv"):
     before writing the updated list back to disk.
     """
 
-    existing = [t for t in load_trades(file_path) if t.trade_id != trade.trade_id]
+    path = _resolve(file_path)
+    existing = [t for t in load_trades(path) if t.trade_id != trade.trade_id]
     existing.append(trade)
-    with open(file_path, "w", newline="") as f:
+    with path.open("w", newline="") as f:
         fieldnames = [
             "trade_id",
             "from_team",
@@ -55,7 +69,8 @@ def save_trade(trade: Trade, file_path="data/trades_pending.csv"):
             )
 
 
-def get_pending_trades(team_id: str, file_path="data/trades_pending.csv"):
+def get_pending_trades(team_id: str, file_path: str | Path = "data/trades_pending.csv"):
     """Return trades awaiting response for ``team_id``."""
 
-    return [t for t in load_trades(file_path) if t.to_team == team_id and t.status == "pending"]
+    path = _resolve(file_path)
+    return [t for t in load_trades(path) if t.to_team == team_id and t.status == "pending"]

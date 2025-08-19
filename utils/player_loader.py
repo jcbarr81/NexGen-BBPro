@@ -1,6 +1,8 @@
 import csv
 from pathlib import Path
+
 from models.player import Player
+from utils.path_utils import get_base_dir
 from models.pitcher import Pitcher
 
 
@@ -29,7 +31,7 @@ def load_players_from_csv(file_path):
         working directory.
     """
 
-    base_path = Path(__file__).resolve().parent.parent
+    base_path = get_base_dir()
     csv_path = Path(file_path)
     if not csv_path.is_absolute():
         csv_path = base_path / csv_path
