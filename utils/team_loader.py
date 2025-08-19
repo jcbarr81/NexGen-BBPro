@@ -1,8 +1,19 @@
 import csv
+import os
 import re
 from models.team import Team
 
-def load_teams(file_path="data/teams.csv"):
+def _resolve_path(file_path: str) -> str:
+    """Return an absolute path for ``file_path`` relative to the project root."""
+
+    if os.path.isabs(file_path):
+        return file_path
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return os.path.join(base_dir, file_path)
+
+
+def load_teams(file_path: str = "data/teams.csv"):
+    file_path = _resolve_path(file_path)
     teams = []
     with open(file_path, mode="r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -22,7 +33,7 @@ def load_teams(file_path="data/teams.csv"):
     return teams
 
 
-def save_team_settings(team: Team, file_path="data/teams.csv") -> None:
+def save_team_settings(team: Team, file_path: str = "data/teams.csv") -> None:
     """Persist updates to a single team's stadium or colors.
 
     Reads the entire teams file, updates the matching team's fields and
@@ -45,6 +56,7 @@ def save_team_settings(team: Team, file_path="data/teams.csv") -> None:
             return value.upper()
         raise ValueError(f"Invalid hex color for {field}: {value}")
 
+    file_path = _resolve_path(file_path)
     teams = []
     with open(file_path, mode="r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
