@@ -30,6 +30,30 @@ class Physics:
         return base + pct * sp / 100.0
 
     # ------------------------------------------------------------------
+    # Fielder reaction delay
+    # ------------------------------------------------------------------
+    def reaction_delay(self, position: str, fa: int) -> float:
+        """Return the reaction delay for a fielder."""
+
+        suffix_map = {
+            "P": "Pitcher",
+            "C": "Catcher",
+            "1B": "FirstBase",
+            "2B": "SecondBase",
+            "3B": "ThirdBase",
+            "SS": "ShortStop",
+            "LF": "LeftField",
+            "CF": "CenterField",
+            "RF": "RightField",
+        }
+        suffix = suffix_map.get(position.upper())
+        if suffix is None:
+            return 0.0
+        base = getattr(self.config, f"delayBase{suffix}")
+        pct = getattr(self.config, f"delayFAPct{suffix}")
+        return base + pct * fa / 100.0
+
+    # ------------------------------------------------------------------
     # Pitch velocity
     # ------------------------------------------------------------------
     def pitch_velocity(
