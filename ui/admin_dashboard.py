@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
+from ui.playbalance_editor import PlayBalanceEditor
 from utils.trade_utils import load_trades, save_trade
 from utils.news_logger import log_news_event
 from utils.roster_loader import load_roster
@@ -85,6 +86,10 @@ class AdminDashboard(QWidget):
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         button_layout.addWidget(self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.playbalance_button = QPushButton("Edit Play Balance")
+        self.playbalance_button.clicked.connect(self.open_playbalance_editor)
+        button_layout.addWidget(self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         layout.addLayout(button_layout)
         layout.addStretch()
@@ -271,6 +276,10 @@ class AdminDashboard(QWidget):
 
     def open_exhibition_dialog(self):
         dialog = ExhibitionGameDialog(self)
+        dialog.exec()
+
+    def open_playbalance_editor(self):
+        dialog = PlayBalanceEditor(self)
         dialog.exec()
 
     def open_add_user(self):
