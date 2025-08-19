@@ -183,6 +183,57 @@ def test_steal_attempt_failure():
     assert away.bases[0] is not None
 
 
+def test_catcher_reaction_delay_affects_steal():
+    cfg = make_cfg(
+        generalSlop=0,
+        tagTimeSlop=0,
+        delayBaseCatcher=12,
+        delayFAPctCatcher=-4,
+    )
+    runner = make_player("run")
+
+    def make_catcher(pid: str, fa: int) -> Player:
+        return Player(
+            player_id=pid,
+            first_name="F" + pid,
+            last_name="L" + pid,
+            birthdate="2000-01-01",
+            height=72,
+            weight=180,
+            bats="R",
+            primary_position="C",
+            other_positions=[],
+            gf=50,
+            ch=0,
+            ph=0,
+            sp=0,
+            pl=0,
+            vl=0,
+            sc=0,
+            fa=fa,
+            arm=0,
+        )
+
+    slow_def = TeamState(lineup=[make_catcher("cs", 0)], bench=[], pitchers=[make_pitcher("hp")])
+    fast_def = TeamState(lineup=[make_catcher("cf", 100)], bench=[], pitchers=[make_pitcher("hp")])
+
+    offense1 = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
+    rstate1 = BatterState(runner)
+    offense1.lineup_stats[runner.player_id] = rstate1
+    offense1.bases[0] = rstate1
+    sim1 = GameSimulation(slow_def, offense1, cfg, MockRandom([0.5]))
+    res1 = sim1._attempt_steal(offense1, slow_def, slow_def.pitchers[0], force=True)
+    assert res1 is True
+
+    offense2 = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("ap")])
+    rstate2 = BatterState(runner)
+    offense2.lineup_stats[runner.player_id] = rstate2
+    offense2.bases[0] = rstate2
+    sim2 = GameSimulation(fast_def, offense2, cfg, MockRandom([0.5]))
+    res2 = sim2._attempt_steal(offense2, fast_def, fast_def.pitchers[0], force=True)
+    assert res2 is False
+
+
 def test_steal_count_and_situational_modifiers():
     cfg = make_cfg(
         offManStealChancePct=100,

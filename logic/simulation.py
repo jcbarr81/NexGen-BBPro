@@ -1248,9 +1248,11 @@ class GameSimulation:
             )
             attempt = self.rng.random() < chance
         if attempt:
-            tag_out = self.fielding_ai.should_tag_runner(10, 10)
-            success_prob = 0.3 if tag_out else 0.7
             catcher_fs = self._get_fielder(defense, "C")
+            fa = catcher_fs.player.fa if catcher_fs else 0
+            delay = self.physics.reaction_delay("C", fa)
+            tag_out = self.fielding_ai.should_tag_runner(delay, 10)
+            success_prob = 0.3 if tag_out else 0.7
             if self.rng.random() < success_prob:
                 ps_runner = offense.base_pitchers[base_idx]
                 offense.bases[base_idx] = None

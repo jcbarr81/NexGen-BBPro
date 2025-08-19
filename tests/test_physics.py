@@ -470,3 +470,11 @@ def test_missed_control_expands_box_and_reduces_velocity():
         + miss_amt * cfg.speedReductionEffMOPct / 100
     )
     assert sim.last_pitch_speed == pytest.approx(10 - reduction)
+
+
+def test_reaction_delay_decreases_with_fa():
+    cfg = make_cfg(delayBaseCatcher=12, delayFAPctCatcher=-4)
+    physics = Physics(cfg)
+    low = physics.reaction_delay("C", 20)
+    high = physics.reaction_delay("C", 80)
+    assert high < low
