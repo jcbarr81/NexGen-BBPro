@@ -27,3 +27,9 @@ def test_invalid_hex_color_raises(tmp_path):
     team.secondary_color = "ZZZZZZ"  # invalid characters
     with pytest.raises(ValueError):
         save_team_settings(team, str(team_file))
+
+
+def test_load_teams_from_any_cwd(monkeypatch):
+    monkeypatch.chdir("ui")
+    teams = load_teams()
+    assert teams, "Expected to load teams regardless of working directory"
