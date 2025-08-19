@@ -73,6 +73,31 @@ class FieldingAI:
 
         return max(0.0, min(1.0, chance / 100))
 
+    def good_throw_probability(self, position: str, fa: int) -> float:
+        """Return the probability of making an accurate throw.
+
+        The calculation mirrors the original game's behaviour and is based on
+        ``goodThrowBase + goodThrowFAPct * FA / 100 + goodThrowChance{Pos}``.
+        The result is clamped to the ``0-1`` range.
+        """
+
+        chance = self.config.goodThrowBase + self.config.goodThrowFAPct * fa / 100
+
+        pos_adjust = {
+            "P": self.config.goodThrowChancePitcher,
+            "C": self.config.goodThrowChanceCatcher,
+            "1B": self.config.goodThrowChanceFirstBase,
+            "2B": self.config.goodThrowChanceSecondBase,
+            "3B": self.config.goodThrowChanceThirdBase,
+            "SS": self.config.goodThrowChanceShortStop,
+            "LF": self.config.goodThrowChanceLeftField,
+            "CF": self.config.goodThrowChanceCenterField,
+            "RF": self.config.goodThrowChanceRightField,
+        }
+        chance += pos_adjust.get(position, 0)
+
+        return max(0.0, min(1.0, chance / 100))
+
     def resolve_fly_ball(
         self, position: str, fa: int, hang_time: float, action: str
     ) -> bool:
@@ -84,12 +109,22 @@ class FieldingAI:
 
     def resolve_throw(
         self, position: str, fa: int, hang_time: float, action: str = "catch"
-    ) -> bool:
-        """Return ``True`` if the thrown ball is caught."""
+    ) -> tuple[bool, bool]:
+        """Resolve a throw and return ``(caught, error)``.
+
+        ``caught`` indicates whether the receiving fielder catches the ball.
+        ``error`` is ``True`` when the throw is offline or wild based on the
+        good throw chance calculation.
+        """
+
+        rng = self.rng or Random()
 
         prob = self.catch_probability(position, fa, hang_time, action)
-        rng = self.rng or Random()
-        return rng.random() < prob
+        caught = rng.random() < prob
+
+        good_throw = rng.random() < self.good_throw_probability(position, fa)
+
+        return caught and good_throw, not good_throw
 
     def should_relay_throw(self, fielder_time: float, runner_time: float) -> bool:
         """Return ``True`` if a relay throw should be attempted."""

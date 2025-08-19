@@ -1,3 +1,5 @@
+from random import Random
+
 from logic.fielding_ai import FieldingAI
 from logic.playbalance_config import PlayBalanceConfig
 
@@ -46,3 +48,32 @@ def test_run_to_bag_slop_affects_choice():
     cfg.stepOnBagSlop = 15
     ai = FieldingAI(cfg)
     assert not ai.should_run_to_bag(fielder_time=10, runner_time=20)
+
+
+def test_higher_fa_reduces_throw_errors():
+    cfg = PlayBalanceConfig()
+    cfg.goodThrowBase = 50
+    cfg.goodThrowFAPct = 50
+    ai = FieldingAI(cfg)
+    low_error = 1 - ai.good_throw_probability("SS", fa=10)
+    high_error = 1 - ai.good_throw_probability("SS", fa=90)
+    assert high_error < low_error
+
+
+def test_outfielders_have_throw_penalty():
+    cfg = PlayBalanceConfig()
+    cfg.goodThrowBase = 50
+    cfg.goodThrowChanceLeftField = -10
+    ai = FieldingAI(cfg)
+    infield = ai.good_throw_probability("SS", fa=50)
+    outfield = ai.good_throw_probability("LF", fa=50)
+    assert outfield < infield
+
+
+def test_bad_throw_sets_error_state():
+    cfg = PlayBalanceConfig()
+    cfg.goodThrowBase = 0
+    cfg.goodThrowFAPct = 0
+    ai = FieldingAI(cfg, rng=Random(0))
+    caught, error = ai.resolve_throw("SS", fa=0, hang_time=1.0)
+    assert error
