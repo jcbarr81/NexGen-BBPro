@@ -13,13 +13,44 @@ class FieldingAI:
     config: PlayBalanceConfig
     rng: Random | None = None
 
-    def catch_action(self, hang_time: float, run_time: float) -> str:
+    def catch_action(
+        self,
+        hang_time: float,
+        run_time: float,
+        *,
+        position: str | None = None,
+        distance: float | None = None,
+        dist_from_home: float | None = None,
+    ) -> str:
         """Return the action to take on a fly ball.
 
         The returned string is one of ``"catch"`` for an easy catch,
         ``"dive"`` when the fielder should make an effort, or
-        ``"no_attempt"`` if the ball cannot be reached in time.
+        ``"no_attempt"`` if the ball cannot be reached in time.  When
+        ``position`` and distance information are supplied the method will
+        honour the corresponding pursuit limits from ``PB.INI`` and return
+        ``"no_attempt"`` when the fielder should not chase the ball.
         """
+
+        # Respect chase distance limits when sufficient information is given.
+        if position:
+            pos = position.upper()
+            if pos == "P":
+                limit = self.config.get("pitcherMaxChaseDist", 0)
+                if limit > 0 and distance is not None and distance > limit:
+                    return "no_attempt"
+            elif pos in {"C", "1B", "2B", "3B", "SS"}:
+                limit = self.config.get("infieldMaxChaseDist", 0)
+                if limit > 0 and distance is not None and distance > limit:
+                    return "no_attempt"
+            elif pos in {"LF", "CF", "RF"}:
+                limit = self.config.get("outfieldMinChaseDist", 0)
+                if (
+                    limit > 0
+                    and dist_from_home is not None
+                    and dist_from_home < limit
+                ):
+                    return "no_attempt"
 
         t = run_time + self.config.generalSlop
         if t + self.config.shouldBeCaughtSlop <= hang_time:
