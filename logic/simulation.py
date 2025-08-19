@@ -451,15 +451,27 @@ class GameSimulation:
     # Core loop helpers
     # ------------------------------------------------------------------
     def simulate_game(self, innings: int = 9) -> None:
-        """Simulate ``innings`` innings.
+        """Simulate a complete game.
 
-        Only very small parts of a real baseball game are modelled – enough to
-        exercise decision making paths for the tests.
+        The game will extend into extra innings if tied after the requested
+        number of innings and the bottom half of the final inning is skipped
+        when the home team is already ahead. Only very small parts of a real
+        baseball game are modelled – enough to exercise decision making
+        paths for the tests.
         """
 
-        for _ in range(innings):
-            self._play_half(self.away, self.home)  # Top half
-            self._play_half(self.home, self.away)  # Bottom half
+        inning = 1
+        if innings > 0:
+            while True:
+                # Top half
+                self._play_half(self.away, self.home)
+                if inning >= innings and self.away.runs < self.home.runs:
+                    break
+                # Bottom half
+                self._play_half(self.home, self.away)
+                if inning >= innings and self.home.runs != self.away.runs:
+                    break
+                inning += 1
 
         # Finalize pitching stats for pitchers who finished the game
         self._on_pitcher_exit(self.home.current_pitcher_state, self.away, self.home, game_finished=True)

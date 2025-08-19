@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 
 from tests.test_simulation import make_player, make_pitcher, MockRandom
+from logic.simulation import BatterState
 from tests.util.pbini_factory import load_config
 
 from logic.simulation import (
@@ -17,8 +18,23 @@ def _simulate_simple_game():
     cfg = load_config()
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[make_player("a1")], bench=[], pitchers=[make_pitcher("ap")])
-    rng = MockRandom([0.0, 0.9] * 100)
-    sim = GameSimulation(home, away, cfg, rng)
+    sim = GameSimulation(home, away, cfg, MockRandom([]))
+
+    def fake_play_half(self, offense, defense):
+        runs = 1 if offense is self.away and len(offense.inning_runs) == 0 else 0
+        batter = offense.lineup[0]
+        bs = offense.lineup_stats.setdefault(batter.player_id, BatterState(batter))
+        bs.pa += 1
+        bs.ab += 1
+        if runs:
+            bs.h += 1
+            bs.b1 += 1
+            bs.r += 1
+            bs.rbi += 1
+        offense.runs += runs
+        offense.inning_runs.append(runs)
+
+    sim._play_half = fake_play_half.__get__(sim, GameSimulation)
     sim.simulate_game(innings=1)
     return home, away
 
