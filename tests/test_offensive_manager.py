@@ -205,7 +205,7 @@ def test_hit_and_run_chance_and_advance():
         "holdChanceBase": 0,
         "holdChanceAdjust": 0,
     })
-    runner = make_player("r")
+    runner = make_player("r", sp=80)
     batter = make_player("b", ch=10, ph=10)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
@@ -345,7 +345,7 @@ def test_sacrifice_bunt_on_deck_high_close_late():
             "holdChanceAdjust": 0,
         }
     )
-    runner = make_player("r")
+    runner = make_player("r", sp=80)
     batter = make_player("b", ch=10, ph=10)
     on_deck = make_player("d", ch=60, ph=60)
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
