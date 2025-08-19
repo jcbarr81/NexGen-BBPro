@@ -1,13 +1,15 @@
-"""Reusable OpenAI client configured via ``config.ini``.
+"""Reusable OpenAI client configured via environment or ``config.ini``.
 
-Reads the API key from the ``[OpenAIkey]`` section of ``config.ini`` and
-creates a singleton ``OpenAI`` client that can be imported anywhere in the
-project. If the :mod:`openai` package is not installed or a key is missing, the
-``client`` variable will be ``None``.
+Reads the API key from the ``OPENAI_API_KEY`` environment variable, falling
+back to the ``[OpenAIkey]`` section of ``config.ini``. A singleton ``OpenAI``
+client is created that can be imported anywhere in the project. If the
+:mod:`openai` package is not installed or a key is missing, the ``client``
+variable will be ``None``.
 """
 from __future__ import annotations
 
 import configparser
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -18,7 +20,12 @@ except Exception:  # pragma: no cover
 
 
 def _read_api_key() -> Optional[str]:
-    """Return the OpenAI API key from ``config.ini`` if available."""
+    """Return the OpenAI API key from environment or ``config.ini``."""
+
+    env_key = os.getenv("OPENAI_API_KEY")
+    if env_key:
+        return env_key
+
     base_dir = Path(__file__).resolve().parent.parent
     config_path = base_dir / "config.ini"
     parser = configparser.ConfigParser()

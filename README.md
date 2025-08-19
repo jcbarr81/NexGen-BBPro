@@ -12,7 +12,16 @@ UBL (Ultimate Baseball League) Simulation is a Python project that models a smal
 ## OpenAI setup
 
 Utilities that generate images (avatars and team logos) require an OpenAI API
-key. Create a `[OpenAIkey]` section in `config.ini`:
+key. Set the `OPENAI_API_KEY` environment variable before running the
+application:
+
+```bash
+export OPENAI_API_KEY=<your API key>
+```
+
+For local development you may instead create a `config.ini` file containing a
+`[OpenAIkey]` section. This file is ignored by git and serves only as a
+fallback when the environment variable is missing:
 
 ```
 [OpenAIkey]
