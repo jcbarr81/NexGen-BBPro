@@ -54,6 +54,39 @@ class Physics:
         return base + pct * fa / 100.0
 
     # ------------------------------------------------------------------
+    # Fielder throw calculations
+    # ------------------------------------------------------------------
+    def max_throw_distance(self, as_rating: int) -> float:
+        """Return maximum throw distance for ``as_rating`` arm strength."""
+
+        base = getattr(self.config, "maxThrowDistBase")
+        pct = getattr(self.config, "maxThrowDistASPct")
+        return base + pct * as_rating / 100.0
+
+    def throw_velocity(self, distance: float, *, outfield: bool) -> float:
+        """Return throw velocity for ``distance`` and fielder type."""
+
+        prefix = "OF" if outfield else "IF"
+        base = getattr(self.config, f"throwSpeed{prefix}Base")
+        pct = getattr(self.config, f"throwSpeed{prefix}DistPct")
+        max_speed = getattr(self.config, f"throwSpeed{prefix}Max")
+        speed = base + pct * distance / 100.0
+        return min(speed, max_speed)
+
+    def throw_time(self, as_rating: int, distance: float, position: str) -> float:
+        """Return travel time for a throw to cover ``distance`` feet."""
+
+        max_dist = self.max_throw_distance(as_rating)
+        if distance > max_dist:
+            return float("inf")
+        outfield = position.upper() in {"LF", "CF", "RF"}
+        speed = self.throw_velocity(distance, outfield=outfield)
+        fps = speed * 5280 / 3600
+        if fps <= 0:
+            return float("inf")
+        return distance / fps
+
+    # ------------------------------------------------------------------
     # Pitch velocity
     # ------------------------------------------------------------------
     def pitch_velocity(
