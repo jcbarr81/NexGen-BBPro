@@ -26,6 +26,7 @@ from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
 from utils.avatar_generator import generate_avatar
 from models.trade import Trade
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 import os
 from logic.league_creator import create_league
@@ -250,20 +251,32 @@ class AdminDashboard(QWidget):
         missing = []
 
         try:
-            for idx, player in enumerate(players, start=1):
-                team_id = player_teams.get(player.player_id, "")
-                if not team_id:
-                    missing.append(player.player_id)
-                out_path = os.path.join(
-                    "images",
-                    "avatars",
-                    f"{player.player_id}.png",
-                )
-                generate_avatar(
-                    f"{player.first_name} {player.last_name}", team_id, out_path
-                )
-                progress.setValue(idx)
-                QApplication.processEvents()
+            max_workers = 5
+            futures = []
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for player in players:
+                    team_id = player_teams.get(player.player_id, "")
+                    if not team_id:
+                        missing.append(player.player_id)
+                    out_path = os.path.join(
+                        "images",
+                        "avatars",
+                        f"{player.player_id}.png",
+                    )
+                    futures.append(
+                        executor.submit(
+                            generate_avatar,
+                            f"{player.first_name} {player.last_name}",
+                            team_id,
+                            out_path,
+                        )
+                    )
+                completed = 0
+                for future in as_completed(futures):
+                    future.result()
+                    completed += 1
+                    progress.setValue(completed)
+                    QApplication.processEvents()
             msg = "Player avatars created."
             if missing:
                 msg += f" {len(missing)} players had no roster entry."
