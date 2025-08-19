@@ -200,3 +200,5 @@ def test_standings_window_displays_league_and_teams():
     assert "UBL" in html
     assert "East" in html
     assert "Dallas Rockets" in html
+    assert "<pre>" in html
+    assert "<ul>" not in html
