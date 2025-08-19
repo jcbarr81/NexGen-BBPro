@@ -81,9 +81,8 @@ class OwnerDashboard(QWidget):
         self.team = teams.get(team_id)
 
         # Window
-        # Open slightly smaller than full screen so multiple windows can be
-        # visible at once.
-        self.setGeometry(200, 200, 1000, 700)
+        # Open slightly larger for better visibility.
+        self.setGeometry(150, 150, 1200, 850)
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
 
         bold = QFont()
@@ -136,15 +135,14 @@ class OwnerDashboard(QWidget):
         welcome.setFont(bold)
         main.addWidget(welcome)
 
-        # Actions
-        self.lineup_button = QPushButton("Manage Lineups")
-        self.rotation_button = QPushButton("Manage Pitching Staff")
-        self.lineup_button.setFont(bold)
-        self.rotation_button.setFont(bold)
-        self.lineup_button.clicked.connect(self.open_lineup_editor)
-        self.rotation_button.clicked.connect(self.open_pitching_editor)
-        main.addWidget(self.lineup_button)
-        main.addWidget(self.rotation_button)
+        # News
+        main.addWidget(QLabel("League News"))
+        self.news_feed = QTextEdit()
+        self.news_feed.setReadOnly(True)
+        self.news_feed.setMinimumHeight(120)
+        self.news_feed.setStyleSheet("background-color:#1e1e1e;color:#ffffff;")
+        self.news_feed.setFont(QFont("Courier New", 9))
+        main.addWidget(self.news_feed)
 
         # Roster count label
         self.roster_count_label = QLabel()
@@ -193,14 +191,19 @@ class OwnerDashboard(QWidget):
         action_box.setLayout(action_layout)
         main.addWidget(action_box)
 
-        # News
-        main.addWidget(QLabel("League News"))
-        self.news_feed = QTextEdit()
-        self.news_feed.setReadOnly(True)
-        self.news_feed.setMinimumHeight(120)
-        self.news_feed.setStyleSheet("background-color:#1e1e1e;color:#ffffff;")
-        self.news_feed.setFont(QFont("Courier New", 9))
-        main.addWidget(self.news_feed)
+        # Lineup/Pitching staff management
+        lineup_layout = QHBoxLayout()
+        self.lineup_button = QPushButton("Manage Lineups")
+        self.rotation_button = QPushButton("Manage Pitching Staff")
+        self.lineup_button.setFont(bold)
+        self.rotation_button.setFont(bold)
+        self.lineup_button.setFixedSize(160, 30)
+        self.rotation_button.setFixedSize(160, 30)
+        self.lineup_button.clicked.connect(self.open_lineup_editor)
+        self.rotation_button.clicked.connect(self.open_pitching_editor)
+        lineup_layout.addWidget(self.lineup_button)
+        lineup_layout.addWidget(self.rotation_button)
+        main.addLayout(lineup_layout)
 
         self.setLayout(main)
         self.apply_team_colors()
