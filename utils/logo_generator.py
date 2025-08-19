@@ -10,7 +10,10 @@ from __future__ import annotations
 
 import base64
 import os
+from io import BytesIO
 from typing import Callable, List, Optional
+
+from PIL import Image
 
 from utils.openai_client import client
 from utils.team_loader import load_teams
@@ -66,7 +69,9 @@ def generate_team_logos(
         Optional output directory. Defaults to ``logo/teams`` relative to the
         project root.
     size:
-        Pixel size for the generated square logos.
+        Pixel size for the final square logos. The OpenAI image API only
+        supports generating ``1024x1024`` images, so results are downscaled to
+        the requested size.
     progress_callback:
         Optional callback receiving ``(completed, total)`` after each logo is
         saved.
@@ -98,13 +103,15 @@ def generate_team_logos(
         result = client.images.generate(
             model="gpt-image-1",
             prompt=prompt,
-            size=f"{size}x{size}",
+            size="1024x1024",
         )
         b64 = result.data[0].b64_json
         image_bytes = base64.b64decode(b64)
         path = os.path.join(out_dir, f"{t.team_id.lower()}.png")
-        with open(path, "wb") as f:
-            f.write(image_bytes)
+        with Image.open(BytesIO(image_bytes)) as img:
+            if size != 1024:
+                img = img.resize((size, size), Image.LANCZOS)
+            img.save(path, format="PNG")
         if progress_callback:
             progress_callback(idx, total)
 

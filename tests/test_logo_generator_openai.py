@@ -4,6 +4,8 @@ from types import SimpleNamespace
 import os
 
 import pytest
+pytest.importorskip("PIL")
+from PIL import Image
 
 from utils import logo_generator
 from models.team import Team
@@ -49,6 +51,7 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     out_dir = tmp_path
     logo_generator.generate_team_logos(out_dir=str(out_dir), size=256, progress_callback=cb)
 
+    assert calls["size"] == "1024x1024"
     assert "Testville" in calls["prompt"]
     assert "Testers" in calls["prompt"]
     assert "#112233" in calls["prompt"]
@@ -56,6 +59,8 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
 
     outfile = out_dir / "tst.png"
     assert outfile.exists()
+    with Image.open(outfile) as img:
+        assert img.size == (256, 256)
     assert progress == [(1, 1)]
 
 
