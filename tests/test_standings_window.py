@@ -69,6 +69,20 @@ class Dummy:
     def question(self, *args, **kwargs):
         return 0
 
+
+class Dialog:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def setWindowTitle(self, *args, **kwargs):
+        pass
+
+    def setGeometry(self, *args, **kwargs):
+        pass
+
+    def exec(self, *args, **kwargs):
+        pass
+
 class QAction:
     def __init__(self, *args, **kwargs):
         self.triggered = DummySignal()
@@ -86,7 +100,7 @@ class QMenuBar(Dummy):
 qtwidgets = types.ModuleType("PyQt6.QtWidgets")
 widget_names = [
     'QWidget','QLabel','QVBoxLayout','QTabWidget','QListWidget','QTextEdit','QPushButton',
-    'QHBoxLayout','QComboBox','QMessageBox','QGroupBox','QMenuBar','QDialog','QFormLayout',
+    'QHBoxLayout','QComboBox','QMessageBox','QGroupBox','QMenuBar','QFormLayout',
     'QSpinBox','QGridLayout','QScrollArea','QLineEdit','QTableWidget','QTableWidgetItem'
 ]
 for name in widget_names:
@@ -94,6 +108,25 @@ for name in widget_names:
 qtwidgets.QMenuBar = QMenuBar
 qtwidgets.QMenu = QMenu
 qtwidgets.QAction = QAction
+qtwidgets.QDialog = Dialog
+
+
+class QTextEdit(Dummy):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._html = ""
+
+    def setHtml(self, html):
+        self._html = html
+
+    def setPlainText(self, text):
+        self._html = text
+
+    def toHtml(self):
+        return self._html
+
+
+qtwidgets.QTextEdit = QTextEdit
 
 class QListWidgetItem:
     def __init__(self, text):
@@ -131,7 +164,10 @@ qtgui.QPixmap = Dummy
 sys.modules['PyQt6.QtGui'] = qtgui
 
 # ---- Imports after stubbing ----
+sys.modules.pop("ui.owner_dashboard", None)
+sys.modules.pop("ui.standings_window", None)
 import ui.owner_dashboard as owner_dashboard
+import ui.standings_window as standings_window
 
 
 def test_standings_action_opens_dialog(monkeypatch):
@@ -156,3 +192,11 @@ def test_standings_action_opens_dialog(monkeypatch):
     dashboard.standings_action.trigger()
 
     assert opened.get("shown")
+
+
+def test_standings_window_displays_league_and_teams():
+    window = standings_window.StandingsWindow()
+    html = window.viewer.toHtml()
+    assert "UBL" in html
+    assert "East" in html
+    assert "Dallas Rockets" in html
