@@ -59,8 +59,23 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     assert progress == [(1, 1)]
 
 
-def test_raises_without_client(tmp_path, monkeypatch):
+def test_auto_logo_fallback_without_client(tmp_path, monkeypatch):
+    monkeypatch.setattr(logo_generator, "client", None)
+    monkeypatch.setattr(logo_generator, "load_teams", lambda _: [])
+
+    called = {}
+
+    def fake_fallback(teams, out_dir, size, progress_callback):
+        called["args"] = (teams, out_dir, size, progress_callback)
+
+    monkeypatch.setattr(logo_generator, "_auto_logo_fallback", fake_fallback)
+
+    logo_generator.generate_team_logos(out_dir=str(tmp_path))
+    assert "args" in called
+
+
+def test_raises_without_client_when_disabled(tmp_path, monkeypatch):
     monkeypatch.setattr(logo_generator, "client", None)
     monkeypatch.setattr(logo_generator, "load_teams", lambda _: [])
     with pytest.raises(RuntimeError):
-        logo_generator.generate_team_logos(out_dir=str(tmp_path))
+        logo_generator.generate_team_logos(out_dir=str(tmp_path), allow_auto_logo=False)

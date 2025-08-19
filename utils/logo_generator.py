@@ -56,7 +56,7 @@ def generate_team_logos(
     out_dir: str | None = None,
     size: int = 512,
     progress_callback: Optional[Callable[[int, int], None]] = None,
-    allow_auto_logo: bool = False,
+    allow_auto_logo: bool = True,
 ) -> str:
     """Generate logos for all teams and return the output directory.
 
@@ -71,8 +71,9 @@ def generate_team_logos(
         Optional callback receiving ``(completed, total)`` after each logo is
         saved.
     allow_auto_logo:
-        When ``True`` and the OpenAI client is not configured, fall back to the
-        older :mod:`images.auto_logo` generator.
+        When ``True`` (the default) and the OpenAI client is not configured,
+        fall back to the older :mod:`images.auto_logo` generator. Set to
+        ``False`` to raise a ``RuntimeError`` instead.
     """
 
     teams = load_teams("data/teams.csv")
