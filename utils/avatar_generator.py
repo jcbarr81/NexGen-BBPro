@@ -12,17 +12,26 @@ from utils.openai_client import client
 from utils.team_loader import load_teams
 
 
+# Preload team colors once to avoid repeated file reads.
+# Mapping: team_id -> {"primary": color, "secondary": color}
+_TEAM_COLOR_MAP: Dict[str, Dict[str, str]] = {
+    t.team_id: {
+        "primary": t.primary_color,
+        "secondary": t.secondary_color,
+    }
+    for t in load_teams("data/teams.csv")
+}
+
+
 def _infer_ethnicity(name: str) -> str:
     """Very naive placeholder for ethnicity inference."""
     return "unspecified"
 
 
 def _team_colors(team_id: str) -> Dict[str, str]:
-    teams = {t.team_id: t for t in load_teams("data/teams.csv")}
-    team = teams.get(team_id)
-    if team:
-        return {"primary": team.primary_color, "secondary": team.secondary_color}
-    return {"primary": "#000000", "secondary": "#ffffff"}
+    return _TEAM_COLOR_MAP.get(
+        team_id, {"primary": "#000000", "secondary": "#ffffff"}
+    )
 
 
 def generate_avatar(name: str, team_id: str, out_file: str) -> str:
