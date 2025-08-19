@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import base64
-import os
 from io import BytesIO
+from pathlib import Path
 from typing import Dict
 
 from PIL import Image
@@ -64,7 +64,7 @@ def generate_avatar(name: str, team_id: str, out_file: str, size: int = 512) -> 
     b64 = result.data[0].b64_json
     image_bytes = base64.b64decode(b64)
     with Image.open(BytesIO(image_bytes)) as img:
-        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+        Path(out_file).parent.mkdir(parents=True, exist_ok=True)
         img.save(out_file, format="PNG")
     return out_file
 

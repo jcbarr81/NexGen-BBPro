@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import configparser
 import os
+import sys
 from pathlib import Path
 from typing import Optional
+
 
 try:  # pragma: no cover - gracefully handle missing dependency
     from openai import OpenAI
@@ -26,7 +28,7 @@ def _read_api_key() -> Optional[str]:
     if env_key:
         return env_key
 
-    base_dir = Path(__file__).resolve().parent.parent
+    base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
     config_path = base_dir / "config.ini"
     parser = configparser.ConfigParser()
     try:

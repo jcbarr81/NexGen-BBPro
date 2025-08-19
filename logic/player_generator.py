@@ -3,17 +3,19 @@ import random
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Set, Optional
 import csv
-import os
+from pathlib import Path
+
+from utils.path_utils import get_base_dir
 
 # Constants
-base_dir = os.path.dirname(os.path.abspath(__file__))
-NAME_PATH = os.path.join(base_dir, "..", "data", "names.csv")
+BASE_DIR = get_base_dir()
+NAME_PATH = BASE_DIR / "data" / "names.csv"
 
 
 def _load_name_pool() -> Dict[str, List[Tuple[str, str]]]:
     pool: Dict[str, List[Tuple[str, str]]] = {}
-    if os.path.exists(NAME_PATH):
-        with open(NAME_PATH, newline="") as f:
+    if NAME_PATH.exists():
+        with NAME_PATH.open(newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 pool.setdefault(row["ethnicity"], []).append(

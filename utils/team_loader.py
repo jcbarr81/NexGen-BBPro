@@ -1,21 +1,24 @@
 import csv
 import os
 import re
+from pathlib import Path
 from models.team import Team
-
-def _resolve_path(file_path: str) -> str:
-    """Return an absolute path for ``file_path`` relative to the project root."""
-
-    if os.path.isabs(file_path):
-        return file_path
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    return os.path.join(base_dir, file_path)
+from utils.path_utils import get_base_dir
 
 
-def load_teams(file_path: str = "data/teams.csv"):
+def _resolve_path(file_path: str | Path) -> Path:
+    """Return an absolute :class:`Path` for ``file_path`` relative to the project root."""
+
+    path = Path(file_path)
+    if path.is_absolute():
+        return path
+    return get_base_dir() / path
+
+
+def load_teams(file_path: str | Path = "data/teams.csv"):
     file_path = _resolve_path(file_path)
     teams = []
-    with open(file_path, mode="r", newline="") as csvfile:
+    with file_path.open(mode="r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             team = Team(
@@ -27,13 +30,13 @@ def load_teams(file_path: str = "data/teams.csv"):
                 stadium=row["stadium"],
                 primary_color=row["primary_color"],
                 secondary_color=row["secondary_color"],
-                owner_id=row["owner_id"]
+                owner_id=row["owner_id"],
             )
             teams.append(team)
     return teams
 
 
-def save_team_settings(team: Team, file_path: str = "data/teams.csv") -> None:
+def save_team_settings(team: Team, file_path: str | Path = "data/teams.csv") -> None:
     """Persist updates to a single team's stadium or colors.
 
     Reads the entire teams file, updates the matching team's fields and
@@ -58,7 +61,7 @@ def save_team_settings(team: Team, file_path: str = "data/teams.csv") -> None:
 
     file_path = _resolve_path(file_path)
     teams = []
-    with open(file_path, mode="r", newline="") as csvfile:
+    with file_path.open(mode="r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row["team_id"] == team.team_id:
@@ -78,7 +81,7 @@ def save_team_settings(team: Team, file_path: str = "data/teams.csv") -> None:
         "secondary_color",
         "owner_id",
     ]
-    with open(file_path, mode="w", newline="") as csvfile:
+    with file_path.open(mode="w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(teams)

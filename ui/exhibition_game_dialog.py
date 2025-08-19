@@ -9,7 +9,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from typing import Dict
-import os
 
 from utils.team_loader import load_teams
 from utils.player_loader import load_players_from_csv
@@ -25,6 +24,7 @@ from logic.simulation import (
 )
 from models.pitcher import Pitcher
 from logic.playbalance_config import PlayBalanceConfig
+from utils.path_utils import get_base_dir
 
 
 class ExhibitionGameDialog(QDialog):
@@ -39,8 +39,8 @@ class ExhibitionGameDialog(QDialog):
         self.home_combo = QComboBox()
         self.away_combo = QComboBox()
 
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
-        teams = load_teams(os.path.join(data_dir, "teams.csv"))
+        data_dir = get_base_dir() / "data"
+        teams = load_teams(data_dir / "teams.csv")
         self._teams: Dict[str, str] = {}
         for t in teams:
             label = f"{t.name} ({t.team_id})"
@@ -79,9 +79,9 @@ class ExhibitionGameDialog(QDialog):
     def _build_state(self, team_id: str) -> TeamState:
         players = {
             p.player_id: p
-            for p in load_players_from_csv(os.path.join(self._data_dir, "players.csv"))
+            for p in load_players_from_csv(self._data_dir / "players.csv")
         }
-        roster = load_roster(team_id, os.path.join(self._data_dir, "rosters"))
+        roster = load_roster(team_id, self._data_dir / "rosters")
 
         lineup = []
         bench = []
@@ -112,9 +112,7 @@ class ExhibitionGameDialog(QDialog):
         try:
             home_state = self._build_state(home_id)
             away_state = self._build_state(away_id)
-            cfg = PlayBalanceConfig.from_file(
-                os.path.join(os.path.dirname(__file__), "..", "logic", "PBINI.txt")
-            )
+            cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
             sim = GameSimulation(home_state, away_state, cfg)
             sim.simulate_game()
             box = generate_boxscore(home_state, away_state)

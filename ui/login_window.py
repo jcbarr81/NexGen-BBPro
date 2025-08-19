@@ -4,15 +4,14 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 import sys
-import os
+
+from utils.path_utils import get_base_dir
 
 from ui.admin_dashboard import AdminDashboard
 from ui.owner_dashboard import OwnerDashboard
 
 # Determine the path to the users file in a cross-platform way
-USER_FILE = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "data", "users.txt")
-)
+USER_FILE = get_base_dir() / "data" / "users.txt"
 
 class LoginWindow(QWidget):
     def __init__(self, splash=None):
@@ -54,11 +53,11 @@ class LoginWindow(QWidget):
         username = self.username_input.text()
         password = self.password_input.text()
 
-        if not os.path.exists(USER_FILE):
+        if not USER_FILE.exists():
             QMessageBox.critical(self, "Error", "User file not found.")
             return
 
-        with open(USER_FILE, "r") as f:
+        with USER_FILE.open("r") as f:
             for line in f:
                 parts = line.strip().split(",")
                 if len(parts) != 4:

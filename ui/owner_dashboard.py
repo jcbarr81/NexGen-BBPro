@@ -43,6 +43,7 @@ from utils.free_agent_finder import find_free_agents
 from utils.team_loader import load_teams, save_team_settings
 from utils.pitcher_role import get_role
 from utils.trade_utils import get_pending_trades
+from utils.path_utils import get_base_dir
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -117,11 +118,10 @@ class OwnerDashboard(QWidget):
         self.schedule_action.triggered.connect(self.open_schedule_window)
         main.setMenuBar(menubar)
 
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        logo_path = os.path.join(base_dir, "logo", "teams", f"{team_id.lower()}.png")
-        if os.path.exists(logo_path):
+        logo_path = get_base_dir() / "logo" / "teams" / f"{team_id.lower()}.png"
+        if logo_path.exists():
             logo_label = QLabel()
-            pix = QPixmap(logo_path).scaled(
+            pix = QPixmap(str(logo_path)).scaled(
                 128,
                 128,
                 Qt.AspectRatioMode.KeepAspectRatio,

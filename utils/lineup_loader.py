@@ -1,16 +1,17 @@
 import csv
-import os
+from pathlib import Path
 from typing import List, Tuple, Iterable
 
 from logic.simulation import TeamState
 from models.player import Player
 from models.pitcher import Pitcher
+from utils.path_utils import get_base_dir
 from .player_loader import load_players_from_csv
 from .roster_loader import load_roster
 from .pitcher_role import get_role
 
 
-def load_lineup(team_id: str, vs: str = "lhp", lineup_dir: str = "data/lineups") -> List[Tuple[str, str]]:
+def load_lineup(team_id: str, vs: str = "lhp", lineup_dir: str | Path = "data/lineups") -> List[Tuple[str, str]]:
     """Load a lineup from ``lineup_dir`` for the given team.
 
     Files are expected to follow the naming pattern
@@ -19,12 +20,15 @@ def load_lineup(team_id: str, vs: str = "lhp", lineup_dir: str = "data/lineups")
     ``P1000``.
     """
     suffix = f"vs_{vs.lower()}"
-    file_path = os.path.join(lineup_dir, f"{team_id}_{suffix}.csv")
-    if not os.path.exists(file_path):
+    lineup_dir = Path(lineup_dir)
+    if not lineup_dir.is_absolute():
+        lineup_dir = get_base_dir() / lineup_dir
+    file_path = lineup_dir / f"{team_id}_{suffix}.csv"
+    if not file_path.exists():
         raise FileNotFoundError(f"Lineup file not found: {file_path}")
 
     lineup: List[Tuple[str, str]] = []
-    with open(file_path, newline='', encoding='utf-8') as csvfile:
+    with file_path.open(newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             player_id = row.get("player_id", "").strip()

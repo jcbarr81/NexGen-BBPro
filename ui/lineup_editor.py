@@ -1,9 +1,11 @@
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QComboBox, QPushButton, QWidget, QMessageBox, QScrollArea, QGroupBox
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QPropertyAnimation
-import os
 import csv
+from pathlib import Path
+
 from utils.pitcher_role import get_role
+from utils.path_utils import get_base_dir
 
 class LineupEditor(QDialog):
     def __init__(self, team_id):
@@ -22,9 +24,9 @@ class LineupEditor(QDialog):
         field_layout.setSpacing(0)
 
         self.field_label = QLabel()
-        field_path = os.path.join("assets", "field_diagram.png")
-        if os.path.exists(field_path):
-            pixmap = QPixmap(field_path).scaledToWidth(400, Qt.TransformationMode.SmoothTransformation)
+        field_path = get_base_dir() / "assets" / "field_diagram.png"
+        if field_path.exists():
+            pixmap = QPixmap(str(field_path)).scaledToWidth(400, Qt.TransformationMode.SmoothTransformation)
             self.field_label.setPixmap(pixmap)
         else:
             self.field_label.setText("Field Image Placeholder")
@@ -173,11 +175,11 @@ class LineupEditor(QDialog):
                     QMessageBox.warning(self, "Validation Error", f"{pdata['name']} is not eligible to play {position}.")
                     return
 
-        filename = self.get_lineup_filename()
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        filename = Path(self.get_lineup_filename())
+        filename.parent.mkdir(parents=True, exist_ok=True)
         for lbl in self.position_labels.values():
             lbl.setText("")
-        with open(filename, "w", newline="", encoding="utf-8") as f:
+        with filename.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["order", "player_id", "position"])
             for i in range(9):
@@ -190,10 +192,10 @@ class LineupEditor(QDialog):
         QMessageBox.information(self, "Lineup Saved", "Lineup saved successfully.")
 
     def load_players_dict(self):
-        players_file = os.path.join("data", "players.csv")
+        players_file = get_base_dir() / "data" / "players.csv"
         players = {}
-        if os.path.exists(players_file):
-            with open(players_file, "r", encoding="utf-8") as f:
+        if players_file.exists():
+            with players_file.open("r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     player_id = str(row.get("player_id", "")).strip()
@@ -216,9 +218,9 @@ class LineupEditor(QDialog):
 
     def get_act_level_ids(self):
         act_ids = set()
-        act_roster_file = os.path.join("data", "rosters", f"{self.team_id}.csv")
-        if os.path.exists(act_roster_file):
-            with open(act_roster_file, "r", encoding="utf-8") as f:
+        act_roster_file = get_base_dir() / "data" / "rosters" / f"{self.team_id}.csv"
+        if act_roster_file.exists():
+            with act_roster_file.open("r", encoding="utf-8") as f:
                 reader = csv.reader(f)
                 for row in reader:
                     if len(row) >= 2 and row[1].strip().upper() == "ACT":
@@ -238,16 +240,16 @@ class LineupEditor(QDialog):
         ``order,player_id,position``.
         """
         suffix = "vs_lhp" if self.current_view == "vs LHP" else "vs_rhp"
-        return os.path.join("data", "lineups", f"{self.team_id}_{suffix}.csv")
+        return get_base_dir() / "data" / "lineups" / f"{self.team_id}_{suffix}.csv"
 
     def load_lineup(self):
         for lbl in self.position_labels.values():
             lbl.setText("")
         filename = self.get_lineup_filename()
-        if not os.path.exists(filename):
+        if not Path(filename).exists():
             return
 
-        with open(filename, "r", newline='', encoding="utf-8") as f:
+        with Path(filename).open("r", newline='', encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:

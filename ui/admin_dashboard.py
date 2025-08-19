@@ -25,6 +25,7 @@ from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
 from utils.avatar_generator import generate_avatar
+from utils.path_utils import get_base_dir
 from models.trade import Trade
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
@@ -154,8 +155,8 @@ class AdminDashboard(QWidget):
 
             # Save updated rosters
             def save_roster(roster):
-                path = f"data/rosters/{roster.team_id}.csv"
-                with open(path, "w", newline="") as f:
+                path = get_base_dir() / "data" / "rosters" / f"{roster.team_id}.csv"
+                with path.open("w", newline="") as f:
                     writer = csv.DictWriter(f, fieldnames=["player_id", "level"])
                     writer.writeheader()
                     for lvl in ["act", "aaa", "low"]:
@@ -221,12 +222,10 @@ class AdminDashboard(QWidget):
     def generate_player_avatars(self):
         players = load_players_from_csv("data/players.csv")
 
-        roster_dir = os.path.join("data", "rosters")
+        roster_dir = get_base_dir() / "data" / "rosters"
         player_teams = {}
-        for fname in os.listdir(roster_dir):
-            if not fname.endswith(".csv"):
-                continue
-            team_id = os.path.splitext(fname)[0]
+        for path in roster_dir.glob("*.csv"):
+            team_id = path.stem
             try:
                 roster = load_roster(team_id, roster_dir)
             except FileNotFoundError:
@@ -240,12 +239,8 @@ class AdminDashboard(QWidget):
             team_id = player_teams.get(player.player_id, "")
             if not team_id:
                 missing.append(player.player_id)
-            out_path = os.path.join(
-                "images",
-                "avatars",
-                f"{player.player_id}.png",
-            )
-            if os.path.exists(out_path):
+            out_path = get_base_dir() / "images" / "avatars" / f"{player.player_id}.png"
+            if out_path.exists():
                 continue
             to_generate.append((player, team_id, out_path))
 
@@ -280,7 +275,7 @@ class AdminDashboard(QWidget):
                             generate_avatar,
                             f"{player.first_name} {player.last_name}",
                             team_id,
-                            out_path,
+                            str(out_path),
                         )
                     )
                 completed = 0
@@ -319,8 +314,8 @@ class AdminDashboard(QWidget):
         team_combo = QComboBox()
 
 
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
-        teams = load_teams(os.path.join(data_dir, "teams.csv"))
+        data_dir = get_base_dir() / "data"
+        teams = load_teams(data_dir / "teams.csv")
         for t in teams:
             team_combo.addItem(f"{t.name} ({t.team_id})", userData=t.team_id)
 
@@ -363,8 +358,8 @@ class AdminDashboard(QWidget):
         dialog = QDialog(self)
         dialog.setWindowTitle("Edit User")
 
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
-        users = load_users(os.path.join(data_dir, "users.txt"))
+        data_dir = get_base_dir() / "data"
+        users = load_users(data_dir / "users.txt")
         if not users:
             QMessageBox.information(self, "No Users", "No users available.")
             return
@@ -379,7 +374,7 @@ class AdminDashboard(QWidget):
         password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
         team_combo = QComboBox()
-        teams = load_teams(os.path.join(data_dir, "teams.csv"))
+        teams = load_teams(data_dir / "teams.csv")
         team_combo.addItem("None", "")
         for t in teams:
             team_combo.addItem(f"{t.name} ({t.team_id})", userData=t.team_id)
@@ -417,7 +412,7 @@ class AdminDashboard(QWidget):
                     user["username"],
                     new_password,
                     new_team,
-                    os.path.join(data_dir, "users.txt"),
+                    data_dir / "users.txt",
                 )
             except ValueError as e:
                 QMessageBox.warning(dialog, "Error", str(e))
@@ -468,9 +463,9 @@ class AdminDashboard(QWidget):
             return
 
         structure = dialog.get_structure()
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+        data_dir = get_base_dir() / "data"
         try:
-            create_league(data_dir, structure, league_name)
+            create_league(str(data_dir), structure, league_name)
         except OSError as e:
             QMessageBox.critical(self, "Error", f"Failed to purge existing league: {e}")
             return

@@ -1,10 +1,15 @@
-import os
 from datetime import datetime
+from pathlib import Path
 
-NEWS_FILE = "data/news_feed.txt"
+from utils.path_utils import get_base_dir
 
-def log_news_event(event: str, file_path: str = NEWS_FILE):
-    """Appends a timestamped news event to the news feed file."""
+NEWS_FILE = get_base_dir() / "data" / "news_feed.txt"
+
+
+def log_news_event(event: str, file_path: Path = NEWS_FILE):
+    """Append a timestamped news event to the news feed file."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(file_path, mode="a", encoding="utf-8") as f:
+    path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open(mode="a", encoding="utf-8") as f:
         f.write(f"[{timestamp}] {event}\n")
