@@ -1,7 +1,6 @@
 import base64
+from io import BytesIO
 from types import SimpleNamespace
-
-import os
 
 import pytest
 pytest.importorskip("PIL")
@@ -11,11 +10,11 @@ from utils import logo_generator
 from models.team import Team
 
 
-def _fake_b64_png() -> str:
-    # 1x1 px transparent PNG
-    return (
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/6XwHAAAAABJRU5ErkJggg=="
-    )
+def _fake_b64_png(size: int) -> str:
+    img = Image.new("RGBA", (size, size))
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
 def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
@@ -35,11 +34,12 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     monkeypatch.setattr(logo_generator, "load_teams", lambda _: [team])
 
     calls = {}
+    logo_size = 256
 
     class DummyImages:
         def generate(self, **kwargs):
             calls.update(kwargs)
-            return SimpleNamespace(data=[SimpleNamespace(b64_json=_fake_b64_png())])
+            return SimpleNamespace(data=[SimpleNamespace(b64_json=_fake_b64_png(logo_size))])
 
     monkeypatch.setattr(logo_generator, "client", SimpleNamespace(images=DummyImages()))
 
@@ -49,9 +49,9 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
         progress.append((done, total))
 
     out_dir = tmp_path
-    logo_generator.generate_team_logos(out_dir=str(out_dir), size=256, progress_callback=cb)
+    logo_generator.generate_team_logos(out_dir=str(out_dir), size=logo_size, progress_callback=cb)
 
-    assert calls["size"] == "1024x1024"
+    assert calls["size"] == f"{logo_size}x{logo_size}"
     assert "Testville" in calls["prompt"]
     assert "Testers" in calls["prompt"]
     assert "#112233" in calls["prompt"]
@@ -60,7 +60,7 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     outfile = out_dir / "tst.png"
     assert outfile.exists()
     with Image.open(outfile) as img:
-        assert img.size == (256, 256)
+        assert img.size == (logo_size, logo_size)
     assert progress == [(1, 1)]
 
 

@@ -34,7 +34,7 @@ def _team_colors(team_id: str) -> Dict[str, str]:
     )
 
 
-def generate_avatar(name: str, team_id: str, out_file: str) -> str:
+def generate_avatar(name: str, team_id: str, out_file: str, size: int = 512) -> str:
     """Generate an avatar for ``name`` and save it to ``out_file``.
 
     Parameters
@@ -45,6 +45,9 @@ def generate_avatar(name: str, team_id: str, out_file: str) -> str:
         Identifier of the player's team to derive colors.
     out_file:
         Path where the resulting PNG should be written.
+    size:
+        Pixel size for the square avatar. This value is passed directly to the
+        OpenAI image API.
     """
     if client is None:  # pragma: no cover - depends on external package
         raise RuntimeError("OpenAI client is not configured")
@@ -55,11 +58,12 @@ def generate_avatar(name: str, team_id: str, out_file: str) -> str:
         f"Portrait of {name}, a {ethnicity} baseball player, wearing team colors "
         f"{colors['primary']} and {colors['secondary']}."
     )
-    result = client.images.generate(model="gpt-image-1", prompt=prompt, size="1024x1024")
+    result = client.images.generate(
+        model="gpt-image-1", prompt=prompt, size=f"{size}x{size}"
+    )
     b64 = result.data[0].b64_json
     image_bytes = base64.b64decode(b64)
     with Image.open(BytesIO(image_bytes)) as img:
-        img = img.resize((512, 512), Image.LANCZOS)
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
         img.save(out_file, format="PNG")
     return out_file
