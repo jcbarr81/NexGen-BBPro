@@ -272,8 +272,19 @@ class AdminDashboard(QWidget):
 
         data_dir = get_base_dir() / "data"
         teams = load_teams(data_dir / "teams.csv")
+        users = load_users(data_dir / "users.txt")
+        owned_ids = {
+            u["team_id"]
+            for u in users
+            if u["role"] == "owner" and u["team_id"]
+        }
         for t in teams:
-            team_combo.addItem(f"{t.name} ({t.team_id})", userData=t.team_id)
+            if t.team_id not in owned_ids:
+                team_combo.addItem(f"{t.name} ({t.team_id})", userData=t.team_id)
+
+        if team_combo.count() == 0:
+            QMessageBox.information(self, "No Teams", "All teams already have owners.")
+            return
 
         layout.addWidget(QLabel("Username:"))
         layout.addWidget(username_input)
