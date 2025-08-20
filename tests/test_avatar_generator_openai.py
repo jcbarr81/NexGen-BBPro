@@ -40,6 +40,10 @@ def test_generates_avatar_at_requested_size(tmp_path, monkeypatch):
     assert "Test Player" in calls["prompt"]
     assert "illustrated" in calls["prompt"].lower()
     assert "cartoon style" in calls["prompt"].lower()
+    prompt = calls["prompt"].lower()
+    assert "plain ball cap and jersey" in prompt
+    assert "no logos, letters, or names" in prompt
+    assert "solid #112233 background" in prompt
     assert out_file.exists()
     with Image.open(out_file) as img:
         assert img.size == (size, size)
