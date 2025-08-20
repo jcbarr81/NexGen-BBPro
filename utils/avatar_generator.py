@@ -61,8 +61,10 @@ def generate_avatar(
     ethnicity = _infer_ethnicity(name)
     prompt = (
         f"{style.capitalize()} portrait of {name}, a {ethnicity} baseball player, "
-        f"wearing team colors {colors['primary']} and {colors['secondary']} in a "
-        "cartoon style."
+        "wearing a plain ball cap and jersey in team colors "
+        f"{colors['primary']} and {colors['secondary']} with no logos, letters, "
+        "or names, on a solid "
+        f"{colors['primary']} background in a cartoon style."
     )
     api_size = 1024 if size == 512 else size
     result = client.images.generate(
