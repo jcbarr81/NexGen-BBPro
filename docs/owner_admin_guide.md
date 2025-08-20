@@ -53,14 +53,14 @@ Administrators control league configuration and high-level operations.
 - **Simulate Exhibition Game**: run a quick simulation between two teams.
 
 ## Default Administrator Login
-When user data is reset, a default administrator account is created:
+When user data is reset, a default administrator account is created. Passwords
+are stored using `bcrypt` hashes. Use these credentials to access the Admin
+Dashboard if no other accounts exist:
 
 ```
 username: admin
 password: pass
 ```
-
-Use these credentials to access the Admin Dashboard if no other accounts exist.
 
 ---
 This document will evolve as new features are introduced.

@@ -66,6 +66,7 @@ order,player_id,position
 Install the dependencies (see `requirements.txt`) then run:
 
 ```bash
+pip install bcrypt
 python main.py
 ```
 
@@ -96,8 +97,9 @@ The executable will be written to the `dist/` directory.
 
 ### Default Admin Credentials
 When a new league is created or user accounts are cleared, the system rewrites
-`data/users.txt` to contain a single administrator account. Use these fallback
-credentials to log in after a reset:
+`data/users.txt` to contain a single administrator account. Passwords are
+stored as `bcrypt` hashes. Use these fallback credentials to log in after a
+reset:
 
 ```
 username: admin
