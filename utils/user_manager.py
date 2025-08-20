@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import List, Dict, Optional
 
+import bcrypt
+
 from utils.path_utils import get_base_dir
 
 def _resolve(path: str | Path) -> Path:
@@ -69,8 +71,10 @@ def add_user(
         if any(u["role"] == "owner" and u["team_id"] == team_id for u in users):
             raise ValueError("Team already has an owner")
 
+    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode()
+
     with file_path.open("a") as f:
-        f.write(f"{username},{password},{role},{team_id}\n")
+        f.write(f"{username},{hashed_pw},{role},{team_id}\n")
 
 
 def update_user(
@@ -126,7 +130,8 @@ def update_user(
         user["team_id"] = new_team_id
 
     if new_password is not None:
-        user["password"] = new_password
+        hashed_pw = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode()
+        user["password"] = hashed_pw
 
     # Rewrite file with updated user data
     with file_path.open("w") as f:
@@ -152,7 +157,8 @@ def clear_users(file_path: str | Path = "data/users.txt") -> None:
                     break
 
     if admin_line is None:
-        admin_line = "admin,pass,admin,"
+        hashed_pw = bcrypt.hashpw(b"pass", bcrypt.gensalt()).decode()
+        admin_line = f"admin,{hashed_pw},admin,"
 
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("w") as f:

@@ -5,6 +5,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 import sys
 
+import bcrypt
+
 from utils.path_utils import get_base_dir
 
 from ui.admin_dashboard import AdminDashboard
@@ -63,9 +65,15 @@ class LoginWindow(QWidget):
                 if len(parts) != 4:
                     continue
                 file_user, file_pass, role, team_id = parts
-                if file_user == username and file_pass == password:
-                    self.accept_login(role, team_id)
-                    return
+                try:
+                    if file_user == username and bcrypt.checkpw(
+                        password.encode("utf-8"), file_pass.encode("utf-8")
+                    ):
+                        self.accept_login(role, team_id)
+                        return
+                except ValueError:
+                    # Skip entries with invalid hashes
+                    continue
 
         QMessageBox.warning(self, "Login Failed", "Invalid username or password.")
 

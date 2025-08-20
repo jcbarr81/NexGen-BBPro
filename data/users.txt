@@ -1,1 +1,1 @@
-admin,pass,admin,
+admin,$2b$12$jLtBOLDnCctnCaFyTL.1b.BvjW9EcoCYH.gU7RaQfzwdm2fcO31rC,admin,

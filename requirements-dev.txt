@@ -7,3 +7,4 @@ opencv-python
 diskcache
 certifi>=2024.2.2
 pyinstaller
+bcrypt
