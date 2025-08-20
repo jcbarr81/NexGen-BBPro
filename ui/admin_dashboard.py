@@ -12,7 +12,6 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QMenuBar,
     QApplication,
-    QProgressDialog,
 )
 from PyQt6.QtCore import Qt
 from ui.team_entry_dialog import TeamEntryDialog
@@ -24,12 +23,12 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
-from utils.avatar_generator import generate_avatar
 from utils.path_utils import get_base_dir
 from models.trade import Trade
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 import os
+import random
+import shutil
 from logic.league_creator import create_league
 
 class AdminDashboard(QWidget):
@@ -221,77 +220,34 @@ class AdminDashboard(QWidget):
 
     def generate_player_avatars(self):
         players = load_players_from_csv("data/players.csv")
+        avatars_dir = get_base_dir() / "images" / "avatars"
+        available = list(avatars_dir.glob("*.png"))
 
-        roster_dir = get_base_dir() / "data" / "rosters"
-        player_teams = {}
-        for path in roster_dir.glob("*.csv"):
-            team_id = path.stem
-            try:
-                roster = load_roster(team_id, roster_dir)
-            except FileNotFoundError:
-                continue
-            for pid in roster.act + roster.aaa + roster.low:
-                player_teams[pid] = team_id
-
-        missing = []
-        to_generate = []
-        for player in players:
-            team_id = player_teams.get(player.player_id, "")
-            if not team_id:
-                missing.append(player.player_id)
-            out_path = get_base_dir() / "images" / "avatars" / f"{player.player_id}.png"
-            if out_path.exists():
-                continue
-            to_generate.append((player, team_id, out_path))
-
-        if not to_generate:
-            msg = "All player avatars already exist."
-            if missing:
-                msg += f" {len(missing)} players had no roster entry."
-            QMessageBox.information(self, "Avatars Generated", msg)
+        if not available:
+            QMessageBox.warning(self, "Error", "No avatar images found.")
             return
 
-        progress = QProgressDialog(
-            "Generating player avatars...",
-            None,
-            0,
-            len(to_generate),
-            self,
-        )
-        progress.setWindowTitle("Generating Avatars")
-        progress.setWindowModality(Qt.WindowModality.WindowModal)
-        progress.setValue(0)
-        progress.show()
-        # Allow the event loop to process the show event so the dialog appears
-        QApplication.processEvents()
+        assigned = 0
+        for player in players:
+            out_path = avatars_dir / f"{player.player_id}.png"
+            if out_path.exists():
+                continue
+            src = random.choice(available)
+            shutil.copy(src, out_path)
+            assigned += 1
 
-        try:
-            max_workers = 5
-            futures = []
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for player, team_id, out_path in to_generate:
-                    futures.append(
-                        executor.submit(
-                            generate_avatar,
-                            f"{player.first_name} {player.last_name}",
-                            team_id,
-                            str(out_path),
-                        )
-                    )
-                completed = 0
-                for future in as_completed(futures):
-                    future.result()
-                    completed += 1
-                    progress.setValue(completed)
-                    QApplication.processEvents()
-            msg = "Player avatars created."
-            if missing:
-                msg += f" {len(missing)} players had no roster entry."
-            QMessageBox.information(self, "Avatars Generated", msg)
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"Failed to generate avatars: {e}")
-        finally:
-            progress.close()
+        if assigned == 0:
+            QMessageBox.information(
+                self,
+                "Avatars Generated",
+                "All player avatars already exist.",
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Avatars Generated",
+                f"Random avatars assigned for {assigned} players.",
+            )
         return
 
     def open_exhibition_dialog(self):
