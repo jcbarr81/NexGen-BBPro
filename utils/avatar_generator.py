@@ -34,7 +34,9 @@ def _team_colors(team_id: str) -> Dict[str, str]:
     )
 
 
-def generate_avatar(name: str, team_id: str, out_file: str, size: int = 512) -> str:
+def generate_avatar(
+    name: str, team_id: str, out_file: str, size: int = 512, style: str = "illustrated"
+) -> str:
     """Generate an avatar for ``name`` and save it to ``out_file``.
 
     Parameters
@@ -48,6 +50,9 @@ def generate_avatar(name: str, team_id: str, out_file: str, size: int = 512) -> 
     size:
         Pixel size for the square avatar. This value is passed directly to the
         OpenAI image API.
+    style:
+        Art style for the portrait (e.g., ``"illustrated"``). The prompt always
+        requests a cartoon style.
     """
     if client is None:  # pragma: no cover - depends on external package
         raise RuntimeError("OpenAI client is not configured")
@@ -55,8 +60,9 @@ def generate_avatar(name: str, team_id: str, out_file: str, size: int = 512) -> 
     colors = _team_colors(team_id)
     ethnicity = _infer_ethnicity(name)
     prompt = (
-        f"Portrait of {name}, a {ethnicity} baseball player, wearing team colors "
-        f"{colors['primary']} and {colors['secondary']}."
+        f"{style.capitalize()} portrait of {name}, a {ethnicity} baseball player, "
+        f"wearing team colors {colors['primary']} and {colors['secondary']} in a "
+        "cartoon style."
     )
     api_size = 1024 if size == 512 else size
     result = client.images.generate(
