@@ -58,12 +58,15 @@ def generate_avatar(name: str, team_id: str, out_file: str, size: int = 512) -> 
         f"Portrait of {name}, a {ethnicity} baseball player, wearing team colors "
         f"{colors['primary']} and {colors['secondary']}."
     )
+    api_size = 1024 if size == 512 else size
     result = client.images.generate(
-        model="gpt-image-1", prompt=prompt, size=f"{size}x{size}"
+        model="gpt-image-1", prompt=prompt, size=f"{api_size}x{api_size}"
     )
     b64 = result.data[0].b64_json
     image_bytes = base64.b64decode(b64)
     with Image.open(BytesIO(image_bytes)) as img:
+        if img.size != (size, size):
+            img = img.resize((size, size))
         Path(out_file).parent.mkdir(parents=True, exist_ok=True)
         img.save(out_file, format="PNG")
     return out_file

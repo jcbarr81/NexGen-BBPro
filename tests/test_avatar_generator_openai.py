@@ -41,3 +41,29 @@ def test_generates_avatar_at_requested_size(tmp_path, monkeypatch):
     assert out_file.exists()
     with Image.open(out_file) as img:
         assert img.size == (size, size)
+
+
+def test_512_falls_back_to_1024(tmp_path, monkeypatch):
+    size = 512
+    monkeypatch.setattr(
+        avatar_generator,
+        "_TEAM_COLOR_MAP",
+        {"TST": {"primary": "#112233", "secondary": "#445566"}},
+    )
+
+    calls = {}
+
+    class DummyImages:
+        def generate(self, **kwargs):
+            calls.update(kwargs)
+            return SimpleNamespace(data=[SimpleNamespace(b64_json=_fake_b64_png(1024))])
+
+    monkeypatch.setattr(avatar_generator, "client", SimpleNamespace(images=DummyImages()))
+
+    out_file = tmp_path / "avatar.png"
+    avatar_generator.generate_avatar("Test Player", "TST", str(out_file), size=size)
+
+    assert calls["size"] == "1024x1024"
+    assert out_file.exists()
+    with Image.open(out_file) as img:
+        assert img.size == (size, size)
