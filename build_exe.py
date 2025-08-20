@@ -8,7 +8,9 @@ import PyInstaller.__main__
 
 def main() -> None:
     """Run PyInstaller to create a standalone executable."""
-    data_dirs = ["data", "logo", "assets", "images"]
+    # Avatar images drastically increase bundle size and are generated on demand,
+    # so skip them when packaging the executable.
+    data_dirs = ["data", "logo", "assets"]
     icon_path = os.path.join("logo", "UBL.ico")
     # --noconsole prevents a console window from appearing when the app runs
     params = [
