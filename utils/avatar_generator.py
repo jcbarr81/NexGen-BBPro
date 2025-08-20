@@ -39,6 +39,10 @@ def generate_avatar(
 ) -> str:
     """Generate an avatar for ``name`` and save it to ``out_file``.
 
+    The avatar uses an off-white background and depicts a player in a plain cap
+    and jersey in team colors without any logos, images, letters, names, or
+    numbers. The image must contain no text overlays.
+
     Parameters
     ----------
     name:
@@ -62,9 +66,10 @@ def generate_avatar(
     prompt = (
         f"{style.capitalize()} portrait of {name}, a {ethnicity} baseball player, "
         "wearing a plain ball cap and jersey in team colors "
-        f"{colors['primary']} and {colors['secondary']} with no logos, letters, "
-        "or names, on a solid "
-        f"{colors['primary']} background in a cartoon style."
+        f"{colors['primary']} and {colors['secondary']}. The cap has no logo, "
+        "image, or letters and the jersey has no names, letters, or numbers. "
+        "The image contains no text overlays or names on an off-white background "
+        "in a cartoon style."
     )
     api_size = 1024 if size == 512 else size
     result = client.images.generate(
