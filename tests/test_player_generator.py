@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date
 import random
 
@@ -93,3 +94,14 @@ def test_pitcher_distribution_totals():
     total = 480
     ratings = pg.distribute_rating_points(total, weights)
     assert sum(ratings.values()) == total
+
+
+def test_skin_tone_distribution_matches_weights():
+    random.seed(0)
+    num_players = 600
+    players = [generate_player(is_pitcher=False) for _ in range(num_players)]
+    counts = Counter(p["skin_tone"] for p in players)
+    total_weight = sum(pg.SKIN_TONE_WEIGHTS.values())
+    for tone, weight in pg.SKIN_TONE_WEIGHTS.items():
+        expected = weight / total_weight
+        assert abs(counts[tone] / num_players - expected) < 0.05

@@ -134,12 +134,22 @@ def distribute_rating_points(total: int, weights: Dict[str, int]) -> Dict[str, i
 
 PITCHER_RATE = 0.4  # Fraction of draft pool that should be pitchers
 
+SKIN_TONE_WEIGHTS = {"dark": 25, "medium": 25, "light": 25}
+
 
 def assign_primary_position() -> str:
     """Select a primary position using weights from the ARR tables."""
     return random.choices(
         list(PRIMARY_POSITION_WEIGHTS.keys()),
         weights=PRIMARY_POSITION_WEIGHTS.values(),
+    )[0]
+
+
+def assign_skin_tone() -> str:
+    """Select a skin tone using weights from the ARR tables."""
+    return random.choices(
+        list(SKIN_TONE_WEIGHTS.keys()),
+        weights=SKIN_TONE_WEIGHTS.values(),
     )[0]
 
 
@@ -389,6 +399,7 @@ def generate_player(
     player_id = f"P{random.randint(1000, 9999)}"
     height = random.randint(68, 78)
     weight = random.randint(160, 250)
+    skin_tone = assign_skin_tone()
 
     if is_pitcher:
         bats, throws = assign_bats_throws("P")
@@ -439,6 +450,7 @@ def generate_player(
             "delivery": delivery,
             "height": height,
             "weight": weight,
+            "skin_tone": skin_tone,
             "primary_position": "P",
             "other_positions": assign_secondary_positions("P"),
             "pot_control": bounded_potential(control, age),
@@ -498,6 +510,7 @@ def generate_player(
             "arm": arm,
             "height": height,
             "weight": weight,
+            "skin_tone": skin_tone,
             "primary_position": primary_pos,
             "other_positions": other_pos,
             "pot_ch": bounded_potential(ch, age),
