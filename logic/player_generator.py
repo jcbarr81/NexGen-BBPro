@@ -5,6 +5,8 @@ from typing import Dict, List, Tuple, Set, Optional
 import csv
 from pathlib import Path
 
+import pandas as pd
+
 from utils.path_utils import get_base_dir
 
 # Constants
