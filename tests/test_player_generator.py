@@ -208,3 +208,31 @@ def test_generate_pitches_counts_and_bonus(monkeypatch):
 
     assert sum(1 for r in ratings.values() if r > 0) == 3
     assert sum(ratings.values()) == base_total + 60
+
+
+def test_endurance_adjustment_adds(monkeypatch):
+    def fake_randint(a, b):
+        if (a, b) == (1, 100):
+            return 10  # trigger modification
+        if (a, b) == (1, 20):
+            return 5   # delta
+        return a
+
+    monkeypatch.setattr(pg.random, "randint", fake_randint)
+    monkeypatch.setattr(pg.random, "choice", lambda seq: 1)
+
+    assert pg._adjust_endurance(40) == 45
+
+
+def test_endurance_adjustment_subtracts(monkeypatch):
+    def fake_randint(a, b):
+        if (a, b) == (1, 100):
+            return 10  # trigger modification
+        if (a, b) == (1, 20):
+            return 5   # delta
+        return a
+
+    monkeypatch.setattr(pg.random, "randint", fake_randint)
+    monkeypatch.setattr(pg.random, "choice", lambda seq: -1)
+
+    assert pg._adjust_endurance(40) == 35
