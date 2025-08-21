@@ -282,6 +282,21 @@ BATS_THROWS: Dict[str, List[Tuple[str, str, int]]] = {
 }
 
 
+FIELDING_POTENTIAL_MATRIX: Dict[str, Dict[str, int]] = {
+    "P": {"P": 0, "C": 10, "1B": 100, "2B": 20, "3B": 60, "SS": 10, "LF": 90, "CF": 40, "RF": 80},
+    "C": {"P": 60, "C": 0, "1B": 100, "2B": 20, "3B": 60, "SS": 10, "LF": 90, "CF": 40, "RF": 80},
+    "1B": {"P": 60, "C": 10, "1B": 0, "2B": 20, "3B": 60, "SS": 10, "LF": 90, "CF": 40, "RF": 80},
+    "2B": {"P": 130, "C": 10, "1B": 160, "2B": 0, "3B": 130, "SS": 90, "LF": 150, "CF": 120, "RF": 140},
+    "3B": {"P": 100, "C": 10, "1B": 140, "2B": 90, "3B": 0, "SS": 80, "LF": 130, "CF": 100, "RF": 120},
+    "SS": {"P": 140, "C": 10, "1B": 170, "2B": 100, "3B": 140, "SS": 0, "LF": 160, "CF": 120, "RF": 150},
+    "LF": {"P": 90, "C": 10, "1B": 120, "2B": 60, "3B": 90, "SS": 40, "LF": 0, "CF": 80, "RF": 100},
+    "CF": {"P": 110, "C": 10, "1B": 150, "2B": 80, "3B": 110, "SS": 70, "LF": 140, "CF": 0, "RF": 130},
+    "RF": {"P": 90, "C": 10, "1B": 130, "2B": 60, "3B": 90, "SS": 40, "LF": 110, "CF": 80, "RF": 0},
+}
+
+ALL_POSITIONS = list(FIELDING_POTENTIAL_MATRIX["P"].keys())
+
+
 def assign_bats_throws(primary: str) -> Tuple[str, str]:
     combos = BATS_THROWS.get(primary, BATS_THROWS["1B"])
     bats, throws, _ = random.choices(
@@ -317,6 +332,16 @@ def assign_secondary_positions(primary: str) -> List[str]:
     return [random.choices(positions, weights=weights)[0]]
 
 PITCH_LIST = ["fb", "si", "cu", "cb", "sl", "kn", "sc"]
+
+
+def generate_fielding_potentials(primary: str, others: List[str]) -> Dict[str, int]:
+    matrix = FIELDING_POTENTIAL_MATRIX.get(primary, {})
+    potentials: Dict[str, int] = {}
+    for pos, value in matrix.items():
+        if pos == primary or pos in others:
+            continue
+        potentials[pos] = value
+    return potentials
 
 PITCH_WEIGHTS = {
     ("L", "overhand"): {"fb": 512, "si": 112, "cu": 168, "cb": 164, "sl": 138, "kn": 1, "sc": 13},
@@ -553,6 +578,7 @@ def generate_player(
         for key in list(pitch_ratings.keys()) + list(pitch_pots.keys()):
             player.setdefault(key, 0)
         _maybe_add_hitting(player, age)
+        player["pot_fielding"] = generate_fielding_potentials("P", player["other_positions"])
         return player
 
     else:
@@ -635,6 +661,7 @@ def generate_player(
         for key in all_keys:
             player.setdefault(key, 0)
         _maybe_add_pitching(player, age, throws)
+        player["pot_fielding"] = generate_fielding_potentials(primary_pos, player["other_positions"])
         return player
 
 

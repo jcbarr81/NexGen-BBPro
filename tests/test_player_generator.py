@@ -269,3 +269,12 @@ def test_endurance_adjustment_subtracts(monkeypatch):
     monkeypatch.setattr(pg.random, "choice", lambda seq: -1)
 
     assert pg._adjust_endurance(40) == 35
+
+
+def test_fielding_potentials_for_unassigned_positions(monkeypatch):
+    monkeypatch.setattr(pg, "assign_secondary_positions", lambda primary: [])
+    player = generate_player(is_pitcher=False, primary_position="1B")
+    pot_fielding = player["pot_fielding"]
+    assert player["primary_position"] not in pot_fielding
+    assert pot_fielding["2B"] == 20
+    assert len(pot_fielding) > 0
