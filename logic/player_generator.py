@@ -87,6 +87,12 @@ def bounded_potential(actual, age):
         pot = actual - random.randint(0, 10)
     return max(10, min(99, pot))
 
+
+def roll_dice(base: int, count: int, faces: int) -> int:
+    """Return ``base`` plus the total from rolling ``count`` ``faces``-sided dice."""
+
+    return base + sum(random.randint(1, faces) for _ in range(count))
+
 def generate_name() -> tuple[str, str]:
     if name_pool:
         total_names = sum(len(v) for v in name_pool.values())
@@ -464,8 +470,17 @@ def generate_player(
     weight = random.randint(160, 250)
     skin_tone = assign_skin_tone()
 
+    # Situational modifiers derived from ARR tables (lines 199-225)
+    mo = roll_dice(35, 5, 5)  # monthly
+    gf = roll_dice(25, 10, 4)  # ground/fly
+    cl = roll_dice(35, 5, 5)  # close/late
+    hm = roll_dice(35, 5, 5)  # home
+    sc = roll_dice(35, 5, 5)  # scoring position
+    pl = roll_dice(35, 5, 5)  # pull rating
+
     if is_pitcher:
         bats, throws = assign_bats_throws("P")
+        vl = roll_dice(30, 10, 4) if throws == "L" else roll_dice(20, 10, 4)
         # Allocate pitching related ratings from a shared pool using the ARR
         # derived weights.  A second pool is used to determine the pitcher's
         # fielding ability.
@@ -515,6 +530,12 @@ def generate_player(
             "hold_runner": hold_runner,
             "role": role,
             "delivery": delivery,
+            "mo": mo,
+            "gf": gf,
+            "cl": cl,
+            "hm": hm,
+            "pl": pl,
+            "vl": vl,
             "height": height,
             "weight": weight,
             "skin_tone": skin_tone,
@@ -539,6 +560,12 @@ def generate_player(
         # the usual random assignment.
         primary_pos = primary_position or assign_primary_position()
         bats, throws = assign_bats_throws(primary_pos)
+        if bats == "L":
+            vl = roll_dice(20, 10, 4)
+        elif bats == "R":
+            vl = roll_dice(30, 10, 4)
+        else:
+            vl = roll_dice(25, 10, 4)
         other_pos = assign_secondary_positions(primary_pos)
         pool = random.randint(
             10 * len(HITTER_RATING_WEIGHTS[primary_pos]),
@@ -550,10 +577,6 @@ def generate_player(
         sp = attr["sp"]
         fa = attr["fa"]
         arm = attr["arm"]
-        gf = bounded_rating()
-        pl = bounded_rating()
-        vl = bounded_rating()
-        sc = bounded_rating()
 
         player = {
             "first_name": first_name,
@@ -573,6 +596,9 @@ def generate_player(
             "pl": pl,
             "vl": vl,
             "sc": sc,
+            "mo": mo,
+            "cl": cl,
+            "hm": hm,
             "fa": fa,
             "arm": arm,
             "height": height,
