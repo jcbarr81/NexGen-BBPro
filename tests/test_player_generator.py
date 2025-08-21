@@ -109,6 +109,50 @@ def test_pitcher_can_hit(monkeypatch):
     assert player["pot_ch"] >= player["ch"]
 
 
+def test_lefty_pitcher_adjustment(monkeypatch):
+    def fake_distribute(total, weights):
+        fake_distribute.calls += 1
+        if fake_distribute.calls == 1:
+            return {
+                "endurance": 50,
+                "control": 60,
+                "movement": 60,
+                "hold_runner": 50,
+                "arm": 50,
+            }
+        return {k: 50 for k in weights}
+
+    fake_distribute.calls = 0
+    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
+    monkeypatch.setattr(pg, "assign_bats_throws", lambda _: ("R", "L"))
+
+    player = generate_player(is_pitcher=True)
+    assert player["movement"] == 70
+    assert player["control"] == 50
+
+
+def test_lefty_pitcher_adjustment_respects_caps(monkeypatch):
+    def fake_distribute(total, weights):
+        fake_distribute.calls += 1
+        if fake_distribute.calls == 1:
+            return {
+                "endurance": 50,
+                "control": 55,
+                "movement": 85,
+                "hold_runner": 50,
+                "arm": 50,
+            }
+        return {k: 50 for k in weights}
+
+    fake_distribute.calls = 0
+    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
+    monkeypatch.setattr(pg, "assign_bats_throws", lambda _: ("R", "L"))
+
+    player = generate_player(is_pitcher=True)
+    assert player["movement"] == 90
+    assert player["control"] == 50
+
+
 def test_hitter_can_pitch(monkeypatch):
     def fake_randint(a, b):
         if (a, b) == (1, 1000):
