@@ -100,6 +100,23 @@ def generate_name() -> tuple[str, str]:
                 return name
     return "John", "Doe"
 
+
+def _adjust_endurance(endurance: int) -> int:
+    """Apply ARR-based endurance adjustments (lines 176-180).
+
+    Pitchers with endurance between 30 and 69 have a 50% chance to have their
+    rating adjusted by adding or subtracting 1–20 points.  The result is always
+    clamped to the 1–99 range.
+    """
+
+    if 30 <= endurance <= 69 and random.randint(1, 100) <= 50:
+        delta = random.randint(1, 20)
+        if random.choice([-1, 1]) < 0:
+            endurance -= delta
+        else:
+            endurance += delta
+    return max(1, min(99, endurance))
+
 PRIMARY_POSITION_WEIGHTS = {
     "C": 19,
     "1B": 15,
@@ -364,7 +381,7 @@ def _maybe_add_pitching(player: Dict, age: int, throws: str, allocation: float =
     if random.randint(1, 1000) != 1:
         return
 
-    endurance = int(bounded_rating() * allocation)
+    endurance = _adjust_endurance(int(bounded_rating() * allocation))
     control = int(bounded_rating() * allocation)
     movement = int(bounded_rating() * allocation)
     hold_runner = int(bounded_rating() * allocation)
@@ -464,7 +481,7 @@ def generate_player(
         )
         field_attrs = distribute_rating_points(field_pool, HITTER_RATING_WEIGHTS["P"])
 
-        endurance = pitch_attrs["endurance"]
+        endurance = _adjust_endurance(pitch_attrs["endurance"])
         control = pitch_attrs["control"]
         movement = pitch_attrs["movement"]
         if throws == "L":
