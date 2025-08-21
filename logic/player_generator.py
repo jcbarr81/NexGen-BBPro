@@ -315,17 +315,25 @@ def _weighted_choice(weight_dict: Dict[str, int]) -> str:
 
 
 def generate_pitches(throws: str, delivery: str, age: int):
-    weights = PITCH_WEIGHTS[(throws, delivery)].copy()
-    num_pitches = random.randint(2, 5)
-    selected = ["fb"]
-    weights.pop("fb", None)
-    for _ in range(num_pitches - 1):
-        pitch = _weighted_choice(weights)
-        selected.append(pitch)
-        weights.pop(pitch, None)
+    weights = PITCH_WEIGHTS[(throws, delivery)]
+    total = random.randint(10 * len(PITCH_LIST), 99 * len(PITCH_LIST)) + 60
+    num_pitches = max(2, min(5, total // 55))
 
-    ratings = {p: bounded_rating() if p in selected else 0 for p in PITCH_LIST}
-    potentials = {f"pot_{p}": bounded_potential(ratings[p], age) if p in selected else 0 for p in PITCH_LIST}
+    selected = ["fb"]
+    available = weights.copy()
+    available.pop("fb", None)
+    for _ in range(num_pitches - 1):
+        pitch = _weighted_choice(available)
+        selected.append(pitch)
+        available.pop(pitch, None)
+
+    dist_weights = {p: weights[p] for p in selected}
+    allocations = distribute_rating_points(total, dist_weights)
+    ratings = {p: allocations.get(p, 0) for p in PITCH_LIST}
+    potentials = {
+        f"pot_{p}": bounded_potential(ratings[p], age) if p in selected else 0
+        for p in PITCH_LIST
+    }
     return ratings, potentials
 
 

@@ -191,3 +191,20 @@ def test_skin_tone_distribution_matches_weights():
     for tone, weight in pg.SKIN_TONE_WEIGHTS.items():
         expected = weight / total_weight
         assert abs(counts[tone] / num_players - expected) < 0.05
+
+
+def test_generate_pitches_counts_and_bonus(monkeypatch):
+    base_total = 110
+
+    def fake_randint(a, b):
+        if (a, b) == (10 * len(pg.PITCH_LIST), 99 * len(pg.PITCH_LIST)):
+            return base_total
+        return (a + b) // 2
+
+    monkeypatch.setattr(pg.random, "randint", fake_randint)
+    monkeypatch.setattr(pg, "_weighted_choice", lambda w: next(iter(w)))
+
+    ratings, _ = pg.generate_pitches("R", "overhand", age=25)
+
+    assert sum(1 for r in ratings.values() if r > 0) == 3
+    assert sum(ratings.values()) == base_total + 60
