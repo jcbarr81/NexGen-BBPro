@@ -65,6 +65,7 @@ def test_pitcher_role_sp_when_endurance_high(monkeypatch):
 
     fake_distribute.calls = 0
     monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
+    monkeypatch.setattr(pg, "_adjust_endurance", lambda e: e)
 
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 60
@@ -86,6 +87,7 @@ def test_pitcher_role_rp_when_endurance_low(monkeypatch):
 
     fake_distribute.calls = 0
     monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
+    monkeypatch.setattr(pg, "_adjust_endurance", lambda e: e)
 
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 55
@@ -93,16 +95,16 @@ def test_pitcher_role_rp_when_endurance_low(monkeypatch):
 
 
 def test_pitcher_can_hit(monkeypatch):
-    def fake_randint(a, b):
-        if (a, b) == (1, 100):
-            fake_randint.calls += 1
-            return 1 if fake_randint.calls == 2 else 50
-        if (a, b) == (10, 99):
-            return 80
-        return (a + b) // 2
+    def fake_add_hitting(player, age, allocation=0.75):
+        rating = int(80 * allocation)
+        player.update(
+            {
+                "ch": rating,
+                "pot_ch": pg.bounded_potential(rating, age),
+            }
+        )
 
-    fake_randint.calls = 0
-    monkeypatch.setattr(pg.random, "randint", fake_randint)
+    monkeypatch.setattr(pg, "_maybe_add_hitting", fake_add_hitting)
 
     player = generate_player(is_pitcher=True)
     assert player["ch"] == int(80 * 0.75)
@@ -180,6 +182,37 @@ def test_pitcher_distribution_totals():
     total = 480
     ratings = pg.distribute_rating_points(total, weights)
     assert sum(ratings.values()) == total
+
+
+def test_hitter_modifier_ranges(monkeypatch):
+    monkeypatch.setattr(pg, "_maybe_add_pitching", lambda *args, **kwargs: None)
+    player = generate_player(is_pitcher=False)
+    assert 40 <= player["mo"] <= 60
+    assert 35 <= player["gf"] <= 65
+    assert 40 <= player["cl"] <= 60
+    assert 40 <= player["hm"] <= 60
+    assert 40 <= player["sc"] <= 60
+    assert 40 <= player["pl"] <= 60
+    if player["bats"] == "L":
+        assert 30 <= player["vl"] <= 60
+    elif player["bats"] == "R":
+        assert 40 <= player["vl"] <= 70
+    else:
+        assert 35 <= player["vl"] <= 65
+
+
+def test_pitcher_modifier_ranges(monkeypatch):
+    monkeypatch.setattr(pg, "_maybe_add_hitting", lambda *args, **kwargs: None)
+    player = generate_player(is_pitcher=True)
+    assert 40 <= player["mo"] <= 60
+    assert 35 <= player["gf"] <= 65
+    assert 40 <= player["cl"] <= 60
+    assert 40 <= player["hm"] <= 60
+    assert 40 <= player["pl"] <= 60
+    if player["throws"] == "L":
+        assert 40 <= player["vl"] <= 70
+    else:
+        assert 30 <= player["vl"] <= 60
 
 
 def test_skin_tone_distribution_matches_weights():
