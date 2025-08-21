@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import random
 from datetime import date, datetime
 from typing import Iterable
+
+from models.pitcher import Pitcher
 
 # Aging adjustments derived from ARR lines 227-262 in pgend_original_converted.txt.
 # Values represent annual rating changes for players at a given age.
@@ -56,6 +59,24 @@ AGE_ADJUSTMENTS = {
     age: dict(zip(_ATTRS, values)) for age, values in _AGING_TABLE.items()
 }
 
+_PITCH_ATTRS = ["fb", "cu", "cb", "sl", "si", "scb", "kn"]
+
+
+def spring_training_pitch(pitcher: Pitcher) -> None:
+    """Boost one pitch by 35% to simulate spring training development.
+
+    According to ARR lines 264-269, each pitcher spends 15% of training
+    camp developing a single pitch, increasing that pitch's rating by 35%.
+    """
+
+    pitches = [attr for attr in _PITCH_ATTRS if getattr(pitcher, attr, 0) > 0]
+    if not pitches:
+        return
+    pitch = random.choice(pitches)
+    current = getattr(pitcher, pitch)
+    boosted = int(round(current * 1.35))
+    setattr(pitcher, pitch, boosted)
+
 
 def calculate_age(birthdate: str) -> int:
     """Return age in years given a birthdate ISO string."""
@@ -70,12 +91,13 @@ def age_player(player) -> None:
 
     age = calculate_age(player.birthdate)
     adjustments = AGE_ADJUSTMENTS.get(age)
-    if not adjustments:
-        return
-    for attr, change in adjustments.items():
-        if hasattr(player, attr):
-            value = getattr(player, attr)
-            setattr(player, attr, max(0, value + change))
+    if adjustments:
+        for attr, change in adjustments.items():
+            if hasattr(player, attr):
+                value = getattr(player, attr)
+                setattr(player, attr, max(0, value + change))
+    if isinstance(player, Pitcher):
+        spring_training_pitch(player)
 
 
 def age_players(players: Iterable) -> None:
