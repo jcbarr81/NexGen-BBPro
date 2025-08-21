@@ -79,3 +79,17 @@ def test_hitter_can_pitch(monkeypatch):
     player = generate_player(is_pitcher=False, primary_position="1B")
     assert player["control"] == int(80 * 0.75)
     assert "P" in player["other_positions"]
+
+
+def test_hitter_distribution_totals():
+    weights = pg.HITTER_RATING_WEIGHTS["1B"]
+    total = 500
+    ratings = pg.distribute_rating_points(total, weights)
+    assert sum(ratings.values()) == total
+
+
+def test_pitcher_distribution_totals():
+    weights = pg.PITCHER_RATING_WEIGHTS
+    total = 480
+    ratings = pg.distribute_rating_points(total, weights)
+    assert sum(ratings.values()) == total
