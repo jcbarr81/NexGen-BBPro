@@ -2,7 +2,11 @@ from collections import Counter
 from datetime import date
 import random
 
-from logic.player_generator import generate_player, assign_primary_position
+from logic.player_generator import (
+    generate_player,
+    assign_primary_position,
+    generate_birthdate,
+)
 import logic.player_generator as pg
 
 
@@ -11,6 +15,28 @@ def test_generate_player_respects_age_range():
     player = generate_player(is_pitcher=False, age_range=age_range)
     age = (date.today() - player["birthdate"]).days // 365
     assert age_range[0] <= age <= age_range[1]
+
+
+def test_generate_birthdate_respects_age_tables():
+    trials = 100
+    for ptype, (base, dice, sides) in pg.AGE_TABLES.items():
+        ages = [generate_birthdate(player_type=ptype)[1] for _ in range(trials)]
+        assert min(ages) >= base + dice
+        assert max(ages) <= base + dice * sides
+
+
+def test_generate_player_uses_age_table_for_draft():
+    player = generate_player(is_pitcher=False, for_draft=True)
+    age = (date.today() - player["birthdate"]).days // 365
+    base, dice, sides = pg.AGE_TABLES["amateur"]
+    assert base + dice <= age <= base + dice * sides
+
+
+def test_generate_player_allows_explicit_player_type():
+    player = generate_player(is_pitcher=False, player_type="filler")
+    age = (date.today() - player["birthdate"]).days // 365
+    base, dice, sides = pg.AGE_TABLES["filler"]
+    assert base + dice <= age <= base + dice * sides
 
 
 def test_primary_position_override():
@@ -25,12 +51,20 @@ def test_primary_position_override():
 
 
 def test_pitcher_role_sp_when_endurance_high(monkeypatch):
-    def fake_bounded_rating_high(min_val=10, max_val=99):
-        fake_bounded_rating_high.calls += 1
-        return 60 if fake_bounded_rating_high.calls == 1 else 50
+    def fake_distribute(total, weights):
+        fake_distribute.calls += 1
+        if fake_distribute.calls == 1:
+            return {
+                "endurance": 60,
+                "control": 50,
+                "movement": 50,
+                "hold_runner": 50,
+                "arm": 50,
+            }
+        return {k: 50 for k in weights}
 
-    fake_bounded_rating_high.calls = 0
-    monkeypatch.setattr(pg, "bounded_rating", fake_bounded_rating_high)
+    fake_distribute.calls = 0
+    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
 
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 60
@@ -38,12 +72,20 @@ def test_pitcher_role_sp_when_endurance_high(monkeypatch):
 
 
 def test_pitcher_role_rp_when_endurance_low(monkeypatch):
-    def fake_bounded_rating_low(min_val=10, max_val=99):
-        fake_bounded_rating_low.calls += 1
-        return 55 if fake_bounded_rating_low.calls == 1 else 50
+    def fake_distribute(total, weights):
+        fake_distribute.calls += 1
+        if fake_distribute.calls == 1:
+            return {
+                "endurance": 55,
+                "control": 50,
+                "movement": 50,
+                "hold_runner": 50,
+                "arm": 50,
+            }
+        return {k: 50 for k in weights}
 
-    fake_bounded_rating_low.calls = 0
-    monkeypatch.setattr(pg, "bounded_rating", fake_bounded_rating_low)
+    fake_distribute.calls = 0
+    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
 
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 55
