@@ -81,6 +81,8 @@ PRIMARY_POSITION_WEIGHTS = {
     "RF": 16,
 }
 
+PITCHER_RATE = 0.4  # Fraction of draft pool that should be pitchers
+
 
 def assign_primary_position() -> str:
     """Select a primary position using weights from the ARR tables."""
@@ -396,8 +398,12 @@ def generate_player(
 
 def generate_draft_pool(num_players: int = 75) -> List[Dict]:
     players = []
+    hitter_weight = sum(PRIMARY_POSITION_WEIGHTS.values())
+    pitcher_weight = hitter_weight * (PITCHER_RATE / (1 - PITCHER_RATE))
+    # Derive pitcher probability from position weights
+    pitcher_rate = pitcher_weight / (pitcher_weight + hitter_weight)
     for _ in range(num_players):
-        is_pitcher = random.random() < 0.45  # roughly 45% pitchers, 55% hitters
+        is_pitcher = random.random() < pitcher_rate
         players.append(generate_player(is_pitcher=is_pitcher, for_draft=True))
     # Ensure all players have all keys filled
     all_keys = set(k for player in players for k in player.keys())
