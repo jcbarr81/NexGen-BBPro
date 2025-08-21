@@ -459,6 +459,10 @@ def generate_player(
         endurance = pitch_attrs["endurance"]
         control = pitch_attrs["control"]
         movement = pitch_attrs["movement"]
+        if throws == "L":
+            # Left-handed pitchers gain movement at the expense of control.
+            movement = min(90, movement + 10)
+            control = max(50, control - 10)
         hold_runner = pitch_attrs["hold_runner"]
         arm = pitch_attrs["arm"]
         fa = field_attrs["fa"]
