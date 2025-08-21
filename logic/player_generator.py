@@ -81,6 +81,57 @@ PRIMARY_POSITION_WEIGHTS = {
     "RF": 16,
 }
 
+# Weights used for distributing rating points among player attributes.  These
+# values were taken from the original ARR data file (lines 71-86) and represent
+# how many parts of a shared rating pool should be assigned to each attribute.
+HITTER_RATING_WEIGHTS: Dict[str, Dict[str, int]] = {
+    "P": {"ch": 20, "ph": 127, "sp": 393, "fa": 557, "arm": 0},
+    "C": {"ch": 169, "ph": 183, "sp": 166, "fa": 214, "arm": 269},
+    "1B": {"ch": 193, "ph": 198, "sp": 163, "fa": 226, "arm": 221},
+    "2B": {"ch": 180, "ph": 155, "sp": 206, "fa": 220, "arm": 239},
+    "SS": {"ch": 167, "ph": 153, "sp": 199, "fa": 225, "arm": 256},
+    "3B": {"ch": 181, "ph": 182, "sp": 175, "fa": 221, "arm": 240},
+    "LF": {"ch": 175, "ph": 185, "sp": 202, "fa": 218, "arm": 220},
+    "CF": {"ch": 182, "ph": 164, "sp": 235, "fa": 206, "arm": 213},
+    "RF": {"ch": 173, "ph": 195, "sp": 187, "fa": 212, "arm": 233},
+}
+
+PITCHER_RATING_WEIGHTS: Dict[str, int] = {
+    "endurance": 196,
+    "control": 206,
+    "hold_runner": 184,
+    "movement": 184,
+    "arm": 228,
+}
+
+
+def distribute_rating_points(total: int, weights: Dict[str, int]) -> Dict[str, int]:
+    """Distribute ``total`` rating points according to ``weights``.
+
+    Parameters
+    ----------
+    total: int
+        Total number of rating points to distribute.
+    weights: Dict[str, int]
+        Mapping of attribute name to weight.  The resulting dictionary will
+        contain the same keys with integer values summing to ``total``.
+    """
+
+    total_weight = sum(weights.values())
+    remaining = total
+    items = list(weights.items())
+    allocations: Dict[str, int] = {}
+
+    for attr, weight in items[:-1]:
+        value = round(total * weight / total_weight)
+        allocations[attr] = value
+        remaining -= value
+
+    # The final attribute takes whatever points remain so the totals match.
+    last_attr = items[-1][0]
+    allocations[last_attr] = remaining
+    return allocations
+
 PITCHER_RATE = 0.4  # Fraction of draft pool that should be pitchers
 
 
@@ -341,14 +392,30 @@ def generate_player(
 
     if is_pitcher:
         bats, throws = assign_bats_throws("P")
-        endurance = bounded_rating()
+        # Allocate pitching related ratings from a shared pool using the ARR
+        # derived weights.  A second pool is used to determine the pitcher's
+        # fielding ability.
+        pitch_pool = random.randint(
+            10 * len(PITCHER_RATING_WEIGHTS),
+            99 * len(PITCHER_RATING_WEIGHTS),
+        )
+        pitch_attrs = distribute_rating_points(pitch_pool, PITCHER_RATING_WEIGHTS)
+
+        field_pool = random.randint(
+            10 * len(HITTER_RATING_WEIGHTS["P"]),
+            99 * len(HITTER_RATING_WEIGHTS["P"]),
+        )
+        field_attrs = distribute_rating_points(field_pool, HITTER_RATING_WEIGHTS["P"])
+
+        endurance = pitch_attrs["endurance"]
+        control = pitch_attrs["control"]
+        movement = pitch_attrs["movement"]
+        hold_runner = pitch_attrs["hold_runner"]
+        arm = pitch_attrs["arm"]
+        fa = field_attrs["fa"]
+
         role = "SP" if endurance > 55 else "RP"
         delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
-        arm = bounded_rating()
-        fa = bounded_rating()
-        control = bounded_rating()
-        movement = bounded_rating()
-        hold_runner = bounded_rating()
         pitch_ratings, pitch_pots = generate_pitches(throws, delivery, age)
 
         player = {
@@ -394,15 +461,20 @@ def generate_player(
         primary_pos = primary_position or assign_primary_position()
         bats, throws = assign_bats_throws(primary_pos)
         other_pos = assign_secondary_positions(primary_pos)
-        ch = bounded_rating()
-        ph = bounded_rating()
-        sp = bounded_rating()
+        pool = random.randint(
+            10 * len(HITTER_RATING_WEIGHTS[primary_pos]),
+            99 * len(HITTER_RATING_WEIGHTS[primary_pos]),
+        )
+        attr = distribute_rating_points(pool, HITTER_RATING_WEIGHTS[primary_pos])
+        ch = attr["ch"]
+        ph = attr["ph"]
+        sp = attr["sp"]
+        fa = attr["fa"]
+        arm = attr["arm"]
         gf = bounded_rating()
         pl = bounded_rating()
         vl = bounded_rating()
         sc = bounded_rating()
-        fa = bounded_rating()
-        arm = bounded_rating()
 
         player = {
             "first_name": first_name,
