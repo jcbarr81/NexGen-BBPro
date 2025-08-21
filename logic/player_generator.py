@@ -27,6 +27,16 @@ def _load_name_pool() -> Dict[str, List[Tuple[str, str]]]:
 name_pool = _load_name_pool()
 used_names: Set[Tuple[str, str]] = set()
 
+# Age generation tables derived from the original ARR configuration.  Each
+# entry maps a player type to a ``(base, num_dice, num_sides)`` tuple used when
+# rolling the player's age.  The final age is ``base`` plus the total of the
+# dice rolls.
+AGE_TABLES: Dict[str, Tuple[int, int, int]] = {
+    "amateur": (14, 3, 3),
+    "fictional": (14, 4, 6),
+    "filler": (17, 4, 6),
+}
+
 
 def reset_name_cache():
     global name_pool, used_names
@@ -36,9 +46,29 @@ def reset_name_cache():
     
 # Helper Functions
 
-def generate_birthdate(age_range=(18, 38)):
+def generate_birthdate(
+    age_range: Optional[Tuple[int, int]] = None,
+    player_type: str = "fictional",
+):
+    """Generate a birthdate and age.
+
+    Parameters
+    ----------
+    age_range:
+        Optional explicit ``(min_age, max_age)`` bounds.  If provided the age
+        is chosen uniformly from within the range.
+    player_type:
+        When ``age_range`` is not supplied the player's age is determined by
+        rolling dice according to the table for the given ``player_type``.
+    """
+
     today = datetime.today()
-    age = random.randint(*age_range)
+    if age_range is not None:
+        age = random.randint(*age_range)
+    else:
+        base, num_dice, num_sides = AGE_TABLES[player_type]
+        age = base + sum(random.randint(1, num_sides) for _ in range(num_dice))
+
     days_old = age * 365 + random.randint(0, 364)
     birthdate = (today - timedelta(days=days_old)).date()
     return birthdate, age
@@ -366,6 +396,7 @@ def generate_player(
     for_draft: bool = False,
     age_range: Optional[Tuple[int, int]] = None,
     primary_position: Optional[str] = None,
+    player_type: Optional[str] = None,
 ) -> Dict:
     """Generate a single player record.
 
@@ -379,10 +410,14 @@ def generate_player(
         supplied.
     age_range: Optional[Tuple[int, int]]
         Optional ``(min_age, max_age)`` tuple.  If provided it is forwarded to
-        :func:`generate_birthdate`.
+        :func:`generate_birthdate` and takes precedence over ``player_type``.
     primary_position: Optional[str]
         When generating hitters this can be used to force a specific primary
         position rather than selecting one at random.
+    player_type: Optional[str]
+        Explicit player type to select the age table from
+        :data:`AGE_TABLES`.  If not supplied ``for_draft`` determines whether
+        the ``"amateur"`` or ``"fictional"`` table is used.
 
     Returns
     -------
@@ -390,11 +425,14 @@ def generate_player(
         A dictionary describing the generated player.
     """
 
-    # Determine the effective age range for the player and pass it directly to
-    # ``generate_birthdate``.  This allows callers to override the default
-    # ranges used for draft or regular players.
-    effective_age_range = age_range or ((17, 21) if for_draft else (18, 38))
-    birthdate, age = generate_birthdate(effective_age_range)
+    # Determine the player's age using either an explicit ``age_range`` or the
+    # appropriate age table based on ``player_type``/``for_draft``.
+    if age_range is not None:
+        birthdate, age = generate_birthdate(age_range=age_range)
+    else:
+        if player_type is None:
+            player_type = "amateur" if for_draft else "fictional"
+        birthdate, age = generate_birthdate(player_type=player_type)
     first_name, last_name = generate_name()
     player_id = f"P{random.randint(1000, 9999)}"
     height = random.randint(68, 78)
