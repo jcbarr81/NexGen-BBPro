@@ -47,3 +47,35 @@ def test_pitcher_role_rp_when_endurance_low(monkeypatch):
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 55
     assert player["role"] == "RP"
+
+
+def test_pitcher_can_hit(monkeypatch):
+    def fake_randint(a, b):
+        if (a, b) == (1, 100):
+            fake_randint.calls += 1
+            return 1 if fake_randint.calls == 2 else 50
+        if (a, b) == (10, 99):
+            return 80
+        return (a + b) // 2
+
+    fake_randint.calls = 0
+    monkeypatch.setattr(pg.random, "randint", fake_randint)
+
+    player = generate_player(is_pitcher=True)
+    assert player["ch"] == int(80 * 0.75)
+    assert player["pot_ch"] >= player["ch"]
+
+
+def test_hitter_can_pitch(monkeypatch):
+    def fake_randint(a, b):
+        if (a, b) == (1, 1000):
+            return 1
+        if (a, b) == (10, 99):
+            return 80
+        return (a + b) // 2
+
+    monkeypatch.setattr(pg.random, "randint", fake_randint)
+
+    player = generate_player(is_pitcher=False, primary_position="1B")
+    assert player["control"] == int(80 * 0.75)
+    assert "P" in player["other_positions"]

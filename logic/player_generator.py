@@ -237,6 +237,69 @@ def generate_pitches(throws: str, delivery: str, age: int):
     potentials = {f"pot_{p}": bounded_potential(ratings[p], age) if p in selected else 0 for p in PITCH_LIST}
     return ratings, potentials
 
+
+def _maybe_add_hitting(player: Dict, age: int, allocation: float = 0.75) -> None:
+    """Occasionally give a pitcher credible hitting attributes.
+
+    According to the ARR tables there is a 1 in 100 chance that a pitcher is
+    also a good hitter.  When triggered we allocate ``allocation`` percent of
+    the usual rating points to hitting related attributes.
+    """
+
+    if random.randint(1, 100) != 1:
+        return
+
+    attrs = {}
+    for key in ["ch", "ph", "sp", "gf", "pl", "vl", "sc"]:
+        rating = int(bounded_rating() * allocation)
+        attrs[key] = rating
+        if key in {"ch", "ph", "sp", "gf", "sc"}:
+            attrs[f"pot_{key}"] = bounded_potential(rating, age)
+
+    player.update(attrs)
+
+
+def _maybe_add_pitching(player: Dict, age: int, throws: str, allocation: float = 0.75) -> None:
+    """Occasionally give a position player credible pitching attributes."""
+
+    if random.randint(1, 1000) != 1:
+        return
+
+    endurance = int(bounded_rating() * allocation)
+    control = int(bounded_rating() * allocation)
+    movement = int(bounded_rating() * allocation)
+    hold_runner = int(bounded_rating() * allocation)
+    delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
+
+    pitch_ratings, _ = generate_pitches(throws, delivery, age)
+    pitch_ratings = {p: int(r * allocation) for p, r in pitch_ratings.items()}
+    pitch_pots = {
+        f"pot_{p}": bounded_potential(pitch_ratings[p], age) if pitch_ratings[p] else 0
+        for p in PITCH_LIST
+    }
+
+    player.update(
+        {
+            "endurance": endurance,
+            "control": control,
+            "movement": movement,
+            "hold_runner": hold_runner,
+            "role": "SP" if endurance > 55 else "RP",
+            "delivery": delivery,
+            "pot_endurance": bounded_potential(endurance, age),
+            "pot_control": bounded_potential(control, age),
+            "pot_movement": bounded_potential(movement, age),
+            "pot_hold_runner": bounded_potential(hold_runner, age),
+        }
+    )
+    player.update(pitch_ratings)
+    player.update(pitch_pots)
+    for key in list(pitch_ratings.keys()) + list(pitch_pots.keys()):
+        player.setdefault(key, 0)
+    player.setdefault("other_positions", [])
+    if "P" not in player["other_positions"]:
+        player["other_positions"].append("P")
+
 def generate_player(
     is_pitcher: bool,
     for_draft: bool = False,
@@ -322,6 +385,7 @@ def generate_player(
         player.update(pitch_pots)
         for key in list(pitch_ratings.keys()) + list(pitch_pots.keys()):
             player.setdefault(key, 0)
+        _maybe_add_hitting(player, age)
         return player
 
     else:
@@ -392,7 +456,7 @@ def generate_player(
         ]
         for key in all_keys:
             player.setdefault(key, 0)
-
+        _maybe_add_pitching(player, age, throws)
         return player
 
 
