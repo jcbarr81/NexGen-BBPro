@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QMenuBar,
+    QProgressDialog,
     QApplication,
 )
 from PyQt6.QtCore import Qt
