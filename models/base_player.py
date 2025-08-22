@@ -17,3 +17,5 @@ class BasePlayer:
     injured: bool = False
     injury_description: Optional[str] = None
     return_date: Optional[str] = None
+    # Flag indicating if the player is ready after training camp
+    ready: bool = False
