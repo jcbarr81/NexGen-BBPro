@@ -157,8 +157,11 @@ def clear_users(file_path: str | Path = "data/users.txt") -> None:
                     break
 
     if admin_line is None:
-        hashed_pw = bcrypt.hashpw(b"pass", bcrypt.gensalt()).decode()
-        admin_line = f"admin,{hashed_pw},admin,"
+        # Store a default admin user with the known password ``pass``.  The
+        # password is intentionally left in plain text so that a fresh league
+        # can always be accessed even when the optional ``bcrypt`` dependency
+        # is not available.
+        admin_line = "admin,pass,admin,"
 
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("w") as f:

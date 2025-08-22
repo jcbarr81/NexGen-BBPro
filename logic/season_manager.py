@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from enum import Enum
 from pathlib import Path
+import shutil
 
 from utils.path_utils import get_base_dir
 
@@ -63,6 +64,44 @@ class SeasonManager:
         self.phase = self.phase.next()
         self.save()
         return self.phase
+
+    # ------------------------------------------------------------------
+    # Pre-season utilities
+    # ------------------------------------------------------------------
+    def finalize_rosters(self, roster_dir: str | Path | None = None) -> None:
+        """Lock roster files prior to the regular season.
+
+        This method copies all roster CSV files into a sibling directory
+        named ``rosters_locked`` and removes write permissions from the
+        originals.  The copied files provide an archival snapshot while the
+        permission change acts as a light-weight lock to prevent further
+        modification before opening day.
+
+        Parameters
+        ----------
+        roster_dir:
+            Directory containing roster files.  If not provided the
+            ``data/rosters`` directory relative to the project's base
+            directory is used.
+        """
+
+        base_dir = get_base_dir()
+        roster_path = Path(roster_dir) if roster_dir is not None else base_dir / "data" / "rosters"
+        if not roster_path.is_absolute():
+            roster_path = base_dir / roster_path
+        if not roster_path.exists():
+            return
+
+        locked_dir = roster_path.parent / "rosters_locked"
+        locked_dir.mkdir(parents=True, exist_ok=True)
+
+        for file in roster_path.glob("*.csv"):
+            shutil.copy2(file, locked_dir / file.name)
+            try:
+                file.chmod(0o444)  # make read-only
+            except OSError:
+                # Permission changes may fail on some systems; ignore
+                pass
 
     # ------------------------------------------------------------------
     # Phase handlers
