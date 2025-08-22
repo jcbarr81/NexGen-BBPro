@@ -128,3 +128,53 @@ def test_simulate_day_until_midseason():
     # Further clicks should not simulate more games
     win.simulate_day_button.clicked.emit()
     assert games == [("A", "B"), ("A", "B"), ("A", "B"), ("A", "B")]
+
+
+from datetime import date
+from models.player import Player
+
+
+def _player(age: int) -> Player:
+    today = date.today()
+    birthdate = date(today.year - age, today.month, today.day).isoformat()
+    return Player(
+        player_id=str(age),
+        first_name="A",
+        last_name="B",
+        birthdate=birthdate,
+        height=72,
+        weight=180,
+        bats="R",
+        primary_position="1b",
+        other_positions=[],
+        gf=0,
+        ch=50,
+        ph=50,
+        sp=50,
+        fa=50,
+        arm=50,
+    )
+
+
+def test_offseason_resets_to_preseason():
+    class OffseasonManager:
+        def __init__(self):
+            self.phase = SeasonPhase.OFFSEASON
+            self.players = {"old": _player(41), "young": _player(30)}
+
+        def handle_phase(self):
+            return "Offseason"
+
+        def save(self):
+            pass
+
+        def advance_phase(self):
+            self.phase = self.phase.next()
+
+    spw.SeasonManager = OffseasonManager
+    win = spw.SeasonProgressWindow()
+    win._next_phase()
+    assert win.manager.phase == SeasonPhase.PRESEASON
+    assert "old" not in win.manager.players
+    import logic.season_manager as sm
+    assert sm.TRADE_DEADLINE.year == date.today().year + 1

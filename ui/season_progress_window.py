@@ -6,7 +6,10 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
+from datetime import date
 
+import logic.season_manager as season_manager
+from logic.aging_model import age_and_retire
 from logic.season_manager import SeasonManager, SeasonPhase
 from logic.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
@@ -85,7 +88,15 @@ class SeasonProgressWindow(QDialog):
 
     def _next_phase(self) -> None:
         """Advance to the next phase and update the display."""
-        self.manager.advance_phase()
+        if self.manager.phase == SeasonPhase.OFFSEASON:
+            players = getattr(self.manager, "players", {})
+            retired = age_and_retire(players)
+            self.notes_label.setText(f"Retired Players: {len(retired)}")
+            season_manager.TRADE_DEADLINE = date(date.today().year + 1, 7, 31)
+            self.manager.phase = SeasonPhase.PRESEASON
+            self.manager.save()
+        else:
+            self.manager.advance_phase()
         self._update_ui()
 
     # ------------------------------------------------------------------
