@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from ui.playbalance_editor import PlayBalanceEditor
+from ui.season_progress_window import SeasonProgressWindow
 from utils.trade_utils import load_trades, save_trade
 from utils.news_logger import log_news_event
 from utils.roster_loader import load_roster
@@ -91,6 +92,10 @@ class AdminDashboard(QWidget):
         self.playbalance_button = QPushButton("Edit Play Balance")
         self.playbalance_button.clicked.connect(self.open_playbalance_editor)
         button_layout.addWidget(self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.season_progress_button = QPushButton("Season Progress")
+        self.season_progress_button.clicked.connect(self.open_season_progress)
+        button_layout.addWidget(self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         layout.addLayout(button_layout)
         layout.addStretch()
@@ -256,6 +261,10 @@ class AdminDashboard(QWidget):
 
     def open_playbalance_editor(self):
         dialog = PlayBalanceEditor(self)
+        dialog.exec()
+
+    def open_season_progress(self):
+        dialog = SeasonProgressWindow(self)
         dialog.exec()
 
     def open_add_user(self):
