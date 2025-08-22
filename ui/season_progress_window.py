@@ -10,12 +10,18 @@ from PyQt6.QtWidgets import (
 from logic.season_manager import SeasonManager, SeasonPhase
 from logic.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
+from logic.season_simulator import SeasonSimulator
 
 
 class SeasonProgressWindow(QDialog):
     """Dialog displaying the current season phase and progress notes."""
 
-    def __init__(self, parent=None) -> None:
+    def __init__(
+        self,
+        parent=None,
+        schedule: list[dict[str, str]] | None = None,
+        simulate_game=None,
+    ) -> None:
         super().__init__(parent)
         try:
             self.setWindowTitle("Season Progress")
@@ -23,6 +29,7 @@ class SeasonProgressWindow(QDialog):
             pass
 
         self.manager = SeasonManager()
+        self.simulator = SeasonSimulator(schedule or [], simulate_game)
 
         layout = QVBoxLayout(self)
 
@@ -42,6 +49,14 @@ class SeasonProgressWindow(QDialog):
         self.training_camp_button.clicked.connect(self._run_training_camp)
         layout.addWidget(self.training_camp_button)
 
+        # Regular season controls
+        self.remaining_label = QLabel()
+        layout.addWidget(self.remaining_label)
+
+        self.simulate_day_button = QPushButton("Simulate Day")
+        self.simulate_day_button.clicked.connect(self._simulate_day)
+        layout.addWidget(self.simulate_day_button)
+
         self.next_button = QPushButton("Next Phase")
         self.next_button.clicked.connect(self._next_phase)
         layout.addWidget(self.next_button)
@@ -59,8 +74,14 @@ class SeasonProgressWindow(QDialog):
         self.notes_label.setText(notes)
 
         is_preseason = self.manager.phase == SeasonPhase.PRESEASON
+        is_regular = self.manager.phase == SeasonPhase.REGULAR_SEASON
         self.free_agency_button.setVisible(is_preseason)
         self.training_camp_button.setVisible(is_preseason)
+        self.remaining_label.setVisible(is_regular)
+        self.simulate_day_button.setVisible(is_regular)
+        if is_regular:
+            remaining = self.simulator.remaining_days()
+            self.remaining_label.setText(f"Days until Midseason: {remaining}")
 
     def _next_phase(self) -> None:
         """Advance to the next phase and update the display."""
@@ -86,4 +107,13 @@ class SeasonProgressWindow(QDialog):
         players = getattr(self.manager, "players", {})
         run_training_camp(players.values())
         self.notes_label.setText("Training camp completed. Players marked ready.")
+
+    # ------------------------------------------------------------------
+    # Regular season actions
+    # ------------------------------------------------------------------
+    def _simulate_day(self) -> None:
+        """Trigger simulation for a single schedule day."""
+        self.simulator.simulate_next_day()
+        remaining = self.simulator.remaining_days()
+        self.remaining_label.setText(f"Days until Midseason: {remaining}")
 
