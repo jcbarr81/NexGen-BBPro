@@ -35,11 +35,12 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
 
     calls = {}
     logo_size = 256
+    api_size = 1024
 
     class DummyImages:
         def generate(self, **kwargs):
             calls.update(kwargs)
-            return SimpleNamespace(data=[SimpleNamespace(b64_json=_fake_b64_png(logo_size))])
+            return SimpleNamespace(data=[SimpleNamespace(b64_json=_fake_b64_png(api_size))])
 
     monkeypatch.setattr(logo_generator, "client", SimpleNamespace(images=DummyImages()))
 
@@ -51,7 +52,7 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     out_dir = tmp_path
     logo_generator.generate_team_logos(out_dir=str(out_dir), size=logo_size, progress_callback=cb)
 
-    assert calls["size"] == f"{logo_size}x{logo_size}"
+    assert calls["size"] == "1024x1024"
     assert "Testville" in calls["prompt"]
     assert "Testers" in calls["prompt"]
     assert "#112233" in calls["prompt"]

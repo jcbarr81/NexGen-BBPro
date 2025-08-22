@@ -29,7 +29,12 @@ def _auto_logo_fallback(
 ) -> None:
     """Generate logos using the legacy ``images.auto_logo`` module."""
 
-    from images.auto_logo import TeamSpec, batch_generate, _seed_from_name  # pragma: no cover
+    from images.auto_logo import (
+        TeamSpec,
+        generate_logo,
+        save_logo,
+        _seed_from_name,
+    )  # pragma: no cover
 
     specs: List[TeamSpec] = []
     for t in teams:
@@ -48,13 +53,19 @@ def _auto_logo_fallback(
     total = len(specs)
     completed = 0
 
-    def cb(spec: TeamSpec, path: str) -> None:
-        nonlocal completed
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for spec in specs:
+        img = generate_logo(spec, size=1024)
+        if size != 1024:
+            img = img.resize((size, size), Image.LANCZOS)
+        filename = f"{(spec.abbrev or (spec.location + ' ' + spec.mascot)).replace(' ', '_').lower()}.png"
+        path = out_dir / filename
+        save_logo(img, str(path))
         completed += 1
         if progress_callback:
             progress_callback(completed, total)
-
-    batch_generate(specs, out_dir=out_dir, size=size, callback=cb)
 
 
 def generate_team_logos(
@@ -71,8 +82,8 @@ def generate_team_logos(
         Optional output directory. Defaults to ``logo/teams`` relative to the
         project root.
     size:
-        Pixel size for the square logos. This value is passed directly to the
-        OpenAI image API, so images are generated at the requested size.
+        Pixel size for the square logos. Images are always generated at
+        ``1024x1024`` and then resized to this value when saved.
     progress_callback:
         Optional callback receiving ``(completed, total)`` after each logo is
         saved.
@@ -105,12 +116,14 @@ def generate_team_logos(
         result = client.images.generate(
             model="gpt-image-1",
             prompt=prompt,
-            size=f"{size}x{size}",
+            size="1024x1024",
         )
         b64 = result.data[0].b64_json
         image_bytes = base64.b64decode(b64)
         path = out_dir / f"{t.team_id.lower()}.png"
         with Image.open(BytesIO(image_bytes)) as img:
+            if size != 1024:
+                img = img.resize((size, size), Image.LANCZOS)
             img.save(path, format="PNG")
         if progress_callback:
             progress_callback(idx, total)
