@@ -12,7 +12,14 @@ of the project can rely on a stable API.
 from pathlib import Path
 from typing import Dict, Iterable, List
 import json
+import logging
+import random
 
+from models.player import Player
+from models.pitcher import Pitcher
+from logic.playbalance_config import PlayBalanceConfig
+from logic.simulation import GameSimulation, TeamState
+from logic.season_manager import SeasonManager, SeasonPhase
 from utils.path_utils import get_base_dir
 
 
@@ -140,6 +147,118 @@ class PlayoffManager:
         except (OSError, json.JSONDecodeError):
             self.bracket = {"rounds": []}
         return self.bracket
+
+    # ------------------------------------------------------------------
+    # Simulation helpers
+    # ------------------------------------------------------------------
+    def simulate_series(
+        self,
+        home_id: str,
+        away_id: str,
+        best_of: int = 7,
+        rng: random.Random | None = None,
+    ) -> str:
+        """Simulate a playoff series and return the winning team.
+
+        A minimal :class:`~logic.simulation.GameSimulation` is executed for each
+        game.  The first club to reach the required number of wins advances.
+
+        Parameters
+        ----------
+        home_id, away_id:
+            Identifiers for the two teams in the series.
+        best_of:
+            Length of the series.  Defaults to a best-of-seven format.
+        rng:
+            Optional random number generator used for deterministic behaviour
+            during testing.
+        """
+
+        wins_needed = best_of // 2 + 1
+        wins = {home_id: 0, away_id: 0}
+        rng = rng or random.Random()
+        config = PlayBalanceConfig()
+
+        def _player(prefix: str, team: str) -> Player:
+            return Player(
+                player_id=f"{prefix}{team}",
+                first_name=prefix,
+                last_name=team,
+                birthdate="2000-01-01",
+                height=72,
+                weight=180,
+                bats="R",
+                primary_position="1B",
+                other_positions=[],
+                gf=50,
+            )
+
+        def _pitcher(prefix: str, team: str) -> Pitcher:
+            return Pitcher(
+                player_id=f"{prefix}{team}P",
+                first_name=prefix,
+                last_name=team,
+                birthdate="2000-01-01",
+                height=72,
+                weight=180,
+                bats="R",
+                primary_position="P",
+                other_positions=[],
+                gf=50,
+                fb=50,
+                endurance=10000,
+            )
+
+        while max(wins.values()) < wins_needed:
+            batter_h = _player("Home", home_id)
+            batter_a = _player("Away", away_id)
+            pitchers_h = [_pitcher("Home", f"{home_id}{i}") for i in range(5)]
+            pitchers_a = [_pitcher("Away", f"{away_id}{i}") for i in range(5)]
+            home = TeamState(lineup=[batter_h], bench=[], pitchers=pitchers_h)
+            away = TeamState(lineup=[batter_a], bench=[], pitchers=pitchers_a)
+            sim = GameSimulation(home, away, config, rng)
+            sim.simulate_game()
+            if home.runs > away.runs:
+                wins[home_id] += 1
+            else:
+                wins[away_id] += 1
+
+        return home_id if wins[home_id] > wins[away_id] else away_id
+
+    def simulate_playoffs(
+        self,
+        best_of: int = 7,
+        rng: random.Random | None = None,
+        season_manager: SeasonManager | None = None,
+    ) -> str | None:
+        """Simulate the entire playoff bracket and return the champion.
+
+        Once the champion is determined the result is logged and the season
+        phase is advanced to :data:`SeasonPhase.OFFSEASON`.
+        """
+
+        if not self.bracket["rounds"]:
+            return None
+
+        rng = rng or random.Random()
+        winners: List[str] = []
+
+        for round_games in self.bracket["rounds"]:
+            for game in round_games:
+                home = game["home"]
+                away = game["away"]
+                if home.startswith("winner_"):
+                    home = winners[int(home.split("_")[1])]
+                if away.startswith("winner_"):
+                    away = winners[int(away.split("_")[1])]
+                winners.append(self.simulate_series(home, away, best_of, rng))
+
+        champion = winners[-1]
+        logging.info("Playoff champion: %s", champion)
+        manager = season_manager or SeasonManager()
+        manager.phase = SeasonPhase.OFFSEASON
+        manager.save()
+        return champion
 
 
 __all__ = ["PlayoffManager"]
