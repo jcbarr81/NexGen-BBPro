@@ -4,8 +4,13 @@ import json
 from enum import Enum
 from pathlib import Path
 import shutil
+from datetime import date
 
 from utils.path_utils import get_base_dir
+
+
+# Trades are prohibited after this date.
+TRADE_DEADLINE = date(date.today().year, 7, 31)
 
 
 class SeasonPhase(Enum):

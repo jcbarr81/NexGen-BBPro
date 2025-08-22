@@ -48,14 +48,13 @@ class SeasonSimulator:
 
         When the midpoint of the season is reached the optional
         ``on_all_star_break`` callback is invoked and regular-season play
-        automatically resumes on the next invocation.
+        automatically resumes immediately afterward.
         """
 
         if self._index == self._mid and not self._all_star_played:
             if self.on_all_star_break is not None:
                 self.on_all_star_break()
             self._all_star_played = True
-            return
 
         if self._index >= len(self.dates):
             return

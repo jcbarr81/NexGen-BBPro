@@ -118,6 +118,13 @@ def test_simulate_day_until_midseason():
     assert games == [("A", "B"), ("A", "B")]
     assert win.remaining_label.text() == "Days until Midseason: 0"
 
+    # After the break the season continues
+    win.simulate_day_button.clicked.emit()
+    assert games == [("A", "B"), ("A", "B"), ("A", "B")]
+
+    win.simulate_day_button.clicked.emit()
+    assert games == [("A", "B"), ("A", "B"), ("A", "B"), ("A", "B")]
+
     # Further clicks should not simulate more games
     win.simulate_day_button.clicked.emit()
-    assert games == [("A", "B"), ("A", "B")]
+    assert games == [("A", "B"), ("A", "B"), ("A", "B"), ("A", "B")]
