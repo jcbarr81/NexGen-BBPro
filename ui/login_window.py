@@ -65,15 +65,18 @@ class LoginWindow(QWidget):
                 if len(parts) != 4:
                     continue
                 file_user, file_pass, role, team_id = parts
-                try:
-                    if file_user == username and bcrypt.checkpw(
-                        password.encode("utf-8"), file_pass.encode("utf-8")
-                    ):
-                        self.accept_login(role, team_id)
-                        return
-                except ValueError:
-                    # Skip entries with invalid hashes
+                if file_user != username:
                     continue
+                hashed_match = False
+                try:
+                    hashed_match = bcrypt.checkpw(
+                        password.encode("utf-8"), file_pass.encode("utf-8")
+                    )
+                except ValueError:
+                    hashed_match = False
+                if hashed_match or password == file_pass:
+                    self.accept_login(role, team_id)
+                    return
 
         QMessageBox.warning(self, "Login Failed", "Invalid username or password.")
 
