@@ -97,9 +97,10 @@ The executable will be written to the `dist/` directory.
 
 ### Default Admin Credentials
 When a new league is created or user accounts are cleared, the system rewrites
-`data/users.txt` to contain a single administrator account. Passwords are
-stored as `bcrypt` hashes. Use these fallback credentials to log in after a
-reset:
+`data/users.txt` to contain a single administrator account. Most passwords are
+stored as `bcrypt` hashes, but the default administrator account keeps a
+plain-text password so the app can always be accessed. Use these fallback
+credentials to log in after a reset:
 
 ```
 username: admin
