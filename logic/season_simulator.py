@@ -9,7 +9,7 @@ from logic.simulation import GameSimulation, TeamState
 
 
 class SeasonSimulator:
-    """Simulate scheduled games up to the season's midpoint.
+    """Simulate a season schedule with an All-Star break.
 
     Parameters
     ----------
@@ -19,32 +19,45 @@ class SeasonSimulator:
         Optional callback accepting ``home`` and ``away`` team identifiers.  If
         not provided a minimal game simulation using :class:`GameSimulation`
         from :mod:`logic.simulation` is performed.
+    on_all_star_break:
+        Optional callable executed when the season reaches its midpoint.  This
+        can be used to run the All-Star exhibition.
     """
 
     def __init__(
         self,
         schedule: Iterable[Dict[str, str]],
         simulate_game: Callable[[str, str], None] | None = None,
+        on_all_star_break: Callable[[], None] | None = None,
     ) -> None:
         self.schedule = list(schedule)
         self.dates: List[str] = sorted({g["date"] for g in self.schedule})
         self._mid = len(self.dates) // 2
         self._index = 0
         self.simulate_game = simulate_game or self._default_simulate_game
+        self.on_all_star_break = on_all_star_break
+        self._all_star_played = False
 
     # ------------------------------------------------------------------
     def remaining_days(self) -> int:
-        """Return the number of days left until midseason."""
+        """Return the number of days left until the All-Star break."""
         return max(self._mid - self._index, 0)
 
     def simulate_next_day(self) -> None:
         """Simulate games for the next scheduled day.
 
-        Simulation stops automatically once the midpoint of the season is
-        reached.
+        When the midpoint of the season is reached the optional
+        ``on_all_star_break`` callback is invoked and regular-season play
+        automatically resumes on the next invocation.
         """
 
-        if self._index >= self._mid:
+        if self._index == self._mid and not self._all_star_played:
+            if self.on_all_star_break is not None:
+                self.on_all_star_break()
+            self._all_star_played = True
+            return
+
+        if self._index >= len(self.dates):
             return
         current_date = self.dates[self._index]
         games = [g for g in self.schedule if g["date"] == current_date]
