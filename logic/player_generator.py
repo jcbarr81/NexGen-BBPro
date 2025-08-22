@@ -5,7 +5,10 @@ from typing import Dict, List, Tuple, Set, Optional
 import csv
 from pathlib import Path
 
-import pandas as pd
+try:
+    import pandas as pd  # type: ignore
+except Exception:  # pragma: no cover - optional dependency for CLI usage
+    pd = None
 
 from utils.path_utils import get_base_dir
 
@@ -684,7 +687,9 @@ def generate_draft_pool(num_players: int = 75) -> List[Dict]:
 
     return players
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover - manual script usage
+    if pd is None:
+        raise SystemExit("pandas is required to export the draft pool")
     draft_pool = generate_draft_pool()
     df = pd.DataFrame(draft_pool)
     df.to_csv("draft_pool.csv", index=False)
