@@ -22,3 +22,15 @@ def test_state_persistence(tmp_path):
     assert data["phase"] == "REGULAR_SEASON"
     new_manager = SeasonManager(path)
     assert new_manager.phase == SeasonPhase.REGULAR_SEASON
+
+
+def test_phase_handlers(tmp_path):
+    path = tmp_path / "state.json"
+    manager = SeasonManager(path)
+    assert "Preseason" in manager.handle_phase()
+    manager.advance_phase()
+    assert "Regular Season" in manager.handle_phase()
+    manager.advance_phase()
+    assert "Playoffs" in manager.handle_phase()
+    manager.advance_phase()
+    assert "Offseason" in manager.handle_phase()
