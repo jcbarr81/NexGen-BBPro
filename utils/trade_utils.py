@@ -1,8 +1,14 @@
 import csv
+from datetime import date
 from pathlib import Path
 
 from models.trade import Trade
 from utils.path_utils import get_base_dir
+from logic.season_manager import TRADE_DEADLINE
+
+
+def _today() -> date:
+    return date.today()
 
 
 def _resolve(file_path: str | Path) -> Path:
@@ -41,6 +47,9 @@ def save_trade(trade: Trade, file_path: str | Path = "data/trades_pending.csv"):
     rejected a proposal).  We now remove any trade with the same ``trade_id``
     before writing the updated list back to disk.
     """
+
+    if _today() > TRADE_DEADLINE:
+        raise RuntimeError("Trade deadline has passed")
 
     path = _resolve(file_path)
     existing = [t for t in load_trades(path) if t.trade_id != trade.trade_id]
