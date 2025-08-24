@@ -19,6 +19,7 @@ from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from ui.playbalance_editor import PlayBalanceEditor
 from ui.season_progress_window import SeasonProgressWindow
+from ui.owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades, save_trade
 from utils.news_logger import log_news_event
 from utils.roster_loader import load_roster
@@ -40,6 +41,8 @@ class AdminDashboard(QWidget):
         # Use a modest default size so the dashboard doesn't fill the screen
         # when launched.
         self.setGeometry(200, 200, 800, 600)
+
+        self.team_dashboards: list[OwnerDashboard] = []
 
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
@@ -76,6 +79,12 @@ class AdminDashboard(QWidget):
         self.edit_user_button = QPushButton("Edit User")
         self.edit_user_button.clicked.connect(self.open_edit_user)
         button_layout.addWidget(self.edit_user_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.team_dashboard_button = QPushButton("Open Team Dashboard")
+        self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
+        button_layout.addWidget(
+            self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
         self.generate_logos_button = QPushButton("Generate Team Logos")
         self.generate_logos_button.clicked.connect(self.generate_team_logos)
@@ -402,6 +411,20 @@ class AdminDashboard(QWidget):
 
         dialog.setLayout(layout)
         dialog.exec()
+
+    def open_team_dashboard(self):
+        teams = load_teams(get_base_dir() / "data" / "teams.csv")
+        team_ids = [t.team_id for t in teams]
+        if not team_ids:
+            QMessageBox.information(self, "No Teams", "No teams available.")
+            return
+        team_id, ok = QInputDialog.getItem(
+            self, "Open Team Dashboard", "Select a team:", team_ids, 0, False
+        )
+        if ok and team_id:
+            dashboard = OwnerDashboard(team_id)
+            dashboard.show()
+            self.team_dashboards.append(dashboard)
 
     def open_create_league(self):
         confirm = QMessageBox.question(
