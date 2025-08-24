@@ -7,6 +7,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 from datetime import date
+import csv
+from pathlib import Path
 
 import logic.season_manager as season_manager
 from logic.aging_model import age_and_retire
@@ -14,8 +16,13 @@ from logic.season_manager import SeasonManager, SeasonPhase
 from logic.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
 from logic.season_simulator import SeasonSimulator
-from logic.schedule_generator import generate_mlb_schedule
+from logic.schedule_generator import generate_mlb_schedule, save_schedule
 from utils.news_logger import log_news_event
+
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+TEAMS_FILE = DATA_DIR / "teams.csv"
+SCHEDULE_FILE = DATA_DIR / "schedule.csv"
 
 
 class SeasonProgressWindow(QDialog):
@@ -176,12 +183,17 @@ class SeasonProgressWindow(QDialog):
             getattr(t, "abbreviation", str(t))
             for t in getattr(self.manager, "teams", [])
         ]
+        if not teams and TEAMS_FILE.exists():
+            with TEAMS_FILE.open(newline="") as fh:
+                reader = csv.DictReader(fh)
+                teams = [row["abbreviation"] for row in reader]
         if not teams:
             self.notes_label.setText("No teams available to generate schedule.")
             return
 
         start = date(date.today().year, 4, 1)
         schedule = generate_mlb_schedule(teams, start)
+        save_schedule(schedule, SCHEDULE_FILE)
         self.simulator = SeasonSimulator(schedule, self._simulate_game)
         self.notes_label.setText(f"Schedule generated with {len(schedule)} games.")
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")

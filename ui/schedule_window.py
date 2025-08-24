@@ -4,38 +4,40 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
 )
+import csv
+from pathlib import Path
+
+SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "schedule.csv"
 
 
 class ScheduleWindow(QDialog):
-    """Dialog displaying a simple placeholder schedule."""
+    """Dialog displaying the full league schedule."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         try:
-            # Set a descriptive window title if supported by the widget backend
             self.setWindowTitle("Schedule")
         except Exception:  # pragma: no cover - stubs without this method
             pass
 
         layout = QVBoxLayout(self)
 
-        # Default schedule data used for placeholder view
-        self.schedule_data = [
-            ("2024-04-01", "Team A vs Team B"),
-            ("2024-04-02", "Team C vs Team D"),
-            ("2024-04-03", "Team A at Team C"),
-        ]
+        self.schedule_data: list[dict[str, str]] = []
+        if SCHEDULE_FILE.exists():
+            with SCHEDULE_FILE.open(newline="") as fh:
+                reader = csv.DictReader(fh)
+                self.schedule_data = list(reader)
 
         table = QTableWidget()
-        table.setColumnCount(2)
+        table.setColumnCount(3)
         table.setRowCount(len(self.schedule_data))
-        table.setHorizontalHeaderLabels(["Date", "Game"])
-        for row, (date, game) in enumerate(self.schedule_data):
-            table.setItem(row, 0, QTableWidgetItem(date))
-            table.setItem(row, 1, QTableWidgetItem(game))
+        table.setHorizontalHeaderLabels(["Date", "Away", "Home"])
+        for row, game in enumerate(self.schedule_data):
+            table.setItem(row, 0, QTableWidgetItem(game.get("date", "")))
+            table.setItem(row, 1, QTableWidgetItem(game.get("away", "")))
+            table.setItem(row, 2, QTableWidgetItem(game.get("home", "")))
         table.resizeColumnsToContents()
 
-        # Expose table for tests
         self.table = table
         layout.addWidget(table)
 
