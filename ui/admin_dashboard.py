@@ -53,6 +53,13 @@ class AdminDashboard(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
         central_widget.setLayout(layout)
+        bg_path = get_base_dir() / "logo" / "Admin-Dashboard.png"
+        bg_url = bg_path.as_posix()
+        central_widget.setStyleSheet(
+            f"background-image: url('{bg_url}');"
+            "background-repeat: no-repeat;"
+            "background-position: center;"
+        )
         icon_dir = get_base_dir() / "images" / "buttons"
         icon_size = QSize(24, 24)
 
