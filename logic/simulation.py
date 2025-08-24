@@ -482,6 +482,10 @@ class GameSimulation:
         for team in (self.home, self.away):
             for bs in team.lineup_stats.values():
                 season = getattr(bs.player, "season_stats", {})
+                for f in fields(BatterState):
+                    if f.name == "player":
+                        continue
+                    season[f.name] = season.get(f.name, 0) + getattr(bs, f.name)
                 season_state = BatterState(bs.player)
                 for f in fields(BatterState):
                     if f.name == "player":
@@ -489,6 +493,8 @@ class GameSimulation:
                     setattr(season_state, f.name, season.get(f.name, 0))
                 season.update(compute_batting_derived(season_state))
                 season.update(compute_batting_rates(season_state))
+                season["2b"] = season.get("b2", 0)
+                season["3b"] = season.get("b3", 0)
                 bs.player.season_stats = season
 
             for ps in team.pitcher_stats.values():
