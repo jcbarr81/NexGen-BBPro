@@ -53,7 +53,7 @@ class AdminDashboard(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
         central_widget.setLayout(layout)
-        icon_dir = os.path.join(os.path.dirname(__file__), "icons")
+        icon_dir = get_base_dir() / "images" / "buttons"
         icon_size = QSize(24, 24)
 
         menubar = QMenuBar()
@@ -76,7 +76,7 @@ class AdminDashboard(QMainWindow):
         league_layout.setSpacing(15)
 
         self.review_button = QPushButton("Review Trades")
-        self.review_button.setIcon(QIcon(os.path.join(icon_dir, "review_trades.svg")))
+        self.review_button.setIcon(QIcon(str(icon_dir / "rt_review_trades_24.png")))
         self.review_button.setIconSize(icon_size)
         self.review_button.clicked.connect(self.open_trade_review)
         league_layout.addWidget(
@@ -84,7 +84,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.create_league_button = QPushButton("Create League")
-        self.create_league_button.setIcon(QIcon(os.path.join(icon_dir, "create_league.svg")))
+        self.create_league_button.setIcon(QIcon(str(icon_dir / "cl_create_league_24.png")))
         self.create_league_button.setIconSize(icon_size)
         self.create_league_button.clicked.connect(self.open_create_league)
         league_layout.addWidget(
@@ -92,7 +92,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.team_dashboard_button = QPushButton("Open Team Dashboard")
-        self.team_dashboard_button.setIcon(QIcon(os.path.join(icon_dir, "team_dashboard.svg")))
+        self.team_dashboard_button.setIcon(QIcon(str(icon_dir / "td_team_dashboard_24.png")))
         self.team_dashboard_button.setIconSize(icon_size)
         self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
         league_layout.addWidget(
@@ -100,7 +100,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
-        self.exhibition_button.setIcon(QIcon(os.path.join(icon_dir, "exhibition_game.svg")))
+        self.exhibition_button.setIcon(QIcon(str(icon_dir / "eg_exhibition_game_24.png")))
         self.exhibition_button.setIconSize(icon_size)
         self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         league_layout.addWidget(
@@ -108,7 +108,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.playbalance_button = QPushButton("Edit Play Balance")
-        self.playbalance_button.setIcon(QIcon(os.path.join(icon_dir, "play_balance.svg")))
+        self.playbalance_button.setIcon(QIcon(str(icon_dir / "pb_play_balance_24.png")))
         self.playbalance_button.setIconSize(icon_size)
         self.playbalance_button.clicked.connect(self.open_playbalance_editor)
         league_layout.addWidget(
@@ -116,7 +116,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.season_progress_button = QPushButton("Season Progress")
-        self.season_progress_button.setIcon(QIcon(os.path.join(icon_dir, "season_progress.svg")))
+        self.season_progress_button.setIcon(QIcon(str(icon_dir / "sp_season_progress_24.png")))
         self.season_progress_button.setIconSize(icon_size)
         self.season_progress_button.clicked.connect(self.open_season_progress)
         league_layout.addWidget(
@@ -133,7 +133,7 @@ class AdminDashboard(QMainWindow):
         user_layout.setSpacing(15)
 
         self.add_user_button = QPushButton("Add User")
-        self.add_user_button.setIcon(QIcon(os.path.join(icon_dir, "add_user.svg")))
+        self.add_user_button.setIcon(QIcon(str(icon_dir / "au_add_user_24.png")))
         self.add_user_button.setIconSize(icon_size)
         self.add_user_button.clicked.connect(self.open_add_user)
         user_layout.addWidget(
@@ -141,7 +141,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.edit_user_button = QPushButton("Edit User")
-        self.edit_user_button.setIcon(QIcon(os.path.join(icon_dir, "edit_user.svg")))
+        self.edit_user_button.setIcon(QIcon(str(icon_dir / "eu_edit_user_24.png")))
         self.edit_user_button.setIconSize(icon_size)
         self.edit_user_button.clicked.connect(self.open_edit_user)
         user_layout.addWidget(
@@ -158,7 +158,7 @@ class AdminDashboard(QMainWindow):
         util_layout.setSpacing(15)
 
         self.generate_logos_button = QPushButton("Generate Team Logos")
-        self.generate_logos_button.setIcon(QIcon(os.path.join(icon_dir, "generate_logos.svg")))
+        self.generate_logos_button.setIcon(QIcon(str(icon_dir / "lg_generate_logos_24.png")))
         self.generate_logos_button.setIconSize(icon_size)
         self.generate_logos_button.clicked.connect(self.generate_team_logos)
         util_layout.addWidget(
@@ -166,7 +166,7 @@ class AdminDashboard(QMainWindow):
         )
 
         self.generate_avatars_button = QPushButton("Generate Player Avatars")
-        self.generate_avatars_button.setIcon(QIcon(os.path.join(icon_dir, "generate_avatars.svg")))
+        self.generate_avatars_button.setIcon(QIcon(str(icon_dir / "av_generate_avatars_24.png")))
         self.generate_avatars_button.setIconSize(icon_size)
         self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
         util_layout.addWidget(
