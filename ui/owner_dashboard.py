@@ -35,6 +35,7 @@ from ui.transactions_window import TransactionsWindow
 from ui.team_settings_dialog import TeamSettingsDialog
 from ui.standings_window import StandingsWindow
 from ui.schedule_window import ScheduleWindow
+from ui.team_schedule_window import TeamScheduleWindow
 from ui.trade_dialog import TradeDialog
 from utils.roster_loader import load_roster, save_roster
 from utils.player_loader import load_players_from_csv
@@ -105,6 +106,8 @@ class OwnerDashboard(QWidget):
         pitch_staff_action = team_menu.addAction("Pitching Staff")
         trans_action = team_menu.addAction("Transactions")
         settings_action = team_menu.addAction("Settings")
+        self.team_schedule_action = team_menu.addAction("Schedule")
+        self.team_schedule_action.triggered.connect(self.open_team_schedule_window)
         pos_action.triggered.connect(self.open_position_players_dialog)
         pit_action.triggered.connect(self.open_pitchers_window)
         lineups_action.triggered.connect(self.open_lineup_editor)
@@ -295,6 +298,13 @@ class OwnerDashboard(QWidget):
     def open_schedule_window(self):
         """Open the league schedule dialog."""
         ScheduleWindow(self).exec()
+
+    def open_team_schedule_window(self):
+        """Open the current team's schedule dialog."""
+        if not getattr(self, "team_id", None):
+            QMessageBox.warning(self, "Error", "Team information not available.")
+            return
+        TeamScheduleWindow(self.team_id, self).exec()
 
     def open_team_settings(self):
         if not self.team:

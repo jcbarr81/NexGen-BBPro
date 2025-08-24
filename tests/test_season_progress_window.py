@@ -225,3 +225,38 @@ def test_preseason_actions_require_sequence():
     win.generate_schedule_button.clicked.emit()
     assert len(win.simulator.schedule) == 162
     assert win.next_button.isEnabled()
+
+
+def test_generate_schedule_loads_teams_from_csv(monkeypatch, tmp_path):
+    import csv
+
+    class PreseasonManager:
+        def __init__(self):
+            self.phase = SeasonPhase.PRESEASON
+            self.players = {}
+            self.teams = []
+
+        def handle_phase(self):
+            return "Preseason"
+
+        def save(self):
+            pass
+
+        def advance_phase(self):
+            pass
+
+    spw.SeasonManager = PreseasonManager
+    teams_file = tmp_path / "teams.csv"
+    with teams_file.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["abbreviation"])
+        writer.writeheader()
+        writer.writerow({"abbreviation": "A"})
+        writer.writerow({"abbreviation": "B"})
+    schedule_file = tmp_path / "schedule.csv"
+    monkeypatch.setattr(spw, "TEAMS_FILE", teams_file)
+    monkeypatch.setattr(spw, "SCHEDULE_FILE", schedule_file)
+
+    win = spw.SeasonProgressWindow()
+    win._generate_schedule()
+    assert len(win.simulator.schedule) > 0
+    assert schedule_file.exists()
