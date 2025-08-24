@@ -31,6 +31,8 @@ from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
 from utils.path_utils import get_base_dir
+from utils.pitcher_role import get_role
+from utils.pitching_autofill import autofill_pitching_staff
 from models.trade import Trade
 import csv
 import os
@@ -137,14 +139,6 @@ class AdminDashboard(QMainWindow):
             self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
-        self.team_dashboard_button = QPushButton("Open Team Dashboard")
-        self.team_dashboard_button.setIcon(QIcon(str(icon_dir / "td_team_dashboard_24.png")))
-        self.team_dashboard_button.setIconSize(icon_size)
-        self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
-        league_layout.addWidget(
-            self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         self.exhibition_button.setIcon(QIcon(str(icon_dir / "eg_exhibition_game_24.png")))
         self.exhibition_button.setIconSize(icon_size)
@@ -171,6 +165,35 @@ class AdminDashboard(QMainWindow):
 
         league_tab.setLayout(league_layout)
         tabs.addTab(league_tab, "League Management")
+
+        # Team Management Tab
+        team_tab = QWidget()
+        team_layout = QVBoxLayout()
+        team_layout.setContentsMargins(20, 20, 20, 20)
+        team_layout.setSpacing(15)
+
+        self.team_dashboard_button = QPushButton("Open Team Dashboard")
+        self.team_dashboard_button.setIcon(QIcon(str(icon_dir / "td_team_dashboard_24.png")))
+        self.team_dashboard_button.setIconSize(icon_size)
+        self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
+        team_layout.addWidget(
+            self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        self.set_lineups_button = QPushButton("Set All Team Lineups")
+        self.set_lineups_button.clicked.connect(self.set_all_lineups)
+        team_layout.addWidget(
+            self.set_lineups_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        self.set_pitching_button = QPushButton("Set All Pitching Staff Roles")
+        self.set_pitching_button.clicked.connect(self.set_all_pitching_roles)
+        team_layout.addWidget(
+            self.set_pitching_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        team_tab.setLayout(team_layout)
+        tabs.addTab(team_tab, "Team Management")
 
         # User Management Tab
         user_tab = QWidget()
@@ -547,6 +570,98 @@ class AdminDashboard(QMainWindow):
             dashboard = OwnerDashboard(team_id)
             dashboard.show()
             self.team_dashboards.append(dashboard)
+
+    def set_all_lineups(self):
+        data_dir = get_base_dir() / "data"
+        players_file = data_dir / "players.csv"
+        if not players_file.exists():
+            QMessageBox.warning(self, "Error", "Players file not found.")
+            return
+        players = {}
+        with players_file.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                pid = row.get("player_id", "").strip()
+                players[pid] = {
+                    "primary": row.get("primary_position", "").strip(),
+                    "others": row.get("other_positions", "").split("/") if row.get("other_positions") else [],
+                    "is_pitcher": row.get("is_pitcher") == "1",
+                }
+
+        teams = load_teams(data_dir / "teams.csv")
+        for team in teams:
+            try:
+                roster = load_roster(team.team_id)
+            except FileNotFoundError:
+                continue
+            act_ids = roster.act
+            lineup = []
+            used = set()
+            for pos in ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]:
+                for pid in players:
+                    if pid not in act_ids or pid in used:
+                        continue
+                    pdata = players[pid]
+                    if pos == "DH":
+                        if pdata["is_pitcher"]:
+                            continue
+                    else:
+                        if pos != pdata["primary"] and pos not in pdata["others"]:
+                            continue
+                    lineup.append((pid, pos))
+                    used.add(pid)
+                    break
+            lineup_dir = data_dir / "lineups"
+            lineup_dir.mkdir(parents=True, exist_ok=True)
+            for vs in ("vs_lhp", "vs_rhp"):
+                path = lineup_dir / f"{team.team_id}_{vs}.csv"
+                with path.open("w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["order", "player_id", "position"])
+                    for i, (pid, pos) in enumerate(lineup, start=1):
+                        writer.writerow([i, pid, pos])
+        QMessageBox.information(self, "Lineups Set", "Lineups auto-filled for all teams.")
+
+    def set_all_pitching_roles(self):
+        data_dir = get_base_dir() / "data"
+        players_file = data_dir / "players.csv"
+        if not players_file.exists():
+            QMessageBox.warning(self, "Error", "Players file not found.")
+            return
+        players = {}
+        with players_file.open("r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                pid = row.get("player_id", "").strip()
+                players[pid] = {
+                    "primary_position": row.get("primary_position", "").strip(),
+                    "role": row.get("role", "").strip(),
+                    "endurance": row.get("endurance", ""),
+                }
+
+        teams = load_teams(data_dir / "teams.csv")
+        for team in teams:
+            try:
+                roster = load_roster(team.team_id)
+            except FileNotFoundError:
+                continue
+            available = [
+                (pid, players[pid])
+                for pid in roster.act
+                if pid in players and get_role(players[pid])
+            ]
+            assignments = autofill_pitching_staff(available)
+            path = data_dir / "rosters" / f"{team.team_id}_pitching.csv"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                for role, pid in assignments.items():
+                    writer.writerow([pid, role])
+        QMessageBox.information(
+            self,
+            "Pitching Staff Set",
+            "Pitching roles auto-filled for all teams.",
+        )
 
     def open_create_league(self):
         confirm = QMessageBox.question(
