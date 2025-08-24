@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List
+from typing import Iterable, List, Any
 
 from PyQt6.QtWidgets import (
     QDialog,
@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
 
 from models.team import Team
 from models.base_player import BasePlayer
+from utils.stats_persistence import load_stats
 
 _BATTING_COLS: List[str] = [
     "g",
@@ -68,6 +69,18 @@ class LeagueStatsWindow(QDialog):
         team_list = list(teams)
         player_list = list(players)
 
+        stats = load_stats()
+        team_stats = stats.get("teams", {})
+        for team in team_list:
+            if not getattr(team, "season_stats", None) and team.team_id in team_stats:
+                team.season_stats = team_stats[team.team_id]
+        player_stats = stats.get("players", {})
+        for player in player_list:
+            pid = getattr(player, "player_id", None)
+            if pid and not getattr(player, "season_stats", None):
+                if pid in player_stats:
+                    player.season_stats = player_stats[pid]
+
         self.tabs.addTab(self._build_team_table(team_list), "Teams")
         batters = [p for p in player_list if not getattr(p, "is_pitcher", False)]
         pitchers = [p for p in player_list if getattr(p, "is_pitcher", False)]
@@ -84,7 +97,8 @@ class LeagueStatsWindow(QDialog):
             table.setItem(row, 0, QTableWidgetItem(name))
             stats = getattr(team, "season_stats", {}) or {}
             for col, key in enumerate(_TEAM_COLS, start=1):
-                table.setItem(row, col, QTableWidgetItem(str(stats.get(key, 0))))
+                value = stats.get(key, 0)
+                table.setItem(row, col, QTableWidgetItem(self._format_stat(value)))
         table.setSortingEnabled(True)
         return table
 
@@ -101,6 +115,12 @@ class LeagueStatsWindow(QDialog):
             stats = getattr(player, "season_stats", {}) or {}
             for col, key in enumerate(columns, start=1):
                 value = stats.get(key, 0)
-                table.setItem(row, col, QTableWidgetItem(str(value)))
+                table.setItem(row, col, QTableWidgetItem(self._format_stat(value)))
         table.setSortingEnabled(True)
         return table
+
+    def _format_stat(self, value: Any) -> str:
+        """Format numeric stats, limiting floats to three decimals."""
+        if isinstance(value, float):
+            return f"{value:.3f}"
+        return str(value)
