@@ -85,6 +85,14 @@ for example:
 pytest tests/test_simulation.py::test_run_tracking_and_boxscore -q
 ```
 
+### Season simulation script
+
+Run a full 162-game season and print average box score statistics with:
+
+```bash
+python scripts/simulate_season_avg.py
+```
+
 ### Building an executable
 Install PyInstaller and create a standalone binary with:
 
