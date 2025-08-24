@@ -169,10 +169,17 @@ class PlayerProfileDialog(QDialog):
 
     def _stats_to_dict(self, stats: Any) -> Dict[str, Any]:
         if isinstance(stats, dict):
-            return stats
-        if is_dataclass(stats):
-            return asdict(stats)
-        return {}
+            data = dict(stats)
+        elif is_dataclass(stats):
+            data = asdict(stats)
+        else:
+            return {}
+        # Normalize key names for extra-base hits
+        if "b2" in data and "2b" not in data:
+            data["2b"] = data.get("b2", 0)
+        if "b3" in data and "3b" not in data:
+            data["3b"] = data.get("b3", 0)
+        return data
 
     def _format_stat(self, value: Any) -> str:
         """Return a string, formatting floats to three decimals."""
