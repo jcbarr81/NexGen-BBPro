@@ -1,0 +1,33 @@
+/* ESPN-like theme */
+QDialog {
+    background-color: #ffffff;
+    color: #1a1a1a;
+    font-family: Arial, sans-serif;
+}
+
+QTableWidget {
+    gridline-color: #e0e0e0;
+    background-color: #ffffff;
+    alternate-background-color: #f9f9f9;
+}
+
+QHeaderView::section {
+    background-color: #C8102E;
+    color: #ffffff;
+    padding: 4px;
+    border: 0px;
+    font-weight: bold;
+}
+
+QGroupBox {
+    border: 1px solid #e0e0e0;
+    margin-top: 10px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 2px 5px;
+    background-color: #C8102E;
+    color: #ffffff;
+}
