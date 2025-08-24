@@ -68,7 +68,11 @@ class SeasonSimulator:
         current_date = self.dates[self._index]
         games = [g for g in self.schedule if g["date"] == current_date]
         for game in games:
-            self.simulate_game(game["home"], game["away"])
+            result = self.simulate_game(game["home"], game["away"])
+            # If the simulation returned a score tuple, store it on the game so
+            # persistence layers can record results and update standings.
+            if isinstance(result, tuple) and len(result) == 2:
+                game["result"] = f"{result[0]}-{result[1]}"
             # Allow the caller to persist results after each individual game
             # rather than waiting for the entire day to complete.  This makes
             # it possible to update standings, schedules and statistics even if
@@ -124,6 +128,7 @@ class SeasonSimulator:
         config = PlayBalanceConfig()
         sim = GameSimulation(home, away, config, random.Random())
         sim.simulate_game()
+        return home.runs, away.runs
 
 
 __all__ = ["SeasonSimulator"]
