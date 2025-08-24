@@ -59,6 +59,7 @@ class AdminDashboard(QMainWindow):
             f"background-image: url('{bg_url}');"
             "background-repeat: no-repeat;"
             "background-position: center;"
+            "background-size: contain;"
         )
         icon_dir = get_base_dir() / "images" / "buttons"
         icon_size = QSize(24, 24)
