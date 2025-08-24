@@ -2,8 +2,9 @@ import csv
 from pathlib import Path
 
 from models.player import Player
-from utils.path_utils import get_base_dir
 from models.pitcher import Pitcher
+from utils.path_utils import get_base_dir
+from utils.stats_persistence import load_stats
 
 
 def _required_int(row, key):
@@ -146,4 +147,9 @@ def load_players_from_csv(file_path):
                 )
 
             players.append(player)
+    stats = load_stats()
+    for player in players:
+        season = stats["players"].get(player.player_id)
+        if season:
+            player.season_stats = season
     return players

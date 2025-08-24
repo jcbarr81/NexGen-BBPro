@@ -64,6 +64,8 @@ class TeamStatsWindow(QDialog):
         self.roster = roster
 
         self.setWindowTitle("Team Statistics")
+        if callable(getattr(self, "resize", None)):
+            self.resize(1000, 600)
 
         layout = QVBoxLayout(self)
         self.tabs = QTabWidget()
