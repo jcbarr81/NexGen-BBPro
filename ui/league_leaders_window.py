@@ -23,6 +23,8 @@ class LeagueLeadersWindow(QDialog):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("League Leaders")
+        if callable(getattr(self, "resize", None)):
+            self.resize(1000, 600)
 
         layout = QVBoxLayout(self)
         self.table = QTableWidget()

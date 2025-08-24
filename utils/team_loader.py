@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from models.team import Team
 from utils.path_utils import get_base_dir
+from utils.stats_persistence import load_stats
 
 
 def _resolve_path(file_path: str | Path) -> Path:
@@ -33,6 +34,11 @@ def load_teams(file_path: str | Path = "data/teams.csv"):
                 owner_id=row["owner_id"],
             )
             teams.append(team)
+    stats = load_stats()
+    for team in teams:
+        season = stats["teams"].get(team.team_id)
+        if season:
+            team.season_stats = season
     return teams
 
 

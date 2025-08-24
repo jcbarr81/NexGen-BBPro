@@ -17,6 +17,7 @@ from logic.batter_ai import BatterAI
 from logic.bullpen import WarmupTracker
 from logic.fielding_ai import FieldingAI
 from utils.path_utils import get_base_dir
+from utils.stats_persistence import save_stats
 from .stats import (
     compute_batting_derived,
     compute_batting_rates,
@@ -541,6 +542,17 @@ class GameSimulation:
             team.team_stats = season
             if team.team is not None:
                 team.team.season_stats = season
+
+        players: Dict[str, Player] = {}
+        for state in (self.home, self.away):
+            for bs in state.lineup_stats.values():
+                players[bs.player.player_id] = bs.player
+            for ps in state.pitcher_stats.values():
+                players[ps.player.player_id] = ps.player
+            for fs in state.fielding_stats.values():
+                players[fs.player.player_id] = fs.player
+        teams = [t.team for t in (self.home, self.away) if t.team is not None]
+        save_stats(players.values(), teams)
 
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
