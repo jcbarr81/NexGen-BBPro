@@ -28,6 +28,7 @@ class SeasonProgressWindow(QDialog):
         super().__init__(parent)
         try:
             self.setWindowTitle("Season Progress")
+            self.setMinimumSize(300, 200)
         except Exception:  # pragma: no cover - harmless in headless tests
             pass
 
