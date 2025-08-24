@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>{{league}} Box Score</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+        th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
+        th { background: #f0f0f0; }
+        h2, h3 { margin: 0.5em 0; }
+    </style>
+</head>
+<body>
+    <h2>{{league}} Box Score</h2>
+    <h3>{{away.name}} {{away.score}}, {{home.name}} {{home.score}}</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>1</th>
+                <th>2</th>
+                <th>3</th>
+                <th>4</th>
+                <th>5</th>
+                <th>6</th>
+                <th>7</th>
+                <th>8</th>
+                <th>9</th>
+                <th>R</th>
+                <th>H</th>
+                <th>E</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>{{away.abbr}}</th>
+                <td>{{linescore.away[0]}}</td>
+                <td>{{linescore.away[1]}}</td>
+                <td>{{linescore.away[2]}}</td>
+                <td>{{linescore.away[3]}}</td>
+                <td>{{linescore.away[4]}}</td>
+                <td>{{linescore.away[5]}}</td>
+                <td>{{linescore.away[6]}}</td>
+                <td>{{linescore.away[7]}}</td>
+                <td>{{linescore.away[8]}}</td>
+                <td>{{totals.away.r}}</td>
+                <td>{{totals.away.h}}</td>
+                <td>{{totals.away.e}}</td>
+            </tr>
+            <tr>
+                <th>{{home.abbr}}</th>
+                <td>{{linescore.home[0]}}</td>
+                <td>{{linescore.home[1]}}</td>
+                <td>{{linescore.home[2]}}</td>
+                <td>{{linescore.home[3]}}</td>
+                <td>{{linescore.home[4]}}</td>
+                <td>{{linescore.home[5]}}</td>
+                <td>{{linescore.home[6]}}</td>
+                <td>{{linescore.home[7]}}</td>
+                <td>{{linescore.home[8]}}</td>
+                <td>{{totals.home.r}}</td>
+                <td>{{totals.home.h}}</td>
+                <td>{{totals.home.e}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>{{away.abbr}} Batting</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>AB</th>
+                <th>R</th>
+                <th>H</th>
+                <th>RBI</th>
+                <th>BB</th>
+                <th>K</th>
+                <th>HR</th>
+                <th>AVG</th>
+                <th>OBP</th>
+                <th>SLG</th>
+            </tr>
+        </thead>
+        <tbody>
+{{#for batter in batting.away}}
+            <tr>
+                <td>{{batter.name}}</td>
+                <td>{{batter.pos}}</td>
+                <td>{{batter.AB}}</td>
+                <td>{{batter.R}}</td>
+                <td>{{batter.H}}</td>
+                <td>{{batter.RBI}}</td>
+                <td>{{batter.BB}}</td>
+                <td>{{batter.K}}</td>
+                <td>{{batter.HR}}</td>
+                <td>{{batter.AVG}}</td>
+                <td>{{batter.OBP}}</td>
+                <td>{{batter.SLG}}</td>
+            </tr>
+{{/for}}
+            <tr>
+                <th>Totals</th>
+                <td></td>
+                <td>{{batting_totals.away.AB}}</td>
+                <td>{{batting_totals.away.R}}</td>
+                <td>{{batting_totals.away.H}}</td>
+                <td>{{batting_totals.away.RBI}}</td>
+                <td>{{batting_totals.away.BB}}</td>
+                <td>{{batting_totals.away.K}}</td>
+                <td>{{batting_totals.away.HR}}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+    <p>{{notes.away.batting}}</p>
+    <p>{{notes.away.risp}}</p>
+    <p>{{notes.away.fielding}}</p>
+
+    <h3>{{home.abbr}} Batting</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>AB</th>
+                <th>R</th>
+                <th>H</th>
+                <th>RBI</th>
+                <th>BB</th>
+                <th>K</th>
+                <th>HR</th>
+                <th>AVG</th>
+                <th>OBP</th>
+                <th>SLG</th>
+            </tr>
+        </thead>
+        <tbody>
+{{#for batter in batting.home}}
+            <tr>
+                <td>{{batter.name}}</td>
+                <td>{{batter.pos}}</td>
+                <td>{{batter.AB}}</td>
+                <td>{{batter.R}}</td>
+                <td>{{batter.H}}</td>
+                <td>{{batter.RBI}}</td>
+                <td>{{batter.BB}}</td>
+                <td>{{batter.K}}</td>
+                <td>{{batter.HR}}</td>
+                <td>{{batter.AVG}}</td>
+                <td>{{batter.OBP}}</td>
+                <td>{{batter.SLG}}</td>
+            </tr>
+{{/for}}
+            <tr>
+                <th>Totals</th>
+                <td></td>
+                <td>{{batting_totals.home.AB}}</td>
+                <td>{{batting_totals.home.R}}</td>
+                <td>{{batting_totals.home.H}}</td>
+                <td>{{batting_totals.home.RBI}}</td>
+                <td>{{batting_totals.home.BB}}</td>
+                <td>{{batting_totals.home.K}}</td>
+                <td>{{batting_totals.home.HR}}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+    <p>{{notes.home.batting}}</p>
+    <p>{{notes.home.risp}}</p>
+    <p>{{notes.home.fielding}}</p>
+
+    <h3>{{away.abbr}} Pitching</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Pitcher</th>
+                <th>IP</th>
+                <th>H</th>
+                <th>R</th>
+                <th>ER</th>
+                <th>BB</th>
+                <th>K</th>
+                <th>HR</th>
+                <th>PC-ST</th>
+                <th>ERA</th>
+            </tr>
+        </thead>
+        <tbody>
+{{#for pitcher in pitching.away}}
+            <tr>
+                <td>{{pitcher.name}}</td>
+                <td>{{pitcher.IP}}</td>
+                <td>{{pitcher.H}}</td>
+                <td>{{pitcher.R}}</td>
+                <td>{{pitcher.ER}}</td>
+                <td>{{pitcher.BB}}</td>
+                <td>{{pitcher.K}}</td>
+                <td>{{pitcher.HR}}</td>
+                <td>{{pitcher.PC-ST}}</td>
+                <td>{{pitcher.ERA}}</td>
+            </tr>
+{{/for}}
+        </tbody>
+    </table>
+
+    <h3>{{home.abbr}} Pitching</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Pitcher</th>
+                <th>IP</th>
+                <th>H</th>
+                <th>R</th>
+                <th>ER</th>
+                <th>BB</th>
+                <th>K</th>
+                <th>HR</th>
+                <th>PC-ST</th>
+                <th>ERA</th>
+            </tr>
+        </thead>
+        <tbody>
+{{#for pitcher in pitching.home}}
+            <tr>
+                <td>{{pitcher.name}}</td>
+                <td>{{pitcher.IP}}</td>
+                <td>{{pitcher.H}}</td>
+                <td>{{pitcher.R}}</td>
+                <td>{{pitcher.ER}}</td>
+                <td>{{pitcher.BB}}</td>
+                <td>{{pitcher.K}}</td>
+                <td>{{pitcher.HR}}</td>
+                <td>{{pitcher.PC-ST}}</td>
+                <td>{{pitcher.ERA}}</td>
+            </tr>
+{{/for}}
+        </tbody>
+    </table>
+</body>
+</html>
