@@ -20,6 +20,7 @@ from logic.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
 from logic.season_simulator import SeasonSimulator
 from logic.schedule_generator import generate_mlb_schedule, save_schedule
+from logic.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
 
 
@@ -350,6 +351,11 @@ class SeasonProgressWindow(QDialog):
         """
 
         game["played"] = "1"
+        html = game.pop("boxscore_html", None)
+        if html:
+            game_id = f"{game.get('date','')}_{game.get('away','')}_at_{game.get('home','')}"
+            path = save_boxscore_html("season", html, game_id)
+            game["boxscore"] = path
         save_schedule(self.simulator.schedule, SCHEDULE_FILE)
 
         # Update simple win/loss standings from the game's result.

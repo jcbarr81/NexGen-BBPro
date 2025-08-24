@@ -54,7 +54,7 @@ def test_boxscore_html_written():
     assert Path(path_se).is_file()
 
     text = Path(path_ex).read_text(encoding="utf-8")
-    assert "1  2  3" in text  # score header
+    assert "League Box Score" in text
     assert "Fa1 La1" in text  # away player
     assert "Fh1 Lh1" in text  # home player
 

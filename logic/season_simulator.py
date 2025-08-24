@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import Callable, Dict, Iterable, List
 import random
 
-from logic.simulation import GameSimulation, TeamState
+from logic.simulation import (
+    GameSimulation,
+    TeamState,
+    generate_boxscore,
+    render_boxscore_html,
+)
 from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
@@ -71,8 +76,11 @@ class SeasonSimulator:
             result = self.simulate_game(game["home"], game["away"])
             # If the simulation returned a score tuple, store it on the game so
             # persistence layers can record results and update standings.
-            if isinstance(result, tuple) and len(result) == 2:
-                game["result"] = f"{result[0]}-{result[1]}"
+            if isinstance(result, tuple):
+                if len(result) >= 2:
+                    game["result"] = f"{result[0]}-{result[1]}"
+                if len(result) >= 3 and isinstance(result[2], str):
+                    game["boxscore_html"] = result[2]
             # Allow the caller to persist results after each individual game
             # rather than waiting for the entire day to complete.  This makes
             # it possible to update standings, schedules and statistics even if
@@ -85,14 +93,15 @@ class SeasonSimulator:
         self._index += 1
 
     # ------------------------------------------------------------------
-    def _default_simulate_game(self, home_id: str, away_id: str) -> tuple[int, int]:
+    def _default_simulate_game(
+        self, home_id: str, away_id: str
+    ) -> tuple[int, int, str]:
         """Run a full pitch-by-pitch simulation between two teams.
 
         This constructs team states from the default player and roster data and
-        then runs :class:`~logic.simulation.GameSimulation` using the same
-        configuration employed for exhibition games.  The resulting runs scored
-        by each club are returned so callers can persist results or update
-        standings.
+        then runs :class:`~logic.simulation.GameSimulation`.  The resulting runs
+        scored by each club are returned along with rendered box score HTML so
+        callers can persist results or update standings.
         """
 
         home = build_default_game_state(home_id)
@@ -100,7 +109,9 @@ class SeasonSimulator:
         cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
         sim = GameSimulation(home, away, cfg, random.Random())
         sim.simulate_game()
-        return home.runs, away.runs
+        box = generate_boxscore(home, away)
+        html = render_boxscore_html(box, home_name=home_id, away_name=away_id)
+        return home.runs, away.runs, html
 
 
 __all__ = ["SeasonSimulator"]
