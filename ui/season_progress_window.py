@@ -8,6 +8,13 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
+try:  # pragma: no cover - fallback for environments without PyQt6
+    from PyQt6.QtWidgets import QApplication
+except ImportError:  # pragma: no cover - simple stub for tests
+    class QApplication:  # type: ignore
+        @staticmethod
+        def processEvents() -> None:  # pragma: no cover - no-op
+            pass
 from datetime import date
 import csv
 import json
@@ -311,6 +318,7 @@ class SeasonProgressWindow(QDialog):
             progress.setCancelButton(None)
             progress.setValue(0)
             progress.show()
+            QApplication.processEvents()
         except Exception:  # pragma: no cover
             pass
 
@@ -322,6 +330,7 @@ class SeasonProgressWindow(QDialog):
             completed += 1
             try:  # pragma: no cover - gui only
                 progress.setValue(completed)
+                QApplication.processEvents()
             except Exception:  # pragma: no cover
                 pass
             if original_after is not None:
