@@ -16,6 +16,7 @@ class DummySignal:
 class Dummy:
     def __init__(self, *args, **kwargs):
         self.clicked = DummySignal()
+        self._enabled = True
 
     def __getattr__(self, name):
         return Dummy()
@@ -37,6 +38,12 @@ class Dummy:
 
     def connect(self, *a, **k):
         pass
+
+    def setEnabled(self, value):
+        self._enabled = value
+
+    def isEnabled(self):
+        return self._enabled
 
     def setWindowTitle(self, *a, **k):
         pass
@@ -178,3 +185,43 @@ def test_offseason_resets_to_preseason():
     assert "old" not in win.manager.players
     import logic.season_manager as sm
     assert sm.TRADE_DEADLINE.year == date.today().year + 1
+
+
+def test_preseason_actions_require_sequence():
+    class PreseasonManager:
+        def __init__(self):
+            self.phase = SeasonPhase.PRESEASON
+            self.players = {}
+            team_a = types.SimpleNamespace(
+                abbreviation="A", act_roster=[], aaa_roster=[], low_roster=[]
+            )
+            team_b = types.SimpleNamespace(
+                abbreviation="B", act_roster=[], aaa_roster=[], low_roster=[]
+            )
+            self.teams = [team_a, team_b]
+
+        def handle_phase(self):
+            return "Preseason"
+
+        def save(self):
+            pass
+
+        def advance_phase(self):
+            self.phase = self.phase.next()
+
+    spw.SeasonManager = PreseasonManager
+    win = spw.SeasonProgressWindow()
+
+    assert not win.training_camp_button.isEnabled()
+    assert not win.generate_schedule_button.isEnabled()
+    assert not win.next_button.isEnabled()
+
+    win.free_agency_button.clicked.emit()
+    assert win.training_camp_button.isEnabled()
+
+    win.training_camp_button.clicked.emit()
+    assert win.generate_schedule_button.isEnabled()
+
+    win.generate_schedule_button.clicked.emit()
+    assert len(win.simulator.schedule) == 162
+    assert win.next_button.isEnabled()

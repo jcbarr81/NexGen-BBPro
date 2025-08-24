@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Iterable, List, Dict
 import csv
 
-__all__ = ["generate_schedule", "save_schedule"]
+__all__ = ["generate_schedule", "generate_mlb_schedule", "save_schedule"]
 
 
 def _round_robin_pairs(teams: List[str]) -> List[List[tuple[str, str]]]:
@@ -111,6 +111,79 @@ def generate_schedule(teams: Iterable[str], start_date: date) -> List[Dict[str, 
                 "away": home,
             })
         current += timedelta(days=1)
+
+    return schedule
+
+
+def generate_mlb_schedule(
+    teams: Iterable[str], start_date: date, games_per_team: int = 162
+) -> List[Dict[str, str]]:
+    """Generate a full 162-game schedule for each team.
+
+    The algorithm builds upon :func:`generate_schedule` which creates a single
+    double round-robin cycle with an All-Star break.  That base cycle is
+    repeated as many times as necessary and truncated so that every club plays
+    exactly *games_per_team* contests (81 home and 81 away when using the
+    default).
+
+    Parameters
+    ----------
+    teams:
+        Iterable of team identifiers/names.
+    start_date:
+        Date of the first day of the schedule.
+    games_per_team:
+        Total number of games each team should play.  Defaults to ``162`` to
+        mirror the length of a Major League Baseball season.
+
+    Returns
+    -------
+    list of dict
+        Each dictionary contains ``date`` (ISO formatted string), ``home`` team
+        and ``away`` team keys representing a single game.
+    """
+
+    teams_list = list(teams)
+    if not teams_list:
+        return []
+
+    base_cycle = generate_schedule(teams_list, start_date)
+    first = date.fromisoformat(base_cycle[0]["date"])
+    last = date.fromisoformat(base_cycle[-1]["date"])
+    cycle_span = (last - first).days + 1
+    games_per_cycle_per_team = 2 * (len(teams_list) - 1)
+
+    full_cycles, remainder = divmod(games_per_team, games_per_cycle_per_team)
+
+    schedule: List[Dict[str, str]] = []
+    offset = 0
+
+    # Add complete cycles
+    for _ in range(full_cycles):
+        for game in base_cycle:
+            adjusted_date = (
+                date.fromisoformat(game["date"]) + timedelta(days=offset)
+            ).isoformat()
+            schedule.append(
+                {"date": adjusted_date, "home": game["home"], "away": game["away"]}
+            )
+        offset += cycle_span
+
+    if remainder:
+        extra_counts = {t: 0 for t in teams_list}
+        for game in base_cycle:
+            home = game["home"]
+            away = game["away"]
+            if extra_counts[home] >= remainder or extra_counts[away] >= remainder:
+                continue
+            adjusted_date = (
+                date.fromisoformat(game["date"]) + timedelta(days=offset)
+            ).isoformat()
+            schedule.append({"date": adjusted_date, "home": home, "away": away})
+            extra_counts[home] += 1
+            extra_counts[away] += 1
+            if all(c >= remainder for c in extra_counts.values()):
+                break
 
     return schedule
 
