@@ -101,18 +101,18 @@ def test_player_profile_dialog_uses_history(monkeypatch):
 
     calls = []
 
-    def fake_build_grid(self, title, data):
-        calls.append(title)
+    def fake_build_stats_table(self, rows):
+        calls.append(rows)
         return Dummy()
 
-    monkeypatch.setattr(ppd.PlayerProfileDialog, "_build_grid", fake_build_grid)
+    monkeypatch.setattr(ppd.PlayerProfileDialog, "_build_stats_table", fake_build_stats_table)
 
     ppd.PlayerProfileDialog(player)
 
-    assert "Year 1 Ratings" in calls
-    assert "Year 1 Stats" in calls
-    assert "Year 2 Ratings" in calls
-    assert "Year 2 Stats" in calls
+    assert calls, "Stats table should be built"
+    years = [r[0] for r in calls[0]]
+    assert "Year 1" in years
+    assert "Year 2" in years
 
 
 def test_player_profile_dialog_handles_missing_positions(monkeypatch):
@@ -135,5 +135,14 @@ def test_player_profile_dialog_handles_missing_positions(monkeypatch):
         gf=40,
     )
 
+    calls: list = []
+
+    def fake_build_stats_table(self, rows):
+        calls.append(rows)
+        return Dummy()
+
+    monkeypatch.setattr(ppd.PlayerProfileDialog, "_build_stats_table", fake_build_stats_table)
+
     dlg = ppd.PlayerProfileDialog(player)
     assert dlg is not None
+    assert calls and calls[0] == []
