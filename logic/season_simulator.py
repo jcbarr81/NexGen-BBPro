@@ -6,6 +6,7 @@ import random
 from models.player import Player
 from models.pitcher import Pitcher
 from logic.simulation import GameSimulation, TeamState
+from logic.playbalance_config import PlayBalanceConfig
 
 
 class SeasonSimulator:
@@ -66,14 +67,47 @@ class SeasonSimulator:
 
     # ------------------------------------------------------------------
     def _default_simulate_game(self, home_id: str, away_id: str) -> None:
-        """Run a minimal game simulation between two placeholder teams."""
-        batter_h = Player(first_name="Home", last_name=home_id)
-        pitcher_h = Pitcher(first_name="Home", last_name=home_id)
-        batter_a = Player(first_name="Away", last_name=away_id)
-        pitcher_a = Pitcher(first_name="Away", last_name=away_id)
+        """Run a minimal game simulation between two placeholder teams.
+
+        The :class:`Player` and :class:`Pitcher` classes require a number of
+        positional fields (e.g. ``player_id``, ``birthdate``) which are not
+        relevant for a tiny self-contained simulation.  Previously this method
+        attempted to instantiate these classes with only names, which raised a
+        :class:`TypeError`.  To keep the simulator light-weight while still
+        honouring the data model, we construct the objects with simple placeholder
+        values for the required attributes.
+        """
+
+        def _placeholder(
+            cls, first: str, last: str, position: str, **extra
+        ):
+            """Create a minimal player instance with required attributes."""
+
+            base = dict(
+                player_id=f"{first[0]}{last}",
+                first_name=first,
+                last_name=last,
+                birthdate="2000-01-01",
+                height=72,
+                weight=180,
+                bats="R",
+                primary_position=position,
+                other_positions=[],
+                gf=50,
+            )
+            base.update(extra)
+            return cls(**base)
+
+        batter_h = _placeholder(Player, "Home", home_id, "DH")
+        pitcher_h = _placeholder(Pitcher, "Home", home_id, "P", fb=50)
+        batter_a = _placeholder(Player, "Away", away_id, "DH")
+        pitcher_a = _placeholder(Pitcher, "Away", away_id, "P", fb=50)
+
         home = TeamState(lineup=[batter_h], bench=[], pitchers=[pitcher_h])
         away = TeamState(lineup=[batter_a], bench=[], pitchers=[pitcher_a])
-        sim = GameSimulation(home, away, {}, random.Random())
+
+        config = PlayBalanceConfig()
+        sim = GameSimulation(home, away, config, random.Random())
         sim.simulate_game()
 
 
