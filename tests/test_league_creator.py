@@ -157,3 +157,26 @@ def test_create_league_clears_users_and_rosters(tmp_path, monkeypatch):
     assert users_file.exists()
     assert users_file.read_text() == "admin,pass,admin,\n"
     assert not stray.exists()
+
+
+def test_create_league_purges_old_files_but_keeps_avatars(tmp_path):
+    root_dir = tmp_path
+    data_dir = root_dir / "data"
+    data_dir.mkdir()
+    old_file = data_dir / "old.txt"
+    old_file.write_text("old")
+    old_dir = data_dir / "lineups"
+    old_dir.mkdir()
+    (old_dir / "dummy.csv").write_text("x")
+
+    avatars_dir = root_dir / "images" / "avatars"
+    avatars_dir.mkdir(parents=True)
+    avatar = avatars_dir / "p1.png"
+    avatar.write_text("img")
+
+    divisions = {"East": [("CityA", "Cats")]}
+    create_league(str(data_dir), divisions, "Test League")
+
+    assert not old_file.exists()
+    assert not old_dir.exists()
+    assert avatar.exists()

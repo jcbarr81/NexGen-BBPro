@@ -1,5 +1,4 @@
 import colorsys
-import os
 import csv
 import shutil
 from pathlib import Path
@@ -105,12 +104,27 @@ def _dict_to_model(data: dict):
         )
 
 
+def _purge_old_league(base_dir: Path) -> None:
+    """Remove remnants of a previous league from ``base_dir``.
+
+    Static resources required for league generation are preserved. Player
+    avatars reside outside ``base_dir`` and are therefore untouched.
+    """
+    keep = {"names.csv", "ballparks.py", "MLB_avg"}
+    for item in base_dir.iterdir():
+        if item.name in keep:
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
+
+
 def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
+    _purge_old_league(base_dir)
     rosters_dir = base_dir / "rosters"
-    if rosters_dir.exists():
-        shutil.rmtree(rosters_dir)
     rosters_dir.mkdir(parents=True, exist_ok=True)
 
     clear_users()
