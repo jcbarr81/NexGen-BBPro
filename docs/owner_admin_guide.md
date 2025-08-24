@@ -44,6 +44,7 @@ Administrators control league configuration and high-level operations.
 - **Create League**: generate a new league structure (overwrites current data).
 - **Add User**: create a new account with optional team assignment.
 - **Edit User**: update passwords and team associations for existing accounts.
+- **Open Team Dashboard**: launch any team's owner dashboard for direct management.
 
 ### Trade Oversight
 - **Review Trades**: approve or reject pending trades submitted by teams.
