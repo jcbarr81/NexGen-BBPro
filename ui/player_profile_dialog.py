@@ -34,22 +34,10 @@ class PlayerProfileDialog(QDialog):
 
         ratings = self._collect_ratings()
         if ratings:
-            layout.addWidget(self._build_grid("Ratings", ratings))
+            layout.addWidget(self._build_horizontal_grid("Ratings", ratings))
 
-        for attr, label in [
-            ("season_stats", "Season Stats"),
-            ("career_stats", "Career Stats"),
-        ]:
-            if hasattr(player, attr):
-                stats = self._stats_to_dict(getattr(player, attr))
-                if stats:
-                    layout.addWidget(self._build_grid(label, stats))
-
-        for year, r_hist, s_hist in self._load_history():
-            if r_hist:
-                layout.addWidget(self._build_grid(f"{year} Ratings", r_hist))
-            if s_hist:
-                layout.addWidget(self._build_grid(f"{year} Stats", s_hist))
+        stats_history = self._collect_stats_history()
+        layout.addWidget(self._build_stats_table(stats_history))
 
         self.setLayout(layout)
         self._apply_espn_style()
@@ -128,6 +116,24 @@ class PlayerProfileDialog(QDialog):
                 ratings[key] = val
         return ratings
 
+    def _collect_stats_history(self) -> List[Tuple[str, Dict[str, Any]]]:
+        """Gather season, career and historical stats for the player."""
+
+        history: List[Tuple[str, Dict[str, Any]]] = []
+        for year, _r_hist, s_hist in self._load_history():
+            if s_hist:
+                history.append((year, s_hist))
+
+        season = self._stats_to_dict(getattr(self.player, "season_stats", {}))
+        if season:
+            history.append(("Current", season))
+
+        career = self._stats_to_dict(getattr(self.player, "career_stats", {}))
+        if career:
+            history.append(("Career", career))
+
+        return history
+
     def _stats_to_dict(self, stats: Any) -> Dict[str, Any]:
         if isinstance(stats, dict):
             return stats
@@ -162,16 +168,45 @@ class PlayerProfileDialog(QDialog):
             history.append((f"Year {idx}", ratings, stats))
         return history
 
-    def _build_grid(self, title: str, data: Dict[str, Any]) -> QGroupBox:
+    def _build_horizontal_grid(self, title: str, data: Dict[str, Any]) -> QGroupBox:
+        """Create a two-row grid with headers across the top."""
+
         group = QGroupBox(title)
         grid = QGridLayout()
-        for row, (key, val) in enumerate(data.items()):
+        for col, (key, val) in enumerate(data.items()):
             grid.addWidget(
                 QLabel(str(key).replace("_", " ").title()),
-                row,
                 0,
+                col,
             )
-            grid.addWidget(QLabel(str(val)), row, 1)
+            grid.addWidget(QLabel(str(val)), 1, col)
+        group.setLayout(grid)
+        return group
+
+    def _build_stats_table(self, rows: List[Tuple[str, Dict[str, Any]]]) -> QGroupBox:
+        """Create a grid showing stats by year with columns for each stat."""
+
+        group = QGroupBox("Stats")
+        grid = QGridLayout()
+        if not rows:
+            grid.addWidget(QLabel("No stats available"), 0, 0)
+            group.setLayout(grid)
+            return group
+
+        columns = sorted({k for _year, data in rows for k in data.keys()})
+        grid.addWidget(QLabel("Year"), 0, 0)
+        for col, key in enumerate(columns, start=1):
+            grid.addWidget(
+                QLabel(str(key).replace("_", " ").title()),
+                0,
+                col,
+            )
+
+        for row_idx, (year, data) in enumerate(rows, start=1):
+            grid.addWidget(QLabel(year), row_idx, 0)
+            for col_idx, key in enumerate(columns, start=1):
+                grid.addWidget(QLabel(str(data.get(key, ""))), row_idx, col_idx)
+
         group.setLayout(grid)
         return group
 
