@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget,
+    QMainWindow,
     QVBoxLayout,
     QLabel,
     QPushButton,
@@ -11,6 +12,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QMenuBar,
+    QStatusBar,
     QProgressDialog,
     QApplication,
     QTabWidget,
@@ -36,7 +38,7 @@ import random
 import shutil
 from logic.league_creator import create_league
 
-class AdminDashboard(QWidget):
+class AdminDashboard(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Admin Dashboard")
@@ -46,9 +48,11 @@ class AdminDashboard(QWidget):
 
         self.team_dashboards: list[OwnerDashboard] = []
 
+        central_widget = QWidget()
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
+        central_widget.setLayout(layout)
         icon_dir = os.path.join(os.path.dirname(__file__), "icons")
         icon_size = QSize(24, 24)
 
@@ -56,7 +60,7 @@ class AdminDashboard(QWidget):
         file_menu = menubar.addMenu("File")
         exit_action = file_menu.addAction("Exit")
         exit_action.triggered.connect(QApplication.quit)
-        layout.setMenuBar(menubar)
+        self.setMenuBar(menubar)
 
         header = QLabel("Welcome to the Admin Dashboard")
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -175,7 +179,11 @@ class AdminDashboard(QWidget):
         layout.addWidget(tabs)
         layout.addStretch()
 
-        self.setLayout(layout)
+        self.setCentralWidget(central_widget)
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        self.status_bar.showMessage("Ready")
+
         self.apply_stylesheet()
 
     def apply_stylesheet(self):
