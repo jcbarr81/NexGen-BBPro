@@ -1553,6 +1553,8 @@ def render_boxscore_html(
     for key, value in repl.items():
         template = template.replace(f"{{{{{key}}}}}", str(value))
 
+    # Remove any unreplaced placeholders to avoid leaking template tokens
+    template = re.sub(r"{{[^{}]+}}", "", template)
     return template
 
 
