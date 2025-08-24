@@ -41,12 +41,15 @@ class TeamEntryDialog(QDialog):
                 )
 
         btn_row = QHBoxLayout()
+        random_all_btn = QPushButton("Randomize All")
         save_btn = QPushButton("Save")
         cancel_btn = QPushButton("Cancel")
+        btn_row.addWidget(random_all_btn)
         btn_row.addWidget(save_btn)
         btn_row.addWidget(cancel_btn)
         layout.addLayout(btn_row)
 
+        random_all_btn.clicked.connect(self._random_fill_all)
         save_btn.clicked.connect(self._handle_save)
         cancel_btn.clicked.connect(self.reject)
 
@@ -61,6 +64,18 @@ class TeamEntryDialog(QDialog):
             return
         city_edit.setText(city)
         name_edit.setText(nickname)
+
+    def _random_fill_all(self) -> None:
+        """Populate all team fields with random names."""
+        for fields in self._inputs.values():
+            for city_edit, name_edit in fields:
+                try:
+                    city, nickname = random_team()
+                except RuntimeError as exc:
+                    QMessageBox.warning(self, "Names Exhausted", str(exc))
+                    return
+                city_edit.setText(city)
+                name_edit.setText(nickname)
 
     def _handle_save(self):
         for fields in self._inputs.values():

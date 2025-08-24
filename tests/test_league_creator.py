@@ -1,7 +1,7 @@
 import csv
 from collections import Counter
 from datetime import date
-from logic.league_creator import create_league, _dict_to_model
+from logic.league_creator import create_league, _dict_to_model, _abbr
 from models.pitcher import Pitcher
 from logic.player_generator import reset_name_cache
 from utils.team_loader import load_teams
@@ -59,6 +59,15 @@ def test_create_league_generates_files(tmp_path):
                 assert 18 <= age <= 21
     with open(league_path) as f:
         assert f.read() == "Test League"
+
+
+def test_abbr_uses_city_only():
+    existing = set()
+    assert _abbr("Dallas", "Wolves", existing) == "DAL"
+    # Subsequent team from a different city uses that city's letters
+    assert _abbr("Denver", "Wolves", existing) == "DEN"
+    # A repeat city receives a numeric suffix
+    assert _abbr("Dallas", "Bears", existing) == "DAL1"
 
 
 def test_create_league_assigns_unique_color_pairs(tmp_path):
