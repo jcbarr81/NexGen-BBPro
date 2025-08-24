@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
     QVBoxLayout,
+    QMessageBox,
 )
 from datetime import date
 import csv
@@ -230,7 +231,13 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     def _simulate_day(self) -> None:
         """Trigger simulation for a single schedule day."""
-        self.simulator.simulate_next_day()
+        try:
+            self.simulator.simulate_next_day()
+        except (FileNotFoundError, ValueError) as e:
+            QMessageBox.warning(
+                self, "Missing Lineup or Pitching", str(e)
+            )
+            return
         remaining = self.simulator.remaining_days()
         self.remaining_label.setText(f"Days until Midseason: {remaining}")
         log_news_event(

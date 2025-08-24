@@ -74,11 +74,20 @@ class QVBoxLayout(Dummy):
     pass
 
 
+class QMessageBox:
+    last = None
+
+    @staticmethod
+    def warning(parent, title, message):
+        QMessageBox.last = (title, message)
+
+
 qtwidgets = types.ModuleType("PyQt6.QtWidgets")
 qtwidgets.QDialog = QDialog
 qtwidgets.QLabel = QLabel
 qtwidgets.QPushButton = QPushButton
 qtwidgets.QVBoxLayout = QVBoxLayout
+qtwidgets.QMessageBox = QMessageBox
 sys.modules["PyQt6"] = types.ModuleType("PyQt6")
 sys.modules["PyQt6.QtWidgets"] = qtwidgets
 
@@ -99,9 +108,10 @@ class DummyManager:
 
 
 spw.SeasonManager = DummyManager
+spw.QMessageBox = QMessageBox
 
 
-def test_simulate_day_until_midseason():
+def test_simulate_day_until_midseason(tmp_path, monkeypatch):
     schedule = [
         {"date": "2024-04-01", "home": "A", "away": "B"},
         {"date": "2024-04-02", "home": "A", "away": "B"},
@@ -114,6 +124,7 @@ def test_simulate_day_until_midseason():
     def fake_sim(home, away):
         games.append((home, away))
 
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
     win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
     assert win.remaining_label.text() == "Days until Midseason: 2"
 
@@ -135,6 +146,21 @@ def test_simulate_day_until_midseason():
     # Further clicks should not simulate more games
     win.simulate_day_button.clicked.emit()
     assert games == [("A", "B"), ("A", "B"), ("A", "B"), ("A", "B")]
+
+
+def test_simulate_day_warns_when_missing_data(tmp_path, monkeypatch):
+    schedule = [{"date": "2024-04-01", "home": "A", "away": "B"}]
+
+    def bad_sim(home, away):  # pragma: no cover - simple stub
+        raise FileNotFoundError("Team A lineup missing")
+
+    QMessageBox.last = None
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=bad_sim)
+    win.simulate_day_button.clicked.emit()
+    assert QMessageBox.last == (
+        "Missing Lineup or Pitching", "Team A lineup missing"
+    )
 
 
 from datetime import date
