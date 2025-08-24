@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (
     QTabWidget,
 )
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QPixmap, QPainter
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from ui.playbalance_editor import PlayBalanceEditor
@@ -38,6 +38,27 @@ import random
 import shutil
 from logic.league_creator import create_league
 
+
+class BackgroundWidget(QWidget):
+    """Widget that paints a scaled background image."""
+
+    def __init__(self, image_path: str):
+        super().__init__()
+        self._pixmap = QPixmap(image_path)
+
+    def paintEvent(self, event):  # pragma: no cover - simple painting
+        painter = QPainter(self)
+        scaled = self._pixmap.scaled(
+            self.size(),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        x = (self.width() - scaled.width()) // 2
+        y = (self.height() - scaled.height()) // 2
+        painter.drawPixmap(x, y, scaled)
+        super().paintEvent(event)
+
+
 class AdminDashboard(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -48,18 +69,12 @@ class AdminDashboard(QMainWindow):
 
         self.team_dashboards: list[OwnerDashboard] = []
 
-        central_widget = QWidget()
+        bg_path = get_base_dir() / "logo" / "Admin-Dashboard.png"
+        central_widget = BackgroundWidget(str(bg_path))
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
         central_widget.setLayout(layout)
-        bg_path = get_base_dir() / "logo" / "Admin-Dashboard.png"
-        bg_url = bg_path.as_posix()
-        central_widget.setStyleSheet(
-            f"background-image: url('{bg_url}');"
-            "background-repeat: no-repeat;"
-            "background-position: center;"
-        )
         icon_dir = get_base_dir() / "images" / "buttons"
         icon_size = QSize(24, 24)
 
