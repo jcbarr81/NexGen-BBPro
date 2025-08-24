@@ -5,6 +5,10 @@ QDialog {
     font-family: Arial, sans-serif;
 }
 
+QLabel {
+    color: #1a1a1a;
+}
+
 QTableWidget {
     gridline-color: #e0e0e0;
     background-color: #ffffff;
@@ -22,6 +26,7 @@ QHeaderView::section {
 QGroupBox {
     border: 1px solid #e0e0e0;
     margin-top: 10px;
+    color: #1a1a1a;
 }
 
 QGroupBox::title {
