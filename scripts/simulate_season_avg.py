@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date
+from pathlib import Path
 import random
+import sys
+
+# Ensure project root is on the path when running this script directly
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from logic.schedule_generator import generate_mlb_schedule
 from logic.season_simulator import SeasonSimulator
