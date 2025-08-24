@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime
+import json
 
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
 
@@ -41,9 +42,18 @@ class StandingsWindow(QDialog):
             league_name = "League"
 
         teams = load_teams()
-        divisions: dict[str, list[str]] = defaultdict(list)
+        divisions: dict[str, list[tuple[str, str]]] = defaultdict(list)
         for team in teams:
-            divisions[team.division].append(f"{team.city} {team.name}")
+            divisions[team.division].append((f"{team.city} {team.name}", team.abbreviation))
+
+        standings_path = base_dir / "data" / "standings.json"
+        standings: dict[str, dict[str, int]] = {}
+        if standings_path.exists():
+            try:
+                with standings_path.open("r", encoding="utf-8") as fh:
+                    standings = json.load(fh)
+            except (OSError, json.JSONDecodeError):
+                standings = {}
 
         # Build HTML using the same format as the sample standings page.
         today = datetime.now().strftime("%A, %B %d, %Y")
@@ -70,9 +80,14 @@ class StandingsWindow(QDialog):
 
         for division in sorted(divisions):
             parts.append(f"<b>{header.format(division)}</b>")
-            for name in sorted(divisions[division]):
+            for name, abbr in sorted(divisions[division]):
+                record = standings.get(abbr, {})
+                wins = int(record.get("wins", 0))
+                losses = int(record.get("losses", 0))
+                games = wins + losses
+                pct = wins / games if games else 0.0
                 parts.append(
-                    f"{name:<22}0   0   .000   ---     0-0    0-0    0-0   W  0     "
+                    f"{name:<22}{wins:>2}  {losses:>2}  {pct:.3f}   ---     0-0    0-0    0-0   W  0     "
                     "0-0    0-0      0-0    0-0      0-0    0-0"
                 )
             parts.append("")

@@ -56,6 +56,16 @@ class SeasonProgressWindow(QDialog):
         self.simulator = SeasonSimulator(
             schedule or [], simulate_game, after_game=self._record_game
         )
+        # Track basic win/loss records as games are played so the standings
+        # window and schedule pages can reflect results.
+        self._standings: dict[str, dict[str, int]] = {}
+        standings_file = DATA_DIR / "standings.json"
+        if standings_file.exists():
+            try:
+                with standings_file.open("r", encoding="utf-8") as fh:
+                    self._standings = json.load(fh)
+            except (OSError, json.JSONDecodeError):
+                pass
         self._preseason_done = {
             "free_agency": False,
             "training_camp": False,
@@ -342,26 +352,26 @@ class SeasonProgressWindow(QDialog):
         game["played"] = "1"
         save_schedule(self.simulator.schedule, SCHEDULE_FILE)
 
-        # Save team standings and player statistics if available.  These
-        # attributes are optional so the method is defensive when accessing
-        # them.
-        standings = {}
-        if hasattr(self.manager, "teams"):
-            for team in getattr(self.manager, "teams", []):
-                tid = getattr(team, "abbreviation", getattr(team, "team_id", ""))
-                standings[tid] = getattr(team, "season_stats", {})
+        # Update simple win/loss standings from the game's result.
+        result = game.get("result")
+        try:
+            if result:
+                home_score, away_score = map(int, result.split("-"))
+                home_id = game.get("home", "")
+                away_id = game.get("away", "")
+                home_rec = self._standings.setdefault(home_id, {"wins": 0, "losses": 0})
+                away_rec = self._standings.setdefault(away_id, {"wins": 0, "losses": 0})
+                if home_score > away_score:
+                    home_rec["wins"] += 1
+                    away_rec["losses"] += 1
+                elif away_score > home_score:
+                    away_rec["wins"] += 1
+                    home_rec["losses"] += 1
+        except ValueError:
+            pass
 
-        players_stats = {}
-        if hasattr(self.manager, "players"):
-            for pid, player in getattr(self.manager, "players", {}).items():
-                players_stats[pid] = getattr(player, "season_stats", {})
-
-        if standings:
-            with (DATA_DIR / "standings.json").open("w", encoding="utf-8") as fh:
-                json.dump(standings, fh, indent=2)
-        if players_stats:
-            with (DATA_DIR / "player_stats.json").open("w", encoding="utf-8") as fh:
-                json.dump(players_stats, fh, indent=2)
+        with (DATA_DIR / "standings.json").open("w", encoding="utf-8") as fh:
+            json.dump(self._standings, fh, indent=2)
 
     def _load_progress(self) -> None:
         """Load preseason and simulation progress from disk."""

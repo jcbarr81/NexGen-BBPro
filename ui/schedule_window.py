@@ -35,14 +35,15 @@ class ScheduleWindow(QDialog):
         parts = [
             "<html><head><title>League Schedule</title></head><body>",
             "<b><font size=\"+2\"><center>League Schedule</center></font></b>",
-            "<hr><pre><b>Date       Away  Home</b>",
+            "<hr><pre><b>Date       Away  Home  Result</b>",
         ]
 
         for game in schedule_data:
             date = game.get("date", "")
             away = game.get("away", "")
             home = game.get("home", "")
-            parts.append(f"{date:<10}{away:<5}{home}")
+            result = game.get("result", "")
+            parts.append(f"{date:<10}{away:<5}{home:<5}{result}")
 
         parts.extend(["</pre></body></html>"])
         try:
