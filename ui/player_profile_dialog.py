@@ -4,7 +4,7 @@ ratings and stats."""
 import os
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 )
 
 from models.base_player import BasePlayer
+from utils.stats_persistence import load_stats
 
 
 class PlayerProfileDialog(QDialog):
@@ -44,8 +45,16 @@ class PlayerProfileDialog(QDialog):
                 if stats:
                     layout.addWidget(self._build_grid(label, stats))
 
+        for year, r_hist, s_hist in self._load_history():
+            if r_hist:
+                layout.addWidget(self._build_grid(f"{year} Ratings", r_hist))
+            if s_hist:
+                layout.addWidget(self._build_grid(f"{year} Stats", s_hist))
+
         self.setLayout(layout)
         self._apply_espn_style()
+        self.adjustSize()
+        self.setFixedSize(self.sizeHint())
 
     # ------------------------------------------------------------------
     def _build_header(self) -> QHBoxLayout:
@@ -123,6 +132,33 @@ class PlayerProfileDialog(QDialog):
         if is_dataclass(stats):
             return asdict(stats)
         return {}
+
+    def _load_history(self) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
+        """Return lists of rating and stat histories keyed by year."""
+
+        data = load_stats()
+        history: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+        rating_fields = getattr(type(self.player), "_rating_fields", set())
+        for idx, entry in enumerate(data.get("history", []), start=1):
+            player_data = entry.get("players", {}).get(self.player.player_id)
+            if not player_data:
+                continue
+            if "ratings" in player_data or "stats" in player_data:
+                ratings = player_data.get("ratings", {})
+                stats = player_data.get("stats", {})
+            else:
+                ratings = {
+                    k: v
+                    for k, v in player_data.items()
+                    if k in rating_fields and not k.startswith("pot_")
+                }
+                stats = {
+                    k: v
+                    for k, v in player_data.items()
+                    if k not in rating_fields and not k.startswith("pot_")
+                }
+            history.append((f"Year {idx}", ratings, stats))
+        return history
 
     def _build_grid(self, title: str, data: Dict[str, Any]) -> QGroupBox:
         group = QGroupBox(title)
