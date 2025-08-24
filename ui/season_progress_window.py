@@ -274,9 +274,12 @@ class SeasonProgressWindow(QDialog):
             return
         remaining = self.simulator.remaining_days()
         self.remaining_label.setText(f"Days until Midseason: {remaining}")
-        log_news_event(
-            f"Simulated a regular season day; {remaining} days until Midseason"
+        message = (
+            f"Simulated a regular season day; {remaining} "
+            "days until Midseason"
         )
+        self.notes_label.setText(message)
+        log_news_event(message)
         self._save_progress()
         season_done = self.simulator._index >= len(self.simulator.dates)
         if remaining <= 0 or season_done:
@@ -289,11 +292,20 @@ class SeasonProgressWindow(QDialog):
         """Simulate multiple days with a progress dialog."""
         if self.simulator.remaining_days() <= 0:
             return
-        progress = QProgressDialog(
-            f"Simulating {label}...", None, 0, days, self
-        )
+        progress = QProgressDialog("", "", 0, days, self)
         try:  # pragma: no cover - harmless in headless tests
             progress.setWindowTitle("Simulation Progress")
+        except Exception:  # pragma: no cover
+            pass
+        try:  # pragma: no cover - gui only
+            progress.setCancelButton(None)
+        except Exception:  # pragma: no cover
+            pass
+        try:  # pragma: no cover - gui only
+            progress.setLabelText(f"Simulating {label}...")
+        except Exception:  # pragma: no cover
+            pass
+        try:  # pragma: no cover - gui only
             progress.setValue(0)
             progress.show()
         except Exception:  # pragma: no cover
@@ -318,9 +330,12 @@ class SeasonProgressWindow(QDialog):
             pass
         remaining = self.simulator.remaining_days()
         self.remaining_label.setText(f"Days until Midseason: {remaining}")
-        log_news_event(
-            f"Simulated {label.lower()}; {remaining} days until Midseason"
+        message = (
+            f"Simulated {label.lower()}; {remaining} "
+            "days until Midseason"
         )
+        self.notes_label.setText(message)
+        log_news_event(message)
         self._save_progress()
         season_done = self.simulator._index >= len(self.simulator.dates)
         if remaining <= 0 or season_done:
