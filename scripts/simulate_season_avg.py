@@ -8,6 +8,12 @@ from pathlib import Path
 import random
 import sys
 
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:  # pragma: no cover
+    def tqdm(iterable, **kwargs):
+        return iterable
+
 # Ensure project root is on the path when running this script directly
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -77,7 +83,7 @@ def simulate_season_average() -> None:
         return box["home"]["score"], box["away"]["score"]
 
     simulator = SeasonSimulator(schedule, simulate_game=simulate_game)
-    for _ in range(len(simulator.dates)):
+    for _ in tqdm(range(len(simulator.dates)), desc="Simulating season"):
         simulator.simulate_next_day()
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
