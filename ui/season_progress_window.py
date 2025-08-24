@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QMessageBox,
+    QProgressDialog,
 )
 from datetime import date
 import csv
@@ -88,6 +89,14 @@ class SeasonProgressWindow(QDialog):
         self.simulate_day_button.clicked.connect(self._simulate_day)
         layout.addWidget(self.simulate_day_button)
 
+        self.simulate_week_button = QPushButton("Simulate Week")
+        self.simulate_week_button.clicked.connect(self._simulate_week)
+        layout.addWidget(self.simulate_week_button)
+
+        self.simulate_month_button = QPushButton("Simulate Month")
+        self.simulate_month_button.clicked.connect(self._simulate_month)
+        layout.addWidget(self.simulate_month_button)
+
         self.next_button = QPushButton("Next Phase")
         self.next_button.clicked.connect(self._next_phase)
         layout.addWidget(self.next_button)
@@ -118,11 +127,17 @@ class SeasonProgressWindow(QDialog):
         self.generate_schedule_button.setVisible(is_preseason)
         self.remaining_label.setVisible(is_regular)
         self.simulate_day_button.setVisible(is_regular)
+        self.simulate_week_button.setVisible(is_regular)
+        self.simulate_month_button.setVisible(is_regular)
         if is_regular:
             remaining = self.simulator.remaining_days()
             self.remaining_label.setText(f"Days until Midseason: {remaining}")
+            enabled = remaining > 0
+            self.simulate_day_button.setEnabled(enabled)
+            self.simulate_week_button.setEnabled(enabled)
+            self.simulate_month_button.setEnabled(enabled)
             season_done = self.simulator._index >= len(self.simulator.dates)
-            self.next_button.setEnabled(season_done)
+            self.next_button.setEnabled(season_done or not enabled)
         elif is_preseason:
             self.free_agency_button.setEnabled(
                 not self._preseason_done["free_agency"]
@@ -231,6 +246,8 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     def _simulate_day(self) -> None:
         """Trigger simulation for a single schedule day."""
+        if self.simulator.remaining_days() <= 0:
+            return
         try:
             self.simulator.simulate_next_day()
         except (FileNotFoundError, ValueError) as e:
@@ -245,8 +262,63 @@ class SeasonProgressWindow(QDialog):
         )
         self._save_progress()
         season_done = self.simulator._index >= len(self.simulator.dates)
-        if season_done:
+        if remaining <= 0 or season_done:
+            self.simulate_day_button.setEnabled(False)
+            self.simulate_week_button.setEnabled(False)
+            self.simulate_month_button.setEnabled(False)
             self.next_button.setEnabled(True)
+
+    def _simulate_span(self, days: int, label: str) -> None:
+        """Simulate multiple days with a progress dialog."""
+        if self.simulator.remaining_days() <= 0:
+            return
+        progress = QProgressDialog(
+            f"Simulating {label}...", None, 0, days, self
+        )
+        try:  # pragma: no cover - harmless in headless tests
+            progress.setWindowTitle("Simulation Progress")
+            progress.setValue(0)
+            progress.show()
+        except Exception:  # pragma: no cover
+            pass
+        simulated = 0
+        while simulated < days and self.simulator.remaining_days() > 0:
+            try:
+                self.simulator.simulate_next_day()
+            except (FileNotFoundError, ValueError) as e:
+                QMessageBox.warning(
+                    self, "Missing Lineup or Pitching", str(e)
+                )
+                break
+            simulated += 1
+            try:  # pragma: no cover - gui only
+                progress.setValue(simulated)
+            except Exception:  # pragma: no cover
+                pass
+        try:  # pragma: no cover - gui only
+            progress.close()
+        except Exception:  # pragma: no cover
+            pass
+        remaining = self.simulator.remaining_days()
+        self.remaining_label.setText(f"Days until Midseason: {remaining}")
+        log_news_event(
+            f"Simulated {label.lower()}; {remaining} days until Midseason"
+        )
+        self._save_progress()
+        season_done = self.simulator._index >= len(self.simulator.dates)
+        if remaining <= 0 or season_done:
+            self.simulate_day_button.setEnabled(False)
+            self.simulate_week_button.setEnabled(False)
+            self.simulate_month_button.setEnabled(False)
+            self.next_button.setEnabled(True)
+
+    def _simulate_week(self) -> None:
+        """Simulate the next seven days or until the break."""
+        self._simulate_span(7, "Week")
+
+    def _simulate_month(self) -> None:
+        """Simulate the next thirty days or until the break."""
+        self._simulate_span(30, "Month")
 
     # ------------------------------------------------------------------
     # Persistence helpers

@@ -2,20 +2,23 @@ import sys, types
 
 # ---- Stub PyQt6 modules ----
 class DummySignal:
-    def __init__(self):
+    def __init__(self, parent=None):
         self._slot = None
+        self._parent = parent
 
     def connect(self, slot):
         self._slot = slot
 
     def emit(self):
-        if self._slot:
+        if self._slot and (
+            self._parent is None or self._parent.isEnabled()
+        ):
             self._slot()
 
 
 class Dummy:
     def __init__(self, *args, **kwargs):
-        self.clicked = DummySignal()
+        self.clicked = DummySignal(self)
         self._enabled = True
 
     def __getattr__(self, name):
@@ -28,6 +31,9 @@ class Dummy:
         pass
 
     def setText(self, *a, **k):
+        pass
+
+    def setValue(self, *a, **k):
         pass
 
     def text(self):
@@ -47,6 +53,15 @@ class Dummy:
 
     def setWindowTitle(self, *a, **k):
         pass
+
+    def show(self, *a, **k):
+        pass
+
+    def close(self, *a, **k):
+        pass
+
+    def wasCanceled(self):
+        return False
 
 
 class QLabel(Dummy):
@@ -88,6 +103,7 @@ qtwidgets.QLabel = QLabel
 qtwidgets.QPushButton = QPushButton
 qtwidgets.QVBoxLayout = QVBoxLayout
 qtwidgets.QMessageBox = QMessageBox
+qtwidgets.QProgressDialog = Dummy
 sys.modules["PyQt6"] = types.ModuleType("PyQt6")
 sys.modules["PyQt6.QtWidgets"] = qtwidgets
 
@@ -135,21 +151,18 @@ def test_simulate_day_until_midseason(tmp_path, monkeypatch):
     win.simulate_day_button.clicked.emit()
     assert games == [("A", "B"), ("A", "B")]
     assert win.remaining_label.text() == "Days until Midseason: 0"
-
-    # After the break the season continues
-    win.simulate_day_button.clicked.emit()
-    assert games == [("A", "B"), ("A", "B"), ("A", "B")]
-
-    win.simulate_day_button.clicked.emit()
-    assert games == [("A", "B"), ("A", "B"), ("A", "B"), ("A", "B")]
+    assert not win.simulate_day_button.isEnabled()
 
     # Further clicks should not simulate more games
     win.simulate_day_button.clicked.emit()
-    assert games == [("A", "B"), ("A", "B"), ("A", "B"), ("A", "B")]
+    assert games == [("A", "B"), ("A", "B")]
 
 
 def test_simulate_day_warns_when_missing_data(tmp_path, monkeypatch):
-    schedule = [{"date": "2024-04-01", "home": "A", "away": "B"}]
+    schedule = [
+        {"date": "2024-04-01", "home": "A", "away": "B"},
+        {"date": "2024-04-02", "home": "A", "away": "B"},
+    ]
 
     def bad_sim(home, away):  # pragma: no cover - simple stub
         raise FileNotFoundError("Team A lineup missing")
@@ -161,6 +174,48 @@ def test_simulate_day_warns_when_missing_data(tmp_path, monkeypatch):
     assert QMessageBox.last == (
         "Missing Lineup or Pitching", "Team A lineup missing"
     )
+
+
+def test_simulate_week_until_midseason(tmp_path, monkeypatch):
+    schedule = [
+        {"date": f"2024-04-{i:02d}", "home": "A", "away": "B"}
+        for i in range(1, 11)
+    ]
+
+    games = []
+
+    def fake_sim(home, away):
+        games.append((home, away))
+
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
+    assert win.remaining_label.text() == "Days until Midseason: 5"
+
+    win.simulate_week_button.clicked.emit()
+    assert len(games) == 5
+    assert win.remaining_label.text() == "Days until Midseason: 0"
+    assert not win.simulate_week_button.isEnabled()
+
+
+def test_simulate_month_until_midseason(tmp_path, monkeypatch):
+    schedule = [
+        {"date": f"2024-04-{i:02d}", "home": "A", "away": "B"}
+        for i in range(1, 41)
+    ]
+
+    games = []
+
+    def fake_sim(home, away):
+        games.append((home, away))
+
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
+    assert win.remaining_label.text() == "Days until Midseason: 20"
+
+    win.simulate_month_button.clicked.emit()
+    assert len(games) == 20
+    assert win.remaining_label.text() == "Days until Midseason: 0"
+    assert not win.simulate_month_button.isEnabled()
 
 
 from datetime import date
