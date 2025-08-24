@@ -1189,10 +1189,10 @@ class GameSimulation:
         if rand >= hit_prob:
             return 0
 
-        single = self.config.get("hit1BProb", 100) / 100.0
-        double = self.config.get("hit2BProb", 0) / 100.0
-        triple = self.config.get("hit3BProb", 0) / 100.0
-        hr = self.config.get("hitHRProb", 0) / 100.0
+        single = self.config.hit1BProb / 100.0
+        double = self.config.hit2BProb / 100.0
+        triple = self.config.hit3BProb / 100.0
+        hr = self.config.hitHRProb / 100.0
         power_adj = (batter.ph - 50) / 100.0
         hr *= 1 + power_adj
         double *= 1 + power_adj / 2
