@@ -14,6 +14,7 @@ from logic.season_manager import SeasonManager, SeasonPhase
 from logic.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
 from logic.season_simulator import SeasonSimulator
+from utils.news_logger import log_news_event
 
 
 class SeasonProgressWindow(QDialog):
@@ -98,6 +99,9 @@ class SeasonProgressWindow(QDialog):
             self.manager.save()
         else:
             self.manager.advance_phase()
+        log_news_event(
+            f"Season advanced to {self.manager.phase.name.replace('_', ' ').title()}"
+        )
         self._update_ui()
 
     # ------------------------------------------------------------------
@@ -111,14 +115,19 @@ class SeasonProgressWindow(QDialog):
         if agents:
             names = ", ".join(f"{p.first_name} {p.last_name}" for p in agents)
             self.notes_label.setText(f"Unsigned Players: {names}")
+            log_news_event(
+                f"Listed unsigned players: {len(agents)} available"
+            )
         else:
             self.notes_label.setText("No unsigned players available.")
+            log_news_event("No unsigned players available")
 
     def _run_training_camp(self) -> None:
         """Run the training camp and mark players as ready."""
         players = getattr(self.manager, "players", {})
         run_training_camp(players.values())
         self.notes_label.setText("Training camp completed. Players marked ready.")
+        log_news_event("Training camp completed; players marked ready")
 
     # ------------------------------------------------------------------
     # Regular season actions
@@ -128,4 +137,7 @@ class SeasonProgressWindow(QDialog):
         self.simulator.simulate_next_day()
         remaining = self.simulator.remaining_days()
         self.remaining_label.setText(f"Days until Midseason: {remaining}")
+        log_news_event(
+            f"Simulated a regular season day; {remaining} days until Midseason"
+        )
 

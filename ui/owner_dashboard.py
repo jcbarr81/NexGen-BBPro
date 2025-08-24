@@ -407,8 +407,10 @@ class OwnerDashboard(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to sign free agent: {e}")
 
     def load_news_feed(self):
+        """Load the latest league news into the dashboard."""
         try:
-            self.news_feed.setPlainText(read_latest_news("data/news_feed.txt"))
+            lines = read_latest_news(file_path="data/news_feed.txt")
+            self.news_feed.setPlainText("".join(lines))
         except Exception as e:
             self.news_feed.setPlainText(f"(Failed to load news)\n{e}")
 
