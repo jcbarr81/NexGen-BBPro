@@ -21,6 +21,39 @@ from models.base_player import BasePlayer
 from utils.stats_persistence import load_stats
 
 
+_BATTING_STATS: List[str] = [
+    "g",
+    "ab",
+    "r",
+    "h",
+    "2b",
+    "3b",
+    "hr",
+    "rbi",
+    "bb",
+    "so",
+    "sb",
+    "avg",
+    "obp",
+    "slg",
+]
+
+_PITCHING_STATS: List[str] = [
+    "w",
+    "l",
+    "era",
+    "g",
+    "gs",
+    "sv",
+    "ip",
+    "h",
+    "er",
+    "bb",
+    "so",
+    "whip",
+]
+
+
 class PlayerProfileDialog(QDialog):
     """Display basic information, current ratings and stats for a player."""
 
@@ -141,13 +174,30 @@ class PlayerProfileDialog(QDialog):
             return asdict(stats)
         return {}
 
+    def _format_stat(self, value: Any) -> str:
+        """Return a string, formatting floats to three decimals."""
+        if isinstance(value, float):
+            return f"{value:.3f}"
+        if isinstance(value, str):
+            try:
+                if "." in value:
+                    return f"{float(value):.3f}"
+            except ValueError:
+                return value
+        return str(value)
+
     def _load_history(self) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-        """Return lists of rating and stat histories keyed by year."""
+        """Return lists of rating and stat histories keyed by year.
+
+        Only the five most recent unique years are returned.
+        """
 
         data = load_stats()
         history: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
         rating_fields = getattr(type(self.player), "_rating_fields", set())
-        for idx, entry in enumerate(data.get("history", []), start=1):
+        entries = data.get("history", [])[-5:]
+        used_years: set[str] = set()
+        for entry in entries:
             player_data = entry.get("players", {}).get(self.player.player_id)
             if not player_data:
                 continue
@@ -165,7 +215,15 @@ class PlayerProfileDialog(QDialog):
                     for k, v in player_data.items()
                     if k not in rating_fields and not k.startswith("pot_")
                 }
-            history.append((f"Year {idx}", ratings, stats))
+            year = entry.get("year")
+            if year is None:
+                year_label = f"Year {len(history) + 1}"
+            else:
+                year_label = str(year)
+            if year_label in used_years:
+                continue
+            used_years.add(year_label)
+            history.append((year_label, ratings, stats))
         return history
 
     def _build_horizontal_grid(self, title: str, data: Dict[str, Any]) -> QGroupBox:
@@ -179,7 +237,7 @@ class PlayerProfileDialog(QDialog):
                 0,
                 col,
             )
-            grid.addWidget(QLabel(str(val)), 1, col)
+            grid.addWidget(QLabel(self._format_stat(val)), 1, col)
         group.setLayout(grid)
         return group
 
@@ -193,19 +251,19 @@ class PlayerProfileDialog(QDialog):
             group.setLayout(grid)
             return group
 
-        columns = sorted({k for _year, data in rows for k in data.keys()})
+        is_pitcher = getattr(self.player, "is_pitcher", False)
+        columns = _PITCHING_STATS if is_pitcher else _BATTING_STATS
         grid.addWidget(QLabel("Year"), 0, 0)
         for col, key in enumerate(columns, start=1):
-            grid.addWidget(
-                QLabel(str(key).replace("_", " ").title()),
-                0,
-                col,
-            )
+            grid.addWidget(QLabel(key.upper()), 0, col)
 
         for row_idx, (year, data) in enumerate(rows, start=1):
             grid.addWidget(QLabel(year), row_idx, 0)
             for col_idx, key in enumerate(columns, start=1):
-                grid.addWidget(QLabel(str(data.get(key, ""))), row_idx, col_idx)
+                value = data.get(key, "")
+                grid.addWidget(
+                    QLabel(self._format_stat(value)), row_idx, col_idx
+                )
 
         group.setLayout(grid)
         return group
