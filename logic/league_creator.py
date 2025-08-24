@@ -13,7 +13,13 @@ from utils.user_manager import clear_users
 
 
 def _abbr(city: str, name: str, existing: set) -> str:
-    base = (city[:1] + name[:2]).upper()
+    """Generate a unique team abbreviation based solely on the city name.
+
+    The abbreviation uses the first three letters of the *city* and appends
+    a number if necessary to ensure uniqueness. The *name* parameter is
+    ignored but kept for backward compatibility with callers.
+    """
+    base = city[:3].upper()
     candidate = base
     i = 1
     while candidate in existing:
