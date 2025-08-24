@@ -122,6 +122,11 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFBase": 52,
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFMax": 92,
+    # Hit type distribution (percentages summing to ~100)
+    "hit1BProb": 64,
+    "hit2BProb": 20,
+    "hit3BProb": 2,
+    "hitHRProb": 14,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
     "pitchRatVariationFaces": 3,
