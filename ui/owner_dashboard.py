@@ -37,6 +37,9 @@ from ui.standings_window import StandingsWindow
 from ui.schedule_window import ScheduleWindow
 from ui.team_schedule_window import TeamScheduleWindow
 from ui.trade_dialog import TradeDialog
+from ui.team_stats_window import TeamStatsWindow
+from ui.league_stats_window import LeagueStatsWindow
+from ui.league_leaders_window import LeagueLeadersWindow
 from utils.roster_loader import load_roster, save_roster
 from utils.player_loader import load_players_from_csv
 from utils.news_reader import read_latest_news
@@ -121,6 +124,7 @@ class OwnerDashboard(QWidget):
         pitch_staff_action = team_menu.addAction("Pitching Staff")
         trans_action = team_menu.addAction("Transactions")
         settings_action = team_menu.addAction("Settings")
+        stats_action = team_menu.addAction("Stats")
         self.team_schedule_action = team_menu.addAction("Schedule")
         self.team_schedule_action.triggered.connect(self.open_team_schedule_window)
         pos_action.triggered.connect(self.open_position_players_dialog)
@@ -129,11 +133,16 @@ class OwnerDashboard(QWidget):
         pitch_staff_action.triggered.connect(self.open_pitching_editor)
         trans_action.triggered.connect(self.open_transactions_page)
         settings_action.triggered.connect(self.open_team_settings)
+        stats_action.triggered.connect(self.open_team_stats_window)
         league_menu = menubar.addMenu("League")
         self.standings_action = league_menu.addAction("Standings")
         self.schedule_action = league_menu.addAction("Schedule")
+        self.league_stats_action = league_menu.addAction("Statistics")
+        self.league_leaders_action = league_menu.addAction("Leaders")
         self.standings_action.triggered.connect(self.open_standings_window)
         self.schedule_action.triggered.connect(self.open_schedule_window)
+        self.league_stats_action.triggered.connect(self.open_league_stats_window)
+        self.league_leaders_action.triggered.connect(self.open_league_leaders_window)
         main.setMenuBar(menubar)
 
         logo_path = get_base_dir() / "logo" / "teams" / f"{team_id.lower()}.png"
@@ -322,6 +331,19 @@ class OwnerDashboard(QWidget):
             QMessageBox.warning(self, "Error", "Team information not available.")
             return
         TeamScheduleWindow(self.team_id, self).exec()
+
+    def open_team_stats_window(self):
+        """Open the team statistics window."""
+        TeamStatsWindow(self.team, self.players, self.roster, self).exec()
+
+    def open_league_stats_window(self):
+        """Open the league-wide statistics window."""
+        teams = load_teams()
+        LeagueStatsWindow(teams, self.players.values(), self).exec()
+
+    def open_league_leaders_window(self):
+        """Open the league leaders window."""
+        LeagueLeadersWindow(self.players.values(), self).exec()
 
     def open_team_settings(self):
         if not self.team:
