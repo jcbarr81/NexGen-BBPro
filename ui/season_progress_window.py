@@ -89,12 +89,19 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     # UI helpers
     # ------------------------------------------------------------------
-    def _update_ui(self) -> None:
-        """Refresh the label and notes for the current phase."""
+    def _update_ui(self, note: str | None = None) -> None:
+        """Refresh the label and notes for the current phase.
+
+        Parameters
+        ----------
+        note:
+            Optional note to display instead of the default phase message.
+        """
         phase_name = self.manager.phase.name.replace("_", " ").title()
         self.phase_label.setText(f"Current Phase: {phase_name}")
-        notes = self.manager.handle_phase()
-        self.notes_label.setText(notes)
+        if note is None:
+            note = self.manager.handle_phase()
+        self.notes_label.setText(note)
 
         is_preseason = self.manager.phase == SeasonPhase.PRESEASON
         is_regular = self.manager.phase == SeasonPhase.REGULAR_SEASON
@@ -138,12 +145,14 @@ class SeasonProgressWindow(QDialog):
                 "training_camp": False,
                 "schedule": False,
             }
+            note = f"Retired Players: {len(retired)}"
         else:
             self.manager.advance_phase()
+            note = None
         log_news_event(
             f"Season advanced to {self.manager.phase.name.replace('_', ' ').title()}"
         )
-        self._update_ui()
+        self._update_ui(note)
 
     # ------------------------------------------------------------------
     # Preseason actions
@@ -165,7 +174,10 @@ class SeasonProgressWindow(QDialog):
 
         self.free_agency_button.setEnabled(False)
         self._preseason_done["free_agency"] = True
-        self._update_ui()
+        message = (
+            f"Unsigned Players: {names}" if agents else "No unsigned players available."
+        )
+        self._update_ui(message)
 
     def _run_training_camp(self) -> None:
         """Run the training camp and mark players as ready."""
@@ -175,7 +187,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event("Training camp completed; players marked ready")
         self.training_camp_button.setEnabled(False)
         self._preseason_done["training_camp"] = True
-        self._update_ui()
+        self._update_ui("Training camp completed. Players marked ready.")
 
     def _generate_schedule(self) -> None:
         """Create a full MLB-style schedule for the league."""
@@ -188,18 +200,18 @@ class SeasonProgressWindow(QDialog):
                 reader = csv.DictReader(fh)
                 teams = [row["abbreviation"] for row in reader]
         if not teams:
-            self.notes_label.setText("No teams available to generate schedule.")
+            self._update_ui("No teams available to generate schedule.")
             return
 
         start = date(date.today().year, 4, 1)
         schedule = generate_mlb_schedule(teams, start)
         save_schedule(schedule, SCHEDULE_FILE)
         self.simulator = SeasonSimulator(schedule, self._simulate_game)
-        self.notes_label.setText(f"Schedule generated with {len(schedule)} games.")
+        message = f"Schedule generated with {len(schedule)} games."
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
         self.generate_schedule_button.setEnabled(False)
         self._preseason_done["schedule"] = True
-        self._update_ui()
+        self._update_ui(message)
 
     # ------------------------------------------------------------------
     # Regular season actions

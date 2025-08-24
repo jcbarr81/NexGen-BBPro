@@ -218,13 +218,16 @@ def test_preseason_actions_require_sequence():
 
     win.free_agency_button.clicked.emit()
     assert win.training_camp_button.isEnabled()
+    assert "No unsigned players available" in win.notes_label.text()
 
     win.training_camp_button.clicked.emit()
     assert win.generate_schedule_button.isEnabled()
+    assert "Training camp completed" in win.notes_label.text()
 
     win.generate_schedule_button.clicked.emit()
     assert len(win.simulator.schedule) == 162
     assert win.next_button.isEnabled()
+    assert "Schedule generated with" in win.notes_label.text()
 
 
 def test_generate_schedule_loads_teams_from_csv(monkeypatch, tmp_path):
