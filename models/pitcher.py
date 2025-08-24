@@ -1,9 +1,27 @@
 from dataclasses import dataclass, field
+from typing import ClassVar
+
 from models.base_player import BasePlayer
 
 
 @dataclass
 class Pitcher(BasePlayer):
+    _rating_fields: ClassVar[set[str]] = BasePlayer._rating_fields | {
+        "endurance",
+        "control",
+        "movement",
+        "hold_runner",
+        "fb",
+        "cu",
+        "cb",
+        "sl",
+        "si",
+        "scb",
+        "kn",
+        "arm",
+        "fa",
+    }
+
     endurance: int = 0
     control: int = 0
     movement: int = 0

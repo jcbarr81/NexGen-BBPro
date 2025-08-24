@@ -1,9 +1,28 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import ClassVar, Optional
+
 from models.base_player import BasePlayer
 
 @dataclass
 class Player(BasePlayer):
+    _rating_fields: ClassVar[set[str]] = BasePlayer._rating_fields | {
+        "ch",
+        "ph",
+        "sp",
+        "pl",
+        "vl",
+        "sc",
+        "fa",
+        "arm",
+        "pot_ch",
+        "pot_ph",
+        "pot_sp",
+        "pot_fa",
+        "pot_arm",
+        "pot_sc",
+        "pot_gf",
+    }
+
     ch: int = 0
     ph: int = 0
     sp: int = 0
