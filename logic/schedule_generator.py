@@ -202,8 +202,20 @@ def save_schedule(schedule: Iterable[Dict[str, str]], path: str | Path) -> None:
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Include optional result/played columns so that schedule files can track
+    # outcomes as the season progresses.  Unknown fields default to blank
+    # strings to keep the CSV consistent.
+    fieldnames = ["date", "home", "away", "result", "played"]
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["date", "home", "away"])
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
         for game in schedule:
-            writer.writerow([game["date"], game["home"], game["away"]])
+            writer.writerow(
+                {
+                    "date": game.get("date", ""),
+                    "home": game.get("home", ""),
+                    "away": game.get("away", ""),
+                    "result": game.get("result", ""),
+                    "played": game.get("played", ""),
+                }
+            )

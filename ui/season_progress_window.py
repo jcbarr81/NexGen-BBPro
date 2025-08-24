@@ -51,7 +51,11 @@ class SeasonProgressWindow(QDialog):
             with SCHEDULE_FILE.open(newline="") as fh:
                 reader = csv.DictReader(fh)
                 schedule = list(reader)
-        self.simulator = SeasonSimulator(schedule or [], simulate_game)
+        # Persist league data after each game so that standings, schedules and
+        # statistics remain current even if a simulation run is interrupted.
+        self.simulator = SeasonSimulator(
+            schedule or [], simulate_game, after_game=self._record_game
+        )
         self._preseason_done = {
             "free_agency": False,
             "training_camp": False,
@@ -233,7 +237,9 @@ class SeasonProgressWindow(QDialog):
         start = date(date.today().year, 4, 1)
         schedule = generate_mlb_schedule(teams, start)
         save_schedule(schedule, SCHEDULE_FILE)
-        self.simulator = SeasonSimulator(schedule, self._simulate_game)
+        self.simulator = SeasonSimulator(
+            schedule, self._simulate_game, after_game=self._record_game
+        )
         message = f"Schedule generated with {len(schedule)} games."
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
         self.generate_schedule_button.setEnabled(False)
@@ -323,6 +329,40 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     # Persistence helpers
     # ------------------------------------------------------------------
+    def _record_game(self, game: dict[str, str]) -> None:
+        """Persist league data after a single game.
+
+        The season simulator invokes this callback after each scheduled game is
+        played.  It marks the game as completed, rewrites the schedule file and
+        dumps current team standings and player statistics to JSON files.  The
+        files are intentionally simple so other parts of the application can
+        load them without needing complex formats.
+        """
+
+        game["played"] = "1"
+        save_schedule(self.simulator.schedule, SCHEDULE_FILE)
+
+        # Save team standings and player statistics if available.  These
+        # attributes are optional so the method is defensive when accessing
+        # them.
+        standings = {}
+        if hasattr(self.manager, "teams"):
+            for team in getattr(self.manager, "teams", []):
+                tid = getattr(team, "abbreviation", getattr(team, "team_id", ""))
+                standings[tid] = getattr(team, "season_stats", {})
+
+        players_stats = {}
+        if hasattr(self.manager, "players"):
+            for pid, player in getattr(self.manager, "players", {}).items():
+                players_stats[pid] = getattr(player, "season_stats", {})
+
+        if standings:
+            with (DATA_DIR / "standings.json").open("w", encoding="utf-8") as fh:
+                json.dump(standings, fh, indent=2)
+        if players_stats:
+            with (DATA_DIR / "player_stats.json").open("w", encoding="utf-8") as fh:
+                json.dump(players_stats, fh, indent=2)
+
     def _load_progress(self) -> None:
         """Load preseason and simulation progress from disk."""
         try:
