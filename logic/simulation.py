@@ -1431,59 +1431,129 @@ def render_boxscore_html(
     box: Dict[str, Dict[str, object]],
     home_name: str = "Home",
     away_name: str = "Away",
+    league: str = "League",
+    home_abbr: str | None = None,
+    away_abbr: str | None = None,
 ) -> str:
-    """Return a very small HTML representation of ``box``.
+    """Render ``box`` using the ``espn_boxscore_template.html`` sample."""
 
-    The goal is not to be feature complete but to provide an easily testable
-    HTML output that mirrors the structure of ``samples/BoxScoreSample.html``.
-    """
+    home_abbr = home_abbr or home_name
+    away_abbr = away_abbr or away_name
 
-    def team_line(key: str, name: str) -> str:
-        innings = box[key]["inning_runs"]
-        innings_str = "".join(f"{r:>3}" for r in innings)
-        if len(innings) < 9:
-            innings_str += "".join("   " for _ in range(9 - len(innings)))
-        hits = sum(entry["h"] for entry in box[key]["batting"])
-        errors = sum(entry["e"] for entry in box[key]["fielding"])
-        return (
-            f"<b>{name:<15}</b>{innings_str}   {box[key]['score']:>2}   {hits:>2}   {errors:>2}"
+    template_path = get_base_dir() / "samples" / "espn_boxscore_template.html"
+    template = template_path.read_text(encoding="utf-8")
+
+    repl: Dict[str, object] = {
+        "league": league,
+        "home.name": home_name,
+        "away.name": away_name,
+        "home.abbr": home_abbr,
+        "away.abbr": away_abbr,
+        "home.score": box["home"]["score"],
+        "away.score": box["away"]["score"],
+    }
+
+    def totals(side: str) -> tuple[int, int, int]:
+        hits = sum(e["h"] for e in box[side]["batting"])
+        errors = sum(e["e"] for e in box[side]["fielding"])
+        return box[side]["score"], hits, errors
+
+    for side in ("home", "away"):
+        r, h, e = totals(side)
+        repl[f"totals.{side}.r"] = r
+        repl[f"totals.{side}.h"] = h
+        repl[f"totals.{side}.e"] = e
+
+    for i in range(9):
+        repl[f"linescore.home[{i}]"] = (
+            box["home"]["inning_runs"][i] if i < len(box["home"]["inning_runs"]) else ""
+        )
+        repl[f"linescore.away[{i}]"] = (
+            box["away"]["inning_runs"][i] if i < len(box["away"]["inning_runs"]) else ""
         )
 
-    lines = ["<html><body><pre>"]
-    lines.append("<b>                  1  2  3   4  5  6   7  8  9         R   H   E</b>")
-    lines.append(team_line("away", away_name))
-    lines.append(team_line("home", home_name))
-    lines.append("</pre><hr><pre>")
+    import re
 
-    def team_section(key: str, name: str) -> None:
-        lines.append(f"<b>{name} Batting</b>")
-        for entry in box[key]["batting"]:
+    def replace_loop(var: str, key: str, entries: list[dict]) -> None:
+        nonlocal template
+        pattern = re.compile(rf"{{{{#for {var} in {key}}}}}(.*?){{{{/for}}}}", re.DOTALL)
+        m = pattern.search(template)
+        if not m:
+            return
+        block = m.group(1)
+        rows: list[str] = []
+        for entry in entries:
+            row = block
             p = entry["player"]
-            lines.append(
-                f"{p.first_name} {p.last_name}: {entry['h']}-{entry['ab']}, BB {entry['bb']}, SO {entry['so']}, SB {entry['sb']}"
-            )
-        if box[key]["pitching"]:
-            lines.append("")
-            lines.append(f"<b>{name} Pitching</b>")
-            for entry in box[key]["pitching"]:
-                p = entry["player"]
-                lines.append(
-                    f"{p.first_name} {p.last_name}: BF {entry['bf']}, R {entry['r']}, ER {entry['er']}, H {entry['h']}, BB {entry['bb']}, SO {entry['so']}, P {entry['pitches']}, S {entry['strikes']}"
-                )
-        if box[key]["fielding"]:
-            lines.append("")
-            lines.append(f"<b>{name} Fielding</b>")
-            for entry in box[key]["fielding"]:
-                p = entry["player"]
-                lines.append(
-                    f"{p.first_name} {p.last_name}: PO {entry['po']}, A {entry['a']}, E {entry['e']}"
-                )
-        lines.append("")
+            name = f"{p.first_name} {p.last_name}"
+            if var == "batter":
+                mapping = {
+                    "name": name,
+                    "pos": getattr(p, "position", ""),
+                    "AB": entry.get("ab", 0),
+                    "R": entry.get("r", 0),
+                    "H": entry.get("h", 0),
+                    "RBI": entry.get("rbi", 0),
+                    "BB": entry.get("bb", 0),
+                    "K": entry.get("so", 0),
+                    "HR": entry.get("hr", 0),
+                    "AVG": f"{entry.get('avg', 0):.3f}",
+                    "OBP": f"{entry.get('obp', 0):.3f}",
+                    "SLG": f"{entry.get('slg', 0):.3f}",
+                }
+            else:
+                outs = entry.get("outs", 0)
+                ip = f"{outs // 3}.{outs % 3}"
+                mapping = {
+                    "name": name,
+                    "IP": ip,
+                    "H": entry.get("h", 0),
+                    "R": entry.get("r", 0),
+                    "ER": entry.get("er", 0),
+                    "BB": entry.get("bb", 0),
+                    "K": entry.get("so", 0),
+                    "HR": entry.get("hr", 0),
+                    "PC-ST": f"{entry.get('pitches', 0)}-{entry.get('strikes', 0)}",
+                    "ERA": f"{entry.get('era', 0):.2f}",
+                }
+            for k, v in mapping.items():
+                row = row.replace(f"{{{{{var}.{k}}}}}", str(v))
+            rows.append(row)
+        template = pattern.sub("".join(rows), template)
 
-    team_section("away", away_name)
-    team_section("home", home_name)
-    lines.append("</pre></body></html>")
-    return "\n".join(lines)
+    replace_loop("batter", "batting.home", box["home"]["batting"])
+    replace_loop("batter", "batting.away", box["away"]["batting"])
+    replace_loop("pitcher", "pitching.home", box["home"]["pitching"])
+    replace_loop("pitcher", "pitching.away", box["away"]["pitching"])
+
+    def batting_totals(side: str) -> tuple[int, int, int, int, int, int, int]:
+        entries = box[side]["batting"]
+        ab = sum(e["ab"] for e in entries)
+        r = sum(e["r"] for e in entries)
+        h = sum(e["h"] for e in entries)
+        rbi = sum(e["rbi"] for e in entries)
+        bb = sum(e["bb"] for e in entries)
+        k = sum(e["so"] for e in entries)
+        hr = sum(e["hr"] for e in entries)
+        return ab, r, h, rbi, bb, k, hr
+
+    for side in ("home", "away"):
+        ab, r, h, rbi, bb, k, hr = batting_totals(side)
+        repl[f"batting_totals.{side}.AB"] = ab
+        repl[f"batting_totals.{side}.R"] = r
+        repl[f"batting_totals.{side}.H"] = h
+        repl[f"batting_totals.{side}.RBI"] = rbi
+        repl[f"batting_totals.{side}.BB"] = bb
+        repl[f"batting_totals.{side}.K"] = k
+        repl[f"batting_totals.{side}.HR"] = hr
+        repl[f"notes.{side}.batting"] = ""
+        repl[f"notes.{side}.risp"] = ""
+        repl[f"notes.{side}.fielding"] = ""
+
+    for key, value in repl.items():
+        template = template.replace(f"{{{{{key}}}}}", str(value))
+
+    return template
 
 
 def save_boxscore_html(game_type: str, html: str, game_id: str | None = None) -> str:

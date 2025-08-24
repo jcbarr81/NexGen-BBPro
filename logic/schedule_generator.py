@@ -205,7 +205,7 @@ def save_schedule(schedule: Iterable[Dict[str, str]], path: str | Path) -> None:
     # Include optional result/played columns so that schedule files can track
     # outcomes as the season progresses.  Unknown fields default to blank
     # strings to keep the CSV consistent.
-    fieldnames = ["date", "home", "away", "result", "played"]
+    fieldnames = ["date", "home", "away", "result", "played", "boxscore"]
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -217,5 +217,6 @@ def save_schedule(schedule: Iterable[Dict[str, str]], path: str | Path) -> None:
                     "away": game.get("away", ""),
                     "result": game.get("result", ""),
                     "played": game.get("played", ""),
+                    "boxscore": game.get("boxscore", ""),
                 }
             )

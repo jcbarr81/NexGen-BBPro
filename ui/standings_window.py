@@ -78,9 +78,21 @@ class StandingsWindow(QDialog):
             "Road    v.RHP  v.LHP   in Div  nonDiv"
         )
 
+        def win_pct(team_abbr: str) -> float:
+            rec = standings.get(team_abbr, {})
+            wins = int(rec.get("wins", 0))
+            losses = int(rec.get("losses", 0))
+            games = wins + losses
+            return wins / games if games else 0.0
+
         for division in sorted(divisions):
             parts.append(f"<b>{header.format(division)}</b>")
-            for name, abbr in sorted(divisions[division]):
+            teams = sorted(
+                divisions[division],
+                key=lambda t: win_pct(t[1]),
+                reverse=True,
+            )
+            for name, abbr in teams:
                 record = standings.get(abbr, {})
                 wins = int(record.get("wins", 0))
                 losses = int(record.get("losses", 0))

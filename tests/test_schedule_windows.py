@@ -185,10 +185,10 @@ def test_schedule_windows_show_data(monkeypatch, tmp_path):
     # prepare schedule csv
     schedule_path = tmp_path / 'schedule.csv'
     with schedule_path.open('w', newline='') as fh:
-        writer = csv.DictWriter(fh, fieldnames=['date','home','away','result'])
+        writer = csv.DictWriter(fh, fieldnames=['date','home','away','result','boxscore'])
         writer.writeheader()
-        writer.writerow({'date':'2024-04-01','home':'A','away':'B','result':'W 3-2'})
-        writer.writerow({'date':'2024-04-02','home':'C','away':'A','result':'L 1-2'})
+        writer.writerow({'date':'2024-04-01','home':'A','away':'B','result':'W 3-2','boxscore':''})
+        writer.writerow({'date':'2024-04-02','home':'C','away':'A','result':'L 1-2','boxscore':''})
 
     monkeypatch.setattr(schedule_window, 'SCHEDULE_FILE', schedule_path)
     monkeypatch.setattr(team_schedule_window, 'SCHEDULE_FILE', schedule_path)
@@ -225,15 +225,13 @@ def test_schedule_windows_show_data(monkeypatch, tmp_path):
     dashboard = owner_dashboard.OwnerDashboard('A')
     dashboard.schedule_action.trigger()
     league = opened['league']
-    html = league.viewer.toHtml()
-    assert '2024-04-01' in html
-    assert 'B' in html
-    assert 'A' in html
+    assert league.viewer.item(0,0).text() == '2024-04-01'
+    assert league.viewer.item(0,1).text() == 'B'
+    assert league.viewer.item(0,2).text() == 'A'
 
     dashboard.team_schedule_action.trigger()
     team = opened['team']
-    html = team.viewer.toHtml()
-    assert '2024-04-01' in html
-    assert 'vs B' in html
-    assert 'W 3-2' in html
-    assert 'at C' in html
+    assert team.viewer.item(0,0).text() == '2024-04-01'
+    assert team.viewer.item(0,1).text() == 'vs B'
+    assert team.viewer.item(0,2).text() == 'W 3-2'
+    assert team.viewer.item(1,1).text() == 'at C'
