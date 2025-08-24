@@ -15,7 +15,8 @@ from PyQt6.QtWidgets import (
     QApplication,
     QTabWidget,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QIcon
 from ui.team_entry_dialog import TeamEntryDialog
 from ui.exhibition_game_dialog import ExhibitionGameDialog
 from ui.playbalance_editor import PlayBalanceEditor
@@ -48,6 +49,8 @@ class AdminDashboard(QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
+        icon_dir = os.path.join(os.path.dirname(__file__), "icons")
+        icon_size = QSize(24, 24)
 
         menubar = QMenuBar()
         file_menu = menubar.addMenu("File")
@@ -57,7 +60,7 @@ class AdminDashboard(QWidget):
 
         header = QLabel("Welcome to the Admin Dashboard")
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        header.setStyleSheet("font-size: 18px; font-weight: bold;")
+        header.setObjectName("header")
         layout.addWidget(header)
 
         tabs = QTabWidget()
@@ -69,36 +72,48 @@ class AdminDashboard(QWidget):
         league_layout.setSpacing(15)
 
         self.review_button = QPushButton("Review Trades")
+        self.review_button.setIcon(QIcon(os.path.join(icon_dir, "review_trades.svg")))
+        self.review_button.setIconSize(icon_size)
         self.review_button.clicked.connect(self.open_trade_review)
         league_layout.addWidget(
             self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.create_league_button = QPushButton("Create League")
+        self.create_league_button.setIcon(QIcon(os.path.join(icon_dir, "create_league.svg")))
+        self.create_league_button.setIconSize(icon_size)
         self.create_league_button.clicked.connect(self.open_create_league)
         league_layout.addWidget(
             self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.team_dashboard_button = QPushButton("Open Team Dashboard")
+        self.team_dashboard_button.setIcon(QIcon(os.path.join(icon_dir, "team_dashboard.svg")))
+        self.team_dashboard_button.setIconSize(icon_size)
         self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
         league_layout.addWidget(
             self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
+        self.exhibition_button.setIcon(QIcon(os.path.join(icon_dir, "exhibition_game.svg")))
+        self.exhibition_button.setIconSize(icon_size)
         self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         league_layout.addWidget(
             self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.playbalance_button = QPushButton("Edit Play Balance")
+        self.playbalance_button.setIcon(QIcon(os.path.join(icon_dir, "play_balance.svg")))
+        self.playbalance_button.setIconSize(icon_size)
         self.playbalance_button.clicked.connect(self.open_playbalance_editor)
         league_layout.addWidget(
             self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.season_progress_button = QPushButton("Season Progress")
+        self.season_progress_button.setIcon(QIcon(os.path.join(icon_dir, "season_progress.svg")))
+        self.season_progress_button.setIconSize(icon_size)
         self.season_progress_button.clicked.connect(self.open_season_progress)
         league_layout.addWidget(
             self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter
@@ -114,12 +129,16 @@ class AdminDashboard(QWidget):
         user_layout.setSpacing(15)
 
         self.add_user_button = QPushButton("Add User")
+        self.add_user_button.setIcon(QIcon(os.path.join(icon_dir, "add_user.svg")))
+        self.add_user_button.setIconSize(icon_size)
         self.add_user_button.clicked.connect(self.open_add_user)
         user_layout.addWidget(
             self.add_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.edit_user_button = QPushButton("Edit User")
+        self.edit_user_button.setIcon(QIcon(os.path.join(icon_dir, "edit_user.svg")))
+        self.edit_user_button.setIconSize(icon_size)
         self.edit_user_button.clicked.connect(self.open_edit_user)
         user_layout.addWidget(
             self.edit_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
@@ -135,12 +154,16 @@ class AdminDashboard(QWidget):
         util_layout.setSpacing(15)
 
         self.generate_logos_button = QPushButton("Generate Team Logos")
+        self.generate_logos_button.setIcon(QIcon(os.path.join(icon_dir, "generate_logos.svg")))
+        self.generate_logos_button.setIconSize(icon_size)
         self.generate_logos_button.clicked.connect(self.generate_team_logos)
         util_layout.addWidget(
             self.generate_logos_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.generate_avatars_button = QPushButton("Generate Player Avatars")
+        self.generate_avatars_button.setIcon(QIcon(os.path.join(icon_dir, "generate_avatars.svg")))
+        self.generate_avatars_button.setIconSize(icon_size)
         self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
         util_layout.addWidget(
             self.generate_avatars_button, alignment=Qt.AlignmentFlag.AlignHCenter
@@ -152,14 +175,17 @@ class AdminDashboard(QWidget):
         layout.addWidget(tabs)
         layout.addStretch()
 
-        self.setStyleSheet(
-            """
-            QWidget {background-color: #f0f0f0; color: #000000; font-size: 14px;}
-            QPushButton {padding: 8px;}
-            """
-        )
-
         self.setLayout(layout)
+        self.apply_stylesheet()
+
+    def apply_stylesheet(self):
+        """Load and apply the QSS stylesheet."""
+        qss_path = os.path.join(
+            os.path.dirname(__file__), "resources", "admin_dashboard.qss"
+        )
+        if os.path.exists(qss_path):
+            with open(qss_path, "r", encoding="utf-8") as qss_file:
+                self.setStyleSheet(qss_file.read())
 
     def open_trade_review(self):
         dialog = QDialog(self)
