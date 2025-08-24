@@ -14,6 +14,7 @@ from logic.season_manager import SeasonManager, SeasonPhase
 from logic.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
 from logic.season_simulator import SeasonSimulator
+from logic.schedule_generator import generate_mlb_schedule
 from utils.news_logger import log_news_event
 
 
@@ -34,7 +35,13 @@ class SeasonProgressWindow(QDialog):
             pass
 
         self.manager = SeasonManager()
+        self._simulate_game = simulate_game
         self.simulator = SeasonSimulator(schedule or [], simulate_game)
+        self._preseason_done = {
+            "free_agency": False,
+            "training_camp": False,
+            "schedule": False,
+        }
 
         layout = QVBoxLayout(self)
 
@@ -53,6 +60,10 @@ class SeasonProgressWindow(QDialog):
         self.training_camp_button = QPushButton("Run Training Camp")
         self.training_camp_button.clicked.connect(self._run_training_camp)
         layout.addWidget(self.training_camp_button)
+
+        self.generate_schedule_button = QPushButton("Generate Schedule")
+        self.generate_schedule_button.clicked.connect(self._generate_schedule)
+        layout.addWidget(self.generate_schedule_button)
 
         # Regular season controls
         self.remaining_label = QLabel()
@@ -82,11 +93,29 @@ class SeasonProgressWindow(QDialog):
         is_regular = self.manager.phase == SeasonPhase.REGULAR_SEASON
         self.free_agency_button.setVisible(is_preseason)
         self.training_camp_button.setVisible(is_preseason)
+        self.generate_schedule_button.setVisible(is_preseason)
         self.remaining_label.setVisible(is_regular)
         self.simulate_day_button.setVisible(is_regular)
         if is_regular:
             remaining = self.simulator.remaining_days()
             self.remaining_label.setText(f"Days until Midseason: {remaining}")
+            season_done = self.simulator._index >= len(self.simulator.dates)
+            self.next_button.setEnabled(season_done)
+        elif is_preseason:
+            self.free_agency_button.setEnabled(
+                not self._preseason_done["free_agency"]
+            )
+            self.training_camp_button.setEnabled(
+                self._preseason_done["free_agency"]
+                and not self._preseason_done["training_camp"]
+            )
+            self.generate_schedule_button.setEnabled(
+                self._preseason_done["training_camp"]
+                and not self._preseason_done["schedule"]
+            )
+            self.next_button.setEnabled(self._preseason_done["schedule"])
+        else:
+            self.next_button.setEnabled(True)
 
     def _next_phase(self) -> None:
         """Advance to the next phase and update the display."""
@@ -97,6 +126,11 @@ class SeasonProgressWindow(QDialog):
             season_manager.TRADE_DEADLINE = date(date.today().year + 1, 7, 31)
             self.manager.phase = SeasonPhase.PRESEASON
             self.manager.save()
+            self._preseason_done = {
+                "free_agency": False,
+                "training_camp": False,
+                "schedule": False,
+            }
         else:
             self.manager.advance_phase()
         log_news_event(
@@ -122,12 +156,38 @@ class SeasonProgressWindow(QDialog):
             self.notes_label.setText("No unsigned players available.")
             log_news_event("No unsigned players available")
 
+        self.free_agency_button.setEnabled(False)
+        self._preseason_done["free_agency"] = True
+        self._update_ui()
+
     def _run_training_camp(self) -> None:
         """Run the training camp and mark players as ready."""
         players = getattr(self.manager, "players", {})
         run_training_camp(players.values())
         self.notes_label.setText("Training camp completed. Players marked ready.")
         log_news_event("Training camp completed; players marked ready")
+        self.training_camp_button.setEnabled(False)
+        self._preseason_done["training_camp"] = True
+        self._update_ui()
+
+    def _generate_schedule(self) -> None:
+        """Create a full MLB-style schedule for the league."""
+        teams = [
+            getattr(t, "abbreviation", str(t))
+            for t in getattr(self.manager, "teams", [])
+        ]
+        if not teams:
+            self.notes_label.setText("No teams available to generate schedule.")
+            return
+
+        start = date(date.today().year, 4, 1)
+        schedule = generate_mlb_schedule(teams, start)
+        self.simulator = SeasonSimulator(schedule, self._simulate_game)
+        self.notes_label.setText(f"Schedule generated with {len(schedule)} games.")
+        log_news_event(f"Generated regular season schedule with {len(schedule)} games")
+        self.generate_schedule_button.setEnabled(False)
+        self._preseason_done["schedule"] = True
+        self._update_ui()
 
     # ------------------------------------------------------------------
     # Regular season actions
@@ -140,4 +200,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event(
             f"Simulated a regular season day; {remaining} days until Midseason"
         )
+        season_done = self.simulator._index >= len(self.simulator.dates)
+        if season_done:
+            self.next_button.setEnabled(True)
 
