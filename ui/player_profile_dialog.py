@@ -91,10 +91,12 @@ class PlayerProfileDialog(QDialog):
             QLabel(f"Bats: {getattr(self.player, 'bats', '?')}")
         )
         positions = ", ".join(
-            [
+            p
+            for p in [
                 self.player.primary_position,
                 *getattr(self.player, "other_positions", []),
             ]
+            if p
         )
         info_layout.addWidget(QLabel(f"Positions: {positions}"))
         layout.addLayout(info_layout)

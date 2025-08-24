@@ -113,3 +113,27 @@ def test_player_profile_dialog_uses_history(monkeypatch):
     assert "Year 1 Stats" in calls
     assert "Year 2 Ratings" in calls
     assert "Year 2 Stats" in calls
+
+
+def test_player_profile_dialog_handles_missing_positions(monkeypatch):
+    """Ensure dialog renders even if position data is missing."""
+
+    monkeypatch.setattr(
+        ppd, "load_stats", lambda: {"players": {}, "teams": {}, "history": []}
+    )
+
+    player = SimpleNamespace(
+        player_id="p2",
+        first_name="A",
+        last_name="B",
+        birthdate="2000-01-01",
+        height=70,
+        weight=180,
+        bats="R",
+        primary_position=None,
+        other_positions=[None],
+        gf=40,
+    )
+
+    dlg = ppd.PlayerProfileDialog(player)
+    assert dlg is not None
