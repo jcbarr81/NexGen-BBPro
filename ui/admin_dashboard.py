@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QMenuBar,
     QProgressDialog,
     QApplication,
+    QTabWidget,
 )
 from PyQt6.QtCore import Qt
 from ui.team_entry_dialog import TeamEntryDialog
@@ -59,55 +60,96 @@ class AdminDashboard(QWidget):
         header.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(header)
 
-        layout.addStretch()
+        tabs = QTabWidget()
 
-        button_layout = QVBoxLayout()
-        button_layout.setSpacing(15)
+        # League Management Tab
+        league_tab = QWidget()
+        league_layout = QVBoxLayout()
+        league_layout.setContentsMargins(20, 20, 20, 20)
+        league_layout.setSpacing(15)
 
         self.review_button = QPushButton("Review Trades")
         self.review_button.clicked.connect(self.open_trade_review)
-        button_layout.addWidget(self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        league_layout.addWidget(
+            self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
         self.create_league_button = QPushButton("Create League")
         self.create_league_button.clicked.connect(self.open_create_league)
-        button_layout.addWidget(self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-        self.add_user_button = QPushButton("Add User")
-        self.add_user_button.clicked.connect(self.open_add_user)
-        button_layout.addWidget(self.add_user_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-        self.edit_user_button = QPushButton("Edit User")
-        self.edit_user_button.clicked.connect(self.open_edit_user)
-        button_layout.addWidget(self.edit_user_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        league_layout.addWidget(
+            self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
         self.team_dashboard_button = QPushButton("Open Team Dashboard")
         self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
-        button_layout.addWidget(
+        league_layout.addWidget(
             self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
-        self.generate_logos_button = QPushButton("Generate Team Logos")
-        self.generate_logos_button.clicked.connect(self.generate_team_logos)
-        button_layout.addWidget(self.generate_logos_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-
-        self.generate_avatars_button = QPushButton("Generate Player Avatars")
-        self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
-        button_layout.addWidget(self.generate_avatars_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
-        button_layout.addWidget(self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        league_layout.addWidget(
+            self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
         self.playbalance_button = QPushButton("Edit Play Balance")
         self.playbalance_button.clicked.connect(self.open_playbalance_editor)
-        button_layout.addWidget(self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        league_layout.addWidget(
+            self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
         self.season_progress_button = QPushButton("Season Progress")
         self.season_progress_button.clicked.connect(self.open_season_progress)
-        button_layout.addWidget(self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        league_layout.addWidget(
+            self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
-        layout.addLayout(button_layout)
+        league_tab.setLayout(league_layout)
+        tabs.addTab(league_tab, "League Management")
+
+        # User Management Tab
+        user_tab = QWidget()
+        user_layout = QVBoxLayout()
+        user_layout.setContentsMargins(20, 20, 20, 20)
+        user_layout.setSpacing(15)
+
+        self.add_user_button = QPushButton("Add User")
+        self.add_user_button.clicked.connect(self.open_add_user)
+        user_layout.addWidget(
+            self.add_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        self.edit_user_button = QPushButton("Edit User")
+        self.edit_user_button.clicked.connect(self.open_edit_user)
+        user_layout.addWidget(
+            self.edit_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        user_tab.setLayout(user_layout)
+        tabs.addTab(user_tab, "User Management")
+
+        # Utilities Tab
+        util_tab = QWidget()
+        util_layout = QVBoxLayout()
+        util_layout.setContentsMargins(20, 20, 20, 20)
+        util_layout.setSpacing(15)
+
+        self.generate_logos_button = QPushButton("Generate Team Logos")
+        self.generate_logos_button.clicked.connect(self.generate_team_logos)
+        util_layout.addWidget(
+            self.generate_logos_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        self.generate_avatars_button = QPushButton("Generate Player Avatars")
+        self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
+        util_layout.addWidget(
+            self.generate_avatars_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        util_tab.setLayout(util_layout)
+        tabs.addTab(util_tab, "Utilities")
+
+        layout.addWidget(tabs)
         layout.addStretch()
 
         self.setStyleSheet(
