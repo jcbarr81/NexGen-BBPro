@@ -292,42 +292,65 @@ class SeasonProgressWindow(QDialog):
         """Simulate multiple days with a progress dialog."""
         if self.simulator.remaining_days() <= 0:
             return
-        progress = QProgressDialog("", "", 0, days, self)
+
+        # Determine how many individual games will be played in the span so
+        # that the progress bar can advance after each contest rather than just
+        # once per day.
+        start = self.simulator._index
+        end = min(start + days, len(self.simulator.dates))
+        upcoming = self.simulator.dates[start:end]
+        total_games = sum(
+            1 for g in self.simulator.schedule if g["date"] in upcoming
+        )
+
+        progress = QProgressDialog(
+            f"Simulating {label}...", "", 0, total_games, self
+        )
         try:  # pragma: no cover - harmless in headless tests
             progress.setWindowTitle("Simulation Progress")
-        except Exception:  # pragma: no cover
-            pass
-        try:  # pragma: no cover - gui only
             progress.setCancelButton(None)
-        except Exception:  # pragma: no cover
-            pass
-        try:  # pragma: no cover - gui only
-            progress.setLabelText(f"Simulating {label}...")
-        except Exception:  # pragma: no cover
-            pass
-        try:  # pragma: no cover - gui only
             progress.setValue(0)
             progress.show()
         except Exception:  # pragma: no cover
             pass
-        simulated = 0
-        while simulated < days and self.simulator.remaining_days() > 0:
-            try:
-                self.simulator.simulate_next_day()
-            except (FileNotFoundError, ValueError) as e:
-                QMessageBox.warning(
-                    self, "Missing Lineup or Pitching", str(e)
-                )
-                break
-            simulated += 1
+
+        completed = 0
+        original_after = self.simulator.after_game
+
+        def after_game(game):
+            nonlocal completed
+            completed += 1
             try:  # pragma: no cover - gui only
-                progress.setValue(simulated)
+                progress.setValue(completed)
             except Exception:  # pragma: no cover
                 pass
-        try:  # pragma: no cover - gui only
-            progress.close()
-        except Exception:  # pragma: no cover
-            pass
+            if original_after is not None:
+                try:  # pragma: no cover - best effort for persistence
+                    original_after(game)
+                except Exception:  # pragma: no cover
+                    pass
+
+        self.simulator.after_game = after_game
+
+        simulated_days = 0
+        try:
+            while (
+                simulated_days < days and self.simulator.remaining_days() > 0
+            ):
+                try:
+                    self.simulator.simulate_next_day()
+                except (FileNotFoundError, ValueError) as e:
+                    QMessageBox.warning(
+                        self, "Missing Lineup or Pitching", str(e)
+                    )
+                    break
+                simulated_days += 1
+        finally:
+            self.simulator.after_game = original_after
+            try:  # pragma: no cover - gui only
+                progress.close()
+            except Exception:  # pragma: no cover
+                pass
         remaining = self.simulator.remaining_days()
         self.remaining_label.setText(f"Days until Midseason: {remaining}")
         message = (
