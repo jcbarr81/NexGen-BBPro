@@ -955,19 +955,31 @@ class GameSimulation:
             )
 
             if swing:
-                if self._swing_result(
+                bases = self._swing_result(
                     batter,
                     pitcher,
                     pitch_speed=pitch_speed,
                     rand=dec_r,
                     contact_quality=contact,
-                ):
+                )
+                if bases:
                     pitcher_state.strikes_thrown += 1
                     pitcher_state.h += 1
-                    pitcher_state.b1 += 1
                     self._add_stat(batter_state, "ab")
                     self._add_stat(batter_state, "h")
-                    self._add_stat(batter_state, "b1")
+                    if bases == 4:
+                        pitcher_state.hr += 1
+                        pitcher_state.allowed_hr = True
+                        self._add_stat(batter_state, "hr")
+                    elif bases == 3:
+                        pitcher_state.b3 += 1
+                        self._add_stat(batter_state, "b3")
+                    elif bases == 2:
+                        pitcher_state.b2 += 1
+                        self._add_stat(batter_state, "b2")
+                    else:
+                        pitcher_state.b1 += 1
+                        self._add_stat(batter_state, "b1")
                     pitcher_state.toast += self.config.get("pitchScoringHit", 0)
                     if pitcher_state.consecutive_hits:
                         pitcher_state.toast += self.config.get(
@@ -975,7 +987,9 @@ class GameSimulation:
                         )
                     pitcher_state.consecutive_hits += 1
                     pitcher_state.consecutive_baserunners += 1
-                    self._advance_runners(offense, defense, batter_state)
+                    self._advance_runners(
+                        offense, defense, batter_state, bases=bases
+                    )
                     steal_result = self._attempt_steal(
                         offense,
                         defense,
@@ -1123,7 +1137,7 @@ class GameSimulation:
         pitch_speed: float,
         rand: float,
         contact_quality: float = 1.0,
-    ) -> bool:
+    ) -> int:
         bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
         # Calculate and store angles for potential future physics steps.
@@ -1165,10 +1179,37 @@ class GameSimulation:
             cur_depth = _avg_depth(infield_pos[self.current_infield_situation])
             if normal_depth > 0:
                 hit_prob *= cur_depth / normal_depth
-        return rand < hit_prob
+
+        if rand >= hit_prob:
+            return 0
+
+        single = self.config.get("hit1BProb", 100) / 100.0
+        double = self.config.get("hit2BProb", 0) / 100.0
+        triple = self.config.get("hit3BProb", 0) / 100.0
+        hr = self.config.get("hitHRProb", 0) / 100.0
+        power_adj = (batter.ph - 50) / 100.0
+        hr *= 1 + power_adj
+        double *= 1 + power_adj / 2
+        triple *= max(0.0, 1 - power_adj)
+        total = single + double + triple + hr
+        if total > 0:
+            single = max(0.0, 1 - (double + triple + hr))
+        type_rand = self.rng.random()
+        if type_rand < hr:
+            return 4
+        if type_rand < hr + triple:
+            return 3
+        if type_rand < hr + triple + double:
+            return 2
+        return 1
 
     def _advance_runners(
-        self, offense: TeamState, defense: TeamState, batter_state: BatterState
+        self,
+        offense: TeamState,
+        defense: TeamState,
+        batter_state: BatterState,
+        *,
+        bases: int,
     ) -> None:
         b = offense.bases
         bp = offense.base_pitchers
@@ -1176,48 +1217,83 @@ class GameSimulation:
         new_bp: List[Optional[PitcherState]] = [None, None, None]
         runs_scored = 0
 
-        if b[2]:
-            self._score_runner(offense, defense, 2)
-            runs_scored += 1
-        if b[1]:
-            spd = self.physics.player_speed(b[1].player.sp)
-            self.physics.ball_roll_distance(
-                spd,
-                self.surface,
-                altitude=self.altitude,
-                temperature=self.temperature,
-                wind_speed=self.wind_speed,
-            )
-            if spd >= 25:
-                self._score_runner(offense, defense, 1)
+        if bases == 1:
+            if b[2]:
+                self._score_runner(offense, defense, 2)
                 runs_scored += 1
-            else:
-                new_bases[2] = b[1]
-                new_bp[2] = bp[1]
-        if b[0]:
-            spd = self.physics.player_speed(b[0].player.sp)
-            self.physics.ball_roll_distance(
-                spd,
-                self.surface,
-                altitude=self.altitude,
-                temperature=self.temperature,
-                wind_speed=self.wind_speed,
-            )
-            if spd >= 25:
-                if new_bases[2] is None:
-                    new_bases[2] = b[0]
-                    new_bp[2] = bp[0]
+            if b[1]:
+                spd = self.physics.player_speed(b[1].player.sp)
+                self.physics.ball_roll_distance(
+                    spd,
+                    self.surface,
+                    altitude=self.altitude,
+                    temperature=self.temperature,
+                    wind_speed=self.wind_speed,
+                )
+                if spd >= 25:
+                    self._score_runner(offense, defense, 1)
+                    runs_scored += 1
+                else:
+                    new_bases[2] = b[1]
+                    new_bp[2] = bp[1]
+            if b[0]:
+                spd = self.physics.player_speed(b[0].player.sp)
+                self.physics.ball_roll_distance(
+                    spd,
+                    self.surface,
+                    altitude=self.altitude,
+                    temperature=self.temperature,
+                    wind_speed=self.wind_speed,
+                )
+                if spd >= 25:
+                    if new_bases[2] is None:
+                        new_bases[2] = b[0]
+                        new_bp[2] = bp[0]
+                    else:
+                        new_bases[1] = b[0]
+                        new_bp[1] = bp[0]
                 else:
                     new_bases[1] = b[0]
                     new_bp[1] = bp[0]
-            else:
-                new_bases[1] = b[0]
-                new_bp[1] = bp[0]
 
-        new_bases[0] = batter_state
-        new_bp[0] = defense.current_pitcher_state
+            new_bases[0] = batter_state
+            new_bp[0] = defense.current_pitcher_state
+            offense.bases = new_bases
+            offense.base_pitchers = new_bp
+            if runs_scored:
+                self._add_stat(batter_state, "rbi", runs_scored)
+            return
+
+        for idx in range(2, -1, -1):
+            runner = b[idx]
+            if runner is None:
+                continue
+            target = idx + bases
+            if target >= 3:
+                self._score_runner(offense, defense, idx)
+                runs_scored += 1
+            else:
+                new_bases[target] = runner
+                new_bp[target] = bp[idx]
+
         offense.bases = new_bases
         offense.base_pitchers = new_bp
+
+        if bases >= 4:
+            offense.runs += 1
+            self._add_stat(batter_state, "r")
+            pitcher = defense.current_pitcher_state
+            if pitcher is not None:
+                pitcher.r += 1
+                pitcher.er += 1
+                pitcher.toast += self.config.get("pitchScoringRun", 0)
+                pitcher.toast += self.config.get("pitchScoringER", 0)
+            runs_scored += 1
+        else:
+            base_idx = bases - 1
+            offense.bases[base_idx] = batter_state
+            offense.base_pitchers[base_idx] = defense.current_pitcher_state
+
         if runs_scored:
             self._add_stat(batter_state, "rbi", runs_scored)
 

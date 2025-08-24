@@ -121,11 +121,18 @@ def test_swing_result_respects_bat_speed():
     assert away1.lineup_stats["b1"].h == 0
 
     # High bat speed -> hit
-    cfg_fast = make_cfg(swingSpeedBase=80, averagePitchSpeed=50)
+    cfg_fast = make_cfg(
+        swingSpeedBase=80,
+        averagePitchSpeed=50,
+        hit1BProb=100,
+        hit2BProb=0,
+        hit3BProb=0,
+        hitHRProb=0,
+    )
     batter2 = make_player("b2")
     home2 = TeamState(lineup=[make_player("h2")], bench=[], pitchers=[make_pitcher("hp2")])
     away2 = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap2")])
-    rng2 = MockRandom([0.0, 0.0, 0.9])
+    rng2 = MockRandom([0.0, 0.0, 0.9, 0.1])
     sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
     outs2 = sim2.play_at_bat(away2, home2)
     assert outs2 == 0
@@ -141,8 +148,15 @@ def test_runner_advancement_respects_speed():
     away1.lineup_stats[runner1.player_id] = runner_state1
     away1.bases[0] = runner_state1
 
-    cfg_slow = make_cfg(speedBase=10, averagePitchSpeed=50)
-    rng1 = MockRandom([0.0, 0.0, 0.9, 0.9])
+    cfg_slow = make_cfg(
+        speedBase=10,
+        averagePitchSpeed=50,
+        hit1BProb=100,
+        hit2BProb=0,
+        hit3BProb=0,
+        hitHRProb=0,
+    )
+    rng1 = MockRandom([0.0, 0.0, 0.9, 0.9, 0.1])
     sim1 = GameSimulation(home1, away1, cfg_slow, rng1)
     outs1 = sim1.play_at_bat(away1, home1)
     assert outs1 == 0
@@ -157,12 +171,46 @@ def test_runner_advancement_respects_speed():
     away2.lineup_stats[runner2.player_id] = runner_state2
     away2.bases[0] = runner_state2
 
-    cfg_fast = make_cfg(speedBase=30, averagePitchSpeed=50)
-    rng2 = MockRandom([0.0, 0.0, 0.9, 0.9])
+    cfg_fast = make_cfg(
+        speedBase=30,
+        averagePitchSpeed=50,
+        hit1BProb=100,
+        hit2BProb=0,
+        hit3BProb=0,
+        hitHRProb=0,
+    )
+    rng2 = MockRandom([0.0, 0.0, 0.9, 0.9, 0.1])
     sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
     outs2 = sim2.play_at_bat(away2, home2)
     assert outs2 == 0
     assert away2.bases[2] is runner_state2
+
+
+def test_home_run_scores_all_runners():
+    batter = make_player("slug", ph=90)
+    runner = make_player("run", sp=50)
+    runner_state = BatterState(runner)
+    home = TeamState(lineup=[make_player("h")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    away.lineup_stats[runner.player_id] = runner_state
+    away.bases[0] = runner_state
+    cfg = make_cfg(
+        swingSpeedBase=80,
+        averagePitchSpeed=50,
+        hit1BProb=0,
+        hit2BProb=0,
+        hit3BProb=0,
+        hitHRProb=100,
+    )
+    rng = MockRandom([0.0, 0.0, 0.9, 0.1])
+    sim = GameSimulation(home, away, cfg, rng)
+    outs = sim.play_at_bat(away, home)
+    assert outs == 0
+    batter_state = away.lineup_stats[batter.player_id]
+    assert batter_state.hr == 1
+    assert batter_state.r == 1
+    assert away.runs == 2
+    assert away.bases == [None, None, None]
 
 
 def test_roll_distance_respects_surface_friction():
