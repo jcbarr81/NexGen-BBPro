@@ -75,6 +75,8 @@ class QAction:
 class QMenu(Dummy):
     def addAction(self, *args, **kwargs):
         return QAction()
+    def addMenu(self, *args, **kwargs):
+        return QMenu()
 
 class QMenuBar(Dummy):
     def addMenu(self, *args, **kwargs):
