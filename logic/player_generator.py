@@ -368,23 +368,38 @@ def _weighted_choice(weight_dict: Dict[str, int]) -> str:
 
 
 def generate_pitches(throws: str, delivery: str, age: int):
+    """Generate pitch ratings without exceeding rating caps.
+
+    The previous implementation allocated points from a large pool which often
+    resulted in fastball (``fb``) ratings above 99 that were immediately capped,
+    producing identical ``fb`` and ``arm`` values for every pitcher.  This
+    version assigns ratings to each selected pitch independently using bounded
+    random values so that fastball and arm strength vary naturally.
+    """
+
     weights = PITCH_WEIGHTS[(throws, delivery)]
-    total = random.randint(10 * len(PITCH_LIST), 99 * len(PITCH_LIST)) + 60
-    num_pitches = max(2, min(5, total // 55))
+    num_pitches = random.randint(2, 5)
 
     selected = ["fb"]
-    available = weights.copy()
-    available.pop("fb", None)
+    available = list(weights.keys())
+    available.remove("fb")
     for _ in range(num_pitches - 1):
-        pitch = _weighted_choice(available)
+        pitch = random.choices(available, weights=[weights[p] for p in available])[0]
         selected.append(pitch)
-        available.pop(pitch, None)
+        available.remove(pitch)
 
-    dist_weights = {p: weights[p] for p in selected}
-    allocations = distribute_rating_points(total, dist_weights)
-    ratings = {p: allocations.get(p, 0) for p in PITCH_LIST}
+    ratings = {}
+    for pitch in selected:
+        if pitch == "fb":
+            ratings[pitch] = bounded_rating(40, 99)
+        else:
+            ratings[pitch] = bounded_rating(20, 95)
+
+    for p in PITCH_LIST:
+        ratings.setdefault(p, 0)
+
     potentials = {
-        f"pot_{p}": bounded_potential(ratings[p], age) if p in selected else 0
+        f"pot_{p}": bounded_potential(ratings[p], age) if ratings[p] else 0
         for p in PITCH_LIST
     }
     return ratings, potentials

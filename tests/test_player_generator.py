@@ -105,6 +105,13 @@ def test_pitcher_can_hit(monkeypatch):
         )
 
     monkeypatch.setattr(pg, "_maybe_add_hitting", fake_add_hitting)
+    # Ensure a younger age so potential is not reduced.
+    def fixed_birthdate(age_range=None, player_type="fictional"):
+        from datetime import date, timedelta
+        age = 25
+        return (date.today() - timedelta(days=age * 365), age)
+
+    monkeypatch.setattr(pg, "generate_birthdate", fixed_birthdate)
 
     player = generate_player(is_pitcher=True)
     assert player["ch"] == int(80 * 0.75)
@@ -226,21 +233,26 @@ def test_skin_tone_distribution_matches_weights():
         assert abs(counts[tone] / num_players - expected) < 0.05
 
 
-def test_generate_pitches_counts_and_bonus(monkeypatch):
-    base_total = 110
-
+def test_generate_pitches_counts_and_bounds(monkeypatch):
     def fake_randint(a, b):
-        if (a, b) == (10 * len(pg.PITCH_LIST), 99 * len(pg.PITCH_LIST)):
-            return base_total
+        if (a, b) == (2, 5):
+            return 3  # number of pitches
+        if (a, b) == (40, 99):
+            return 80  # fastball rating
+        if (a, b) == (20, 95):
+            return 50  # other pitch ratings
         return (a + b) // 2
 
     monkeypatch.setattr(pg.random, "randint", fake_randint)
-    monkeypatch.setattr(pg, "_weighted_choice", lambda w: next(iter(w)))
+    monkeypatch.setattr(pg.random, "choices", lambda seq, weights=None: [seq[0]])
 
     ratings, _ = pg.generate_pitches("R", "overhand", age=25)
 
+    assert ratings["fb"] == 80
+    assert ratings["si"] == 50
+    assert ratings["cu"] == 50
     assert sum(1 for r in ratings.values() if r > 0) == 3
-    assert sum(ratings.values()) == base_total + 60
+    assert all(0 <= r <= 99 for r in ratings.values())
 
 
 def test_endurance_adjustment_adds(monkeypatch):

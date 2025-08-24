@@ -41,6 +41,8 @@ def save_players_to_csv(players, file_path):
             if is_pitcher:
                 row.update({
                     "gf": p.gf,
+                    "arm": p.arm,
+                    "fa": p.fa,
                     "endurance": p.endurance,
                     "control": p.control,
                     "movement": p.movement,
