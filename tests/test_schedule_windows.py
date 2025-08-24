@@ -117,9 +117,24 @@ for name in widget_names:
 qtwidgets.QMenuBar = QMenuBar
 qtwidgets.QMenu = QMenu
 qtwidgets.QAction = QAction
+# Provide a simple QTextEdit capable of storing HTML for assertions
+class QTextEdit(Dummy):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._html = ""
+
+    def setHtml(self, html):
+        self._html = html
+
+    def toHtml(self):
+        return self._html
+
+    def setPlainText(self, text):
+        self._html = text
+
+qtwidgets.QTextEdit = QTextEdit
 qtwidgets.QTableWidget = QTableWidget
 qtwidgets.QTableWidgetItem = QTableWidgetItem
-
 class QListWidgetItem:
     def __init__(self, text):
         self._text = text
@@ -210,13 +225,15 @@ def test_schedule_windows_show_data(monkeypatch, tmp_path):
     dashboard = owner_dashboard.OwnerDashboard('A')
     dashboard.schedule_action.trigger()
     league = opened['league']
-    assert league.table.item(0,0).text() == '2024-04-01'
-    assert league.table.item(0,1).text() == 'B'
-    assert league.table.item(0,2).text() == 'A'
+    html = league.viewer.toHtml()
+    assert '2024-04-01' in html
+    assert 'B' in html
+    assert 'A' in html
 
     dashboard.team_schedule_action.trigger()
     team = opened['team']
-    assert team.table.item(0,0).text() == '2024-04-01'
-    assert team.table.item(0,1).text() == 'vs B'
-    assert team.table.item(0,2).text() == 'W 3-2'
-    assert team.table.item(1,1).text() == 'at C'
+    html = team.viewer.toHtml()
+    assert '2024-04-01' in html
+    assert 'vs B' in html
+    assert 'W 3-2' in html
+    assert 'at C' in html

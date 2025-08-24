@@ -1,9 +1,4 @@
-from PyQt6.QtWidgets import (
-    QDialog,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-)
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
 import csv
 from pathlib import Path
 
@@ -11,16 +6,25 @@ SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "schedule.csv"
 
 
 class TeamScheduleWindow(QDialog):
-    """Dialog displaying a team's schedule and results."""
+    """Dialog displaying a team's schedule and results as HTML."""
 
     def __init__(self, team_id: str, parent=None):
         super().__init__(parent)
         try:
             self.setWindowTitle("Team Schedule")
+            self.setGeometry(100, 100, 800, 600)
         except Exception:  # pragma: no cover
             pass
 
         layout = QVBoxLayout(self)
+
+        self.viewer = QTextEdit()
+        try:
+            self.viewer.setReadOnly(True)
+            self.viewer.setMinimumHeight(560)
+        except Exception:  # pragma: no cover
+            pass
+        layout.addWidget(self.viewer)
 
         schedule: list[tuple[str, str, str]] = []
         if SCHEDULE_FILE.exists():
@@ -35,15 +39,17 @@ class TeamScheduleWindow(QDialog):
                         result = row.get("result", "")
                         schedule.append((row.get("date", ""), f"{venue} {opponent}", result))
 
-        table = QTableWidget()
-        table.setColumnCount(3)
-        table.setRowCount(len(schedule))
-        table.setHorizontalHeaderLabels(["Date", "Opponent", "Result"])
-        for row, (date, opp, res) in enumerate(schedule):
-            table.setItem(row, 0, QTableWidgetItem(date))
-            table.setItem(row, 1, QTableWidgetItem(opp))
-            table.setItem(row, 2, QTableWidgetItem(res))
-        table.resizeColumnsToContents()
+        parts = [
+            "<html><head><title>Team Schedule</title></head><body>",
+            f"<b><font size=\"+2\"><center>{team_id} Schedule</center></font></b>",
+            "<hr><pre><b>Date       Opponent  Result</b>",
+        ]
 
-        self.table = table
-        layout.addWidget(table)
+        for date, opp, res in schedule:
+            parts.append(f"{date:<10}{opp:<10}{res}")
+
+        parts.extend(["</pre></body></html>"])
+        try:
+            self.viewer.setHtml("\n".join(parts))
+        except Exception:  # pragma: no cover
+            pass
