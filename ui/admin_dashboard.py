@@ -69,8 +69,8 @@ class AdminDashboard(QMainWindow):
 
         self.team_dashboards: list[OwnerDashboard] = []
 
-        bg_path = get_base_dir() / "logo" / "Admin-Dashboard.png"
-        central_widget = BackgroundWidget(str(bg_path))
+        logo_path = get_base_dir() / "logo" / "Admin-Dashboard.png"
+        central_widget = QWidget()
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
@@ -83,6 +83,30 @@ class AdminDashboard(QMainWindow):
         exit_action = file_menu.addAction("Exit")
         exit_action.triggered.connect(QApplication.quit)
         self.setMenuBar(menubar)
+
+        logo_pixmap = QPixmap(str(logo_path)).scaled(
+            80,
+            80,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        left_logo = QLabel()
+        left_logo.setPixmap(logo_pixmap)
+        right_logo = QLabel()
+        right_logo.setPixmap(logo_pixmap)
+        logo_layout = QHBoxLayout()
+        logo_layout.addWidget(
+            left_logo,
+            alignment=Qt.AlignmentFlag.AlignLeft
+            | Qt.AlignmentFlag.AlignVCenter,
+        )
+        logo_layout.addStretch()
+        logo_layout.addWidget(
+            right_logo,
+            alignment=Qt.AlignmentFlag.AlignRight
+            | Qt.AlignmentFlag.AlignVCenter,
+        )
+        layout.addLayout(logo_layout)
 
         header = QLabel("Welcome to the Admin Dashboard")
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
