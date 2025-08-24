@@ -62,6 +62,13 @@ def _contrast_text_color(hex_color: str) -> str:
     return "#000000" if luminance > 180 else "#ffffff"
 
 
+PREDEFINED_COLOR_SCHEMES: dict[str, tuple[str, str]] = {
+    "Light": ("#f5f5f5", "#d0d0d0"),
+    "Dark": ("#2e3440", "#4c566a"),
+    "Classic": ("#003366", "#cccccc"),
+}
+
+
 class OwnerDashboard(QWidget):
     """Owner-facing dashboard showing roster and quick actions.
 
@@ -99,6 +106,14 @@ class OwnerDashboard(QWidget):
         file_menu = menubar.addMenu("File")
         exit_action = file_menu.addAction("Exit")
         exit_action.triggered.connect(QApplication.quit)
+        color_menu = file_menu.addMenu("Color Scheme")
+        for name, (primary, secondary) in PREDEFINED_COLOR_SCHEMES.items():
+            action = color_menu.addAction(name)
+            action.triggered.connect(
+                lambda _=False, p=primary, s=secondary: self.apply_color_scheme(p, s)
+            )
+        team_colors_action = color_menu.addAction("Team Colors")
+        team_colors_action.triggered.connect(self.apply_team_colors)
         team_menu = menubar.addMenu("Team")
         pos_action = team_menu.addAction("Position Players")
         pit_action = team_menu.addAction("Pitchers")
@@ -227,8 +242,10 @@ class OwnerDashboard(QWidget):
         """Apply the team's color scheme to the dashboard."""
         if not self.team:
             return
-        primary = self.team.primary_color
-        secondary = self.team.secondary_color
+        self.apply_color_scheme(self.team.primary_color, self.team.secondary_color)
+
+    def apply_color_scheme(self, primary: str, secondary: str):
+        """Apply a custom color scheme to the dashboard."""
         text_color = _contrast_text_color(primary)
         button_text = _contrast_text_color(secondary)
         self.setStyleSheet(
