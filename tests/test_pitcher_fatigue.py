@@ -45,7 +45,7 @@ def make_pitcher(pid: str) -> Pitcher:
         control=80,
         movement=70,
         hold_runner=50,
-        fb=100,
+        fb=99,
         cu=0,
         cb=0,
         sl=0,
@@ -87,7 +87,7 @@ def test_ratings_drop_when_tired():
     sim._update_fatigue(ps)
     fatigued = sim._fatigued_pitcher(ps.player)
     assert ps.player.fatigue == "tired"
-    assert fatigued.fb == 50  # 100 * 0.5
+    assert fatigued.fb == 49  # 99 * 0.5
     assert fatigued.arm == 72  # 90 * 0.8
     assert fatigued.control == 72  # 80 * 0.9
     assert fatigued.movement == 56  # 70 * 0.8
@@ -99,7 +99,7 @@ def test_ratings_drop_when_exhausted():
     sim._update_fatigue(ps)
     fatigued = sim._fatigued_pitcher(ps.player)
     assert ps.player.fatigue == "exhausted"
-    assert fatigued.fb == 25  # 100 * 0.25
+    assert fatigued.fb == 24  # 99 * 0.25
     assert fatigued.arm == 54  # 90 * 0.6
     assert fatigued.control == 72  # effCOPct still 0.9
     assert fatigued.movement == 56  # effMOPct 0.8

@@ -906,6 +906,8 @@ class SubstitutionManager:
                 if tracker is None or not tracker.is_ready():
                     return False
         from .simulation import PitcherState  # local import to avoid cycle
+        if not defense.pitchers:
+            return False
         defense.pitchers.pop(0)
         if defense.pitchers:
             new_pitcher = defense.pitchers[0]
