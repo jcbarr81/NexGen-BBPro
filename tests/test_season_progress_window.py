@@ -263,3 +263,38 @@ def test_generate_schedule_loads_teams_from_csv(monkeypatch, tmp_path):
     win._generate_schedule()
     assert len(win.simulator.schedule) > 0
     assert schedule_file.exists()
+
+
+def test_progress_persists_between_sessions(monkeypatch, tmp_path):
+    class PreseasonManager:
+        def __init__(self):
+            self.phase = SeasonPhase.PRESEASON
+            self.players = {}
+            team_a = types.SimpleNamespace(
+                abbreviation="A", act_roster=[], aaa_roster=[], low_roster=[]
+            )
+            team_b = types.SimpleNamespace(
+                abbreviation="B", act_roster=[], aaa_roster=[], low_roster=[]
+            )
+            self.teams = [team_a, team_b]
+
+        def handle_phase(self):
+            return "Preseason"
+
+        def save(self):
+            pass
+
+        def advance_phase(self):
+            pass
+
+    spw.SeasonManager = PreseasonManager
+    progress_file = tmp_path / "progress.json"
+    monkeypatch.setattr(spw, "PROGRESS_FILE", progress_file)
+
+    win1 = spw.SeasonProgressWindow()
+    assert win1.free_agency_button.isEnabled()
+    win1.free_agency_button.clicked.emit()
+
+    win2 = spw.SeasonProgressWindow()
+    assert not win2.free_agency_button.isEnabled()
+    assert win2.training_camp_button.isEnabled()

@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from datetime import date
 import csv
+import json
 from pathlib import Path
 
 import logic.season_manager as season_manager
@@ -23,6 +24,7 @@ from utils.news_logger import log_news_event
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 TEAMS_FILE = DATA_DIR / "teams.csv"
 SCHEDULE_FILE = DATA_DIR / "schedule.csv"
+PROGRESS_FILE = DATA_DIR / "season_progress.json"
 
 
 class SeasonProgressWindow(QDialog):
@@ -43,12 +45,17 @@ class SeasonProgressWindow(QDialog):
 
         self.manager = SeasonManager()
         self._simulate_game = simulate_game
+        if schedule is None and SCHEDULE_FILE.exists():
+            with SCHEDULE_FILE.open(newline="") as fh:
+                reader = csv.DictReader(fh)
+                schedule = list(reader)
         self.simulator = SeasonSimulator(schedule or [], simulate_game)
         self._preseason_done = {
             "free_agency": False,
             "training_camp": False,
             "schedule": False,
         }
+        self._load_progress()
 
         layout = QVBoxLayout(self)
 
@@ -145,6 +152,7 @@ class SeasonProgressWindow(QDialog):
                 "training_camp": False,
                 "schedule": False,
             }
+            self.simulator = SeasonSimulator([], self._simulate_game)
             note = f"Retired Players: {len(retired)}"
         else:
             self.manager.advance_phase()
@@ -152,6 +160,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event(
             f"Season advanced to {self.manager.phase.name.replace('_', ' ').title()}"
         )
+        self._save_progress()
         self._update_ui(note)
 
     # ------------------------------------------------------------------
@@ -177,6 +186,7 @@ class SeasonProgressWindow(QDialog):
         message = (
             f"Unsigned Players: {names}" if agents else "No unsigned players available."
         )
+        self._save_progress()
         self._update_ui(message)
 
     def _run_training_camp(self) -> None:
@@ -187,6 +197,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event("Training camp completed; players marked ready")
         self.training_camp_button.setEnabled(False)
         self._preseason_done["training_camp"] = True
+        self._save_progress()
         self._update_ui("Training camp completed. Players marked ready.")
 
     def _generate_schedule(self) -> None:
@@ -211,6 +222,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
         self.generate_schedule_button.setEnabled(False)
         self._preseason_done["schedule"] = True
+        self._save_progress()
         self._update_ui(message)
 
     # ------------------------------------------------------------------
@@ -224,7 +236,31 @@ class SeasonProgressWindow(QDialog):
         log_news_event(
             f"Simulated a regular season day; {remaining} days until Midseason"
         )
+        self._save_progress()
         season_done = self.simulator._index >= len(self.simulator.dates)
         if season_done:
             self.next_button.setEnabled(True)
+
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+    def _load_progress(self) -> None:
+        """Load preseason and simulation progress from disk."""
+        try:
+            with PROGRESS_FILE.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            return
+        self._preseason_done.update(data.get("preseason_done", {}))
+        self.simulator._index = data.get("sim_index", self.simulator._index)
+
+    def _save_progress(self) -> None:
+        """Persist preseason and simulation progress to disk."""
+        PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "preseason_done": self._preseason_done,
+            "sim_index": self.simulator._index,
+        }
+        with PROGRESS_FILE.open("w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2)
 
