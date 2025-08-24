@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Callable, Dict, Iterable, List
 import random
 
-from models.player import Player
-from models.pitcher import Pitcher
 from logic.simulation import GameSimulation, TeamState
 from logic.playbalance_config import PlayBalanceConfig
+from utils.lineup_loader import build_default_game_state
+from utils.path_utils import get_base_dir
 
 
 class SeasonSimulator:
@@ -85,48 +85,20 @@ class SeasonSimulator:
         self._index += 1
 
     # ------------------------------------------------------------------
-    def _default_simulate_game(self, home_id: str, away_id: str) -> None:
-        """Run a minimal game simulation between two placeholder teams.
+    def _default_simulate_game(self, home_id: str, away_id: str) -> tuple[int, int]:
+        """Run a full pitch-by-pitch simulation between two teams.
 
-        The :class:`Player` and :class:`Pitcher` classes require a number of
-        positional fields (e.g. ``player_id``, ``birthdate``) which are not
-        relevant for a tiny self-contained simulation.  Previously this method
-        attempted to instantiate these classes with only names, which raised a
-        :class:`TypeError`.  To keep the simulator light-weight while still
-        honouring the data model, we construct the objects with simple placeholder
-        values for the required attributes.
+        This constructs team states from the default player and roster data and
+        then runs :class:`~logic.simulation.GameSimulation` using the same
+        configuration employed for exhibition games.  The resulting runs scored
+        by each club are returned so callers can persist results or update
+        standings.
         """
 
-        def _placeholder(
-            cls, first: str, last: str, position: str, **extra
-        ):
-            """Create a minimal player instance with required attributes."""
-
-            base = dict(
-                player_id=f"{first[0]}{last}",
-                first_name=first,
-                last_name=last,
-                birthdate="2000-01-01",
-                height=72,
-                weight=180,
-                bats="R",
-                primary_position=position,
-                other_positions=[],
-                gf=50,
-            )
-            base.update(extra)
-            return cls(**base)
-
-        batter_h = _placeholder(Player, "Home", home_id, "DH")
-        pitcher_h = _placeholder(Pitcher, "Home", home_id, "P", fb=50)
-        batter_a = _placeholder(Player, "Away", away_id, "DH")
-        pitcher_a = _placeholder(Pitcher, "Away", away_id, "P", fb=50)
-
-        home = TeamState(lineup=[batter_h], bench=[], pitchers=[pitcher_h])
-        away = TeamState(lineup=[batter_a], bench=[], pitchers=[pitcher_a])
-
-        config = PlayBalanceConfig()
-        sim = GameSimulation(home, away, config, random.Random())
+        home = build_default_game_state(home_id)
+        away = build_default_game_state(away_id)
+        cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+        sim = GameSimulation(home, away, cfg, random.Random())
         sim.simulate_game()
         return home.runs, away.runs
 
