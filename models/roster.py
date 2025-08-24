@@ -14,7 +14,7 @@ class Roster:
         getattr(self, from_level).remove(player_id)
         getattr(self, to_level).append(player_id)
 
-    def promote_replacements(self, target_size: int = 26) -> None:
+    def promote_replacements(self, target_size: int = 25) -> None:
         """Promote players from the minors to fill active roster vacancies.
 
         Parameters

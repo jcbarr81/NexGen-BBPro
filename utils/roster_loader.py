@@ -3,7 +3,8 @@ from pathlib import Path
 
 from models.roster import Roster
 from utils.path_utils import get_base_dir
-ACTIVE_ROSTER_SIZE = 26
+# Teams should field exactly 25 players on the active roster.
+ACTIVE_ROSTER_SIZE = 25
 
 
 def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
