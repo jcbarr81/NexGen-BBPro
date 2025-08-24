@@ -30,6 +30,7 @@ class SeasonSimulator:
         schedule: Iterable[Dict[str, str]],
         simulate_game: Callable[[str, str], None] | None = None,
         on_all_star_break: Callable[[], None] | None = None,
+        after_game: Callable[[Dict[str, str]], None] | None = None,
     ) -> None:
         self.schedule = list(schedule)
         self.dates: List[str] = sorted({g["date"] for g in self.schedule})
@@ -38,6 +39,11 @@ class SeasonSimulator:
         self.simulate_game = simulate_game or self._default_simulate_game
         self.on_all_star_break = on_all_star_break
         self._all_star_played = False
+        # Callback invoked after each game to persist results such as
+        # standings, schedule updates or player statistics.  The callback
+        # receives the ``game`` dictionary for the contest that was just
+        # simulated.
+        self.after_game = after_game
 
     # ------------------------------------------------------------------
     def remaining_days(self) -> int:
@@ -63,6 +69,15 @@ class SeasonSimulator:
         games = [g for g in self.schedule if g["date"] == current_date]
         for game in games:
             self.simulate_game(game["home"], game["away"])
+            # Allow the caller to persist results after each individual game
+            # rather than waiting for the entire day to complete.  This makes
+            # it possible to update standings, schedules and statistics even if
+            # a simulation run is interrupted mid-day.
+            if self.after_game is not None:
+                try:
+                    self.after_game(game)
+                except Exception:  # pragma: no cover - persistence is best effort
+                    pass
         self._index += 1
 
     # ------------------------------------------------------------------
