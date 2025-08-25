@@ -200,8 +200,8 @@ def test_pitch_classification():
     ai = BatterAI(cfg)
 
     assert ai.pitch_class(0) == "sure strike"
-    assert ai.pitch_class(3) == "sure strike"
-    assert ai.pitch_class(4) == "close strike"
+    assert ai.pitch_class(3) == "close strike"
+    assert ai.pitch_class(4) == "close ball"
     assert ai.pitch_class(5) == "close ball"
     assert ai.pitch_class(6) == "sure ball"
 
