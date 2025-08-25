@@ -337,11 +337,12 @@ class BatterAI:
             if disc_roll < rating / 100.0:
                 swing = False
 
-        contact = (
-            timing_quality
-            if swing and type_id and time_id
-            else 0.5 if swing else 0.0
-        )
+        if not swing:
+            contact = 0.0
+        elif type_id and loc_id and time_id:
+            contact = timing_quality
+        else:
+            contact = 0.0
 
         if swing and not self.can_adjust_swing(
             batter, dx, dy, swing_type=swing_type
