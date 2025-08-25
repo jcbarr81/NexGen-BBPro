@@ -114,7 +114,7 @@ def test_pinch_hitter_not_used():
     sim.play_at_bat(away, home)
     assert away.lineup[0].player_id == "start"
     stats = away.lineup_stats["start"]
-    assert stats.bb == 1
+    assert stats.so == 1
 
 
 def test_pinch_hit_need_hit_used():
@@ -506,7 +506,7 @@ def test_walk_records_stats():
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
     # four balls
-    rng = MockRandom([0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9])
+    rng = MockRandom([0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99])
     sim = GameSimulation(home, away, cfg, rng)
     outs = sim.play_at_bat(away, home)
     assert outs == 0
@@ -536,7 +536,7 @@ def test_pitch_control_affects_location():
         lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=30)]
     )
     away_low = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap")])
-    rng_low = MockRandom([0.8, 0.9, 0.8, 0.9, 0.8, 0.9, 0.8, 0.9])
+    rng_low = MockRandom([0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99])
     sim_low = GameSimulation(home_low, away_low, cfg, rng_low)
     outs_low = sim_low.play_at_bat(away_low, home_low)
     stats_low = away_low.lineup_stats[batter2.player_id]

@@ -1119,7 +1119,7 @@ siBreakRangeWidth=0     ; Random range to add to RIGHT break for a sinker
 siBreakRangeHeight=-1   ; Random range to add to UPWARD break for a sinker
 ;
 ; Missed control check pitch modifiers
-controlBoxIncreaseEffCOPct=15   ; When the control check is missed, the amount
+controlBoxIncreaseEffCOPct=8    ; When the control check is missed, the amount
 ;                                  it missed by is multiplied by this percentage
 ;                                  to get the number of squares the control box
 ;                                  will increase in size to determine the final
@@ -1317,8 +1317,8 @@ pitchObj32CountPlusWeight=23        ; Any pitch to plus location on 3-2 counts
 ; The values here are how far from 0,0 to call a particular class of pitch.
 ; The number of squares out from center to classify the parts of the zone.
 ;
-sureStrikeDist=3
-closeStrikeDist=4
+sureStrikeDist=2
+closeStrikeDist=3
 closeBallDist=5
 ;
 ; LOOK FOR PITCH TYPE ADJUSTMENTS
@@ -1415,9 +1415,9 @@ timingVeryGoodBase=-63
 ; new location or timing.  The adjustments are measured in "units".  A unit is
 ; either a one of the squares in the 9x9 strike zone grid or are timing units.
 ;
-adjustUnitsCHPct=100
+adjustUnitsCHPct=120
 adjustUnitsPowerPct=75
-adjustUnitsContactPct=150
+adjustUnitsContactPct=200
 ;
 ; SWING ADJUSTMENT UNITS
 ; These controls allow you to set how many adjustment "units" it costs
@@ -1460,19 +1460,19 @@ adjustUnitsContactPct=150
 ;    4. The batter gets a number of adjustment units based on the specified
 ;       percent multiplier on his CH rating.
 ;
-adjustUnitsDiag=2   ; Units used to move swing 1 square diagonally
-adjustUnitsHoriz=3  ; Units used to move swing 1 square horizontally
-adjustUnitsVert=2   ; Units used to move swing 1 square vertically
+adjustUnitsDiag=1   ; Units used to move swing 1 square diagonally
+adjustUnitsHoriz=2  ; Units used to move swing 1 square horizontally
+adjustUnitsVert=1   ; Units used to move swing 1 square vertically
 adjustUnitsSpeedUpLowGeared=1   ; Multiplier to timing adjustment units
 ;                                  if swing needs to be sped up to a speed
 ;                                  lower than the geared speed
-adjustUnitsSpeedUpHighGeared=8  ; Multiplier to timing adjustment units
+adjustUnitsSpeedUpHighGeared=4  ; Multiplier to timing adjustment units
 ;                                  if swing needs to be sped up to a speed
 ;                                  higher than the geared speed
 adjustUnitsSlowDownLowGeared=1  ; Multiplier to timing adjustment units
 ;                                  if swing needs to be slowed down to a
 ;                                  speed lower than the geared speed
-adjustUnitsSlowDownHighGeared=4 ; Multiplier to timing adjustment units
+adjustUnitsSlowDownHighGeared=2 ; Multiplier to timing adjustment units
 ;                                  if swing needs to be slowed down to a
 ;                                  speed higher than the geared speed
 ;
