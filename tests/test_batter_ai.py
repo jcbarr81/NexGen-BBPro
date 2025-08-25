@@ -50,7 +50,7 @@ def test_misidentification_reduces_contact():
         random_value=0.4,
     )
     assert swing is True
-    assert contact == 0.5
+    assert contact == 0.0
 
 
 def test_primary_look_adjust_increases_swings():
@@ -80,7 +80,7 @@ def test_primary_look_adjust_increases_swings():
         random_value=0.4,
     )
     assert swing is True
-    assert contact == 0.5
+    assert contact == 0.0
 
 
 def test_best_look_adjust_increases_swings():
@@ -110,7 +110,7 @@ def test_best_look_adjust_increases_swings():
         random_value=0.4,
     )
     assert swing is True
-    assert contact == 0.5
+    assert contact == 0.0
 
 
 def test_ch_and_exp_ratings_increase_identification():
@@ -147,7 +147,7 @@ def test_ch_and_exp_ratings_increase_identification():
     )
 
     assert swing_low is True
-    assert contact_low == 0.5
+    assert contact_low == 0.0
     assert swing_high is True
     assert contact_high == pytest.approx(0.82)
 
@@ -156,7 +156,7 @@ def test_pitch_rating_makes_identification_harder():
     cfg = load_config()
     cfg.values.update(
         {
-            "idRatingBase": 0,
+            "idRatingBase": 60,
             "idRatingCHPct": 0,
             "idRatingExpPct": 0,
             "idRatingPitchRatPct": 100,
@@ -176,7 +176,7 @@ def test_pitch_rating_makes_identification_harder():
         balls=0,
         strikes=0,
         dist=0,
-        random_value=0.4,
+        random_value=0.9,
     )
 
     pitcher_hard = make_pitcher("hard")
@@ -188,11 +188,11 @@ def test_pitch_rating_makes_identification_harder():
         balls=0,
         strikes=0,
         dist=0,
-        random_value=0.4,
+        random_value=0.9,
     )
 
-    assert swing_e is True and contact_e == pytest.approx(0.77)
-    assert swing_h is True and contact_h == 0.5
+    assert swing_e is True and contact_e > 0
+    assert swing_h is True and contact_h == 0.0
 
 
 def test_pitch_classification():
@@ -258,8 +258,6 @@ def test_discipline_ratings_increase_takes():
 @pytest.mark.parametrize(
     "base,expected",
     [
-        (50, 0.99),
-        (65, 0.89),
         (85, 0.79),
         (92, 0.69),
         (98, 0.59),

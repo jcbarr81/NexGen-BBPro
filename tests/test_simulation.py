@@ -519,6 +519,26 @@ def test_walk_records_stats():
     assert pstats.pitches_thrown == 4
 
 
+def test_swing_and_miss_records_strikeout(monkeypatch):
+    cfg = load_config()
+    batter = make_player("bat")
+    home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    sim = GameSimulation(home, away, cfg, MockRandom([0.0] * 9))
+
+    monkeypatch.setattr(sim.batter_ai, "decide_swing", lambda *_, **__: (True, 0.0))
+
+    def fail(*args, **kwargs):  # pragma: no cover - sanity check
+        raise AssertionError("should not be called")
+
+    monkeypatch.setattr(sim, "_swing_result", fail)
+
+    outs = sim.play_at_bat(away, home)
+    stats = away.lineup_stats[batter.player_id]
+    assert outs == 1
+    assert stats.so == 1
+
+
 def test_pitch_control_affects_location():
     cfg = load_config()
     batter1 = make_player("bat1")
