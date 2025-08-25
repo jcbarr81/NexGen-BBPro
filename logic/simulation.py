@@ -961,92 +961,114 @@ class GameSimulation:
             )
 
             if swing:
-                bases = self._swing_result(
-                    batter,
-                    pitcher,
-                    pitch_speed=pitch_speed,
-                    rand=dec_r,
-                    contact_quality=contact,
-                )
-                if bases:
-                    pitcher_state.strikes_thrown += 1
-                    pitcher_state.h += 1
-                    self._add_stat(batter_state, "ab")
-                    self._add_stat(batter_state, "h")
-                    if bases == 4:
-                        pitcher_state.hr += 1
-                        pitcher_state.allowed_hr = True
-                        self._add_stat(batter_state, "hr")
-                    elif bases == 3:
-                        pitcher_state.b3 += 1
-                        self._add_stat(batter_state, "b3")
-                    elif bases == 2:
-                        pitcher_state.b2 += 1
-                        self._add_stat(batter_state, "b2")
-                    else:
-                        pitcher_state.b1 += 1
-                        self._add_stat(batter_state, "b1")
-                    pitcher_state.toast += self.config.get("pitchScoringHit", 0)
-                    if pitcher_state.consecutive_hits:
-                        pitcher_state.toast += self.config.get(
-                            "pitchScoringConsHit", 0
+                if contact > 0:
+                    bases = self._swing_result(
+                        batter,
+                        pitcher,
+                        pitch_speed=pitch_speed,
+                        rand=dec_r,
+                        contact_quality=contact,
+                    )
+                    if bases:
+                        pitcher_state.strikes_thrown += 1
+                        pitcher_state.h += 1
+                        self._add_stat(batter_state, "ab")
+                        self._add_stat(batter_state, "h")
+                        if bases == 4:
+                            pitcher_state.hr += 1
+                            pitcher_state.allowed_hr = True
+                            self._add_stat(batter_state, "hr")
+                        elif bases == 3:
+                            pitcher_state.b3 += 1
+                            self._add_stat(batter_state, "b3")
+                        elif bases == 2:
+                            pitcher_state.b2 += 1
+                            self._add_stat(batter_state, "b2")
+                        else:
+                            pitcher_state.b1 += 1
+                            self._add_stat(batter_state, "b1")
+                        pitcher_state.toast += self.config.get("pitchScoringHit", 0)
+                        if pitcher_state.consecutive_hits:
+                            pitcher_state.toast += self.config.get(
+                                "pitchScoringConsHit", 0
+                            )
+                        pitcher_state.consecutive_hits += 1
+                        pitcher_state.consecutive_baserunners += 1
+                        self._advance_runners(
+                            offense, defense, batter_state, bases=bases
                         )
-                    pitcher_state.consecutive_hits += 1
-                    pitcher_state.consecutive_baserunners += 1
-                    self._advance_runners(
-                        offense, defense, batter_state, bases=bases
-                    )
-                    steal_result = self._attempt_steal(
-                        offense,
-                        defense,
-                        pitcher_state.player,
-                        batter=batter,
-                        balls=balls,
-                        strikes=strikes,
-                        outs=outs,
-                        runner_on=2,
-                        batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher.control <= 30,
-                        pitcher_in_windup=False,
-                        run_diff=run_diff,
-                    )
-                    if steal_result is False:
+                        steal_result = self._attempt_steal(
+                            offense,
+                            defense,
+                            pitcher_state.player,
+                            batter=batter,
+                            balls=balls,
+                            strikes=strikes,
+                            outs=outs,
+                            runner_on=2,
+                            batter_ch=batter.ch,
+                            pitcher_is_wild=pitcher.control <= 30,
+                            pitcher_in_windup=False,
+                            run_diff=run_diff,
+                        )
+                        if steal_result is False:
+                            outs += 1
+                            pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners = 0
+                        steal_result = self._attempt_steal(
+                            offense,
+                            defense,
+                            pitcher_state.player,
+                            batter=batter,
+                            balls=balls,
+                            strikes=strikes,
+                            outs=outs,
+                            runner_on=1,
+                            batter_ch=batter.ch,
+                            pitcher_is_wild=pitcher.control <= 30,
+                            pitcher_in_windup=False,
+                            run_diff=run_diff,
+                        )
+                        if steal_result is False:
+                            outs += 1
+                            pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners = 0
+                        self._add_stat(
+                            batter_state,
+                            "pitches",
+                            pitcher_state.pitches_thrown - start_pitches,
+                        )
+                        pitcher_state.outs += outs
+                        run_diff = offense.runs - defense.runs
+                        self.subs.maybe_warm_reliever(
+                            defense, inning=inning, run_diff=run_diff, home_team=home_team
+                        )
+                        return outs
+                    if self.config.get("ballInPlayOuts", False):
+                        pitcher_state.strikes_thrown += 1
+                        self._add_stat(batter_state, "ab")
                         outs += 1
                         pitcher_state.toast += self.config.get("pitchScoringOut", 0)
                         pitcher_state.consecutive_hits = 0
                         pitcher_state.consecutive_baserunners = 0
-                    steal_result = self._attempt_steal(
-                        offense,
-                        defense,
-                        pitcher_state.player,
-                        batter=batter,
-                        balls=balls,
-                        strikes=strikes,
-                        outs=outs,
-                        runner_on=1,
-                        batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher.control <= 30,
-                        pitcher_in_windup=False,
-                        run_diff=run_diff,
-                    )
-                    if steal_result is False:
-                        outs += 1
-                        pitcher_state.toast += self.config.get("pitchScoringOut", 0)
-                        pitcher_state.consecutive_hits = 0
-                        pitcher_state.consecutive_baserunners = 0
-                    self._add_stat(
-                        batter_state,
-                        "pitches",
-                        pitcher_state.pitches_thrown - start_pitches,
-                    )
-                    pitcher_state.outs += outs
-                    run_diff = offense.runs - defense.runs
-                    self.subs.maybe_warm_reliever(
-                        defense, inning=inning, run_diff=run_diff, home_team=home_team
-                    )
-                    return outs
-                strikes += 1
-                pitcher_state.strikes_thrown += 1
+                        self._add_stat(
+                            batter_state,
+                            "pitches",
+                            pitcher_state.pitches_thrown - start_pitches,
+                        )
+                        pitcher_state.outs += outs
+                        run_diff = offense.runs - defense.runs
+                        self.subs.maybe_warm_reliever(
+                            defense, inning=inning, run_diff=run_diff, home_team=home_team
+                        )
+                        return outs
+                    strikes += 1
+                    pitcher_state.strikes_thrown += 1
+                else:
+                    strikes += 1
+                    pitcher_state.strikes_thrown += 1
             else:
                 if dist <= 3:
                     strikes += 1

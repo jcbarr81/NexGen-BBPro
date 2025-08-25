@@ -49,6 +49,7 @@ def simulate_season_average() -> None:
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+    cfg.ballInPlayOuts = 1
     rng = random.Random(42)
 
     totals: Counter[str] = Counter()
