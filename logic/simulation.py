@@ -1166,10 +1166,19 @@ class GameSimulation:
             wet=self.wet,
             temperature=self.temperature,
         )
-        movement_factor = max(0.05, (100 - pitcher.movement) / 100.0)
+        movement_factor = max(0.1, (100 - pitcher.movement) / 100.0)
+        contact_factor = 0.8 + getattr(batter, "ch", 50) / 250.0
         hit_prob = max(
             0.0,
-            min(0.95, (bat_speed / 100.0) * contact_quality * movement_factor),
+            min(
+                0.95,
+                (
+                    (bat_speed / 100.0)
+                    * contact_quality
+                    * contact_factor
+                    * movement_factor
+                ),
+            ),
         )
         # Modify hit probability based on current defensive alignment.
         infield_pos = self.current_field_positions.get("infield", {})
