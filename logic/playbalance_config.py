@@ -127,6 +127,7 @@ _DEFAULTS: Dict[str, Any] = {
     "hit2BProb": 22,
     "hit3BProb": 3,
     "hitHRProb": 18,
+    "ballInPlayOuts": 0,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
     "pitchRatVariationFaces": 3,
