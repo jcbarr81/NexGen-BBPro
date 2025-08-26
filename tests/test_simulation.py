@@ -114,7 +114,7 @@ def test_pinch_hitter_not_used():
     sim.play_at_bat(away, home)
     assert away.lineup[0].player_id == "start"
     stats = away.lineup_stats["start"]
-    assert stats.so == 1
+    assert stats.bb == 1
 
 
 def test_pinch_hit_need_hit_used():

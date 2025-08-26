@@ -931,7 +931,7 @@ class GameSimulation:
             pitch_speed = self.physics.pitch_velocity(
                 pitch_type, pitcher.arm, rand=loc_r
             )
-            control_chance = pitcher.control / 100.0
+            control_chance = pitcher.control / 100.0 * 0.9  # encourage more balls
             width, height = self.physics.control_box(pitch_type)
             frac = loc_r
             miss_amt = 0.0
