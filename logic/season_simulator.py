@@ -110,8 +110,11 @@ class SeasonSimulator:
                 if isinstance(result, tuple):
                     if len(result) >= 2:
                         game["result"] = f"{result[0]}-{result[1]}"
-                    if len(result) >= 3 and isinstance(result[2], str):
-                        game["boxscore_html"] = result[2]
+                    if len(result) >= 3:
+                        if isinstance(result[2], str):
+                            game["boxscore_html"] = result[2]
+                        else:
+                            game["extra"] = result[2]
                 if self.after_game is not None:
                     try:
                         self.after_game(game)
@@ -123,8 +126,11 @@ class SeasonSimulator:
                 if isinstance(result, tuple):
                     if len(result) >= 2:
                         game["result"] = f"{result[0]}-{result[1]}"
-                    if len(result) >= 3 and isinstance(result[2], str):
-                        game["boxscore_html"] = result[2]
+                    if len(result) >= 3:
+                        if isinstance(result[2], str):
+                            game["boxscore_html"] = result[2]
+                        else:
+                            game["extra"] = result[2]
                 if self.after_game is not None:
                     try:
                         self.after_game(game)

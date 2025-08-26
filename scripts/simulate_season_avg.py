@@ -112,15 +112,23 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
     totals: Counter[str] = Counter()
     total_games = 0
 
-    def simulate_game(home_id: str, away_id: str) -> tuple[int, int]:
-        nonlocal total_games
-
+    def simulate_game(home_id: str, away_id: str) -> tuple[int, int, dict]:
         home = clone_team_state(base_states[home_id])
         away = clone_team_state(base_states[away_id])
         sim = GameSimulation(home, away, cfg, rng)
         sim.simulate_game()
         box = generate_boxscore(home, away)
+        return box["home"]["score"], box["away"]["score"], box
 
+    pbar = None
+    if use_tqdm:
+        pbar = tqdm(total=len(schedule), desc="Simulating season")
+
+    def after_game(game) -> None:
+        nonlocal total_games
+        box = game.get("extra")
+        if not box:
+            return
         for side in ("home", "away"):
             batting = box[side]["batting"]
             pitching = box[side]["pitching"]
@@ -136,16 +144,18 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
             totals["HitByPitch"] += sum(p["hbp"] for p in batting)
             totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
             totals["Strikes"] += sum(p["strikes"] for p in pitching)
-
         total_games += 1
-        return box["home"]["score"], box["away"]["score"]
+        if pbar is not None:
+            pbar.update(1)
 
-    simulator = SeasonSimulator(schedule, simulate_game=simulate_game)
-    iterator = range(len(simulator.dates))
-    if use_tqdm:
-        iterator = tqdm(iterator, desc="Simulating season")
-    for _ in iterator:
+    simulator = SeasonSimulator(
+        schedule, simulate_game=simulate_game, after_game=after_game
+    )
+    for _ in simulator.dates:
         simulator.simulate_next_day()
+
+    if pbar is not None:
+        pbar.close()
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
 
