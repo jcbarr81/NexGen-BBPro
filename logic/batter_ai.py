@@ -329,7 +329,12 @@ class BatterAI:
                 "close ball": 0.25,
                 "sure ball": 0.0,
             }
-            swing = rand_type < swing_probs[p_class]
+            swing_prob = swing_probs[p_class]
+            if p_class in {"close ball", "sure ball"}:
+                swing_prob = max(
+                    0.0, swing_prob - getattr(batter, "ch", 0) / 400.0
+                )
+            swing = rand_type < swing_prob
 
         if swing and p_class in {"close ball", "sure ball"}:
             disc_roll = (random_value + 0.99) % 1

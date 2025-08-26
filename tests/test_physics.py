@@ -382,7 +382,7 @@ def test_pitch_aim_uses_control_box_dimensions(ptype, cfg_key, width, height):
     batter = make_player("b")
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[pitcher])
-    rng = MockRandom([0.9, 0.0])
+    rng = MockRandom([0.899, 0.0])
     sim = GameSimulation(home, away, cfg, rng)
     tracker = TrackingBatterAI(cfg)
     sim.batter_ai = tracker
@@ -509,7 +509,8 @@ def test_missed_control_expands_box_and_reduces_velocity():
     sim.batter_ai = tracker
     with pytest.raises(CaptureDist):
         sim.play_at_bat(away, home)
-    miss_amt = (0.9 - 0.5) * 100
+    control_chance = pitcher.control / 100.0 * 0.9
+    miss_amt = (0.9 - control_chance) * 100
     inc = miss_amt * cfg.controlBoxIncreaseEffCOPct / 100
     expected_dist = int(round((max(2, 3) + inc) * 0.8))
     assert tracker.last_dist == expected_dist
