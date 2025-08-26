@@ -141,9 +141,9 @@ _DEFAULTS: Dict[str, Any] = {
     "pitchObj00CountFastCenterWeight": 0,
     "pitchObj00CountPlusWeight": 60,
     # Batter AI -------------------------------------------------------
-    "sureStrikeDist": 3,
-    "closeStrikeDist": 4,
-    "closeBallDist": 5,
+    "sureStrikeDist": 4,
+    "closeStrikeDist": 5,
+    "closeBallDist": 4,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
