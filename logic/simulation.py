@@ -940,6 +940,9 @@ class GameSimulation:
                 width, height = self.physics.expand_control_box(width, height, miss_amt)
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
+            exp_dx, exp_dy = self.physics.pitch_break(pitch_type, rand=0.5)
+            x_off -= exp_dx
+            y_off -= exp_dy
             dx, dy = self.physics.pitch_break(pitch_type, rand=loc_r)
             x_off += dx
             y_off += dy

@@ -7,7 +7,7 @@ from logic.simulation import GameSimulation, TeamState, BatterState
 from logic.physics import Physics
 from models.player import Player
 from models.pitcher import Pitcher
-from tests.util.pbini_factory import make_cfg
+from tests.util.pbini_factory import make_cfg, load_config
 
 
 class MockRandom(random.Random):
@@ -456,13 +456,13 @@ def _throw_for_dist(ptype: str, cfg, rng_vals=None) -> int:
 
 
 @pytest.mark.parametrize(
-    "ptype,cfg_key,dx,dy",
+    "ptype,cfg_key,range_w,range_h",
     [
-        ("cb", "cb", 2, -5),
-        ("scb", "sb", -2, -4),
+        ("cb", "cb", 2, -1),
+        ("scb", "sb", -2, -1),
     ],
 )
-def test_pitch_break_affects_location(ptype, cfg_key, dx, dy):
+def test_pitch_break_variation_affects_location(ptype, cfg_key, range_w, range_h):
     cfg = make_cfg(
         fbControlBoxWidth=0,
         fbControlBoxHeight=0,
@@ -473,16 +473,16 @@ def test_pitch_break_affects_location(ptype, cfg_key, dx, dy):
         **{
             f"{cfg_key}ControlBoxWidth": 0,
             f"{cfg_key}ControlBoxHeight": 0,
-            f"{cfg_key}BreakBaseWidth": dx,
-            f"{cfg_key}BreakBaseHeight": dy,
-            f"{cfg_key}BreakRangeWidth": 0,
-            f"{cfg_key}BreakRangeHeight": 0,
+            f"{cfg_key}BreakBaseWidth": 0,
+            f"{cfg_key}BreakBaseHeight": 0,
+            f"{cfg_key}BreakRangeWidth": range_w,
+            f"{cfg_key}BreakRangeHeight": range_h,
         },
     )
     dist_fast = _throw_for_dist("fb", cfg)
     dist_non = _throw_for_dist(ptype, cfg)
     assert dist_fast == 0
-    expected = int(round(max(abs(dx), abs(dy))))
+    expected = int(round(max(abs(range_w) / 2, abs(range_h) / 2)))
     assert dist_non == expected
     assert dist_non != dist_fast
 
@@ -526,3 +526,32 @@ def test_reaction_delay_decreases_with_fa():
     low = physics.reaction_delay("C", 20)
     high = physics.reaction_delay("C", 80)
     assert high < low
+
+
+def test_break_compensation_reduces_walks():
+    cfg = load_config()
+    physics = Physics(cfg)
+    r_vals = [i / 10 for i in range(11)]
+    for ptype in ("cb", "sl"):
+        width, height = physics.control_box(ptype)
+        exp_dx, exp_dy = physics.pitch_break(ptype, rand=0.5)
+        old_balls = new_balls = 0
+        for r in r_vals:
+            x_off = (r * 2 - 1) * width
+            y_off = (r * 2 - 1) * height
+            dx, dy = physics.pitch_break(ptype, rand=r)
+            old = int(round(max(abs(x_off + dx), abs(y_off + dy))))
+            new = int(
+                round(
+                    max(
+                        abs(x_off - exp_dx + dx),
+                        abs(y_off - exp_dy + dy),
+                    )
+                )
+            )
+            if old > 3:
+                old_balls += 1
+            if new > 3:
+                new_balls += 1
+        assert new_balls < old_balls
+        assert new_balls <= len(r_vals) // 2
