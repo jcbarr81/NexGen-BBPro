@@ -6,6 +6,8 @@ from collections import Counter
 from copy import deepcopy
 from datetime import date
 from pathlib import Path
+import argparse
+import os
 import random
 import sys
 
@@ -86,8 +88,12 @@ def clone_team_state(base: TeamState) -> TeamState:
     return team
 
 
-def simulate_season_average() -> None:
-    """Run a season simulation and print average box score values."""
+def simulate_season_average(use_tqdm: bool = True) -> None:
+    """Run a season simulation and print average box score values.
+
+    Args:
+        use_tqdm: Whether to display a progress bar using ``tqdm``.
+    """
 
     teams = [t.team_id for t in load_teams()]
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
@@ -129,7 +135,10 @@ def simulate_season_average() -> None:
         return box["home"]["score"], box["away"]["score"]
 
     simulator = SeasonSimulator(schedule, simulate_game=simulate_game)
-    for _ in tqdm(range(len(simulator.dates)), desc="Simulating season"):
+    iterator = range(len(simulator.dates))
+    if use_tqdm:
+        iterator = tqdm(iterator, desc="Simulating season")
+    for _ in iterator:
         simulator.simulate_next_day()
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
@@ -140,4 +149,16 @@ def simulate_season_average() -> None:
 
 
 if __name__ == "__main__":
-    simulate_season_average()
+    parser = argparse.ArgumentParser(
+        description="Simulate a full season and report average box score stats."
+    )
+    parser.add_argument(
+        "--disable-tqdm",
+        action="store_true",
+        help="Disable tqdm progress bar.",
+    )
+    args = parser.parse_args()
+
+    env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
+    use_tqdm = not (args.disable_tqdm or env_disable)
+    simulate_season_average(use_tqdm=use_tqdm)
