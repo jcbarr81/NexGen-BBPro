@@ -1,4 +1,10 @@
-"""Simulate a full 162-game season and report average box score stats."""
+"""Simulate a full 162-game season and report average box score stats.
+
+For lengthy runs this script can benefit from PyPy's JIT or by invoking
+CPython with ``python -O`` to skip asserts. When using PyPy ensure required
+C extensions such as ``bcrypt`` are available; GUI-focused modules like
+``PyQt6`` are not needed here.
+"""
 
 from __future__ import annotations
 
