@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable, Dict, Iterable, List
+import multiprocessing as mp
 import random
 
 from logic.simulation import (
@@ -12,6 +13,20 @@ from logic.simulation import (
 from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
+
+
+def _simulate_game_worker(
+    simulate_func: Callable[[str, str], tuple[int, int, str] | tuple[int, int] | None],
+    home: str,
+    away: str,
+    seed: int,
+):
+    """Wrapper executed in a worker process."""
+    try:
+        return simulate_func(home, away, seed)
+    except TypeError:
+        random.seed(seed)
+        return simulate_func(home, away)
 
 
 class SeasonSimulator:
@@ -72,29 +87,55 @@ class SeasonSimulator:
             return
         current_date = self.dates[self._index]
         games = [g for g in self.schedule if g["date"] == current_date]
-        for game in games:
-            result = self.simulate_game(game["home"], game["away"])
-            # If the simulation returned a score tuple, store it on the game so
-            # persistence layers can record results and update standings.
-            if isinstance(result, tuple):
-                if len(result) >= 2:
-                    game["result"] = f"{result[0]}-{result[1]}"
-                if len(result) >= 3 and isinstance(result[2], str):
-                    game["boxscore_html"] = result[2]
-            # Allow the caller to persist results after each individual game
-            # rather than waiting for the entire day to complete.  This makes
-            # it possible to update standings, schedules and statistics even if
-            # a simulation run is interrupted mid-day.
-            if self.after_game is not None:
-                try:
-                    self.after_game(game)
-                except Exception:  # pragma: no cover - persistence is best effort
-                    pass
+
+        if len(games) > 1:
+            seeds = [random.randrange(1 << 30) for _ in games]
+
+            try:
+                with mp.Pool() as pool:
+                    results = pool.starmap(
+                        _simulate_game_worker,
+                        [
+                            (self.simulate_game, g["home"], g["away"], s)
+                            for g, s in zip(games, seeds)
+                        ],
+                    )
+            except Exception:
+                results = [
+                    _simulate_game_worker(self.simulate_game, g["home"], g["away"], s)
+                    for g, s in zip(games, seeds)
+                ]
+
+            for game, result in zip(games, results):
+                if isinstance(result, tuple):
+                    if len(result) >= 2:
+                        game["result"] = f"{result[0]}-{result[1]}"
+                    if len(result) >= 3 and isinstance(result[2], str):
+                        game["boxscore_html"] = result[2]
+                if self.after_game is not None:
+                    try:
+                        self.after_game(game)
+                    except Exception:  # pragma: no cover - persistence is best effort
+                        pass
+        else:
+            for game in games:
+                result = self.simulate_game(game["home"], game["away"])
+                if isinstance(result, tuple):
+                    if len(result) >= 2:
+                        game["result"] = f"{result[0]}-{result[1]}"
+                    if len(result) >= 3 and isinstance(result[2], str):
+                        game["boxscore_html"] = result[2]
+                if self.after_game is not None:
+                    try:
+                        self.after_game(game)
+                    except Exception:  # pragma: no cover - persistence is best effort
+                        pass
         self._index += 1
 
     # ------------------------------------------------------------------
+    @staticmethod
     def _default_simulate_game(
-        self, home_id: str, away_id: str
+        home_id: str, away_id: str, seed: int | None = None
     ) -> tuple[int, int, str]:
         """Run a full pitch-by-pitch simulation between two teams.
 
@@ -107,7 +148,7 @@ class SeasonSimulator:
         home = build_default_game_state(home_id)
         away = build_default_game_state(away_id)
         cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-        sim = GameSimulation(home, away, cfg, random.Random())
+        sim = GameSimulation(home, away, cfg, random.Random(seed))
         sim.simulate_game()
         box = generate_boxscore(home, away)
         html = render_boxscore_html(box, home_name=home_id, away_name=away_id)
