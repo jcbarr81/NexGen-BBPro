@@ -122,11 +122,11 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFBase": 52,
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFMax": 92,
-    # Hit type distribution (percentages summing to ~100)
+    # Hit type distribution reflecting MLB averages
     "hit1BProb": 64,
-    "hit2BProb": 22,
-    "hit3BProb": 3,
-    "hitHRProb": 18,
+    "hit2BProb": 20,
+    "hit3BProb": 2,
+    "hitHRProb": 14,
     "ballInPlayOuts": 0,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
