@@ -16,7 +16,7 @@ def test_playbalance_config_defaults():
     assert cfg.pitchObj00CountEstablishWeight == 0
 
     # Batter AI defaults
-    assert cfg.sureStrikeDist == 3
+    assert cfg.sureStrikeDist == 4
     assert cfg.lookPrimaryType00CountAdjust == 0
     assert cfg.lookBestType30CountAdjust == 15
 
