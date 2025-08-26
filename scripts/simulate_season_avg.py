@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from copy import deepcopy
 from datetime import date
 from pathlib import Path
 import random
@@ -19,7 +20,13 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from logic.schedule_generator import generate_mlb_schedule
 from logic.season_simulator import SeasonSimulator
-from logic.simulation import GameSimulation, generate_boxscore
+from logic.simulation import (
+    FieldingState,
+    GameSimulation,
+    PitcherState,
+    TeamState,
+    generate_boxscore,
+)
 from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
@@ -42,11 +49,49 @@ STAT_ORDER = [
 ]
 
 
+def clone_team_state(base: TeamState) -> TeamState:
+    """Return a deep-copied ``TeamState`` with per-game fields reset."""
+
+    team = deepcopy(base)
+    team.lineup_stats = {}
+    team.pitcher_stats = {}
+    team.fielding_stats = {}
+    team.batting_index = 0
+    team.bases = [None, None, None]
+    team.base_pitchers = [None, None, None]
+    team.runs = 0
+    team.inning_runs = []
+    team.lob = 0
+    team.inning_lob = []
+    team.inning_events = []
+    team.team_stats = {}
+    team.warming_reliever = False
+    team.bullpen_warmups = {}
+    if team.pitchers:
+        starter = team.pitchers[0]
+        state = PitcherState(starter)
+        team.pitcher_stats[starter.player_id] = state
+        team.current_pitcher_state = state
+        state.g += 1
+        state.gs += 1
+        fs = team.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
+        fs.g += 1
+        fs.gs += 1
+    else:
+        team.current_pitcher_state = None
+    for p in team.lineup:
+        fs = team.fielding_stats.setdefault(p.player_id, FieldingState(p))
+        fs.g += 1
+        fs.gs += 1
+    return team
+
+
 def simulate_season_average() -> None:
     """Run a season simulation and print average box score values."""
 
     teams = [t.team_id for t in load_teams()]
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
+    base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
     cfg.ballInPlayOuts = 1
@@ -58,8 +103,8 @@ def simulate_season_average() -> None:
     def simulate_game(home_id: str, away_id: str) -> tuple[int, int]:
         nonlocal total_games
 
-        home = build_default_game_state(home_id)
-        away = build_default_game_state(away_id)
+        home = clone_team_state(base_states[home_id])
+        away = clone_team_state(base_states[away_id])
         sim = GameSimulation(home, away, cfg, rng)
         sim.simulate_game()
         box = generate_boxscore(home, away)
