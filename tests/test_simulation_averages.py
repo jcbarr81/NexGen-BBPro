@@ -42,13 +42,15 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
         simulated[stat.strip()] = float(value.strip())
 
     # Load MLB benchmark averages from CSV
-    csv_path = Path(__file__).resolve().parents[1] / "data" / "MLB_avg" / \
-        "mlb_avg_boxscore_2020_2024_both_teams.csv"
-    with csv_path.open() as f:
-        reader = csv.reader(f)
-        header = next(reader)[1:]
-        row = next(reader)[1:]
-    benchmarks = {k: float(v) for k, v in zip(header, row)}
+    csv_path = (
+        Path(__file__).resolve().parents[1]
+        / "data"
+        / "MLB_avg"
+        / "mlb_avg_boxscore_2020_2024_both_teams.csv"
+    )
+    with csv_path.open(newline="") as f:
+        row = next(csv.DictReader(f))
+    benchmarks = {stat: float(value) for stat, value in row.items() if stat}
 
     # Assert simulated values are within a generous tolerance of MLB averages
     for stat, mlb_val in benchmarks.items():
