@@ -1,3 +1,5 @@
+import random
+
 from logic.season_simulator import SeasonSimulator
 
 
@@ -27,3 +29,23 @@ def test_default_simulation_runs_without_callback():
 
     # Should execute without raising exceptions using real roster data
     sim.simulate_next_day()
+
+
+def _random_game(home: str, away: str, seed: int | None = None):
+    rng = random.Random(seed)
+    return rng.randint(0, 10), rng.randint(0, 10)
+
+
+def test_parallel_simulation_invokes_after_game():
+    schedule = [
+        {"date": "2024-04-01", "home": "A", "away": "B"},
+        {"date": "2024-04-01", "home": "C", "away": "D"},
+    ]
+    recorded: list[str] = []
+
+    sim = SeasonSimulator(schedule, simulate_game=_random_game, after_game=lambda g: recorded.append(g["result"]))
+
+    sim.simulate_next_day()
+
+    assert len(recorded) == 2
+    assert all("result" in g for g in schedule)
