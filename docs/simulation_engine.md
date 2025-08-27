@@ -69,3 +69,10 @@ stats【F:logic/stats.py†L9-L60】.
 above modules.  By adjusting this configuration, tests and future gameplay modes
 can explore different balancing options for the simulation engine.
 
+Key entries now available include:
+
+- **`exitVeloBase`** – baseline exit velocity applied to all batted balls.
+- **`exitVeloPHPct`** – percentage boost to exit velocity for pinch hitters.
+- **`vertAngleGFPct`** – ground/fly ratio adjustment for vertical launch angles.
+- **`sprayAnglePLPct`** – pull/line tendency applied to spray angle calculations.
+

@@ -18,7 +18,12 @@ class MockRandom(random.Random):
         self.values = list(values)
 
     def random(self):  # type: ignore[override]
-        return self.values.pop(0)
+        # When the predefined values are exhausted, return ``0.0`` to keep
+        # deterministic behaviour while avoiding ``IndexError`` in tests that
+        # require more draws than initially expected.
+        if self.values:
+            return self.values.pop(0)
+        return 0.0
 
     def randint(self, a, b):  # type: ignore[override]
         # ``PitcherAI`` uses ``randint`` for pitch variation.  Returning the
