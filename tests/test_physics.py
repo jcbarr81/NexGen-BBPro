@@ -83,6 +83,37 @@ def make_pitcher(pid: str) -> Pitcher:
     )
 
 
+@pytest.mark.parametrize(
+    "ph,gf,pl,vx,vy,vz",
+    [
+        (50, 50, 50, 108.33, 0.0, 19.10),
+        (80, 30, 80, 117.54, 59.89, 4.61),
+    ],
+)
+def test_launch_vector_returns_expected_components(ph, gf, pl, vx, vy, vz):
+    physics = Physics(make_cfg(), random.Random(0))
+    result = physics.launch_vector(ph, gf, pl)
+    assert result[0] == pytest.approx(vx, abs=0.01)
+    assert result[1] == pytest.approx(vy, abs=0.01)
+    assert result[2] == pytest.approx(vz, abs=0.01)
+
+
+@pytest.mark.parametrize(
+    "ph,gf,pl,x,y,t",
+    [
+        (50, 50, 50, 143.84, 0.0, 1.3278),
+        (80, 30, 80, 70.31, 35.82, 0.5981),
+    ],
+)
+def test_landing_point_returns_expected_coordinates(ph, gf, pl, x, y, t):
+    physics = Physics(make_cfg(), random.Random(0))
+    vx, vy, vz = physics.launch_vector(ph, gf, pl)
+    lx, ly, ht = physics.landing_point(vx, vy, vz)
+    assert lx == pytest.approx(x, abs=0.01)
+    assert ly == pytest.approx(y, abs=0.01)
+    assert ht == pytest.approx(t, abs=0.001)
+
+
 def test_swing_angle_varies_with_range():
     cfg = make_cfg(
         swingAngleTenthDegreesBase=100,

@@ -60,3 +60,35 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
     for stat, mlb_val in benchmarks.items():
         sim_val = simulated[stat]
         assert math.isclose(sim_val, mlb_val, rel_tol=3.0), stat
+
+    # Derived rate statistics using simple approximations
+    hits = simulated["Hits"]
+    doubles = simulated["Doubles"]
+    triples = simulated["Triples"]
+    homers = simulated["HomeRuns"]
+
+    mlb_hits = benchmarks["Hits"]
+    mlb_doubles = benchmarks["Doubles"]
+    mlb_triples = benchmarks["Triples"]
+    mlb_homers = benchmarks["HomeRuns"]
+
+    ab = hits + 54
+    mlb_ab = mlb_hits + 54
+    singles = hits - doubles - triples - homers
+    mlb_singles = mlb_hits - mlb_doubles - mlb_triples - mlb_homers
+    total_bases = singles + 2 * doubles + 3 * triples + 4 * homers
+    mlb_total_bases = mlb_singles + 2 * mlb_doubles + 3 * mlb_triples + 4 * mlb_homers
+
+    ba = hits / ab if ab else 0.0
+    mlb_ba = mlb_hits / mlb_ab if mlb_ab else 0.0
+    slg = total_bases / ab if ab else 0.0
+    mlb_slg = mlb_total_bases / mlb_ab if mlb_ab else 0.0
+    hr_rate = homers / ab if ab else 0.0
+    mlb_hr_rate = mlb_homers / mlb_ab if mlb_ab else 0.0
+
+    for stat, sim_val, mlb_val in [
+        ("BA", ba, mlb_ba),
+        ("SLG", slg, mlb_slg),
+        ("HR_rate", hr_rate, mlb_hr_rate),
+    ]:
+        assert math.isclose(sim_val, mlb_val, rel_tol=3.0), stat
