@@ -1050,6 +1050,12 @@ class GameSimulation:
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
                         return outs
+                    foul_chance = self._foul_probability(batter, pitcher)
+                    if self.rng.random() < foul_chance:
+                        pitcher_state.strikes_thrown += 1
+                        if strikes < 2:
+                            strikes += 1
+                        continue
                     if self.config.get("ballInPlayOuts", False):
                         if dist <= 3:
                             pitcher_state.strikes_thrown += 1
@@ -1162,6 +1168,13 @@ class GameSimulation:
     # ------------------------------------------------------------------
     # Swing outcome
     # ------------------------------------------------------------------
+    def _foul_probability(self, batter: Player, pitcher: Pitcher) -> float:
+        """Return foul ball probability based on batter and pitcher ratings."""
+
+        base = 0.05
+        prob = base + (getattr(batter, "ch", 50) + getattr(pitcher, "movement", 50)) / 1000.0
+        return max(0.05, min(0.5, prob))
+
     def _swing_result(
         self,
         batter: Player,

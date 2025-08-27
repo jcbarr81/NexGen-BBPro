@@ -477,9 +477,9 @@ def test_run_tracking_and_boxscore():
     away.lineup_stats[runner.player_id] = runner_state
     away.bases[2] = runner_state
 
-    sim = GameSimulation(home, away, cfg, MockRandom([0.0, 0.0, 0.0, 0.9]))
+    sim = GameSimulation(home, away, cfg, MockRandom([0.0, 0.0, 0.9, 0.0, 0.9]))
     outs = sim.play_at_bat(away, home)  # run scores, runner thrown out
-    strike_seq = [0.0, 0.9, 0.0, 0.9, 0.0, 0.9]
+    strike_seq = [0.0, 0.9, 0.9] * 4
     sim = GameSimulation(home, away, cfg, MockRandom(strike_seq))
     outs += sim.play_at_bat(away, home)  # strikeout
     sim = GameSimulation(home, away, cfg, MockRandom(strike_seq))
@@ -546,7 +546,7 @@ def test_pitch_control_affects_location():
         lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=70)]
     )
     away_high = TeamState(lineup=[batter1], bench=[], pitchers=[make_pitcher("ap")])
-    rng_high = MockRandom([0.4, 0.9, 0.4, 0.9, 0.4, 0.9])
+    rng_high = MockRandom([0.4, 0.9, 0.9, 0.4, 0.9, 0.9, 0.4, 0.9, 0.9])
     sim_high = GameSimulation(home_high, away_high, cfg, rng_high)
     outs_high = sim_high.play_at_bat(away_high, home_high)
     assert outs_high == 1
@@ -556,7 +556,7 @@ def test_pitch_control_affects_location():
         lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=30)]
     )
     away_low = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap")])
-    rng_low = MockRandom([0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99])
+    rng_low = MockRandom([0.99, 0.99, 0.99] * 4)
     sim_low = GameSimulation(home_low, away_low, cfg, rng_low)
     outs_low = sim_low.play_at_bat(away_low, home_low)
     stats_low = away_low.lineup_stats[batter2.player_id]
@@ -627,7 +627,25 @@ def test_fielding_stats_tracking():
     offense.lineup_stats[runner.player_id] = runner_state
     offense.bases[0] = runner_state
     offense.base_pitchers[0] = defense.current_pitcher_state
-    rng = MockRandom([0.9, 0.0, 0.9, 0.0, 0.9, 0.0, 0.9])
+    rng = MockRandom(
+        [
+            0.9,
+            0.0,
+            0.9,
+            0.0,
+            0.9,
+            0.0,
+            0.0,
+            0.9,
+            0.9,
+            0.0,
+            0.9,
+            0.9,
+            0.0,
+            0.9,
+            0.9,
+        ]
+    )
     sim = GameSimulation(defense, offense, cfg, rng)
     res = sim._attempt_steal(offense, defense, defense.current_pitcher_state.player, force=True)
     assert res is False
