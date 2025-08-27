@@ -148,12 +148,21 @@ class PitcherAI:
         # real game uses weighted randomness for this selection so we gather the
         # weights for all objectives and perform a single weighted roll.
         prefix = f"pitchObj{balls}{strikes}Count"
+        outside_weight = self.config.get(prefix + "OutsideWeight", 0)
+        if strikes > balls:
+            outside_weight *= 2
         weights = [
             ("establish", self.config.get(prefix + "EstablishWeight", 0)),
-            ("outside", self.config.get(prefix + "OutsideWeight", 0)),
+            ("outside", outside_weight),
             ("best", self.config.get(prefix + "BestWeight", 0)),
-            ("best_center", self.config.get(prefix + "BestCenterWeight", 0)),
-            ("fast_center", self.config.get(prefix + "FastCenterWeight", 0)),
+            (
+                "best_center",
+                self.config.get(prefix + "BestCenterWeight", 0),
+            ),
+            (
+                "fast_center",
+                self.config.get(prefix + "FastCenterWeight", 0),
+            ),
             ("plus", self.config.get(prefix + "PlusWeight", 0)),
         ]
 
