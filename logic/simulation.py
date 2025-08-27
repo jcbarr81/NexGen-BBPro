@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field, fields, replace
 from typing import Dict, List, Optional, Tuple
@@ -16,6 +17,7 @@ from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
 from logic.bullpen import WarmupTracker
 from logic.fielding_ai import FieldingAI
+from logic.field_geometry import DEFAULT_POSITIONS
 from utils.path_utils import get_base_dir
 from utils.stats_persistence import save_stats
 from .stats import (
@@ -968,6 +970,7 @@ class GameSimulation:
                     bases = self._swing_result(
                         batter,
                         pitcher,
+                        defense,
                         pitch_speed=pitch_speed,
                         rand=dec_r,
                         contact_quality=contact,
@@ -1179,6 +1182,7 @@ class GameSimulation:
         self,
         batter: Player,
         pitcher: Pitcher,
+        defense: TeamState,
         *,
         pitch_speed: float,
         rand: float,
@@ -1238,23 +1242,45 @@ class GameSimulation:
         if rand >= hit_prob:
             return 0
 
-        single = self.config.hit1BProb / 100.0
-        double = self.config.hit2BProb / 100.0
-        triple = self.config.hit3BProb / 100.0
-        hr = self.config.hitHRProb / 100.0
-        power_adj = (batter.ph - 50) / 100.0
-        hr *= 1 + power_adj
-        double *= 1 + power_adj / 2
-        triple *= max(0.0, 1 - power_adj)
-        total = single + double + triple + hr
-        if total > 0:
-            single = max(0.0, 1 - (double + triple + hr))
-        type_rand = self.rng.random()
-        if type_rand < hr:
+        vx, vy, vz = self.physics.launch_vector(
+            getattr(batter, "ph", 50),
+            getattr(batter, "gf", 50),
+            getattr(batter, "pl", 50),
+        )
+        x, y, hang_time = self.physics.landing_point(vx, vy, vz)
+        landing_dist = math.hypot(x, y)
+
+        fielders = {p.primary_position.upper(): p for p in defense.lineup}
+        fielders["P"] = pitcher
+        for pos, (fx, fy) in DEFAULT_POSITIONS.items():
+            fielder = fielders.get(pos)
+            if not fielder:
+                continue
+            sp = getattr(fielder, "sp", 50)
+            fa = getattr(fielder, "fa", 50)
+            distance = math.hypot(fx - x, fy - y)
+            run_time = (
+                distance / self.physics.player_speed(sp)
+                + self.physics.reaction_delay(pos, fa)
+            )
+            action = self.fielding_ai.catch_action(
+                hang_time,
+                run_time,
+                position=pos,
+                distance=distance,
+                dist_from_home=landing_dist,
+            )
+            if action == "no_attempt":
+                continue
+            prob = self.fielding_ai.catch_probability(pos, fa, hang_time, action)
+            if self.rng.random() < prob:
+                return 0
+
+        if landing_dist >= 360:
             return 4
-        if type_rand < hr + triple:
+        if landing_dist >= 250:
             return 3
-        if type_rand < hr + triple + double:
+        if landing_dist >= 160:
             return 2
         return 1
 

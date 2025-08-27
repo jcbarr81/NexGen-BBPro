@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 
 from .playbalance_config import PlayBalanceConfig
@@ -414,6 +415,48 @@ class Physics:
             vert_speed * vert_pct / 100.0,
             horiz_speed * horiz_pct / 100.0,
         )
+
+    # ------------------------------------------------------------------
+    # Batted ball trajectory helpers
+    # ------------------------------------------------------------------
+    def launch_vector(self, ph: int, gf: int, pl: int) -> tuple[float, float, float]:
+        """Return velocity components for a batted ball.
+
+        ``ph`` is the batter's power rating, ``gf`` their ground/fly
+        tendency and ``pl`` the pull tendency.  The calculation keeps the
+        numbers intentionally small and deterministic and is not a realistic
+        model of actual exit velocities.
+        """
+
+        speed_mph = 50 + ph * 0.5
+        speed_fps = speed_mph * 5280 / 3600
+
+        vert_angle = -10 + gf * 0.4
+        horiz_angle = -45 + pl * 0.9
+
+        v_rad = math.radians(vert_angle)
+        h_rad = math.radians(horiz_angle)
+
+        vx = speed_fps * math.cos(v_rad) * math.cos(h_rad)
+        vy = speed_fps * math.cos(v_rad) * math.sin(h_rad)
+        vz = speed_fps * math.sin(v_rad)
+        return vx, vy, vz
+
+    def landing_point(
+        self, vx: float, vy: float, vz: float, *, height: float = 3.0
+    ) -> tuple[float, float, float]:
+        """Return ``(x, y, t)`` where the ball lands.
+
+        ``height`` represents the initial height of the ball off the bat in
+        feet.  Air resistance is ignored and the ball is assumed to be
+        influenced only by gravity.
+        """
+
+        g = 32.174
+        t = (vz + math.sqrt(max(0.0, vz * vz + 2 * g * height))) / g
+        x = vx * t
+        y = vy * t
+        return x, y, t
 
 
 __all__ = ["Physics"]
