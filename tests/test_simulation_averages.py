@@ -33,13 +33,17 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
     with contextlib.redirect_stdout(buf):
         ssa.simulate_season_average(use_tqdm=False)
     lines = [
-        line for line in buf.getvalue().splitlines() if ":" in line and line.split(":", 1)[1].strip()
+        line
+        for line in buf.getvalue().splitlines()
+        if ":" in line and line.split(":", 1)[0] in ssa.STAT_ORDER
     ]
 
     simulated = {}
     for line in lines:
-        stat, value = line.split(":", 1)
-        simulated[stat.strip()] = float(value.strip())
+        stat, rest = line.split(":", 1)
+        parts = [p.strip() for p in rest.split(",")]
+        sim_part = next(p for p in parts if p.startswith("Sim"))
+        simulated[stat.strip()] = float(sim_part.split()[1])
 
     # Load MLB benchmark averages from CSV
     csv_path = (
