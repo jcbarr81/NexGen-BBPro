@@ -122,6 +122,11 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFBase": 52,
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFMax": 92,
+    # Exit velocity and launch characteristics
+    "exitVeloBase": 0,
+    "exitVeloPHPct": 0,
+    "vertAngleGFPct": 0,
+    "sprayAnglePLPct": 0,
     # Hit type distribution reflecting MLB averages
     "hit1BProb": 64,
     "hit2BProb": 20,
@@ -521,6 +526,30 @@ class PlayBalanceConfig:
         _DEFAULTS.update(_BASE_DEFAULTS)
         if path.exists():
             path.unlink()
+
+    # ------------------------------------------------------------------
+    # Convenience accessors
+    # ------------------------------------------------------------------
+
+    @property
+    def exit_velo_base(self) -> int:
+        """Base exit velocity for batted balls."""
+        return int(self.exitVeloBase)
+
+    @property
+    def exit_velo_ph_pct(self) -> int:
+        """Pinch hitter adjustment percentage for exit velocity."""
+        return int(self.exitVeloPHPct)
+
+    @property
+    def vert_angle_gf_pct(self) -> int:
+        """Ground/fly ratio adjustment for vertical launch angle."""
+        return int(self.vertAngleGFPct)
+
+    @property
+    def spray_angle_pl_pct(self) -> int:
+        """Pull/line percentage for spray angle distribution."""
+        return int(self.sprayAnglePLPct)
 
     # ------------------------------------------------------------------
     # Mapping style helpers
