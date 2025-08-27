@@ -143,3 +143,24 @@ def test_pitch_variation_cached_per_game():
     pitch4, _ = ai.select_pitch(pitcher)
     assert pitch3 == pitch4 == "fb"
 
+
+def test_ahead_count_prefers_outside():
+    pitcher = make_pitcher("p4")
+    cfg = make_cfg(
+        pitchRatVariationCount=0,
+        pitchObj02CountOutsideWeight=10,
+        pitchObj02CountBestWeight=10,
+        pitchObj20CountOutsideWeight=10,
+        pitchObj20CountBestWeight=10,
+    )
+    ai = PitcherAI(cfg, SeqRandom([], floats=[0.5, 0.5]))
+
+    ai.new_game()
+    _, obj1 = ai.select_pitch(pitcher, balls=0, strikes=2)
+
+    ai.new_game()
+    _, obj2 = ai.select_pitch(pitcher, balls=2, strikes=0)
+
+    assert obj1 == "outside"
+    assert obj2 == "best"
+
