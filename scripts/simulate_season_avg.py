@@ -107,7 +107,7 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = 0
+    cfg.ballInPlayOuts = 1
     rng = random.Random(42)
 
     totals: Counter[str] = Counter()
