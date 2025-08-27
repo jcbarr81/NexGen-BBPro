@@ -114,7 +114,7 @@ def test_swing_result_respects_bat_speed():
     batter1 = make_player("b1")
     home1 = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp1")])
     away1 = TeamState(lineup=[batter1], bench=[], pitchers=[make_pitcher("ap1")])
-    rng1 = MockRandom([0.0, 0.4, 0.0, 0.4, 0.0, 0.4])
+    rng1 = MockRandom([0.0, 0.4, 0.9, 0.0, 0.4, 0.9, 0.0, 0.4, 0.9])
     sim1 = GameSimulation(home1, away1, cfg_slow, rng1)
     outs1 = sim1.play_at_bat(away1, home1)
     assert outs1 == 1
@@ -132,7 +132,7 @@ def test_swing_result_respects_bat_speed():
     batter2 = make_player("b2")
     home2 = TeamState(lineup=[make_player("h2")], bench=[], pitchers=[make_pitcher("hp2")])
     away2 = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap2")])
-    rng2 = MockRandom([0.0, 0.0, 0.9, 0.1])
+    rng2 = MockRandom([0.0, 0.0, 0.9, 0.1, 0.9])
     sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
     outs2 = sim2.play_at_bat(away2, home2)
     assert outs2 == 0
