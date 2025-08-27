@@ -13,6 +13,7 @@ from copy import deepcopy
 from datetime import date
 from pathlib import Path
 import argparse
+import csv
 import os
 import random
 import sys
@@ -159,9 +160,25 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
 
+    csv_path = (
+        get_base_dir()
+        / "data"
+        / "MLB_avg"
+        / "mlb_avg_boxscore_2020_2024_both_teams.csv"
+    )
+    with csv_path.open(newline="") as f:
+        row = next(csv.DictReader(f))
+    mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
+    diffs = {k: averages[k] - mlb_averages.get(k, 0.0) for k in STAT_ORDER}
+
     print("Average box score per game (both teams):")
     for key in STAT_ORDER:
-        print(f"{key}: {averages[key]:.2f}")
+        mlb_val = mlb_averages[key]
+        sim_val = averages[key]
+        diff = diffs[key]
+        print(
+            f"{key}: MLB {mlb_val:.2f}, Sim {sim_val:.2f}, Diff {diff:+.2f}"
+        )
 
 
 if __name__ == "__main__":
