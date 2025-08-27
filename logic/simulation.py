@@ -973,7 +973,8 @@ class GameSimulation:
                         contact_quality=contact,
                     )
                     if bases:
-                        pitcher_state.strikes_thrown += 1
+                        if dist <= 3:
+                            pitcher_state.strikes_thrown += 1
                         pitcher_state.h += 1
                         self._add_stat(batter_state, "ab")
                         self._add_stat(batter_state, "h")
@@ -1050,7 +1051,8 @@ class GameSimulation:
                         )
                         return outs
                     if self.config.get("ballInPlayOuts", False):
-                        pitcher_state.strikes_thrown += 1
+                        if dist <= 3:
+                            pitcher_state.strikes_thrown += 1
                         self._add_stat(batter_state, "ab")
                         outs += 1
                         pitcher_state.toast += self.config.get("pitchScoringOut", 0)
