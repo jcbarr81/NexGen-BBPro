@@ -933,12 +933,16 @@ class GameSimulation:
             pitch_speed = self.physics.pitch_velocity(
                 pitch_type, pitcher.arm, rand=loc_r
             )
-            control_chance = pitcher.control / 100.0  # rely on full control rating
+            control_scale = self.config.get("controlScale", 150)
+            jitter = self.rng.uniform(-5, 5)
+            control_chance = (pitcher.control + jitter) / control_scale
+            control_chance = max(0.0, min(1.0, control_chance))
             width, height = self.physics.control_box(pitch_type)
             frac = loc_r
             miss_amt = 0.0
             if loc_r >= control_chance:
                 miss_amt = (loc_r - control_chance) * 100.0
+                miss_amt += self.rng.uniform(0.0, miss_amt)
                 width, height = self.physics.expand_control_box(width, height, miss_amt)
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
@@ -978,6 +982,8 @@ class GameSimulation:
                     if bases:
                         if dist <= 3:
                             pitcher_state.strikes_thrown += 1
+                        else:
+                            pitcher_state.balls_thrown += 1
                         pitcher_state.h += 1
                         self._add_stat(batter_state, "ab")
                         self._add_stat(batter_state, "h")
@@ -1055,6 +1061,8 @@ class GameSimulation:
                         return outs
                     foul_chance = self._foul_probability(batter, pitcher)
                     if self.rng.random() < foul_chance:
+                        if dist > 3:
+                            pitcher_state.balls_thrown += 1
                         pitcher_state.strikes_thrown += 1
                         if strikes < 2:
                             strikes += 1
@@ -1062,6 +1070,8 @@ class GameSimulation:
                     if self.config.get("ballInPlayOuts", False):
                         if dist <= 3:
                             pitcher_state.strikes_thrown += 1
+                        else:
+                            pitcher_state.balls_thrown += 1
                         self._add_stat(batter_state, "ab")
                         outs += 1
                         pitcher_state.toast += self.config.get("pitchScoringOut", 0)
@@ -1079,10 +1089,16 @@ class GameSimulation:
                         )
                         return outs
                     strikes += 1
-                    pitcher_state.strikes_thrown += 1
+                    if dist > 3:
+                        pitcher_state.balls_thrown += 1
+                    else:
+                        pitcher_state.strikes_thrown += 1
                 else:
                     strikes += 1
-                    pitcher_state.strikes_thrown += 1
+                    if dist > 3:
+                        pitcher_state.balls_thrown += 1
+                    else:
+                        pitcher_state.strikes_thrown += 1
             else:
                 if dist <= 3:
                     strikes += 1
