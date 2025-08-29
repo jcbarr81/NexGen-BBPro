@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import base64
+import csv
+from collections import Counter, defaultdict
 from io import BytesIO
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple
 
 from PIL import Image
 
@@ -23,9 +25,46 @@ _TEAM_COLOR_MAP: Dict[str, Dict[str, str]] = {
 }
 
 
+# Preload ethnicity data from names.csv for quick lookups.
+# Mapping: (first_name, last_name) -> Counter of ethnicities
+_NAME_ETHNICITY_FULL: Dict[Tuple[str, str], Counter[str]] = defaultdict(Counter)
+# Mapping: individual name -> Counter of ethnicities
+_NAME_ETHNICITY_SINGLE: Dict[str, Counter[str]] = defaultdict(Counter)
+
+with Path("data/names.csv").open(newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        ethnicity = row["ethnicity"]
+        first = row["first_name"].strip().lower()
+        last = row["last_name"].strip().lower()
+        _NAME_ETHNICITY_FULL[(first, last)][ethnicity] += 1
+        _NAME_ETHNICITY_SINGLE[first][ethnicity] += 1
+        _NAME_ETHNICITY_SINGLE[last][ethnicity] += 1
+
+
 def _infer_ethnicity(name: str) -> str:
-    """Very naive placeholder for ethnicity inference."""
-    return "unspecified"
+    """Return the most probable ethnicity for ``name``.
+
+    The lookup prioritizes an exact match of both first and last name and then
+    falls back to individual name statistics. "unspecified" is returned when no
+    data exists for the provided name.
+    """
+
+    parts = [p.strip().lower() for p in name.split() if p.strip()]
+    if not parts:
+        return "unspecified"
+
+    first, last = parts[0], parts[-1]
+
+    scores: Counter[str] = Counter()
+    scores.update(_NAME_ETHNICITY_FULL.get((first, last), {}))
+    scores.update(_NAME_ETHNICITY_SINGLE.get(first, {}))
+    scores.update(_NAME_ETHNICITY_SINGLE.get(last, {}))
+
+    if not scores:
+        return "unspecified"
+
+    return scores.most_common(1)[0][0]
 
 
 def _team_colors(team_id: str) -> Dict[str, str]:
