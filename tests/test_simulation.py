@@ -706,6 +706,40 @@ def test_defensive_alignment_guard_and_cutoff():
     assert sim.current_infield_situation == "cutoffRun"
 
 
+def test_throw_error_results_in_roe(monkeypatch):
+    cfg = load_config()
+    batter = make_player("b", ph=80)
+    pitcher = make_pitcher("p")
+    defense = TeamState(lineup=[make_player("d")], bench=[], pitchers=[pitcher])
+    offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
+    rng = MockRandom([0.0, 1.0, 1.0])
+    sim = GameSimulation(offense, defense, cfg, rng)
+    batter_state = BatterState(batter)
+    offense.lineup_stats[batter.player_id] = batter_state
+
+    from logic.field_geometry import DEFAULT_POSITIONS
+
+    px, py = DEFAULT_POSITIONS["P"]
+    monkeypatch.setattr(
+        sim.physics, "landing_point", lambda vx, vy, vz: (px, py, 1.0)
+    )
+    monkeypatch.setattr(
+        sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0.0
+    )
+    monkeypatch.setattr(
+        sim.physics, "ball_bounce", lambda *args, **kwargs: (0.0, 0.0)
+    )
+
+    bases, error = sim._swing_result(batter, pitcher, defense, pitch_speed=50, rand=0.0)
+    assert error and bases == 1
+    sim._advance_runners(offense, defense, batter_state, bases=bases, error=error)
+
+    p_fs = defense.fielding_stats[pitcher.player_id]
+    assert p_fs.e == 1
+    assert batter_state.roe == 1
+    assert offense.bases[0] is batter_state
+
+
 def test_simulate_game_skips_bottom_when_home_leads():
     cfg = load_config()
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])

@@ -971,7 +971,7 @@ class GameSimulation:
 
             if swing:
                 if contact > 0:
-                    bases = self._swing_result(
+                    bases, error = self._swing_result(
                         batter,
                         pitcher,
                         defense,
@@ -984,32 +984,45 @@ class GameSimulation:
                             pitcher_state.strikes_thrown += 1
                         else:
                             pitcher_state.balls_thrown += 1
-                        pitcher_state.h += 1
                         self._add_stat(batter_state, "ab")
-                        self._add_stat(batter_state, "h")
-                        if bases == 4:
-                            pitcher_state.hr += 1
-                            pitcher_state.allowed_hr = True
-                            self._add_stat(batter_state, "hr")
-                        elif bases == 3:
-                            pitcher_state.b3 += 1
-                            self._add_stat(batter_state, "b3")
-                        elif bases == 2:
-                            pitcher_state.b2 += 1
-                            self._add_stat(batter_state, "b2")
-                        else:
-                            pitcher_state.b1 += 1
-                            self._add_stat(batter_state, "b1")
-                        pitcher_state.toast += self.config.get("pitchScoringHit", 0)
-                        if pitcher_state.consecutive_hits:
-                            pitcher_state.toast += self.config.get(
-                                "pitchScoringConsHit", 0
+                        if error:
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners += 1
+                            self._advance_runners(
+                                offense,
+                                defense,
+                                batter_state,
+                                bases=bases,
+                                error=True,
                             )
-                        pitcher_state.consecutive_hits += 1
-                        pitcher_state.consecutive_baserunners += 1
-                        self._advance_runners(
-                            offense, defense, batter_state, bases=bases
-                        )
+                        else:
+                            pitcher_state.h += 1
+                            self._add_stat(batter_state, "h")
+                            if bases == 4:
+                                pitcher_state.hr += 1
+                                pitcher_state.allowed_hr = True
+                                self._add_stat(batter_state, "hr")
+                            elif bases == 3:
+                                pitcher_state.b3 += 1
+                                self._add_stat(batter_state, "b3")
+                            elif bases == 2:
+                                pitcher_state.b2 += 1
+                                self._add_stat(batter_state, "b2")
+                            else:
+                                pitcher_state.b1 += 1
+                                self._add_stat(batter_state, "b1")
+                            pitcher_state.toast += self.config.get(
+                                "pitchScoringHit", 0
+                            )
+                            if pitcher_state.consecutive_hits:
+                                pitcher_state.toast += self.config.get(
+                                    "pitchScoringConsHit", 0
+                                )
+                            pitcher_state.consecutive_hits += 1
+                            pitcher_state.consecutive_baserunners += 1
+                            self._advance_runners(
+                                offense, defense, batter_state, bases=bases
+                            )
                         steal_result = self._attempt_steal(
                             offense,
                             defense,
@@ -1228,7 +1241,7 @@ class GameSimulation:
         pitch_speed: float,
         rand: float,
         contact_quality: float = 1.0,
-    ) -> int:
+    ) -> tuple[int, bool]:
         bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
         # Calculate and store angles for potential future physics steps.
@@ -1279,7 +1292,7 @@ class GameSimulation:
                 hit_prob *= cur_depth / normal_depth
 
         if rand >= hit_prob:
-            return 0
+            return 0, False
 
         vx, vy, vz = self.physics.launch_vector(
             getattr(batter, "ph", 50),
@@ -1314,16 +1327,23 @@ class GameSimulation:
                 continue
             prob = self.fielding_ai.catch_probability(pos, fa, hang_time, action)
             if self.rng.random() < prob:
-                return 0
+                caught, error = self.fielding_ai.resolve_throw(pos, fa, hang_time)
+                if caught:
+                    return 0, False
+                fs = defense.fielding_stats.setdefault(
+                    fielder.player_id, FieldingState(fielder)
+                )
+                self._add_fielding_stat(fs, "e")
+                return 1, True
 
         total_dist = landing_dist + bounce_horiz + roll_dist
         if total_dist >= 380:
-            return 4
+            return 4, False
         if total_dist >= 300:
-            return 3
+            return 3, False
         if total_dist >= 200:
-            return 2
-        return 1
+            return 2, False
+        return 1, False
 
     def _advance_runners(
         self,
@@ -1332,12 +1352,16 @@ class GameSimulation:
         batter_state: BatterState,
         *,
         bases: int,
+        error: bool = False,
     ) -> None:
         b = offense.bases
         bp = offense.base_pitchers
         new_bases: List[Optional[BatterState]] = [None, None, None]
         new_bp: List[Optional[PitcherState]] = [None, None, None]
         runs_scored = 0
+
+        if error:
+            self._add_stat(batter_state, "roe")
 
         if bases == 1:
             if b[2]:
@@ -1396,7 +1420,7 @@ class GameSimulation:
             new_bp[0] = defense.current_pitcher_state
             offense.bases = new_bases
             offense.base_pitchers = new_bp
-            if runs_scored:
+            if runs_scored and not error:
                 self._add_stat(batter_state, "rbi", runs_scored)
             return
 
@@ -1430,7 +1454,7 @@ class GameSimulation:
             offense.bases[base_idx] = batter_state
             offense.base_pitchers[base_idx] = defense.current_pitcher_state
 
-        if runs_scored:
+        if runs_scored and not error:
             self._add_stat(batter_state, "rbi", runs_scored)
 
     def _advance_walk(
