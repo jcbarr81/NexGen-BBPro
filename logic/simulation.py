@@ -1188,13 +1188,36 @@ class GameSimulation:
     # Swing outcome
     # ------------------------------------------------------------------
     def _foul_probability(self, batter: Player, pitcher: Pitcher) -> float:
-        """Return foul ball probability based on batter and pitcher ratings."""
+        """Return foul ball probability derived from configuration and ratings.
 
-        base = 0.02
-        prob = base + (
-            getattr(batter, "ch", 50) + getattr(pitcher, "movement", 50)
-        ) / 1500.0
-        return max(0.02, min(0.4, prob))
+        ``foulStrikeBasePct`` represents the percentage of strikes that are
+        fouls in the source data (roughly 27.8%). ``foulContactTrendPct`` adds
+        roughly ``+2`` percentage points for every 20 point edge in batter
+        contact over pitcher movement. The percentage is converted to a
+        foul-to-balls-in-play ratio and then scaled so that an average matchup
+        produces a 1:1 split between foul balls and balls put in play.
+
+        The final probability is clamped to ``0``–``0.5`` to avoid unrealistic
+        behaviour.
+        """
+
+        cfg = self.config
+        base_pct = float(cfg.get("foulStrikeBasePct", 27.8))
+        trend_pct = float(cfg.get("foulContactTrendPct", 2.0))
+
+        contact_delta = getattr(batter, "ch", 50) - getattr(pitcher, "movement", 50)
+        foul_pct = base_pct + (contact_delta / 20.0) * trend_pct
+        foul_pct = max(0.0, min(95.0, foul_pct))
+
+        foul_ratio = foul_pct / (100.0 - foul_pct)
+        prob = foul_ratio / (1.0 + foul_ratio)
+
+        base_ratio = base_pct / (100.0 - base_pct)
+        base_prob = base_ratio / (1.0 + base_ratio)
+        if base_prob:
+            prob *= 0.5 / base_prob
+
+        return max(0.0, min(0.5, prob))
 
     def _swing_result(
         self,
