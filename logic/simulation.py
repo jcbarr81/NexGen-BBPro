@@ -1246,8 +1246,9 @@ class GameSimulation:
 
         vx, vy, vz = self.physics.launch_vector(
             getattr(batter, "ph", 50),
-            getattr(batter, "gf", 50),
             getattr(batter, "pl", 50),
+            swing_angle,
+            vert_angle,
         )
         x, y, hang_time = self.physics.landing_point(vx, vy, vz)
         landing_dist = math.hypot(x, y)
@@ -1278,11 +1279,11 @@ class GameSimulation:
             if self.rng.random() < prob:
                 return 0
 
-        if landing_dist >= 360:
+        if landing_dist >= 380:
             return 4
-        if landing_dist >= 250:
+        if landing_dist >= 300:
             return 3
-        if landing_dist >= 160:
+        if landing_dist >= 200:
             return 2
         return 1
 

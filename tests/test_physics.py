@@ -84,30 +84,30 @@ def make_pitcher(pid: str) -> Pitcher:
 
 
 @pytest.mark.parametrize(
-    "ph,gf,pl,vx,vy,vz",
+    "ph,pl,swing,vert,vx,vy,vz",
     [
-        (50, 50, 50, 108.33, 0.0, 19.10),
-        (80, 30, 80, 117.54, 59.89, 4.61),
+        (50, 50, 5.0, 10.0, 106.25, 0.0, 28.47),
+        (80, 80, 5.0, 20.0, 103.85, 52.91, 61.97),
     ],
 )
-def test_launch_vector_returns_expected_components(ph, gf, pl, vx, vy, vz):
+def test_launch_vector_returns_expected_components(ph, pl, swing, vert, vx, vy, vz):
     physics = Physics(make_cfg(), random.Random(0))
-    result = physics.launch_vector(ph, gf, pl)
+    result = physics.launch_vector(ph, pl, swing, vert)
     assert result[0] == pytest.approx(vx, abs=0.01)
     assert result[1] == pytest.approx(vy, abs=0.01)
     assert result[2] == pytest.approx(vz, abs=0.01)
 
 
 @pytest.mark.parametrize(
-    "ph,gf,pl,x,y,t",
+    "ph,pl,swing,vert,x,y,t",
     [
-        (50, 50, 50, 143.84, 0.0, 1.3278),
-        (80, 30, 80, 70.31, 35.82, 0.5981),
+        (50, 50, 5.0, 10.0, 198.64, 0.0, 1.8695),
+        (80, 80, 5.0, 20.0, 405.00, 206.36, 3.9000),
     ],
 )
-def test_landing_point_returns_expected_coordinates(ph, gf, pl, x, y, t):
+def test_landing_point_returns_expected_coordinates(ph, pl, swing, vert, x, y, t):
     physics = Physics(make_cfg(), random.Random(0))
-    vx, vy, vz = physics.launch_vector(ph, gf, pl)
+    vx, vy, vz = physics.launch_vector(ph, pl, swing, vert)
     lx, ly, ht = physics.landing_point(vx, vy, vz)
     assert lx == pytest.approx(x, abs=0.01)
     assert ly == pytest.approx(y, abs=0.01)
@@ -247,6 +247,22 @@ def test_home_run_scores_all_runners():
     assert batter_state.r == 1
     assert away.runs == 2
     assert away.bases == [None, None, None]
+
+
+def test_power_hitter_can_hit_home_run(monkeypatch):
+    batter = make_player("slug", ph=80)
+    pitcher = make_pitcher("arm")
+    home = TeamState(lineup=[make_player("h")], bench=[], pitchers=[pitcher])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    cfg = make_cfg(swingSpeedBase=80, averagePitchSpeed=50)
+    rng = MockRandom([0.0] + [0.9] * 20)
+    sim = GameSimulation(home, away, cfg, rng)
+
+    monkeypatch.setattr(sim.physics, "swing_angle", lambda gf, swing_type="normal", pitch_loc="middle": 5.0)
+    monkeypatch.setattr(sim.physics, "vertical_hit_angle", lambda swing_type="normal": 20.0)
+
+    bases = sim._swing_result(batter, pitcher, home, pitch_speed=50, rand=0.0)
+    assert bases == 4
 
 
 def test_roll_distance_respects_surface_friction():

@@ -419,19 +419,29 @@ class Physics:
     # ------------------------------------------------------------------
     # Batted ball trajectory helpers
     # ------------------------------------------------------------------
-    def launch_vector(self, ph: int, gf: int, pl: int) -> tuple[float, float, float]:
+    def launch_vector(
+        self,
+        ph: int,
+        pl: int,
+        swing_angle: float,
+        vertical_hit_angle: float,
+    ) -> tuple[float, float, float]:
         """Return velocity components for a batted ball.
 
-        ``ph`` is the batter's power rating, ``gf`` their ground/fly
-        tendency and ``pl`` the pull tendency.  The calculation keeps the
-        numbers intentionally small and deterministic and is not a realistic
-        model of actual exit velocities.
+        ``ph`` is the batter's power rating and ``pl`` their pull tendency.
+        ``swing_angle`` represents the angle of the bat through the zone while
+        ``vertical_hit_angle`` is the rolled launch angle offset.  Both angles
+        are combined with a power based adjustment allowing strong hitters to
+        generate higher trajectories.  The calculation keeps the numbers small
+        and deterministic and is not a realistic model of actual exit
+        velocities.
         """
 
         speed_mph = 50 + ph * 0.5
         speed_fps = speed_mph * 5280 / 3600
 
-        vert_angle = -10 + gf * 0.4
+        power_adjust = (ph - 50) * 0.1
+        vert_angle = swing_angle + vertical_hit_angle + power_adjust
         horiz_angle = -45 + pl * 0.9
 
         v_rad = math.radians(vert_angle)
