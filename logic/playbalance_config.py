@@ -560,7 +560,8 @@ class PlayBalanceConfig:
         return self.values.get(key, default)
 
     def __getattr__(self, item: str) -> Any:  # pragma: no cover - simple delegation
-        return self.values.get(item, _DEFAULTS.get(item, 0))
+        values = self.__dict__.get("values", {})
+        return values.get(item, _DEFAULTS.get(item, 0))
 
     def __setattr__(self, key: str, value: Any) -> None:  # pragma: no cover - simple
         if key == "values":
