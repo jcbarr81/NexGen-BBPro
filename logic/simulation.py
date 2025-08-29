@@ -1029,6 +1029,17 @@ class GameSimulation:
                 dist=dist,
                 random_value=dec_r,
             )
+            catcher_fs = self._get_fielder(defense, "C")
+            if swing and self._maybe_catcher_interference(
+                offense,
+                defense,
+                batter_state,
+                catcher_fs,
+                pitcher_state,
+                start_pitches,
+            ):
+                pitcher_state.outs += outs
+                return outs + outs_from_pick
 
             if swing:
                 if contact > 0:
@@ -1269,6 +1280,8 @@ class GameSimulation:
                     else:
                         balls += 1
                         pitcher_state.balls_thrown += 1
+
+            self._maybe_passed_ball(offense, defense, catcher_fs)
 
             if balls >= 4:
                 self._add_stat(batter_state, "bb")
@@ -1704,6 +1717,69 @@ class GameSimulation:
         if runs_scored:
             self._add_stat(batter_state, "rbi", runs_scored)
 
+    def _advance_passed_ball(
+        self, offense: TeamState, defense: TeamState
+    ) -> None:
+        """Advance all runners one base on a passed ball."""
+
+        b = offense.bases
+        bp = offense.base_pitchers
+        if b[2]:
+            self._score_runner(offense, defense, 2)
+        if b[1]:
+            offense.bases[2] = b[1]
+            offense.base_pitchers[2] = bp[1]
+            offense.bases[1] = None
+            offense.base_pitchers[1] = None
+        if b[0]:
+            offense.bases[1] = b[0]
+            offense.base_pitchers[1] = bp[0]
+            offense.bases[0] = None
+            offense.base_pitchers[0] = None
+
+    def _maybe_passed_ball(
+        self,
+        offense: TeamState,
+        defense: TeamState,
+        catcher_fs: Optional[FieldingState],
+    ) -> bool:
+        """Return ``True`` if a passed ball occurs."""
+
+        if catcher_fs is None or not any(offense.bases):
+            return False
+        fa = catcher_fs.player.fa
+        pb_chance = max(0.0, 0.01 - fa / 10000)
+        if self.rng.random() < pb_chance:
+            self._add_fielding_stat(catcher_fs, "pb")
+            self._advance_passed_ball(offense, defense)
+            return True
+        return False
+
+    def _maybe_catcher_interference(
+        self,
+        offense: TeamState,
+        defense: TeamState,
+        batter_state: BatterState,
+        catcher_fs: Optional[FieldingState],
+        pitcher_state: PitcherState,
+        start_pitches: int,
+    ) -> bool:
+        """Return ``True`` if catcher's interference is called."""
+
+        if catcher_fs is None:
+            return False
+        fa = catcher_fs.player.fa
+        ci_chance = max(0.0, 0.001 - fa / 100000)
+        if self.rng.random() < ci_chance:
+            self._add_fielding_stat(catcher_fs, "ci")
+            self._add_stat(batter_state, "ci")
+            self._advance_walk(offense, defense, batter_state)
+            self._add_stat(
+                batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+            )
+            return True
+        return False
+
     # ------------------------------------------------------------------
     # Steal attempts
     # ------------------------------------------------------------------
@@ -1752,6 +1828,9 @@ class GameSimulation:
             attempt = self.rng.random() < chance
         if attempt:
             catcher_fs = self._get_fielder(defense, "C")
+            if catcher_fs and self._maybe_passed_ball(offense, defense, catcher_fs):
+                self._add_stat(runner_state, "sb")
+                return True
             fa = catcher_fs.player.fa if catcher_fs else 0
             delay = self.physics.reaction_delay("C", fa)
             tag_out = self.fielding_ai.should_tag_runner(delay, 10)
