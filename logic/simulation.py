@@ -988,13 +988,19 @@ class GameSimulation:
                         if error:
                             pitcher_state.consecutive_hits = 0
                             pitcher_state.consecutive_baserunners += 1
-                            self._advance_runners(
+                            outs_made = self._advance_runners(
                                 offense,
                                 defense,
                                 batter_state,
                                 bases=bases,
                                 error=True,
                             )
+                            if outs_made:
+                                outs += outs_made
+                                pitcher_state.toast += self.config.get("pitchScoringOut", 0) * outs_made
+                                pitcher_state.consecutive_hits = 0
+                                pitcher_state.consecutive_baserunners = 0
+                                pitcher_state.outs += outs_made
                         else:
                             pitcher_state.h += 1
                             self._add_stat(batter_state, "h")
@@ -1020,9 +1026,15 @@ class GameSimulation:
                                 )
                             pitcher_state.consecutive_hits += 1
                             pitcher_state.consecutive_baserunners += 1
-                            self._advance_runners(
+                            outs_made = self._advance_runners(
                                 offense, defense, batter_state, bases=bases
                             )
+                            if outs_made:
+                                outs += outs_made
+                                pitcher_state.toast += self.config.get("pitchScoringOut", 0) * outs_made
+                                pitcher_state.consecutive_hits = 0
+                                pitcher_state.consecutive_baserunners = 0
+                                pitcher_state.outs += outs_made
                         steal_result = self._attempt_steal(
                             offense,
                             defense,
@@ -1359,14 +1371,21 @@ class GameSimulation:
         new_bases: List[Optional[BatterState]] = [None, None, None]
         new_bp: List[Optional[PitcherState]] = [None, None, None]
         runs_scored = 0
+        outs = 0
 
         if error:
             self._add_stat(batter_state, "roe")
 
         if bases == 1:
+            runner_on_first_out = False
             if b[2]:
-                self._score_runner(offense, defense, 2)
-                runs_scored += 1
+                runner_time = 90 / self.physics.player_speed(b[2].player.sp)
+                fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(0, 90, "LF")
+                if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
+                    outs += 1
+                else:
+                    self._score_runner(offense, defense, 2)
+                    runs_scored += 1
             if b[1]:
                 spd = self.physics.player_speed(b[1].player.sp)
                 roll_dist = self.physics.ball_roll_distance(
@@ -1384,8 +1403,13 @@ class GameSimulation:
                     temperature=self.temperature,
                 )
                 if roll_dist + bounce_dist >= 25:
-                    self._score_runner(offense, defense, 1)
-                    runs_scored += 1
+                    runner_time = 180 / spd
+                    fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(0, 180, "LF")
+                    if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
+                        outs += 1
+                    else:
+                        self._score_runner(offense, defense, 1)
+                        runs_scored += 1
                 else:
                     new_bases[2] = b[1]
                     new_bp[2] = bp[1]
@@ -1413,16 +1437,34 @@ class GameSimulation:
                         new_bases[1] = b[0]
                         new_bp[1] = bp[0]
                 else:
-                    new_bases[1] = b[0]
-                    new_bp[1] = bp[0]
+                    runner_time = 90 / spd
+                    fielder_time = self.physics.reaction_delay("SS", 0) + self.physics.throw_time(0, 90, "SS")
+                    if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
+                        outs += 1
+                        runner_on_first_out = True
+                    else:
+                        new_bases[1] = b[0]
+                        new_bp[1] = bp[0]
 
-            new_bases[0] = batter_state
-            new_bp[0] = defense.current_pitcher_state
+            if runner_on_first_out:
+                batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
+                relay_time = self.physics.reaction_delay("2B", 0) + self.physics.throw_time(0, 90, "2B")
+                if self.fielding_ai.should_relay_throw(relay_time, batter_time) and self.fielding_ai.should_tag_runner(relay_time, batter_time):
+                    outs += 1
+                    self._add_stat(batter_state, "gidp")
+                else:
+                    new_bases[0] = batter_state
+                    new_bp[0] = defense.current_pitcher_state
+                    self._add_stat(batter_state, "fc")
+            else:
+                new_bases[0] = batter_state
+                new_bp[0] = defense.current_pitcher_state
+
             offense.bases = new_bases
             offense.base_pitchers = new_bp
             if runs_scored and not error:
                 self._add_stat(batter_state, "rbi", runs_scored)
-            return
+            return outs
 
         for idx in range(2, -1, -1):
             runner = b[idx]
@@ -1456,6 +1498,7 @@ class GameSimulation:
 
         if runs_scored and not error:
             self._add_stat(batter_state, "rbi", runs_scored)
+        return outs
 
     def _advance_walk(
         self, offense: TeamState, defense: TeamState, batter_state: BatterState
