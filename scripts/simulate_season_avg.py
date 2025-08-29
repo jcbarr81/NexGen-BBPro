@@ -17,6 +17,7 @@ import csv
 import os
 import random
 import sys
+from multiprocessing import Pool
 
 try:
     from tqdm import tqdm
@@ -28,7 +29,6 @@ except ModuleNotFoundError:  # pragma: no cover
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from logic.schedule_generator import generate_mlb_schedule
-from logic.season_simulator import SeasonSimulator
 from logic.simulation import (
     FieldingState,
     GameSimulation,
@@ -95,6 +95,48 @@ def clone_team_state(base: TeamState) -> TeamState:
     return team
 
 
+# Global objects used by worker processes
+_BASE_STATES: dict[str, TeamState] | None = None
+_CFG: PlayBalanceConfig | None = None
+
+
+def _init_pool(base_states: dict[str, TeamState], cfg: PlayBalanceConfig) -> None:
+    """Initializer to share state across worker processes."""
+
+    global _BASE_STATES, _CFG
+    _BASE_STATES = base_states
+    _CFG = cfg
+
+
+def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
+    """Simulate a single game and return stat totals for both teams."""
+
+    assert _BASE_STATES is not None and _CFG is not None
+    home = clone_team_state(_BASE_STATES[home_id])
+    away = clone_team_state(_BASE_STATES[away_id])
+    rng = random.Random(seed)
+    sim = GameSimulation(home, away, _CFG, rng)
+    sim.simulate_game()
+    box = generate_boxscore(home, away)
+    totals: Counter[str] = Counter()
+    for side in ("home", "away"):
+        batting = box[side]["batting"]
+        pitching = box[side]["pitching"]
+        totals["Runs"] += box[side]["score"]
+        totals["Hits"] += sum(p["h"] for p in batting)
+        totals["Doubles"] += sum(p["2b"] for p in batting)
+        totals["Triples"] += sum(p["3b"] for p in batting)
+        totals["HomeRuns"] += sum(p["hr"] for p in batting)
+        totals["Walks"] += sum(p["bb"] for p in batting)
+        totals["Strikeouts"] += sum(p["so"] for p in batting)
+        totals["StolenBases"] += sum(p["sb"] for p in batting)
+        totals["CaughtStealing"] += sum(p["cs"] for p in batting)
+        totals["HitByPitch"] += sum(p["hbp"] for p in batting)
+        totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
+        totals["Strikes"] += sum(p["strikes"] for p in pitching)
+    return totals
+
+
 def simulate_season_average(use_tqdm: bool = True) -> None:
     """Run a season simulation and print average box score values.
 
@@ -108,55 +150,22 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
     cfg.ballInPlayOuts = 1
-    rng = random.Random(42)
+
+    # Prepare list of (home, away, seed) tuples for multiprocessing
+    games = [
+        (g["home"], g["away"], 42 + i) for i, g in enumerate(schedule)
+    ]
+    iterator = games
+    if use_tqdm:
+        iterator = tqdm(iterator, total=len(games), desc="Simulating season")
+
+    with Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
+        results = pool.starmap(_simulate_game, iterator)
 
     totals: Counter[str] = Counter()
-    total_games = 0
-
-    def simulate_game(home_id: str, away_id: str) -> tuple[int, int, dict]:
-        home = clone_team_state(base_states[home_id])
-        away = clone_team_state(base_states[away_id])
-        sim = GameSimulation(home, away, cfg, rng)
-        sim.simulate_game()
-        box = generate_boxscore(home, away)
-        return box["home"]["score"], box["away"]["score"], box
-
-    pbar = None
-    if use_tqdm:
-        pbar = tqdm(total=len(schedule), desc="Simulating season")
-
-    def after_game(game) -> None:
-        nonlocal total_games
-        box = game.get("extra")
-        if not box:
-            return
-        for side in ("home", "away"):
-            batting = box[side]["batting"]
-            pitching = box[side]["pitching"]
-            totals["Runs"] += box[side]["score"]
-            totals["Hits"] += sum(p["h"] for p in batting)
-            totals["Doubles"] += sum(p["2b"] for p in batting)
-            totals["Triples"] += sum(p["3b"] for p in batting)
-            totals["HomeRuns"] += sum(p["hr"] for p in batting)
-            totals["Walks"] += sum(p["bb"] for p in batting)
-            totals["Strikeouts"] += sum(p["so"] for p in batting)
-            totals["StolenBases"] += sum(p["sb"] for p in batting)
-            totals["CaughtStealing"] += sum(p["cs"] for p in batting)
-            totals["HitByPitch"] += sum(p["hbp"] for p in batting)
-            totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
-            totals["Strikes"] += sum(p["strikes"] for p in pitching)
-        total_games += 1
-        if pbar is not None:
-            pbar.update(1)
-
-    simulator = SeasonSimulator(
-        schedule, simulate_game=simulate_game, after_game=after_game
-    )
-    for _ in simulator.dates:
-        simulator.simulate_next_day()
-
-    if pbar is not None:
-        pbar.close()
+    for game_totals in results:
+        totals.update(game_totals)
+    total_games = len(results)
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
 
