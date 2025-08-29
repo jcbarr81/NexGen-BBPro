@@ -17,7 +17,7 @@ from logic.pitcher_ai import PitcherAI
 from logic.batter_ai import BatterAI
 from logic.bullpen import WarmupTracker
 from logic.fielding_ai import FieldingAI
-from logic.field_geometry import DEFAULT_POSITIONS
+from logic.field_geometry import DEFAULT_POSITIONS, Stadium
 from utils.path_utils import get_base_dir
 from utils.stats_persistence import save_stats
 from .stats import (
@@ -217,6 +217,7 @@ class GameSimulation:
         temperature: float = 70.0,
         altitude: float = 0.0,
         wind_speed: float = 0.0,
+        stadium: Stadium | None = None,
     ) -> None:
         self.home = home
         self.away = away
@@ -243,6 +244,7 @@ class GameSimulation:
         self.temperature = temperature
         self.altitude = altitude
         self.wind_speed = wind_speed
+        self.stadium = stadium or Stadium()
         self.last_batted_ball_angles: tuple[float, float] | None = None
         self.last_pitch_speed: float | None = None
 
@@ -1492,6 +1494,7 @@ class GameSimulation:
         )
         x, y, hang_time = self.physics.landing_point(vx, vy, vz)
         landing_dist = math.hypot(x, y)
+        angle = math.atan2(abs(y), abs(x))
 
         offense = self.away if defense is self.home else self.home
         if (
@@ -1539,11 +1542,12 @@ class GameSimulation:
                 return 1, True
 
         total_dist = landing_dist + bounce_horiz + roll_dist
-        if total_dist >= 380:
+        wall = self.stadium.wall_distance(angle)
+        if total_dist >= wall:
             return 4, False
-        if total_dist >= 300:
+        if total_dist >= self.stadium.triple_distance(angle):
             return 3, False
-        if total_dist >= 200:
+        if total_dist >= self.stadium.double_distance(angle):
             return 2, False
         return 1, False
 
