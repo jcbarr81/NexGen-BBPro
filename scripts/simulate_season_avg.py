@@ -17,7 +17,7 @@ import csv
 import os
 import random
 import sys
-from multiprocessing import Pool
+import multiprocessing as mp
 
 try:
     from tqdm import tqdm
@@ -159,8 +159,19 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
     if use_tqdm:
         iterator = tqdm(iterator, total=len(games), desc="Simulating season")
 
-    with Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
-        results = pool.starmap(_simulate_game, iterator)
+    # ``spawn`` start method on Windows requires all objects to be picklable.
+    # ``TeamState`` and ``PlayBalanceConfig`` are complex and can trigger
+    # pickling errors, so fall back to a simple sequential loop when the
+    # ``spawn`` method is active.  This keeps the function usable on Windows
+    # while still taking advantage of multiprocessing on Unix-like systems.
+    use_pool = mp.get_start_method(allow_none=True) != "spawn"
+
+    if use_pool:
+        with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
+            results = pool.starmap(_simulate_game, iterator)
+    else:  # pragma: no cover - exercised only on Windows
+        _init_pool(base_states, cfg)
+        results = [_simulate_game(h, a, s) for h, a, s in iterator]
 
     totals: Counter[str] = Counter()
     for game_totals in results:
