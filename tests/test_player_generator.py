@@ -2,6 +2,8 @@ from collections import Counter
 from datetime import date
 import random
 
+import pytest
+
 from logic.player_generator import (
     generate_player,
     assign_primary_position,
@@ -235,9 +237,11 @@ def test_skin_tone_distribution_matches_weights():
         assert abs(counts[tone] / num_players - expected) < 0.05
 
 
-def test_generate_player_includes_appearance():
-    player = generate_player(is_pitcher=False)
+@pytest.mark.parametrize("is_pitcher", [True, False])
+def test_generate_player_includes_appearance(is_pitcher):
+    player = generate_player(is_pitcher=is_pitcher)
     assert player["ethnicity"]
+    assert player["skin_tone"]
     assert player["hair_color"] in pg.HAIR_COLOR_WEIGHTS[player["ethnicity"]]
     assert player["facial_hair"] in pg.FACIAL_HAIR_WEIGHTS[player["ethnicity"]]
 
