@@ -344,10 +344,17 @@ class BatterAI:
 
         if not swing:
             contact = 0.0
-        elif type_id and loc_id and time_id:
-            contact = timing_quality
         else:
-            contact = 0.0
+            success = int(type_id) + int(loc_id) + int(time_id)
+            if success == 0:
+                contact = 0.0
+            else:
+                ch_factor = getattr(batter, "ch", 0) / 100.0
+                weights = [
+                    1.0 if ident else ch_factor * 0.5
+                    for ident in (type_id, loc_id, time_id)
+                ]
+                contact = timing_quality * sum(weights) / 3.0
 
         if swing and not self.can_adjust_swing(
             batter, dx, dy, swing_type=swing_type

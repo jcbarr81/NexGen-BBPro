@@ -80,7 +80,7 @@ def test_primary_look_adjust_increases_swings():
         random_value=0.4,
     )
     assert swing is True
-    assert contact == 0.0
+    assert contact == pytest.approx(0.25666666666666665)
 
 
 def test_best_look_adjust_increases_swings():
@@ -110,7 +110,7 @@ def test_best_look_adjust_increases_swings():
         random_value=0.4,
     )
     assert swing is True
-    assert contact == 0.0
+    assert contact == pytest.approx(0.25666666666666665)
 
 
 def test_ch_and_exp_ratings_increase_identification():
@@ -191,8 +191,8 @@ def test_pitch_rating_makes_identification_harder():
         random_value=0.9,
     )
 
-    assert swing_e is True and contact_e > 0
-    assert swing_h is True and contact_h == 0.0
+    assert swing_e is True and contact_e > contact_h
+    assert swing_h is True and contact_h > 0
 
 
 def test_pitch_classification():
