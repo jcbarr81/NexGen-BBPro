@@ -1,6 +1,9 @@
 import csv
 import random
+from types import SimpleNamespace
 from pathlib import Path
+
+import pytest
 
 import logic.simulation as sim
 from logic.simulation import GameSimulation, generate_boxscore
@@ -9,6 +12,7 @@ from scripts.simulate_season_avg import clone_team_state
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
+from tests.test_physics import make_player, make_pitcher
 
 
 def _simulate(monkeypatch, foul_lambda=None, games: int = 20):
@@ -62,4 +66,37 @@ def test_fouls_increase_pitches_reduce_strikeouts(monkeypatch):
 
     assert foul_k < no_foul_k
     assert abs(foul_k - mlb_ks) < abs(no_foul_k - mlb_ks)
+
+
+PB_CFG = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+
+
+@pytest.mark.parametrize(
+    "base_pct, trend_pct",
+    [(PB_CFG.foulStrikeBasePct / 100.0, PB_CFG.foulContactTrendPct / 100.0)],
+)
+def test_foul_strike_distribution(base_pct, trend_pct):
+    """Ensure foul strikes match configured league averages."""
+
+    rng = random.Random(0)
+    batter = make_player("B", ch=50)
+    pitcher = make_pitcher("P")
+    sim_stub = SimpleNamespace(config=PB_CFG)
+
+    contact_rate = min(1.0, 2 * base_pct)
+    total_strikes = 100_000
+    foul_strikes = 0
+    balls_in_play = 0
+
+    for _ in range(total_strikes):
+        if rng.random() < contact_rate:
+            prob = GameSimulation._foul_probability(sim_stub, batter, pitcher)
+            if rng.random() < prob:
+                foul_strikes += 1
+            else:
+                balls_in_play += 1
+
+    foul_pct = foul_strikes / total_strikes
+    assert foul_pct == pytest.approx(base_pct, abs=0.01)
+    assert foul_strikes == pytest.approx(balls_in_play, rel=0.02)
 
