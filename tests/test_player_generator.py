@@ -225,12 +225,21 @@ def test_pitcher_modifier_ranges(monkeypatch):
 def test_skin_tone_distribution_matches_weights():
     random.seed(0)
     num_players = 600
-    players = [generate_player(is_pitcher=False) for _ in range(num_players)]
-    counts = Counter(p["skin_tone"] for p in players)
-    total_weight = sum(pg.SKIN_TONE_WEIGHTS.values())
-    for tone, weight in pg.SKIN_TONE_WEIGHTS.items():
+    ethnicity = "Anglo"
+    tones = [pg.assign_skin_tone(ethnicity) for _ in range(num_players)]
+    counts = Counter(tones)
+    weights = pg.SKIN_TONE_WEIGHTS[ethnicity]
+    total_weight = sum(weights.values())
+    for tone, weight in weights.items():
         expected = weight / total_weight
         assert abs(counts[tone] / num_players - expected) < 0.05
+
+
+def test_generate_player_includes_appearance():
+    player = generate_player(is_pitcher=False)
+    assert player["ethnicity"]
+    assert player["hair_color"] in pg.HAIR_COLOR_WEIGHTS[player["ethnicity"]]
+    assert player["facial_hair"] in pg.FACIAL_HAIR_WEIGHTS[player["ethnicity"]]
 
 
 def test_generate_pitches_counts_and_bounds(monkeypatch):

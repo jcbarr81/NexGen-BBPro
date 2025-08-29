@@ -98,18 +98,20 @@ def roll_dice(base: int, count: int, faces: int) -> int:
 
     return base + sum(random.randint(1, faces) for _ in range(count))
 
-def generate_name() -> tuple[str, str]:
+def generate_name() -> tuple[str, str, str]:
+    """Return a unique ``(first, last, ethnicity)`` tuple."""
+
     if name_pool:
         total_names = sum(len(v) for v in name_pool.values())
         if len(used_names) >= total_names:
-            return "John", "Doe"
+            return "John", "Doe", "Unknown"
         while True:
             ethnicity = random.choice(list(name_pool.keys()))
-            name = random.choice(name_pool[ethnicity])
-            if name not in used_names:
-                used_names.add(name)
-                return name
-    return "John", "Doe"
+            first, last = random.choice(name_pool[ethnicity])
+            if (first, last) not in used_names:
+                used_names.add((first, last))
+                return first, last, ethnicity
+    return "John", "Doe", "Unknown"
 
 
 def _adjust_endurance(endurance: int) -> int:
@@ -192,7 +194,31 @@ def distribute_rating_points(total: int, weights: Dict[str, int]) -> Dict[str, i
 
 PITCHER_RATE = 0.4  # Fraction of draft pool that should be pitchers
 
-SKIN_TONE_WEIGHTS = {"dark": 25, "medium": 25, "light": 25}
+# Appearance tables keyed by ethnicity. The ``"Default"`` entry is used when an
+# ethnicity is not explicitly listed.
+SKIN_TONE_WEIGHTS: Dict[str, Dict[str, int]] = {
+    "Anglo": {"light": 60, "medium": 30, "dark": 10},
+    "African": {"light": 5, "medium": 15, "dark": 80},
+    "Asian": {"light": 40, "medium": 55, "dark": 5},
+    "Hispanic": {"light": 30, "medium": 50, "dark": 20},
+    "Default": {"light": 33, "medium": 34, "dark": 33},
+}
+
+HAIR_COLOR_WEIGHTS: Dict[str, Dict[str, int]] = {
+    "Anglo": {"blonde": 25, "brown": 40, "black": 25, "red": 10},
+    "African": {"black": 80, "brown": 20},
+    "Asian": {"black": 90, "brown": 10},
+    "Hispanic": {"black": 40, "brown": 40, "blonde": 15, "red": 5},
+    "Default": {"black": 40, "brown": 40, "blonde": 15, "red": 5},
+}
+
+FACIAL_HAIR_WEIGHTS: Dict[str, Dict[str, int]] = {
+    "Anglo": {"clean_shaven": 60, "mustache": 10, "goatee": 10, "beard": 20},
+    "African": {"clean_shaven": 55, "mustache": 15, "goatee": 10, "beard": 20},
+    "Asian": {"clean_shaven": 70, "mustache": 10, "goatee": 10, "beard": 10},
+    "Hispanic": {"clean_shaven": 55, "mustache": 15, "goatee": 15, "beard": 15},
+    "Default": {"clean_shaven": 60, "mustache": 10, "goatee": 10, "beard": 20},
+}
 
 
 def assign_primary_position() -> str:
@@ -203,12 +229,42 @@ def assign_primary_position() -> str:
     )[0]
 
 
-def assign_skin_tone() -> str:
-    """Select a skin tone using weights from the ARR tables."""
-    return random.choices(
-        list(SKIN_TONE_WEIGHTS.keys()),
-        weights=SKIN_TONE_WEIGHTS.values(),
-    )[0]
+def _lookup_weights(table: Dict[str, Dict[str, int]], ethnicity: str) -> Dict[str, int]:
+    """Return the weight mapping for ``ethnicity`` falling back to ``Default``."""
+
+    return table.get(ethnicity, table["Default"])
+
+
+def assign_skin_tone(ethnicity: str) -> str:
+    """Select a skin tone using ethnicity-specific weights."""
+
+    weights = _lookup_weights(SKIN_TONE_WEIGHTS, ethnicity)
+    return random.choices(list(weights.keys()), weights=weights.values())[0]
+
+
+def assign_hair_color(ethnicity: str) -> str:
+    """Select a hair color using ethnicity-specific weights."""
+
+    weights = _lookup_weights(HAIR_COLOR_WEIGHTS, ethnicity)
+    return random.choices(list(weights.keys()), weights=weights.values())[0]
+
+
+def assign_facial_hair(ethnicity: str, age: int) -> str:
+    """Select facial hair style using ethnicity-specific weights.
+
+    Younger players tend to be clean shaven while older players are more likely
+    to sport mustaches or beards.
+    """
+
+    weights = _lookup_weights(FACIAL_HAIR_WEIGHTS, ethnicity).copy()
+    if age < 25:
+        weights["clean_shaven"] += 20
+        weights["beard"] = max(0, weights.get("beard", 0) - 10)
+    elif age > 35:
+        weights["mustache"] += 10
+        weights["beard"] += 10
+        weights["clean_shaven"] = max(0, weights.get("clean_shaven", 0) - 20)
+    return random.choices(list(weights.keys()), weights=weights.values())[0]
 
 
 BATS_THROWS: Dict[str, List[Tuple[str, str, int]]] = {
@@ -509,11 +565,13 @@ def generate_player(
         if player_type is None:
             player_type = "amateur" if for_draft else "fictional"
         birthdate, age = generate_birthdate(player_type=player_type)
-    first_name, last_name = generate_name()
+    first_name, last_name, ethnicity = generate_name()
     player_id = f"P{random.randint(1000, 9999)}"
     height = random.randint(68, 78)
     weight = random.randint(160, 250)
-    skin_tone = assign_skin_tone()
+    skin_tone = assign_skin_tone(ethnicity)
+    hair_color = assign_hair_color(ethnicity)
+    facial_hair = assign_facial_hair(ethnicity, age)
 
     # Situational modifiers derived from ARR tables (lines 199-225)
     mo = roll_dice(35, 5, 5)  # monthly
@@ -583,7 +641,10 @@ def generate_player(
             "vl": vl,
             "height": height,
             "weight": weight,
+            "ethnicity": ethnicity,
             "skin_tone": skin_tone,
+            "hair_color": hair_color,
+            "facial_hair": facial_hair,
             "primary_position": "P",
             "other_positions": assign_secondary_positions("P"),
             "pot_control": bounded_potential(control, age),
@@ -649,7 +710,10 @@ def generate_player(
             "arm": arm,
             "height": height,
             "weight": weight,
+            "ethnicity": ethnicity,
             "skin_tone": skin_tone,
+            "hair_color": hair_color,
+            "facial_hair": facial_hair,
             "primary_position": primary_pos,
             "other_positions": other_pos,
             "pot_ch": bounded_potential(ch, age),
