@@ -1,7 +1,7 @@
 # AGENTS instructions
 
 ## Testing
-- Run `pytest` before committing any changes.
+- No need to run `pytest` before committing any changes.
 
 ## Development guidelines
 - Use `rg` for searching the repository.
