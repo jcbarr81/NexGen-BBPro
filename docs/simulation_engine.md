@@ -56,6 +56,32 @@ reaction delays, throwing mechanics and pitch characteristics.  All formulas are
 parameterised by the `PlayBalanceConfig` so tests can verify configuration
 impact【F:logic/physics.py†L8-L75】【F:logic/physics.py†L92-L130】.
 
+## Foul Balls
+
+Foul tips are modeled through `_foul_probability`, which derives the chance of a
+foul ball from player ratings and configuration. The formula starts with
+`foulStrikeBasePct`—the share of strikes that are fouls in MLB (27.8% in recent
+seasons)—and adjusts it by `foulContactTrendPct` for every 20 point contact edge
+the batter holds over the pitcher. The resulting percentage is converted to a
+foul-to-balls-in-play ratio and scaled so that an average matchup yields a 1:1
+split between foul balls and contacted pitches put in play, with the final
+probability clamped between 0 and 0.5 to avoid unrealistic extremes【F:logic/simulation.py†L1190-L1220】.
+
+Historical foul-strike rates have changed gradually over time:
+
+| Season | Foul/Strike % |
+|-------:|--------------:|
+| 1988   | 23.0% |
+| 1998   | 25.1% |
+| 2008   | 26.4% |
+| 2018   | 27.3% |
+| 2023   | 27.8% |
+
+To explore these eras, tweak the `PlayBalanceConfig` values. Setting
+`foulStrikeBasePct` to one of the percentages above shifts the league-wide foul
+rate, while `foulContactTrendPct` controls how strongly batter contact versus
+pitcher movement affects foul frequency【F:logic/playbalance_config.py†L135-L137】.
+
 ## Statistics
 
 At the end of each play, raw totals are converted into derived and rate stats
