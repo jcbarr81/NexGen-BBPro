@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+from dataclasses import dataclass
 from math import sqrt
 
 # Coordinates are measured in feet with home plate at (0, 0).
@@ -23,6 +25,46 @@ DEFAULT_POSITIONS = {
     "RF": (300.0, 0.0),
 }
 
+
+@dataclass
+class Stadium:
+    """Basic outfield dimensions for a ballpark.
+
+    Distances are measured from home plate to the wall down the left field
+    line, straightaway centre field and down the right field line.  ``double``
+    and ``triple`` represent the fraction of the wall distance required for a
+    ball to be ruled a double or triple when it remains in the park.
+    """
+
+    left: float = 330.0
+    center: float = 400.0
+    right: float = 330.0
+    double: float = 200.0 / 380.0
+    triple: float = 300.0 / 380.0
+
+    def wall_distance(self, angle: float) -> float:
+        """Return the distance to the wall at ``angle`` in radians.
+
+        Angle ``0`` corresponds to the right field line (positive *x*) and
+        ``π/2`` to the left field line (positive *y*).  Values in between are
+        linearly interpolated between the provided corner distances.
+        """
+
+        half = math.pi / 4
+        if angle <= half:
+            return self.right + (self.center - self.right) * angle / half
+        return self.center + (self.left - self.center) * (angle - half) / half
+
+    def double_distance(self, angle: float) -> float:
+        """Threshold distance for a double at ``angle``."""
+
+        return self.wall_distance(angle) * self.double
+
+    def triple_distance(self, angle: float) -> float:
+        """Threshold distance for a triple at ``angle``."""
+
+        return self.wall_distance(angle) * self.triple
+
 __all__ = [
     "HOME",
     "FIRST_BASE",
@@ -30,4 +72,5 @@ __all__ = [
     "THIRD_BASE",
     "PITCHER",
     "DEFAULT_POSITIONS",
+    "Stadium",
 ]
