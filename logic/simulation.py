@@ -1235,16 +1235,14 @@ class GameSimulation:
         swing_angle = self.physics.swing_angle(batter.gf)
         vert_angle = self.physics.vertical_hit_angle()
         self.last_batted_ball_angles = (swing_angle, vert_angle)
-        # Simulate ball contact with surface and air; results are unused but the
-        # calls ensure PBINI driven physics influence the simulation.
-        self.physics.ball_roll_distance(
+        roll_dist = self.physics.ball_roll_distance(
             bat_speed,
             self.surface,
             altitude=self.altitude,
             temperature=self.temperature,
             wind_speed=self.wind_speed,
         )
-        self.physics.ball_bounce(
+        bounce_vert, bounce_horiz = self.physics.ball_bounce(
             bat_speed / 2.0,
             bat_speed / 2.0,
             self.surface,
@@ -1318,11 +1316,12 @@ class GameSimulation:
             if self.rng.random() < prob:
                 return 0
 
-        if landing_dist >= 380:
+        total_dist = landing_dist + bounce_horiz + roll_dist
+        if total_dist >= 380:
             return 4
-        if landing_dist >= 300:
+        if total_dist >= 300:
             return 3
-        if landing_dist >= 200:
+        if total_dist >= 200:
             return 2
         return 1
 
@@ -1346,14 +1345,21 @@ class GameSimulation:
                 runs_scored += 1
             if b[1]:
                 spd = self.physics.player_speed(b[1].player.sp)
-                self.physics.ball_roll_distance(
+                roll_dist = self.physics.ball_roll_distance(
                     spd,
                     self.surface,
                     altitude=self.altitude,
                     temperature=self.temperature,
                     wind_speed=self.wind_speed,
                 )
-                if spd >= 25:
+                _, bounce_dist = self.physics.ball_bounce(
+                    spd / 2.0,
+                    spd / 2.0,
+                    self.surface,
+                    wet=self.wet,
+                    temperature=self.temperature,
+                )
+                if roll_dist + bounce_dist >= 25:
                     self._score_runner(offense, defense, 1)
                     runs_scored += 1
                 else:
@@ -1361,14 +1367,21 @@ class GameSimulation:
                     new_bp[2] = bp[1]
             if b[0]:
                 spd = self.physics.player_speed(b[0].player.sp)
-                self.physics.ball_roll_distance(
+                roll_dist = self.physics.ball_roll_distance(
                     spd,
                     self.surface,
                     altitude=self.altitude,
                     temperature=self.temperature,
                     wind_speed=self.wind_speed,
                 )
-                if spd >= 25:
+                _, bounce_dist = self.physics.ball_bounce(
+                    spd / 2.0,
+                    spd / 2.0,
+                    self.surface,
+                    wet=self.wet,
+                    temperature=self.temperature,
+                )
+                if roll_dist + bounce_dist >= 25:
                     if new_bases[2] is None:
                         new_bases[2] = b[0]
                         new_bp[2] = bp[0]
