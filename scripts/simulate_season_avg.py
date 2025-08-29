@@ -149,7 +149,31 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = 1
+    cfg.ballInPlayOuts = 0
+
+    csv_path = (
+        get_base_dir()
+        / "data"
+        / "MLB_avg"
+        / "mlb_avg_boxscore_2020_2024_both_teams.csv"
+    )
+    with csv_path.open(newline="") as f:
+        row = next(csv.DictReader(f))
+    hits = float(row["Hits"])
+    singles = (
+        hits
+        - float(row["Doubles"])
+        - float(row["Triples"])
+        - float(row["HomeRuns"])
+    )
+    cfg.hit1BProb = int(round(singles / hits * 100))
+    cfg.hit2BProb = int(round(float(row["Doubles"]) / hits * 100))
+    cfg.hit3BProb = int(round(float(row["Triples"]) / hits * 100))
+    cfg.hitHRProb = max(
+        0,
+        100 - cfg.hit1BProb - cfg.hit2BProb - cfg.hit3BProb,
+    )
+    mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
     games = [
@@ -180,15 +204,6 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
 
-    csv_path = (
-        get_base_dir()
-        / "data"
-        / "MLB_avg"
-        / "mlb_avg_boxscore_2020_2024_both_teams.csv"
-    )
-    with csv_path.open(newline="") as f:
-        row = next(csv.DictReader(f))
-    mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     diffs = {k: averages[k] - mlb_averages.get(k, 0.0) for k in STAT_ORDER}
 
     print("Average box score per game (both teams):")

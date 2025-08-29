@@ -933,7 +933,7 @@ class GameSimulation:
             pitch_speed = self.physics.pitch_velocity(
                 pitch_type, pitcher.arm, rand=loc_r
             )
-            control_chance = pitcher.control / 100.0 * 0.9  # encourage more balls
+            control_chance = pitcher.control / 100.0  # rely on full control rating
             width, height = self.physics.control_box(pitch_type)
             frac = loc_r
             miss_amt = 0.0
@@ -1174,9 +1174,11 @@ class GameSimulation:
     def _foul_probability(self, batter: Player, pitcher: Pitcher) -> float:
         """Return foul ball probability based on batter and pitcher ratings."""
 
-        base = 0.05
-        prob = base + (getattr(batter, "ch", 50) + getattr(pitcher, "movement", 50)) / 1000.0
-        return max(0.05, min(0.5, prob))
+        base = 0.02
+        prob = base + (
+            getattr(batter, "ch", 50) + getattr(pitcher, "movement", 50)
+        ) / 1500.0
+        return max(0.02, min(0.4, prob))
 
     def _swing_result(
         self,
