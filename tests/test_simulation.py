@@ -313,6 +313,37 @@ def test_second_base_steal_attempt_success():
     assert runner_state.sb == 1
 
 
+def test_passed_ball_on_steal_attempt():
+    cfg = load_config()
+    runner = make_player("run", sp=80)
+    runner2 = make_player("run2")
+    catcher = make_player("c")
+    catcher.primary_position = "C"
+    defense = TeamState(lineup=[catcher], bench=[], pitchers=[make_pitcher("hp")])
+    offense = TeamState(lineup=[runner, runner2], bench=[], pitchers=[make_pitcher("ap")])
+    rstate1 = BatterState(runner)
+    rstate1.lead = 2
+    rstate2 = BatterState(runner2)
+    offense.lineup_stats[runner.player_id] = rstate1
+    offense.lineup_stats[runner2.player_id] = rstate2
+    offense.bases[0] = rstate1
+    offense.bases[1] = rstate2
+    sim = GameSimulation(defense, offense, cfg, MockRandom([0.0]))
+    res = sim._attempt_steal(
+        offense,
+        defense,
+        defense.pitchers[0],
+        force=True,
+        runner_on=1,
+    )
+    assert res is True
+    assert offense.bases[1] is rstate1
+    assert offense.bases[2] is rstate2
+    cstats = defense.fielding_stats[catcher.player_id]
+    assert cstats.pb == 1
+    assert rstate1.sb == 1
+
+
 def test_pickoff_attempt_scares_runner():
     cfg = make_cfg(
         holdChanceBase=100,
@@ -602,6 +633,60 @@ def test_swing_and_miss_records_strikeout(monkeypatch):
     stats = away.lineup_stats[batter.player_id]
     assert outs == 1
     assert stats.so == 1
+
+
+def test_passed_ball_advances_runner(monkeypatch):
+    cfg = load_config()
+    runner = make_player("run")
+    batter = make_player("bat")
+    catcher = make_player("c")
+    catcher.primary_position = "C"
+    home = TeamState(lineup=[catcher], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    rstate = BatterState(runner)
+    away.lineup_stats[runner.player_id] = rstate
+    away.bases[2] = rstate
+    sim = GameSimulation(home, away, cfg, MockRandom([0.5] * 50))
+    monkeypatch.setattr(sim.pitcher_ai, "select_pitch", lambda *_, **__: ("fb", None))
+    monkeypatch.setattr(sim.batter_ai, "decide_swing", lambda *_, **__: (True, 0.0))
+
+    called = {"done": False}
+
+    def force_pb(off, defn, cfs):
+        if not called["done"]:
+            sim._add_fielding_stat(cfs, "pb")
+            sim._advance_passed_ball(off, defn)
+            called["done"] = True
+            return True
+        return False
+
+    monkeypatch.setattr(sim, "_maybe_passed_ball", force_pb)
+    monkeypatch.setattr(sim, "_maybe_catcher_interference", lambda *a, **k: False)
+
+    outs = sim.play_at_bat(away, home)
+    cstats = home.fielding_stats[catcher.player_id]
+    assert outs == 1
+    assert away.runs == 1
+    assert cstats.pb == 1
+
+
+def test_catcher_interference_awards_first(monkeypatch):
+    cfg = load_config()
+    batter = make_player("bat")
+    catcher = make_player("c")
+    catcher.primary_position = "C"
+    home = TeamState(lineup=[catcher], bench=[], pitchers=[make_pitcher("hp")])
+    away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
+    sim = GameSimulation(home, away, cfg, MockRandom([0.5, 0.5, 0.0]))
+    monkeypatch.setattr(sim.pitcher_ai, "select_pitch", lambda *_, **__: ("fb", None))
+    monkeypatch.setattr(sim.batter_ai, "decide_swing", lambda *_, **__: (True, 0.0))
+    outs = sim.play_at_bat(away, home)
+    bstats = away.lineup_stats[batter.player_id]
+    cstats = home.fielding_stats[catcher.player_id]
+    assert outs == 0
+    assert away.bases[0] is bstats
+    assert bstats.ci == 1
+    assert cstats.ci == 1
 
 
 def test_pitch_control_affects_location():
