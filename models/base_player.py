@@ -14,6 +14,12 @@ class BasePlayer:
     other_positions: List[str]
     gf: int  # Groundball-Flyball ratio
 
+    # Appearance attributes
+    ethnicity: str = ""
+    skin_tone: str = ""
+    hair_color: str = ""
+    facial_hair: str = ""
+
     injured: bool = False
     injury_description: Optional[str] = None
     return_date: Optional[str] = None
