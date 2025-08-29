@@ -34,13 +34,24 @@ def test_generates_avatar_at_requested_size(tmp_path, monkeypatch):
     monkeypatch.setattr(avatar_generator, "client", SimpleNamespace(images=DummyImages()))
 
     out_file = tmp_path / "avatar.png"
-    avatar_generator.generate_avatar("Test Player", "TST", str(out_file), size=size)
+    avatar_generator.generate_avatar(
+        "Test Player",
+        "TST",
+        str(out_file),
+        size=size,
+        skin_tone="light",
+        hair_color="black",
+        facial_hair="goatee",
+    )
 
     assert calls["size"] == f"{size}x{size}"
     assert "Test Player" in calls["prompt"]
     assert "illustrated" in calls["prompt"].lower()
     assert "cartoon style" in calls["prompt"].lower()
     prompt = calls["prompt"].lower()
+    assert "light-skinned" in prompt
+    assert "black hair" in prompt
+    assert "goatee" in prompt
     assert "plain ball cap and jersey" in prompt
     assert "cap has no logo, image, or letters" in prompt
     assert "jersey has no names, letters, or numbers" in prompt
@@ -69,7 +80,15 @@ def test_512_falls_back_to_1024(tmp_path, monkeypatch):
     monkeypatch.setattr(avatar_generator, "client", SimpleNamespace(images=DummyImages()))
 
     out_file = tmp_path / "avatar.png"
-    avatar_generator.generate_avatar("Test Player", "TST", str(out_file), size=size)
+    avatar_generator.generate_avatar(
+        "Test Player",
+        "TST",
+        str(out_file),
+        size=size,
+        skin_tone="light",
+        hair_color="black",
+        facial_hair="goatee",
+    )
 
     assert calls["size"] == "1024x1024"
     assert out_file.exists()

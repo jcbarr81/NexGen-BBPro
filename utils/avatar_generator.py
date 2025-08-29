@@ -74,7 +74,14 @@ def _team_colors(team_id: str) -> Dict[str, str]:
 
 
 def generate_avatar(
-    name: str, team_id: str, out_file: str, size: int = 512, style: str = "illustrated"
+    name: str,
+    team_id: str,
+    out_file: str,
+    size: int = 512,
+    style: str = "illustrated",
+    skin_tone: str | None = None,
+    hair_color: str | None = None,
+    facial_hair: str | None = None,
 ) -> str:
     """Generate an avatar for ``name`` and save it to ``out_file``.
 
@@ -96,14 +103,32 @@ def generate_avatar(
     style:
         Art style for the portrait (e.g., ``"illustrated"``). The prompt always
         requests a cartoon style.
+    skin_tone:
+        Optional descriptor for the player's complexion (e.g., ``"light"``).
+    hair_color:
+        Optional hair color descriptor.
+    facial_hair:
+        Optional facial hair style (e.g., ``"goatee"``).
     """
     if client is None:  # pragma: no cover - depends on external package
         raise RuntimeError("OpenAI client is not configured")
 
     colors = _team_colors(team_id)
     ethnicity = _infer_ethnicity(name)
+
+    tone_part = f"{skin_tone}-skinned " if skin_tone else ""
+    trait_bits = []
+    if hair_color:
+        trait_bits.append(f"{hair_color} hair")
+    if facial_hair:
+        trait_bits.append(f"a {facial_hair}")
+    traits = ""
+    if trait_bits:
+        traits = " with " + " and ".join(trait_bits)
+
+    descriptor = f"{tone_part}{ethnicity} baseball player"
     prompt = (
-        f"{style.capitalize()} portrait of {name}, a {ethnicity} baseball player, "
+        f"{style.capitalize()} portrait of {name}, a {descriptor}{traits}, "
         "wearing a plain ball cap and jersey in team colors "
         f"{colors['primary']} and {colors['secondary']}. The cap has no logo, "
         "image, or letters and the jersey has no names, letters, or numbers. "
