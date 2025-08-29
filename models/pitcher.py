@@ -22,6 +22,11 @@ class Pitcher(BasePlayer):
         "fa",
     }
 
+    ethnicity: str = ""
+    skin_tone: str = ""
+    hair_color: str = ""
+    facial_hair: str = ""
+
     endurance: int = 0
     control: int = 0
     movement: int = 0

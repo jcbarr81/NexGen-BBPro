@@ -23,6 +23,11 @@ class Player(BasePlayer):
         "pot_gf",
     }
 
+    ethnicity: str = ""
+    skin_tone: str = ""
+    hair_color: str = ""
+    facial_hair: str = ""
+
     ch: int = 0
     ph: int = 0
     sp: int = 0
