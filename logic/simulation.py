@@ -90,6 +90,7 @@ class PitcherState:
     wp: int = 0  # Wild pitches
     bk: int = 0  # Balks
     pk: int = 0  # Pickoffs
+    pocs: int = 0  # Pickoff caught stealing
     ir: int = 0  # Inherited runners
     irs: int = 0  # Inherited runners scored
     gf: int = 0  # Games finished
@@ -312,20 +313,74 @@ class GameSimulation:
                 continue
             runner.lead = 2 if runner.player.sp >= long_speed else 0
 
-    def _maybe_pickoff(self, runner_state: BatterState, steal_chance: int) -> None:
-        """Attempt a pickoff and handle near-success outcomes."""
+    def _maybe_pickoff(
+        self,
+        offense: TeamState,
+        defense: TeamState,
+        runner_state: BatterState,
+        steal_chance: int,
+    ) -> int:
+        """Attempt a pickoff.  Returns the number of outs recorded."""
 
-        if self.defense.maybe_pickoff(
+        if not self.defense.maybe_pickoff(
             steal_chance=steal_chance,
             lead=runner_state.lead,
             pitches_since=self.pitches_since_pickoff,
         ):
-            self.debug_log.append("Pickoff attempt")
-            self.pitches_since_pickoff = 0
-            if self.rng.random() < 0.1:
-                self.debug_log.append("Pickoff nearly succeeds")
-                if runner_state.player.sp <= self.config.get("pickoffScareSpeed", 0):
-                    runner_state.lead = 0
+            return 0
+
+        self.debug_log.append("Pickoff attempt")
+        self.pitches_since_pickoff = 0
+
+        pitcher_state = defense.current_pitcher_state
+        if pitcher_state is None:
+            return 0
+
+        hold = pitcher_state.player.hold_runner
+        speed = runner_state.player.sp
+        success_prob = hold / max(1, hold + speed)
+        balk_prob = 0.02
+        outcome = self.rng.random()
+
+        if outcome < success_prob:
+            stealing = self.rng.random() < (steal_chance / 100.0)
+            if stealing:
+                self.debug_log.append("Runner picked off stealing")
+                pitcher_state.pocs += 1
+                self._add_stat(runner_state, "pocs")
+            else:
+                self.debug_log.append("Runner picked off")
+                pitcher_state.pk += 1
+                self._add_stat(runner_state, "po")
+            offense.bases[0] = None
+            offense.base_pitchers[0] = None
+            return 1
+        if outcome < success_prob + balk_prob:
+            self.debug_log.append("Balk on pickoff")
+            pitcher_state.bk += 1
+            for base in range(2, -1, -1):
+                runner = offense.bases[base]
+                if runner is None:
+                    continue
+                ps_runner = offense.base_pitchers[base]
+                if base == 2:
+                    self._score_runner(offense, defense, 2)
+                else:
+                    offense.bases[base + 1] = runner
+                    offense.base_pitchers[base + 1] = ps_runner
+                offense.bases[base] = None
+                offense.base_pitchers[base] = None
+            return 0
+
+        if (
+            self.rng.random() < 0.1
+            and runner_state.player.sp
+            <= self.config.get("pickoffScareSpeed", 0)
+        ):
+            self.debug_log.append("Pickoff nearly succeeds")
+            runner_state.lead = 0
+
+        return 0
 
     def _get_fielder(self, defense: TeamState, position: str) -> Optional[FieldingState]:
         """Return the ``FieldingState`` for ``position`` if present."""
@@ -632,6 +687,7 @@ class GameSimulation:
         runner = runner_state.player if runner_state else None
         holding_runner = False
         steal_chance = 0
+        outs_from_pick = 0
         pitcher_fa = (
             defense.current_pitcher_state.player.fa
             if defense.current_pitcher_state
@@ -681,7 +737,11 @@ class GameSimulation:
                     )
                     * 100
                 )
-            self._maybe_pickoff(runner_state, steal_chance)
+            outs_from_pick = self._maybe_pickoff(
+                offense, defense, runner_state, steal_chance
+            )
+            self.current_outs += outs_from_pick
+            outs_before += outs_from_pick
 
         inning = len(offense.inning_runs) + 1
         batter_idx = offense.batting_index % len(offense.lineup)
@@ -802,7 +862,7 @@ class GameSimulation:
                 batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
             )
             pitcher_state.outs += outs
-            return outs
+            return outs + outs_from_pick
 
         inning = len(offense.inning_runs) + 1
         run_diff = offense.runs - defense.runs
@@ -898,7 +958,7 @@ class GameSimulation:
                         batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                     )
                     pitcher_state.outs += outs
-                    return outs
+                    return outs + outs_from_pick
 
             if (
                 offense.bases[2]
@@ -922,7 +982,7 @@ class GameSimulation:
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
                 pitcher_state.outs += outs
-                return outs
+                return outs + outs_from_pick
 
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
@@ -1083,7 +1143,7 @@ class GameSimulation:
                         self.subs.maybe_warm_reliever(
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
-                        return outs
+                        return outs + outs_from_pick
                     foul_chance = self._foul_probability(batter, pitcher)
                     if self.rng.random() < foul_chance:
                         if dist > 3:
@@ -1112,7 +1172,7 @@ class GameSimulation:
                         self.subs.maybe_warm_reliever(
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
-                        return outs
+                        return outs + outs_from_pick
                     strikes += 1
                     if dist > 3:
                         pitcher_state.balls_thrown += 1
@@ -1159,7 +1219,7 @@ class GameSimulation:
                                 run_diff=run_diff,
                                 home_team=home_team,
                             )
-                            return outs
+                            return outs + outs_from_pick
                     else:
                         balls += 1
                         pitcher_state.balls_thrown += 1
@@ -1179,7 +1239,7 @@ class GameSimulation:
                 self.subs.maybe_warm_reliever(
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
                 )
-                return outs
+                return outs + outs_from_pick
             if strikes >= 3:
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
@@ -1203,7 +1263,7 @@ class GameSimulation:
                 self.subs.maybe_warm_reliever(
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
                 )
-                return outs
+                return outs + outs_from_pick
 
 
     # ------------------------------------------------------------------
@@ -1464,7 +1524,7 @@ class GameSimulation:
             offense.base_pitchers = new_bp
             if runs_scored and not error:
                 self._add_stat(batter_state, "rbi", runs_scored)
-            return outs
+            return outs + outs_from_pick
 
         for idx in range(2, -1, -1):
             runner = b[idx]
@@ -1498,7 +1558,7 @@ class GameSimulation:
 
         if runs_scored and not error:
             self._add_stat(batter_state, "rbi", runs_scored)
-        return outs
+        return outs + outs_from_pick
 
     def _advance_walk(
         self, offense: TeamState, defense: TeamState, batter_state: BatterState
@@ -1666,6 +1726,7 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
                 "wp": ps.wp,
                 "bk": ps.bk,
                 "pk": ps.pk,
+                "pocs": ps.pocs,
                 "ir": ps.ir,
                 "irs": ps.irs,
                 "gf": ps.gf,

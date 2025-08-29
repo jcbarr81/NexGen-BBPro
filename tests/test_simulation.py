@@ -328,11 +328,76 @@ def test_pickoff_attempt_scares_runner():
     rstate = BatterState(runner)
     offense.lineup_stats[runner.player_id] = rstate
     offense.bases[0] = rstate
-    sim = GameSimulation(defense, offense, cfg, MockRandom([0.0, 0.0]))
+    sim = GameSimulation(defense, offense, cfg, MockRandom([0.9, 0.0]))
     sim._set_runner_leads(offense)
     assert rstate.lead == 2
-    sim._maybe_pickoff(rstate, steal_chance=0)
+    outs = sim._maybe_pickoff(offense, defense, rstate, steal_chance=0)
+    assert outs == 0
     assert rstate.lead == 0
+
+
+def test_pickoff_records_pk():
+    cfg = make_cfg(
+        pickoffChanceBase=100,
+        holdChanceBase=100,
+        holdChanceMinRunnerSpeed=0,
+        holdChanceAdjust=0,
+    )
+    runner = make_player("run", sp=10)
+    offense = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("op")])
+    defense = TeamState(
+        lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("dp", hold_runner=100)]
+    )
+    rstate = BatterState(runner)
+    offense.lineup_stats[runner.player_id] = rstate
+    offense.bases[0] = rstate
+    offense.base_pitchers[0] = defense.current_pitcher_state
+    sim = GameSimulation(defense, offense, cfg, MockRandom([0.0, 0.0, 0.5]))
+    sim._set_runner_leads(offense)
+    outs = sim._maybe_pickoff(offense, defense, rstate, steal_chance=0)
+    assert outs == 1
+    assert offense.bases[0] is None
+    pstats = defense.current_pitcher_state
+    assert pstats.pk == 1
+
+
+def test_pickoff_caught_stealing_records_pocs():
+    cfg = make_cfg(pickoffChanceBase=100)
+    runner = make_player("run", sp=10)
+    offense = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("op")])
+    defense = TeamState(
+        lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("dp", hold_runner=100)]
+    )
+    rstate = BatterState(runner)
+    offense.lineup_stats[runner.player_id] = rstate
+    offense.bases[0] = rstate
+    offense.base_pitchers[0] = defense.current_pitcher_state
+    sim = GameSimulation(defense, offense, cfg, MockRandom([0.0, 0.0, 0.0]))
+    sim._set_runner_leads(offense)
+    outs = sim._maybe_pickoff(offense, defense, rstate, steal_chance=100)
+    assert outs == 1
+    pstats = defense.current_pitcher_state
+    assert pstats.pocs == 1
+    assert rstate.pocs == 1
+
+
+def test_pickoff_balk_advances_runner():
+    cfg = make_cfg(pickoffChanceBase=100)
+    runner = make_player("run", sp=10)
+    offense = TeamState(lineup=[runner], bench=[], pitchers=[make_pitcher("op")])
+    defense = TeamState(lineup=[make_player("d")], bench=[], pitchers=[make_pitcher("dp")])
+    defense.current_pitcher_state.player.hold_runner = 0
+    rstate = BatterState(runner)
+    offense.lineup_stats[runner.player_id] = rstate
+    offense.bases[0] = rstate
+    offense.base_pitchers[0] = defense.current_pitcher_state
+    sim = GameSimulation(defense, offense, cfg, MockRandom([0.0, 0.01]))
+    sim._set_runner_leads(offense)
+    outs = sim._maybe_pickoff(offense, defense, rstate, steal_chance=0)
+    assert outs == 0
+    assert offense.bases[1] is rstate
+    pstats = defense.current_pitcher_state
+    assert pstats.bk == 1
 
 def test_hit_and_run_count_adjust():
     cfg = make_cfg(
