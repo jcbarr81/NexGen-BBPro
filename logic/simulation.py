@@ -232,6 +232,7 @@ class GameSimulation:
         self.debug_log: List[str] = []
         self.pitches_since_pickoff = 4
         self.current_outs = 0
+        self.infield_fly: bool = False
         self.current_field_positions: Dict[
             str, Dict[str, Dict[str, Tuple[float, float]]]
         ] = {}
@@ -1031,6 +1032,7 @@ class GameSimulation:
 
             if swing:
                 if contact > 0:
+                    self.infield_fly = False
                     bases, error = self._swing_result(
                         batter,
                         pitcher,
@@ -1039,6 +1041,27 @@ class GameSimulation:
                         rand=dec_r,
                         contact_quality=contact,
                     )
+                    if self.infield_fly:
+                        if dist <= 3:
+                            pitcher_state.strikes_thrown += 1
+                        else:
+                            pitcher_state.balls_thrown += 1
+                        self._add_stat(batter_state, "ab")
+                        outs += 1
+                        pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                        pitcher_state.consecutive_hits = 0
+                        pitcher_state.consecutive_baserunners = 0
+                        self._add_stat(
+                            batter_state,
+                            "pitches",
+                            pitcher_state.pitches_thrown - start_pitches,
+                        )
+                        pitcher_state.outs += outs
+                        run_diff = offense.runs - defense.runs
+                        self.subs.maybe_warm_reliever(
+                            defense, inning=inning, run_diff=run_diff, home_team=home_team
+                        )
+                        return outs + outs_from_pick
                     if bases:
                         if dist <= 3:
                             pitcher_state.strikes_thrown += 1
@@ -1149,6 +1172,29 @@ class GameSimulation:
                         if dist > 3:
                             pitcher_state.balls_thrown += 1
                         pitcher_state.strikes_thrown += 1
+                        if self._attempt_foul_catch(
+                            batter,
+                            pitcher,
+                            defense,
+                            pitch_speed=pitch_speed,
+                            rand=dec_r,
+                        ):
+                            self._add_stat(batter_state, "ab")
+                            outs += 1
+                            pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners = 0
+                            self._add_stat(
+                                batter_state,
+                                "pitches",
+                                pitcher_state.pitches_thrown - start_pitches,
+                            )
+                            pitcher_state.outs += outs
+                            run_diff = offense.runs - defense.runs
+                            self.subs.maybe_warm_reliever(
+                                defense, inning=inning, run_diff=run_diff, home_team=home_team
+                            )
+                            return outs + outs_from_pick
                         if strikes < 2:
                             strikes += 1
                         continue
@@ -1304,6 +1350,65 @@ class GameSimulation:
 
         return max(0.0, min(0.5, prob))
 
+    def _attempt_foul_catch(
+        self,
+        batter: Player,
+        pitcher: Pitcher,
+        defense: TeamState,
+        *,
+        pitch_speed: float,
+        rand: float,
+    ) -> bool:
+        """Return ``True`` if a foul ball is caught for an out."""
+
+        bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
+        bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
+        swing_angle = self.physics.swing_angle(batter.gf)
+        vert_angle = self.physics.vertical_hit_angle()
+        vx, vy, vz = self.physics.launch_vector(
+            getattr(batter, "ph", 50),
+            getattr(batter, "pl", 50),
+            swing_angle,
+            vert_angle,
+        )
+        x, y, hang_time = self.physics.landing_point(vx, vy, vz)
+        if self.rng.random() < 0.5:
+            x = -abs(x)
+        else:
+            y = -abs(y)
+        landing_dist = math.hypot(x, y)
+
+        fielders = {p.primary_position.upper(): p for p in defense.lineup}
+        fielders["P"] = pitcher
+        for pos, (fx, fy) in DEFAULT_POSITIONS.items():
+            fielder = fielders.get(pos)
+            if not fielder:
+                continue
+            sp = getattr(fielder, "sp", 50)
+            fa = getattr(fielder, "fa", 50)
+            distance = math.hypot(fx - x, fy - y)
+            run_time = (
+                distance / self.physics.player_speed(sp)
+                + self.physics.reaction_delay(pos, fa)
+            )
+            action = self.fielding_ai.catch_action(
+                hang_time,
+                run_time,
+                position=pos,
+                distance=distance,
+                dist_from_home=landing_dist,
+            )
+            if action == "no_attempt":
+                continue
+            if self.fielding_ai.resolve_fly_ball(pos, fa, hang_time, action):
+                fs = defense.fielding_stats.setdefault(
+                    fielder.player_id, FieldingState(fielder)
+                )
+                self._add_fielding_stat(fs, "po")
+                self.debug_log.append("Foul ball caught")
+                return True
+        return False
+
     def _swing_result(
         self,
         batter: Player,
@@ -1374,6 +1479,18 @@ class GameSimulation:
         )
         x, y, hang_time = self.physics.landing_point(vx, vy, vz)
         landing_dist = math.hypot(x, y)
+
+        offense = self.away if defense is self.home else self.home
+        if (
+            self.current_outs < 2
+            and offense.bases[0] is not None
+            and offense.bases[1] is not None
+            and landing_dist <= 160
+            and vert_angle >= 50
+        ):
+            self.infield_fly = True
+            self.debug_log.append("Infield fly rule applied")
+            return 0, False
 
         fielders = {p.primary_position.upper(): p for p in defense.lineup}
         fielders["P"] = pitcher
