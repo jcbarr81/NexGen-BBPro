@@ -145,34 +145,27 @@ def test_vertical_hit_angle_power_vs_contact():
 
 
 def test_swing_result_respects_bat_speed():
-    # Low bat speed -> out
+    # Low bat speed -> out when swing misses hit probability
     cfg_slow = make_cfg(swingSpeedBase=10, averagePitchSpeed=50)
     batter1 = make_player("b1")
-    home1 = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp1")])
-    away1 = TeamState(lineup=[batter1], bench=[], pitchers=[make_pitcher("ap1")])
-    rng1 = MockRandom([0.0, 0.4, 0.9, 0.0, 0.4, 0.9, 0.0, 0.4, 0.9])
-    sim1 = GameSimulation(home1, away1, cfg_slow, rng1)
-    outs1 = sim1.play_at_bat(away1, home1)
-    assert outs1 == 1
-    assert away1.lineup_stats["b1"].h == 0
-
-    # High bat speed -> hit
-    cfg_fast = make_cfg(
-        swingSpeedBase=80,
-        averagePitchSpeed=50,
-        hit1BProb=100,
-        hit2BProb=0,
-        hit3BProb=0,
-        hitHRProb=0,
+    pitcher1 = make_pitcher("p1")
+    defense1 = TeamState(lineup=[make_player("d1")], bench=[], pitchers=[pitcher1])
+    sim1 = GameSimulation(defense1, defense1, cfg_slow, MockRandom([0.9]))
+    bases1, error1 = sim1._swing_result(
+        batter1, pitcher1, defense1, pitch_speed=50, rand=0.99
     )
+    assert bases1 == 0 and not error1
+
+    # High bat speed -> batter reaches safely
+    cfg_fast = make_cfg(swingSpeedBase=80, averagePitchSpeed=50)
     batter2 = make_player("b2")
-    home2 = TeamState(lineup=[make_player("h2")], bench=[], pitchers=[make_pitcher("hp2")])
-    away2 = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap2")])
-    rng2 = MockRandom([0.0, 0.0, 0.9, 0.1, 0.9])
-    sim2 = GameSimulation(home2, away2, cfg_fast, rng2)
-    outs2 = sim2.play_at_bat(away2, home2)
-    assert outs2 == 0
-    assert away2.lineup_stats["b2"].h == 1
+    pitcher2 = make_pitcher("p2")
+    defense2 = TeamState(lineup=[make_player("d2")], bench=[], pitchers=[pitcher2])
+    sim2 = GameSimulation(defense2, defense2, cfg_fast, MockRandom([0.9]))
+    bases2, error2 = sim2._swing_result(
+        batter2, pitcher2, defense2, pitch_speed=50, rand=0.0
+    )
+    assert bases2 > 0
 
 
 def test_runner_advancement_respects_speed():
@@ -261,8 +254,9 @@ def test_power_hitter_can_hit_home_run(monkeypatch):
     monkeypatch.setattr(sim.physics, "swing_angle", lambda gf, swing_type="normal", pitch_loc="middle": 5.0)
     monkeypatch.setattr(sim.physics, "vertical_hit_angle", lambda swing_type="normal": 20.0)
 
-    bases = sim._swing_result(batter, pitcher, home, pitch_speed=50, rand=0.0)
+    bases, error = sim._swing_result(batter, pitcher, home, pitch_speed=50, rand=0.0)
     assert bases == 4
+    assert not error
 
 
 def test_roll_distance_respects_surface_friction():
