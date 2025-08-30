@@ -35,11 +35,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from .ui_template import (
-    NavButton,
-    Card,
-    section_title,
-)
+from .components import Card, NavButton, section_title
 from .theme import _toggle_theme
 from .team_entry_dialog import TeamEntryDialog
 from .exhibition_game_dialog import ExhibitionGameDialog
