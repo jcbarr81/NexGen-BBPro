@@ -14,7 +14,7 @@ import importlib
 import bcrypt
 
 from utils.path_utils import get_base_dir
-from ui.theme import LIGHT_QSS
+from ui.theme import DARK_QSS
 
 # Determine the path to the users file in a cross-platform way
 USER_FILE = get_base_dir() / "data" / "users.txt"
@@ -113,7 +113,7 @@ class LoginWindow(QWidget):
 
         app = QApplication.instance()
         if app:
-            app.setStyleSheet(LIGHT_QSS)
+            app.setStyleSheet(DARK_QSS)
 
         self.dashboard.show()
 
@@ -142,7 +142,7 @@ class LoginWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyleSheet(LIGHT_QSS)
+    app.setStyleSheet(DARK_QSS)
     window = LoginWindow()
     window.show()
     sys.exit(app.exec())

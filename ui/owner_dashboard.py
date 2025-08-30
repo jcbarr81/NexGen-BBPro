@@ -72,9 +72,9 @@ class OwnerDashboard(QMainWindow):
 
         self.btn_roster = NavButton("  Roster")
         self.btn_transactions = NavButton("  Transactions")
-        self.btn_schedule = NavButton("  Schedule")
+        self.btn_league = NavButton("  League")
 
-        for b in (self.btn_roster, self.btn_transactions, self.btn_schedule):
+        for b in (self.btn_roster, self.btn_transactions, self.btn_league):
             side.addWidget(b)
 
         side.addStretch()
@@ -103,7 +103,7 @@ class OwnerDashboard(QMainWindow):
         self.pages = {
             "roster": RosterPage(self),
             "transactions": TransactionsPage(self),
-            "schedule": SchedulePage(self),
+            "league": SchedulePage(self),
         }
         for p in self.pages.values():
             self.stack.addWidget(p)
@@ -128,7 +128,7 @@ class OwnerDashboard(QMainWindow):
         # Navigation signals
         self.btn_roster.clicked.connect(lambda: self._go("roster"))
         self.btn_transactions.clicked.connect(lambda: self._go("transactions"))
-        self.btn_schedule.clicked.connect(lambda: self._go("schedule"))
+        self.btn_league.clicked.connect(lambda: self._go("league"))
         self.btn_roster.setChecked(True)
         self._go("roster")
 
