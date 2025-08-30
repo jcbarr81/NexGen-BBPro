@@ -214,6 +214,13 @@ class MainWindow(QMainWindow):
             side.addWidget(b)
         side.addStretch()
 
+        self.nav_buttons = {
+            "league": self.btn_league,
+            "teams": self.btn_teams,
+            "users": self.btn_users,
+            "utils": self.btn_utils,
+        }
+
         # header + stacked pages -----------------------------------------
         header = QWidget(objectName="Header")
         h = QHBoxLayout(header)
@@ -300,6 +307,11 @@ class MainWindow(QMainWindow):
         view_menu.addAction(theme_action)
 
     def _go(self, key: str) -> None:
+        for btn in self.nav_buttons.values():
+            btn.setChecked(False)
+        btn = self.nav_buttons.get(key)
+        if btn:
+            btn.setChecked(True)
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
         self.statusBar().showMessage(f"Ready • {key.capitalize()}")

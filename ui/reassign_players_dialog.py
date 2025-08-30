@@ -6,11 +6,12 @@ from typing import Dict
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QComboBox,
     QDialog,
-    QTableWidget,
-    QTableWidgetItem,
+    QHBoxLayout,
+    QListWidget,
+    QListWidgetItem,
     QVBoxLayout,
+    QLabel,
     QMessageBox,
     QPushButton,
 )
@@ -32,65 +33,65 @@ class ReassignPlayersDialog(QDialog):
 
         self.setWindowTitle("Reassign Players")
 
-        self.table = QTableWidget(0, 3, self)
-        self.table.setHorizontalHeaderLabels(["Player", "Current", "Destination"])
+        self.lists: Dict[str, QListWidget] = {}
+        originals: Dict[str, str] = {}
 
+        columns = QHBoxLayout()
         for level in self.levels:
+            vbox = QVBoxLayout()
+            vbox.addWidget(QLabel(level.upper()))
+            lw = QListWidget()
+            lw.setObjectName(level)
+            lw.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+            lw.setDragEnabled(True)
+            lw.setAcceptDrops(True)
+            lw.setDropIndicatorShown(True)
+            lw.setDefaultDropAction(Qt.DropAction.MoveAction)
+            self.lists[level] = lw
+
             for pid in getattr(roster, level):
                 player = players.get(pid)
                 if not player:
                     continue
-                row = self.table.rowCount()
-                self.table.insertRow(row)
+                item = QListWidgetItem(f"{player.first_name} {player.last_name}")
+                item.setData(Qt.ItemDataRole.UserRole, pid)
+                lw.addItem(item)
+                originals[pid] = level
 
-                name_item = QTableWidgetItem(
-                    f"{player.first_name} {player.last_name}"
-                )
-                name_item.setData(Qt.ItemDataRole.UserRole, pid)
-                self.table.setItem(row, 0, name_item)
+            vbox.addWidget(lw)
+            columns.addLayout(vbox)
 
-                current_item = QTableWidgetItem(level.upper())
-                current_item.setData(Qt.ItemDataRole.UserRole, level)
-                self.table.setItem(row, 1, current_item)
-
-                dest_combo = QComboBox()
-                for lvl in self.levels:
-                    if lvl != level:
-                        dest_combo.addItem(lvl.upper(), lvl)
-                self.table.setCellWidget(row, 2, dest_combo)
-
-        self.table.resizeColumnsToContents()
-        self.table.resizeRowsToContents()
+        self.original_levels = originals
 
         move_btn = QPushButton("Reassign")
         move_btn.clicked.connect(self._apply_moves)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(self.table)
+        layout.addLayout(columns)
         layout.addWidget(move_btn)
 
-        height = (
-            self.table.verticalHeader().length()
-            + self.table.horizontalHeader().height()
-            + 80
-        )
-        width = self.table.horizontalHeader().length() + 40
-        self.resize(width, height)
+        def _calc_height(lw: QListWidget) -> int:
+            row = lw.sizeHintForRow(0) if lw.count() else 20
+            return row * max(lw.count(), 1) + 80
+
+        height = max(_calc_height(lw) for lw in self.lists.values())
+        self.resize(600, height)
 
     def _apply_moves(self) -> None:
         moved = False
-        for row in range(self.table.rowCount()):
-            pid = self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
-            current = self.table.item(row, 1).data(Qt.ItemDataRole.UserRole)
-            combo = self.table.cellWidget(row, 2)
-            dest = combo.currentData()
-            if dest and dest != current:
-                try:
-                    move_player_between_rosters(pid, self.roster, current, dest)
-                    moved = True
-                except Exception as exc:
-                    QMessageBox.critical(self, "Error", str(exc))
-                    return
+        for dest_level, lw in self.lists.items():
+            for i in range(lw.count()):
+                item = lw.item(i)
+                pid = item.data(Qt.ItemDataRole.UserRole)
+                current = self.original_levels.get(pid)
+                if current and current != dest_level:
+                    try:
+                        move_player_between_rosters(pid, self.roster, current, dest_level)
+                        self.original_levels[pid] = dest_level
+                        moved = True
+                    except Exception as exc:
+                        QMessageBox.critical(self, "Error", str(exc))
+                        return
 
         if moved:
             QMessageBox.information(
