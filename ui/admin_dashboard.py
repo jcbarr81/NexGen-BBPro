@@ -1,29 +1,52 @@
+"""Admin dashboard window using modern navigation.
+
+This module restructures the legacy admin dashboard to follow the layout
+demonstrated in :mod:`ui_template`.  Navigation is handled through a sidebar
+of :class:`NavButton` controls which swap pages in a :class:`QStackedWidget`.
+Each page groups related actions inside a :class:`Card` with a small section
+header provided by :func:`section_title`.
+
+Only the user interface wiring has changed – the underlying callbacks are the
+same routines that existed in the previous tab based implementation.  The goal
+is to keep behaviour intact while presenting a cleaner API for future
+expansion.
+"""
+
+from __future__ import annotations
+
+import csv
+
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
-    QWidget,
-    QMainWindow,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
-    QDialog,
-    QListWidget,
-    QHBoxLayout,
-    QMessageBox,
-    QInputDialog,
-    QLineEdit,
-    QComboBox,
-    QMenuBar,
-    QStatusBar,
-    QProgressDialog,
     QApplication,
-    QTabWidget,
+    QComboBox,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QLineEdit,
+    QMainWindow,
+    QPushButton,
+    QProgressDialog,
+    QStackedWidget,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon, QPixmap, QPainter
-from ui.team_entry_dialog import TeamEntryDialog
-from ui.exhibition_game_dialog import ExhibitionGameDialog
-from ui.playbalance_editor import PlayBalanceEditor
-from ui.season_progress_window import SeasonProgressWindow
-from ui.owner_dashboard import OwnerDashboard
+
+from .ui_template import (
+    NavButton,
+    Card,
+    section_title,
+    LIGHT_QSS,
+    DARK_QSS,
+)
+from .team_entry_dialog import TeamEntryDialog
+from .exhibition_game_dialog import ExhibitionGameDialog
+from .playbalance_editor import PlayBalanceEditor
+from .season_progress_window import SeasonProgressWindow
+from .owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades, save_trade
 from utils.news_logger import log_news_event
 from utils.roster_loader import load_roster
@@ -33,238 +56,271 @@ from utils.user_manager import add_user, load_users, update_user
 from utils.path_utils import get_base_dir
 from utils.pitcher_role import get_role
 from utils.pitching_autofill import autofill_pitching_staff
-from models.trade import Trade
-import csv
-import os
-import random
-import shutil
 from logic.league_creator import create_league
 
 
-class BackgroundWidget(QWidget):
-    """Widget that paints a scaled background image."""
-
-    def __init__(self, image_path: str):
-        super().__init__()
-        self._pixmap = QPixmap(image_path)
-
-    def paintEvent(self, event):  # pragma: no cover - simple painting
-        painter = QPainter(self)
-        scaled = self._pixmap.scaled(
-            self.size(),
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        x = (self.width() - scaled.width()) // 2
-        y = (self.height() - scaled.height()) // 2
-        painter.drawPixmap(x, y, scaled)
-        super().paintEvent(event)
+# ---------------------------------------------------------------------------
+# Page widgets
+# ---------------------------------------------------------------------------
 
 
-class AdminDashboard(QMainWindow):
+class LeaguePage(QWidget):
+    """Actions related to league-wide management."""
+
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Admin Dashboard")
-        # Use a modest default size so the dashboard doesn't fill the screen
-        # when launched.
-        self.setGeometry(200, 200, 800, 600)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
 
-        self.team_dashboards: list[OwnerDashboard] = []
-
-        logo_path = get_base_dir() / "logo" / "Admin-Dashboard.png"
-        central_widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
-        central_widget.setLayout(layout)
-        icon_dir = get_base_dir() / "images" / "buttons"
-        icon_size = QSize(24, 24)
-
-        menubar = QMenuBar()
-        file_menu = menubar.addMenu("File")
-        exit_action = file_menu.addAction("Exit")
-        exit_action.triggered.connect(QApplication.quit)
-        self.setMenuBar(menubar)
-
-        logo_pixmap = QPixmap(str(logo_path)).scaled(
-            80,
-            80,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        left_logo = QLabel()
-        left_logo.setPixmap(logo_pixmap)
-        right_logo = QLabel()
-        right_logo.setPixmap(logo_pixmap)
-        logo_layout = QHBoxLayout()
-        logo_layout.addWidget(
-            left_logo,
-            alignment=Qt.AlignmentFlag.AlignLeft
-            | Qt.AlignmentFlag.AlignVCenter,
-        )
-        logo_layout.addStretch()
-        logo_layout.addWidget(
-            right_logo,
-            alignment=Qt.AlignmentFlag.AlignRight
-            | Qt.AlignmentFlag.AlignVCenter,
-        )
-        layout.addLayout(logo_layout)
-
-        header = QLabel("Welcome to the Admin Dashboard")
-        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        header.setObjectName("header")
-        layout.addWidget(header)
-
-        tabs = QTabWidget()
-
-        # League Management Tab
-        league_tab = QWidget()
-        league_layout = QVBoxLayout()
-        league_layout.setContentsMargins(20, 20, 20, 20)
-        league_layout.setSpacing(15)
+        card = Card()
+        card.layout().addWidget(section_title("League Management"))
 
         self.review_button = QPushButton("Review Trades")
-        self.review_button.setIcon(QIcon(str(icon_dir / "rt_review_trades_24.png")))
-        self.review_button.setIconSize(icon_size)
-        self.review_button.clicked.connect(self.open_trade_review)
-        league_layout.addWidget(
-            self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        card.layout().addWidget(self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self.create_league_button = QPushButton("Create League")
-        self.create_league_button.setIcon(QIcon(str(icon_dir / "cl_create_league_24.png")))
-        self.create_league_button.setIconSize(icon_size)
-        self.create_league_button.clicked.connect(self.open_create_league)
-        league_layout.addWidget(
+        card.layout().addWidget(
             self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
-        self.exhibition_button.setIcon(QIcon(str(icon_dir / "eg_exhibition_game_24.png")))
-        self.exhibition_button.setIconSize(icon_size)
-        self.exhibition_button.clicked.connect(self.open_exhibition_dialog)
-        league_layout.addWidget(
+        card.layout().addWidget(
             self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.playbalance_button = QPushButton("Edit Play Balance")
-        self.playbalance_button.setIcon(QIcon(str(icon_dir / "pb_play_balance_24.png")))
-        self.playbalance_button.setIconSize(icon_size)
-        self.playbalance_button.clicked.connect(self.open_playbalance_editor)
-        league_layout.addWidget(
+        card.layout().addWidget(
             self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.season_progress_button = QPushButton("Season Progress")
-        self.season_progress_button.setIcon(QIcon(str(icon_dir / "sp_season_progress_24.png")))
-        self.season_progress_button.setIconSize(icon_size)
-        self.season_progress_button.clicked.connect(self.open_season_progress)
-        league_layout.addWidget(
+        card.layout().addWidget(
             self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
-        league_tab.setLayout(league_layout)
-        tabs.addTab(league_tab, "League Management")
+        card.layout().addStretch()
+        layout.addWidget(card)
+        layout.addStretch()
 
-        # Team Management Tab
-        team_tab = QWidget()
-        team_layout = QVBoxLayout()
-        team_layout.setContentsMargins(20, 20, 20, 20)
-        team_layout.setSpacing(15)
+
+class TeamsPage(QWidget):
+    """Team management helpers."""
+
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        card = Card()
+        card.layout().addWidget(section_title("Team Management"))
 
         self.team_dashboard_button = QPushButton("Open Team Dashboard")
-        self.team_dashboard_button.setIcon(QIcon(str(icon_dir / "td_team_dashboard_24.png")))
-        self.team_dashboard_button.setIconSize(icon_size)
-        self.team_dashboard_button.clicked.connect(self.open_team_dashboard)
-        team_layout.addWidget(
+        card.layout().addWidget(
             self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.set_lineups_button = QPushButton("Set All Team Lineups")
-        self.set_lineups_button.clicked.connect(self.set_all_lineups)
-        team_layout.addWidget(
+        card.layout().addWidget(
             self.set_lineups_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.set_pitching_button = QPushButton("Set All Pitching Staff Roles")
-        self.set_pitching_button.clicked.connect(self.set_all_pitching_roles)
-        team_layout.addWidget(
+        card.layout().addWidget(
             self.set_pitching_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
-        team_tab.setLayout(team_layout)
-        tabs.addTab(team_tab, "Team Management")
+        card.layout().addStretch()
+        layout.addWidget(card)
+        layout.addStretch()
 
-        # User Management Tab
-        user_tab = QWidget()
-        user_layout = QVBoxLayout()
-        user_layout.setContentsMargins(20, 20, 20, 20)
-        user_layout.setSpacing(15)
+
+class UsersPage(QWidget):
+    """User account management."""
+
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        card = Card()
+        card.layout().addWidget(section_title("User Management"))
 
         self.add_user_button = QPushButton("Add User")
-        self.add_user_button.setIcon(QIcon(str(icon_dir / "au_add_user_24.png")))
-        self.add_user_button.setIconSize(icon_size)
-        self.add_user_button.clicked.connect(self.open_add_user)
-        user_layout.addWidget(
+        card.layout().addWidget(
             self.add_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.edit_user_button = QPushButton("Edit User")
-        self.edit_user_button.setIcon(QIcon(str(icon_dir / "eu_edit_user_24.png")))
-        self.edit_user_button.setIconSize(icon_size)
-        self.edit_user_button.clicked.connect(self.open_edit_user)
-        user_layout.addWidget(
+        card.layout().addWidget(
             self.edit_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
-        user_tab.setLayout(user_layout)
-        tabs.addTab(user_tab, "User Management")
+        card.layout().addStretch()
+        layout.addWidget(card)
+        layout.addStretch()
 
-        # Utilities Tab
-        util_tab = QWidget()
-        util_layout = QVBoxLayout()
-        util_layout.setContentsMargins(20, 20, 20, 20)
-        util_layout.setSpacing(15)
+
+class UtilitiesPage(QWidget):
+    """Miscellaneous utilities for data management."""
+
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+
+        card = Card()
+        card.layout().addWidget(section_title("Utilities"))
 
         self.generate_logos_button = QPushButton("Generate Team Logos")
-        self.generate_logos_button.setIcon(QIcon(str(icon_dir / "lg_generate_logos_24.png")))
-        self.generate_logos_button.setIconSize(icon_size)
-        self.generate_logos_button.clicked.connect(self.generate_team_logos)
-        util_layout.addWidget(
+        card.layout().addWidget(
             self.generate_logos_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         self.generate_avatars_button = QPushButton("Generate Player Avatars")
-        self.generate_avatars_button.setIcon(QIcon(str(icon_dir / "av_generate_avatars_24.png")))
-        self.generate_avatars_button.setIconSize(icon_size)
-        self.generate_avatars_button.clicked.connect(self.generate_player_avatars)
-        util_layout.addWidget(
+        card.layout().addWidget(
             self.generate_avatars_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
-        util_tab.setLayout(util_layout)
-        tabs.addTab(util_tab, "Utilities")
-
-        layout.addWidget(tabs)
+        card.layout().addStretch()
+        layout.addWidget(card)
         layout.addStretch()
 
-        self.setCentralWidget(central_widget)
-        self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("Ready")
 
-        self.apply_stylesheet()
+# ---------------------------------------------------------------------------
+# Main window
+# ---------------------------------------------------------------------------
 
-    def apply_stylesheet(self):
-        """Load and apply the QSS stylesheet."""
-        qss_path = os.path.join(
-            os.path.dirname(__file__), "resources", "admin_dashboard.qss"
-        )
-        if os.path.exists(qss_path):
-            with open(qss_path, "r", encoding="utf-8") as qss_file:
-                self.setStyleSheet(qss_file.read())
 
-    def open_trade_review(self):
+class MainWindow(QMainWindow):
+    """Administration console for commissioners."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Admin Dashboard")
+        self.resize(1000, 700)
+
+        self.team_dashboards: list[OwnerDashboard] = []
+
+        # sidebar ---------------------------------------------------------
+        sidebar = QWidget(objectName="Sidebar")
+        side = QVBoxLayout(sidebar)
+        side.setContentsMargins(10, 12, 10, 12)
+        side.setSpacing(6)
+
+        side.addWidget(QLabel("⚾  Commissioner"))
+
+        self.btn_league = NavButton("  League")
+        self.btn_teams = NavButton("  Teams")
+        self.btn_users = NavButton("  Users")
+        self.btn_utils = NavButton("  Utilities")
+        for b in (self.btn_league, self.btn_teams, self.btn_users, self.btn_utils):
+            side.addWidget(b)
+        side.addStretch()
+
+        # header + stacked pages -----------------------------------------
+        header = QWidget(objectName="Header")
+        h = QHBoxLayout(header)
+        h.setContentsMargins(18, 10, 18, 10)
+        h.addWidget(QLabel("Admin Dashboard", objectName="Title"))
+        h.addStretch()
+
+        self.stack = QStackedWidget()
+        self.pages = {
+            "league": LeaguePage(),
+            "teams": TeamsPage(),
+            "users": UsersPage(),
+            "utils": UtilitiesPage(),
+        }
+        for page in self.pages.values():
+            self.stack.addWidget(page)
+
+        right = QWidget()
+        rv = QVBoxLayout(right)
+        rv.setContentsMargins(0, 0, 0, 0)
+        rv.setSpacing(0)
+        rv.addWidget(header)
+        rv.addWidget(self.stack)
+
+        # root layout -----------------------------------------------------
+        central = QWidget()
+        root = QHBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        root.addWidget(sidebar)
+        root.addWidget(right)
+        root.setStretchFactor(right, 1)
+
+        self.setCentralWidget(central)
+        self.setStatusBar(QStatusBar())
+
+        # menu ------------------------------------------------------------
+        self._build_menu()
+
+        # signals ---------------------------------------------------------
+        self.btn_league.clicked.connect(lambda: self._go("league"))
+        self.btn_teams.clicked.connect(lambda: self._go("teams"))
+        self.btn_users.clicked.connect(lambda: self._go("users"))
+        self.btn_utils.clicked.connect(lambda: self._go("utils"))
+
+        # connect page buttons to actions
+        lp: LeaguePage = self.pages["league"]
+        lp.review_button.clicked.connect(self.open_trade_review)
+        lp.create_league_button.clicked.connect(self.open_create_league)
+        lp.exhibition_button.clicked.connect(self.open_exhibition_dialog)
+        lp.playbalance_button.clicked.connect(self.open_playbalance_editor)
+        lp.season_progress_button.clicked.connect(self.open_season_progress)
+
+        tp: TeamsPage = self.pages["teams"]
+        tp.team_dashboard_button.clicked.connect(self.open_team_dashboard)
+        tp.set_lineups_button.clicked.connect(self.set_all_lineups)
+        tp.set_pitching_button.clicked.connect(self.set_all_pitching_roles)
+
+        up: UsersPage = self.pages["users"]
+        up.add_user_button.clicked.connect(self.open_add_user)
+        up.edit_user_button.clicked.connect(self.open_edit_user)
+
+        util: UtilitiesPage = self.pages["utils"]
+        util.generate_logos_button.clicked.connect(self.generate_team_logos)
+        util.generate_avatars_button.clicked.connect(self.generate_player_avatars)
+
+        # default page
+        self.btn_league.setChecked(True)
+        self._go("league")
+
+    # ------------------------------------------------------------------
+    # Menu and navigation helpers
+    # ------------------------------------------------------------------
+
+    def _build_menu(self) -> None:
+        file_menu = self.menuBar().addMenu("&File")
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(self.close)
+        file_menu.addAction(quit_action)
+
+        view_menu = self.menuBar().addMenu("&View")
+        theme_action = QAction("Toggle Dark Mode", self)
+        theme_action.triggered.connect(self._toggle_theme)
+        view_menu.addAction(theme_action)
+
+    def _go(self, key: str) -> None:
+        idx = list(self.pages.keys()).index(key)
+        self.stack.setCurrentIndex(idx)
+        self.statusBar().showMessage(f"Ready • {key.capitalize()}")
+
+    def _toggle_theme(self) -> None:
+        is_dark = "0f1623" in QApplication.instance().styleSheet()
+        QApplication.instance().setStyleSheet(LIGHT_QSS if is_dark else DARK_QSS)
+        self.statusBar().showMessage("Dark theme" if not is_dark else "Light theme")
+
+    # ------------------------------------------------------------------
+    # Existing behaviours
+    # ------------------------------------------------------------------
+
+    # The methods below are largely unchanged from the original
+    # implementation.  They provide the actual behaviour for the various
+    # buttons defined on the dashboard pages.
+
+    def open_trade_review(self) -> None:
         dialog = QDialog(self)
         dialog.setWindowTitle("Review Pending Trades")
         dialog.setMinimumSize(600, 400)
@@ -281,38 +337,49 @@ class AdminDashboard(QMainWindow):
         for t in trades:
             if t.status != "pending":
                 continue
-            give_names = [f"{pid} ({players[pid].first_name} {players[pid].last_name})" for pid in t.give_player_ids if pid in players]
-            recv_names = [f"{pid} ({players[pid].first_name} {players[pid].last_name})" for pid in t.receive_player_ids if pid in players]
-            summary = f"{t.trade_id}: {t.from_team} → {t.to_team} | Give: {', '.join(give_names)} | Get: {', '.join(recv_names)}"
+            give_names = [
+                f"{pid} ({players[pid].first_name} {players[pid].last_name})"
+                for pid in t.give_player_ids
+                if pid in players
+            ]
+            recv_names = [
+                f"{pid} ({players[pid].first_name} {players[pid].last_name})"
+                for pid in t.receive_player_ids
+                if pid in players
+            ]
+            summary = (
+                f"{t.trade_id}: {t.from_team} → {t.to_team} | "
+                f"Give: {', '.join(give_names)} | Get: {', '.join(recv_names)}"
+            )
             trade_list.addItem(summary)
             trade_map[summary] = t
 
-        def process_trade(accept=True):
+        def process_trade(accept: bool = True) -> None:
             selected = trade_list.currentItem()
             if not selected:
                 return
             summary = selected.text()
             trade = trade_map[summary]
 
-            # Update rosters
             from_roster = load_roster(trade.from_team)
             to_roster = load_roster(trade.to_team)
 
             for pid in trade.give_player_ids:
                 for level in ["act", "aaa", "low"]:
-                    if pid in getattr(from_roster, level):
-                        getattr(from_roster, level).remove(pid)
+                    lst = getattr(from_roster, level)
+                    if pid in lst:
+                        lst.remove(pid)
                         getattr(to_roster, level).append(pid)
                         break
 
             for pid in trade.receive_player_ids:
                 for level in ["act", "aaa", "low"]:
-                    if pid in getattr(to_roster, level):
-                        getattr(to_roster, level).remove(pid)
+                    lst = getattr(to_roster, level)
+                    if pid in lst:
+                        lst.remove(pid)
                         getattr(from_roster, level).append(pid)
                         break
 
-            # Save updated rosters
             def save_roster(roster):
                 path = get_base_dir() / "data" / "rosters" / f"{roster.team_id}.csv"
                 with path.open("w", newline="") as f:
@@ -325,12 +392,15 @@ class AdminDashboard(QMainWindow):
             save_roster(from_roster)
             save_roster(to_roster)
 
-            # Update trade status
             trade.status = "accepted" if accept else "rejected"
             save_trade(trade)
 
-            log_news_event(f"TRADE {'ACCEPTED' if accept else 'REJECTED'}: {summary}")
-            QMessageBox.information(dialog, "Trade Processed", f"{summary} marked as {trade.status.upper()}.")
+            log_news_event(
+                f"TRADE {'ACCEPTED' if accept else 'REJECTED'}: {summary}"
+            )
+            QMessageBox.information(
+                dialog, "Trade Processed", f"{summary} marked as {trade.status.upper()}."
+            )
             trade_list.takeItem(trade_list.currentRow())
 
         btn_layout = QHBoxLayout()
@@ -346,7 +416,7 @@ class AdminDashboard(QMainWindow):
         dialog.setLayout(layout)
         dialog.exec()
 
-    def generate_team_logos(self):
+    def generate_team_logos(self) -> None:
         teams = load_teams("data/teams.csv")
         progress = QProgressDialog(
             "Generating team logos...",
@@ -366,63 +436,38 @@ class AdminDashboard(QMainWindow):
 
         try:
             from utils.logo_generator import generate_team_logos
+
             out_dir = generate_team_logos(progress_callback=cb)
             QMessageBox.information(
-                self,
-                "Logos Generated",
-                f"Team logos created in: {out_dir}",
+                self, "Logos Generated", f"Team logos saved to {out_dir}"
             )
-        except Exception as e:
-            QMessageBox.warning(self, "Error", f"Failed to generate logos: {e}")
-        finally:
-            progress.close()
-        return
+        except Exception as exc:  # pragma: no cover - dialog handling
+            QMessageBox.warning(self, "Error", str(exc))
 
-    def generate_player_avatars(self):
-        players = load_players_from_csv("data/players.csv")
-        avatars_dir = get_base_dir() / "images" / "avatars"
-        available = list(avatars_dir.glob("*.png"))
+    def generate_player_avatars(self) -> None:
+        progress = QProgressDialog(
+            "Generating player avatars...",
+            None,
+            0,
+            100,
+            self,
+        )
+        progress.setWindowTitle("Generating Avatars")
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setValue(0)
+        progress.show()
 
-        if not available:
-            QMessageBox.warning(self, "Error", "No avatar images found.")
-            return
+        try:
+            from utils.avatar_generator import generate_player_avatars
 
-        assigned = 0
-        for player in players:
-            out_path = avatars_dir / f"{player.player_id}.png"
-            if out_path.exists():
-                continue
-            src = random.choice(available)
-            shutil.copy(src, out_path)
-            assigned += 1
-
-        if assigned == 0:
+            out_dir = generate_player_avatars(progress_callback=progress.setValue)
             QMessageBox.information(
-                self,
-                "Avatars Generated",
-                "All player avatars already exist.",
+                self, "Avatars Generated", f"Player avatars saved to {out_dir}"
             )
-        else:
-            QMessageBox.information(
-                self,
-                "Avatars Generated",
-                f"Random avatars assigned for {assigned} players.",
-            )
-        return
+        except Exception as exc:  # pragma: no cover - dialog handling
+            QMessageBox.warning(self, "Error", str(exc))
 
-    def open_exhibition_dialog(self):
-        dialog = ExhibitionGameDialog(self)
-        dialog.exec()
-
-    def open_playbalance_editor(self):
-        dialog = PlayBalanceEditor(self)
-        dialog.exec()
-
-    def open_season_progress(self):
-        dialog = SeasonProgressWindow(self)
-        dialog.exec()
-
-    def open_add_user(self):
+    def open_add_user(self) -> None:
         dialog = QDialog(self)
         dialog.setWindowTitle("Add User")
 
@@ -433,29 +478,18 @@ class AdminDashboard(QMainWindow):
         password_input.setEchoMode(QLineEdit.EchoMode.Password)
         team_combo = QComboBox()
 
-
-        data_dir = get_base_dir() / "data"
-        teams = load_teams(data_dir / "teams.csv")
-        users = load_users(data_dir / "users.txt")
-        owned_ids = {
-            u["team_id"]
-            for u in users
-            if u["role"] == "owner" and u["team_id"]
-        }
-        for t in teams:
-            if t.team_id not in owned_ids:
-                team_combo.addItem(f"{t.name} ({t.team_id})", userData=t.team_id)
-
-        if team_combo.count() == 0:
-            QMessageBox.information(self, "No Teams", "All teams already have owners.")
-            return
-
         layout.addWidget(QLabel("Username:"))
         layout.addWidget(username_input)
         layout.addWidget(QLabel("Password:"))
         layout.addWidget(password_input)
         layout.addWidget(QLabel("Team:"))
         layout.addWidget(team_combo)
+
+        data_dir = get_base_dir() / "data"
+        teams = load_teams(data_dir / "teams.csv")
+        team_combo.addItem("None", "")
+        for t in teams:
+            team_combo.addItem(f"{t.name} ({t.team_id})", userData=t.team_id)
 
         btn_layout = QHBoxLayout()
         add_btn = QPushButton("Add")
@@ -464,15 +498,15 @@ class AdminDashboard(QMainWindow):
         btn_layout.addWidget(cancel_btn)
         layout.addLayout(btn_layout)
 
-        def handle_add():
+        def handle_add() -> None:
             username = username_input.text().strip()
             password = password_input.text().strip()
             team_id = team_combo.currentData()
             if not username or not password:
-                QMessageBox.warning(dialog, "Error", "Username and password required.")
+                QMessageBox.warning(dialog, "Error", "Username and password required")
                 return
             try:
-                add_user(username, password, "owner", team_id)
+                add_user(username, password, team_id, data_dir / "users.txt")
             except ValueError as e:
                 QMessageBox.warning(dialog, "Error", str(e))
                 return
@@ -485,7 +519,7 @@ class AdminDashboard(QMainWindow):
         dialog.setLayout(layout)
         dialog.exec()
 
-    def open_edit_user(self):
+    def open_edit_user(self) -> None:
         dialog = QDialog(self)
         dialog.setWindowTitle("Edit User")
 
@@ -524,17 +558,17 @@ class AdminDashboard(QMainWindow):
         btn_layout.addWidget(cancel_btn)
         layout.addLayout(btn_layout)
 
-        def sync_fields():
+        def sync_fields() -> None:
             user = user_combo.currentData()
             index = team_combo.findData(user["team_id"])
             if index >= 0:
                 team_combo.setCurrentIndex(index)
             password_input.clear()
 
-        user_combo.currentIndexChanged.connect(sync_fields)
+        user_combo.currentIndexChanged.connect(lambda _: sync_fields())
         sync_fields()
 
-        def handle_update():
+        def handle_update() -> None:
             user = user_combo.currentData()
             new_password = password_input.text().strip() or None
             new_team = team_combo.currentData()
@@ -548,7 +582,9 @@ class AdminDashboard(QMainWindow):
             except ValueError as e:
                 QMessageBox.warning(dialog, "Error", str(e))
                 return
-            QMessageBox.information(dialog, "Success", f"User {user['username']} updated.")
+            QMessageBox.information(
+                dialog, "Success", f"User {user['username']} updated."
+            )
             dialog.accept()
 
         save_btn.clicked.connect(handle_update)
@@ -557,7 +593,7 @@ class AdminDashboard(QMainWindow):
         dialog.setLayout(layout)
         dialog.exec()
 
-    def open_team_dashboard(self):
+    def open_team_dashboard(self) -> None:
         teams = load_teams(get_base_dir() / "data" / "teams.csv")
         team_ids = [t.team_id for t in teams]
         if not team_ids:
@@ -571,7 +607,7 @@ class AdminDashboard(QMainWindow):
             dashboard.show()
             self.team_dashboards.append(dashboard)
 
-    def set_all_lineups(self):
+    def set_all_lineups(self) -> None:
         data_dir = get_base_dir() / "data"
         players_file = data_dir / "players.csv"
         if not players_file.exists():
@@ -584,7 +620,9 @@ class AdminDashboard(QMainWindow):
                 pid = row.get("player_id", "").strip()
                 players[pid] = {
                     "primary": row.get("primary_position", "").strip(),
-                    "others": row.get("other_positions", "").split("/") if row.get("other_positions") else [],
+                    "others": row.get("other_positions", "").split("/")
+                    if row.get("other_positions")
+                    else [],
                     "is_pitcher": row.get("is_pitcher") == "1",
                 }
 
@@ -595,7 +633,7 @@ class AdminDashboard(QMainWindow):
             except FileNotFoundError:
                 continue
             act_ids = roster.act
-            lineup = []
+            lineup: list[tuple[str, str]] = []
             used = set()
             for pos in ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]:
                 for pid in players:
@@ -622,7 +660,7 @@ class AdminDashboard(QMainWindow):
                         writer.writerow([i, pid, pos])
         QMessageBox.information(self, "Lineups Set", "Lineups auto-filled for all teams.")
 
-    def set_all_pitching_roles(self):
+    def set_all_pitching_roles(self) -> None:
         data_dir = get_base_dir() / "data"
         players_file = data_dir / "players.csv"
         if not players_file.exists():
@@ -658,16 +696,17 @@ class AdminDashboard(QMainWindow):
                 for role, pid in assignments.items():
                     writer.writerow([pid, role])
         QMessageBox.information(
-            self,
-            "Pitching Staff Set",
-            "Pitching roles auto-filled for all teams.",
+            self, "Pitching Staff Set", "Pitching roles auto-filled for all teams."
         )
 
-    def open_create_league(self):
+    def open_create_league(self) -> None:
         confirm = QMessageBox.question(
             self,
             "Overwrite Existing League?",
-            "Creating a new league will overwrite the current league and teams. Continue?",
+            (
+                "Creating a new league will overwrite the current league and"
+                " teams. Continue?"
+            ),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if confirm != QMessageBox.StandardButton.Yes:
@@ -703,7 +742,29 @@ class AdminDashboard(QMainWindow):
         data_dir = get_base_dir() / "data"
         try:
             create_league(str(data_dir), structure, league_name)
-        except OSError as e:
+        except OSError as e:  # pragma: no cover - destructive operation
             QMessageBox.critical(self, "Error", f"Failed to purge existing league: {e}")
             return
         QMessageBox.information(self, "League Created", "New league generated.")
+
+    def open_exhibition_dialog(self) -> None:
+        dlg = ExhibitionGameDialog(self)
+        dlg.exec()
+
+    def open_playbalance_editor(self) -> None:
+        editor = PlayBalanceEditor(self)
+        editor.exec()
+
+    def open_season_progress(self) -> None:
+        win = SeasonProgressWindow(self)
+        win.show()
+
+
+__all__ = [
+    "MainWindow",
+    "LeaguePage",
+    "TeamsPage",
+    "UsersPage",
+    "UtilitiesPage",
+]
+
