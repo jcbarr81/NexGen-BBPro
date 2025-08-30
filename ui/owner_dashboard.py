@@ -78,6 +78,12 @@ class OwnerDashboard(QMainWindow):
         for b in (self.btn_roster, self.btn_transactions, self.btn_league):
             side.addWidget(b)
 
+        self.nav_buttons = {
+            "roster": self.btn_roster,
+            "transactions": self.btn_transactions,
+            "league": self.btn_league,
+        }
+
         side.addStretch()
         self.btn_settings = NavButton("  Toggle Theme")
         self.btn_settings.clicked.connect(lambda: _toggle_theme(self.statusBar()))
@@ -151,6 +157,11 @@ class OwnerDashboard(QMainWindow):
         view_menu.addAction(theme_action)
 
     def _go(self, key: str) -> None:
+        for btn in self.nav_buttons.values():
+            btn.setChecked(False)
+        btn = self.nav_buttons.get(key)
+        if btn:
+            btn.setChecked(True)
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
         self.statusBar().showMessage(f"Ready • {key.capitalize()}")

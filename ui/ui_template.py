@@ -154,6 +154,14 @@ class MainWindow(QMainWindow):
         for b in (self.btn_dashboard, self.btn_league, self.btn_teams, self.btn_users, self.btn_utils):
             side.addWidget(b)
 
+        self.nav_buttons = {
+            "dashboard": self.btn_dashboard,
+            "league": self.btn_league,
+            "teams": self.btn_teams,
+            "users": self.btn_users,
+            "utils": self.btn_utils,
+        }
+
         side.addStretch()
         side.addWidget(QLabel("  Settings"))
         self.btn_settings = NavButton("  Preferences")
@@ -231,6 +239,11 @@ class MainWindow(QMainWindow):
         view_menu.addAction(theme_action)
 
     def _go(self, key):
+        for btn in self.nav_buttons.values():
+            btn.setChecked(False)
+        btn = self.nav_buttons.get(key)
+        if btn:
+            btn.setChecked(True)
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
         self.statusBar().showMessage(f"Ready • {key.capitalize()}")
