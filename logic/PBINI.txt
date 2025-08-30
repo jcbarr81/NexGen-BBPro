@@ -1538,8 +1538,8 @@ failedCheckContactChance = 0   ; If a player checks his swing and the bat
 ;
 ; FOUL BALL RATES
 ; Base foul-strike percentage and change per 20 pt contact edge
-foulStrikeBasePct=27.8
-foulContactTrendPct=2.0
+foulStrikeBasePct=30.0
+foulContactTrendPct=1.5
 ;
 ; AVOIDING HIT BY PITCH
 ; The chance that the batter will be able to avoid being hit by a pitch.
