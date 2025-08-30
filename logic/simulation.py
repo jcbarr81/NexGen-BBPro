@@ -1337,8 +1337,8 @@ class GameSimulation:
         """Return foul ball probability derived from configuration and ratings.
 
         ``foulStrikeBasePct`` represents the percentage of strikes that are
-        fouls in the source data (roughly 27.8%). ``foulContactTrendPct`` adds
-        roughly ``+2`` percentage points for every 20 point edge in batter
+        fouls in the source data (roughly 30%). ``foulContactTrendPct`` adds
+        roughly ``+1.5`` percentage points for every 20 point edge in batter
         contact over pitcher movement. The percentage is converted to a
         foul-to-balls-in-play ratio and then scaled so that an average matchup
         produces a 1:1 split between foul balls and balls put in play.
@@ -1348,8 +1348,8 @@ class GameSimulation:
         """
 
         cfg = self.config
-        base_pct = float(cfg.get("foulStrikeBasePct", 27.8))
-        trend_pct = float(cfg.get("foulContactTrendPct", 2.0))
+        base_pct = float(cfg.get("foulStrikeBasePct", 30.0))
+        trend_pct = float(cfg.get("foulContactTrendPct", 1.5))
 
         contact_delta = getattr(batter, "ch", 50) - getattr(pitcher, "movement", 50)
         foul_pct = base_pct + (contact_delta / 20.0) * trend_pct

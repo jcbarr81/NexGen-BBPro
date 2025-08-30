@@ -133,8 +133,8 @@ _DEFAULTS: Dict[str, Any] = {
     "hit3BProb": 2,
     "hitHRProb": 14,
     # Foul ball tuning -----------------------------------------------
-    "foulStrikeBasePct": 27.8,
-    "foulContactTrendPct": 2.0,
+    "foulStrikeBasePct": 30.0,
+    "foulContactTrendPct": 1.5,
     "ballInPlayOuts": 1,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
