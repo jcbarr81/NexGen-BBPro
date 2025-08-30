@@ -1,16 +1,20 @@
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QLabel, QLineEdit,
-    QPushButton, QVBoxLayout, QMessageBox
+    QApplication,
+    QWidget,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt
 import sys
+import importlib
 
 import bcrypt
 
 from utils.path_utils import get_base_dir
-
-from ui.admin_dashboard import AdminDashboard
-from ui.owner_dashboard import OwnerDashboard
+from ui.theme import LIGHT_QSS
 
 # Determine the path to the users file in a cross-platform way
 USER_FILE = get_base_dir() / "data" / "users.txt"
@@ -19,7 +23,6 @@ class LoginWindow(QWidget):
     def __init__(self, splash=None):
         super().__init__()
         self.setWindowTitle("UBL Login")
-        self.setGeometry(100, 100, 300, 150)
 
         # Keep a reference to the splash screen so it can be closed after
         # successful authentication.
@@ -82,9 +85,13 @@ class LoginWindow(QWidget):
 
     def accept_login(self, role, team_id):
         if role == "admin":
-            self.dashboard = AdminDashboard()
+            mod = importlib.import_module("ui.admin_dashboard")
+            dash_cls = getattr(mod, "AdminDashboard", getattr(mod, "MainWindow"))
+            self.dashboard = dash_cls()
         elif role == "owner":
-            self.dashboard = OwnerDashboard(team_id)
+            mod = importlib.import_module("ui.owner_dashboard")
+            dash_cls = getattr(mod, "OwnerDashboard", getattr(mod, "MainWindow"))
+            self.dashboard = dash_cls(team_id)
         else:
             QMessageBox.warning(self, "Error", "Unrecognized role.")
             return
@@ -94,12 +101,11 @@ class LoginWindow(QWidget):
         # launched.
         self.dashboard.closeEvent = self.dashboard_closed
 
-        # Show the dashboard at its default size rather than maximized so it
-        # doesn't dominate the entire screen.
-        self.dashboard.show()
-        self.dashboard.raise_()
-        self.dashboard.activateWindow()
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(LIGHT_QSS)
 
+        self.dashboard.show()
 
         # Keep the splash screen visible while the dashboard is open so it
         # behaves the same way it does when the login window is shown.  This
@@ -126,6 +132,7 @@ class LoginWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyleSheet(LIGHT_QSS)
     window = LoginWindow()
     window.show()
     sys.exit(app.exec())
