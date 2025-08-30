@@ -347,7 +347,7 @@ class BatterAI:
         else:
             success = int(type_id) + int(loc_id) + int(time_id)
             if success == 0:
-                contact = 0.0
+                contact = min(getattr(batter, "ch", 0) / 1000.0, 0.1)
             else:
                 ch_factor = getattr(batter, "ch", 0) / 100.0
                 weights = [
