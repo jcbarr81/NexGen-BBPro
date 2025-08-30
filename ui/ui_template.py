@@ -2,44 +2,20 @@ import sys
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QAction, QFont
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QToolButton, QStackedWidget, QLabel, QFrame, QPushButton,
-    QSizePolicy, QStatusBar, QSpacerItem
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QStackedWidget,
+    QLabel,
+    QFrame,
+    QPushButton,
+    QStatusBar,
 )
 
+from .components import Card, NavButton, section_title
 from .theme import LIGHT_QSS, _toggle_theme
-
-# ------------------------------------------------------------
-# Small building blocks
-# ------------------------------------------------------------
-
-class NavButton(QToolButton):
-    def __init__(self, text, parent=None):
-        super().__init__(parent)
-        self.setObjectName("NavButton")
-        # Emoji icons keep dependencies light; swap for SVGs if you prefer
-        self.setText(text)  # e.g., "⚾  Dashboard"
-        self.setCheckable(True)
-        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-class Card(QFrame):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setObjectName("Card")
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(18, 18, 18, 18)
-        self.layout().setSpacing(10)
-
-def section_title(text):
-    lbl = QLabel(text)
-    lbl.setObjectName("SectionTitle")
-    return lbl
-
-def spacer(h=1, v=1):
-    return QSpacerItem(h, v, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
 # ------------------------------------------------------------
 # Pages
