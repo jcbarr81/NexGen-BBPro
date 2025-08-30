@@ -25,6 +25,10 @@ class RosterPage(QWidget):
         btn_lineups.clicked.connect(dashboard.open_lineup_editor)
         card.layout().addWidget(btn_lineups)
 
+        btn_move = QPushButton("Move Player", objectName="Primary")
+        btn_move.clicked.connect(dashboard.open_move_player_dialog)
+        card.layout().addWidget(btn_move)
+
         card.layout().addStretch()
         layout.addWidget(card)
         layout.addStretch()
