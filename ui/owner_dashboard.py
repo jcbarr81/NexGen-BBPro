@@ -48,6 +48,7 @@ from utils.team_loader import load_teams, save_team_settings
 from utils.pitcher_role import get_role
 from utils.trade_utils import get_pending_trades
 from utils.path_utils import get_base_dir
+from .theme import _toggle_theme
 
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
@@ -110,6 +111,8 @@ class OwnerDashboard(QWidget):
         exit_action = file_menu.addAction("Exit")
         exit_action.triggered.connect(QApplication.quit)
         color_menu = file_menu.addMenu("Color Scheme")
+        toggle_action = color_menu.addAction("Toggle Dark Mode")
+        toggle_action.triggered.connect(_toggle_theme)
         for name, (primary, secondary) in PREDEFINED_COLOR_SCHEMES.items():
             action = color_menu.addAction(name)
             action.triggered.connect(

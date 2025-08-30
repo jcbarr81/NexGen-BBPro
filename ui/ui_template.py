@@ -7,172 +7,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy, QStatusBar, QSpacerItem
 )
 
-# ------------------------------------------------------------
-# Theme toggles
-# ------------------------------------------------------------
-
-LIGHT_QSS = """
-/* App */
-QWidget {
-    background: #f7f8fb;
-    color: #0f2545;
-    font-family: 'Segoe UI', 'Noto Sans', Arial;
-    font-size: 14px;
-}
-
-/* Sidebar (dugout) */
-#Sidebar {
-    background: #0f2545; /* deep navy */
-    border: none;
-}
-#Sidebar QLabel {
-    color: #f1f5ff;
-    font-weight: 600;
-    padding: 8px 10px;
-    letter-spacing: .5px;
-}
-#NavButton {
-    color: #e7efff;
-    background: transparent;
-    padding: 10px 14px;
-    margin: 4px 8px;
-    border-radius: 10px;
-    text-align: left;
-}
-#NavButton:hover { background: #1b3b6b; }
-#NavButton:checked {
-    background: #1b4d89;
-    border: 1px solid #2b66b8;
-    color: white;
-}
-
-/* Header (scoreboard strip) */
-#Header {
-    background: white;
-    border-bottom: 1px solid #e6e9f2;
-}
-#Title {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: .5px;
-}
-#Scoreboard {
-    background: #0f2545;
-    color: #f6f8ff;
-    border-radius: 10px;
-    padding: 6px 12px;
-    font-weight: 700;
-}
-
-/* Cards and content */
-QFrame#Card {
-    background: white;
-    border: 1px solid #e9edf5;
-    border-radius: 14px;
-}
-QLabel#SectionTitle {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f2545;
-}
-
-/* Buttons */
-QPushButton#Primary {
-    background: #1b4d89;  /* primary blue */
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 600;
-}
-QPushButton#Primary:hover { background: #205aa0; }
-QPushButton#Primary:pressed { background: #17487a; }
-
-QPushButton#Success {
-    background: #2f9e44;  /* "Play ball" green */
-    color: white;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 700;
-}
-QPushButton#Success:hover { background: #27903c; }
-QPushButton#Success:pressed { background: #237f35; }
-
-QStatusBar { background: #ffffff; border-top: 1px solid #e6e9f2; }
-"""
-
-DARK_QSS = """
-QWidget {
-    background: #0f1623;
-    color: #e6ecfa;
-    font-family: 'Segoe UI', 'Noto Sans', Arial;
-    font-size: 14px;
-}
-#Sidebar {
-    background: #0b1222;
-}
-#Sidebar QLabel { color: #dbe6ff; }
-#NavButton {
-    color: #cfe0ff;
-    background: transparent;
-    padding: 10px 14px;
-    margin: 4px 8px;
-    border-radius: 10px;
-}
-#NavButton:hover { background: #132645; }
-#NavButton:checked {
-    background: #19345f;
-    border: 1px solid #2a4c8e;
-    color: white;
-}
-#Header {
-    background: #111a2b;
-    border-bottom: 1px solid #1b2943;
-}
-#Title { color: #eaf1ff; }
-#Scoreboard {
-    background: #0b1222;
-    color: #eaf1ff;
-    border: 1px solid #1b2943;
-    border-radius: 10px;
-    padding: 6px 12px;
-    font-weight: 700;
-}
-QFrame#Card {
-    background: #121b2d;
-    border: 1px solid #1b2943;
-    border-radius: 14px;
-}
-QLabel#SectionTitle {
-    font-size: 16px;
-    font-weight: 700;
-    color: #e6ecfa;
-}
-QPushButton#Primary {
-    background: #1b4d89;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 600;
-}
-QPushButton#Primary:hover { background: #205aa0; }
-QPushButton#Primary:pressed { background: #17487a; }
-QPushButton#Success {
-    background: #2f9e44;
-    color: white;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 700;
-}
-QPushButton#Success:hover { background: #27903c; }
-QPushButton#Success:pressed { background: #237f35; }
-QStatusBar { background: #0f1623; border-top: 1px solid #1b2943; }
-"""
+from .theme import LIGHT_QSS, _toggle_theme
 
 # ------------------------------------------------------------
 # Small building blocks
@@ -402,7 +237,7 @@ class MainWindow(QMainWindow):
         self.btn_teams.clicked.connect(lambda: self._go("teams"))
         self.btn_users.clicked.connect(lambda: self._go("users"))
         self.btn_utils.clicked.connect(lambda: self._go("utils"))
-        self.btn_settings.clicked.connect(self._toggle_theme)
+        self.btn_settings.clicked.connect(lambda: _toggle_theme(self.statusBar()))
 
         # Default selection
         self.btn_dashboard.setChecked(True)
@@ -416,7 +251,7 @@ class MainWindow(QMainWindow):
 
         view_menu = self.menuBar().addMenu("&View")
         theme_action = QAction("Toggle Dark Mode", self)
-        theme_action.triggered.connect(self._toggle_theme)
+        theme_action.triggered.connect(lambda: _toggle_theme(self.statusBar()))
         view_menu.addAction(theme_action)
 
     def _go(self, key):
@@ -424,17 +259,6 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(idx)
         self.statusBar().showMessage(f"Ready • {key.capitalize()}")
 
-    def _toggle_theme(self):
-        # swap app-wide style between light and dark
-        current = self.parent().styleSheet() if self.parent() else self.styleSheet()
-        # detect by a token present in each sheet
-        is_dark = "0f1623" in QApplication.instance().styleSheet()
-        if is_dark:
-            QApplication.instance().setStyleSheet(LIGHT_QSS)
-            self.statusBar().showMessage("Light theme")
-        else:
-            QApplication.instance().setStyleSheet(DARK_QSS)
-            self.statusBar().showMessage("Dark theme")
 
 # ------------------------------------------------------------
 # Run

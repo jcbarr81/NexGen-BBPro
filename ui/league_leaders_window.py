@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Iterable, List, Tuple
 
 from PyQt6.QtWidgets import (
@@ -41,16 +40,7 @@ class LeagueLeadersWindow(QDialog):
             self.table.setItem(row, 1, QTableWidgetItem(name))
             self.table.setItem(row, 2, QTableWidgetItem(value))
         self.table.setSortingEnabled(True)
-        self._apply_espn_style()
 
-    def _apply_espn_style(self) -> None:
-        """Apply ESPN-like color scheme."""
-        qss_path = os.path.join(
-            os.path.dirname(__file__), "resources", "espn.qss"
-        )
-        if os.path.exists(qss_path) and callable(getattr(self, "setStyleSheet", None)):
-            with open(qss_path, "r", encoding="utf-8") as qss_file:
-                self.setStyleSheet(qss_file.read())
 
     # ------------------------------------------------------------------
     def _gather_leaders(
