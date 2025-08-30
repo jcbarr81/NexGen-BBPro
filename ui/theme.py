@@ -7,9 +7,10 @@ LIGHT_QSS = """
 /* App */
 QWidget {
     background: #f7f8fb;
-    color: #0f2545;
+    color: #1a1a1a;
     font-family: 'Segoe UI', 'Noto Sans', Arial;
     font-size: 14px;
+    font-weight: 500;
 }
 
 /* Sidebar (dugout) */
@@ -69,6 +70,17 @@ QLabel#SectionTitle {
 }
 
 /* Buttons */
+QPushButton {
+    background: #e0e6ef;
+    color: #0f2545;
+    border: 1px solid #b5bdc9;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+QPushButton:hover { background: #d3dae5; }
+QPushButton:pressed { background: #c2c9d4; }
+
 QPushButton#Primary {
     background: #1b4d89;  /* primary blue */
     color: white;
@@ -101,6 +113,7 @@ QWidget {
     color: #e6ecfa;
     font-family: 'Segoe UI', 'Noto Sans', Arial;
     font-size: 14px;
+    font-weight: 500;
 }
 #Sidebar {
     background: #0b1222;
@@ -142,6 +155,16 @@ QLabel#SectionTitle {
     font-weight: 700;
     color: #e6ecfa;
 }
+QPushButton {
+    background: #1b2e45;
+    color: #e6ecfa;
+    border: 1px solid #2a4c8e;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+QPushButton:hover { background: #243a57; }
+QPushButton:pressed { background: #1a273a; }
 QPushButton#Primary {
     background: #1b4d89;
     color: white;
