@@ -1658,7 +1658,7 @@ class GameSimulation:
             offense.base_pitchers = new_bp
             if runs_scored and not error:
                 self._add_stat(batter_state, "rbi", runs_scored)
-            return outs + outs_from_pick
+            return outs
 
         for idx in range(2, -1, -1):
             runner = b[idx]
@@ -1692,7 +1692,7 @@ class GameSimulation:
 
         if runs_scored and not error:
             self._add_stat(batter_state, "rbi", runs_scored)
-        return outs + outs_from_pick
+        return outs
 
     def _advance_walk(
         self, offense: TeamState, defense: TeamState, batter_state: BatterState
