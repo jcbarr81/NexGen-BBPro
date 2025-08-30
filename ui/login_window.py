@@ -86,11 +86,21 @@ class LoginWindow(QWidget):
     def accept_login(self, role, team_id):
         if role == "admin":
             mod = importlib.import_module("ui.admin_dashboard")
-            dash_cls = getattr(mod, "AdminDashboard", getattr(mod, "MainWindow"))
+            dash_cls = getattr(mod, "AdminDashboard", None) or getattr(
+                mod, "MainWindow", None
+            )
+            if dash_cls is None:
+                QMessageBox.warning(self, "Error", "Admin dashboard not found.")
+                return
             self.dashboard = dash_cls()
         elif role == "owner":
             mod = importlib.import_module("ui.owner_dashboard")
-            dash_cls = getattr(mod, "OwnerDashboard", getattr(mod, "MainWindow"))
+            dash_cls = getattr(mod, "OwnerDashboard", None) or getattr(
+                mod, "MainWindow", None
+            )
+            if dash_cls is None:
+                QMessageBox.warning(self, "Error", "Owner dashboard not found.")
+                return
             self.dashboard = dash_cls(team_id)
         else:
             QMessageBox.warning(self, "Error", "Unrecognized role.")
