@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Dict, Iterable, List
 
 from PyQt6.QtWidgets import (
@@ -96,7 +95,6 @@ class TeamStatsWindow(QDialog):
             "Pitching",
         )
         self.tabs.addTab(self._build_team_table(team.season_stats), "Team")
-        self._apply_espn_style()
 
     # ------------------------------------------------------------------
     def _build_player_table(
@@ -119,14 +117,6 @@ class TeamStatsWindow(QDialog):
         table.setSortingEnabled(True)
         return table
 
-    def _apply_espn_style(self) -> None:
-        """Apply ESPN-like color scheme."""
-        qss_path = os.path.join(
-            os.path.dirname(__file__), "resources", "espn.qss"
-        )
-        if os.path.exists(qss_path) and callable(getattr(self, "setStyleSheet", None)):
-            with open(qss_path, "r", encoding="utf-8") as qss_file:
-                self.setStyleSheet(qss_file.read())
 
     def _build_team_table(self, stats: Dict[str, float]) -> QTableWidget:
         items = sorted(stats.items())

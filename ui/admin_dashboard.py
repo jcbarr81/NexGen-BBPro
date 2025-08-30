@@ -39,9 +39,8 @@ from .ui_template import (
     NavButton,
     Card,
     section_title,
-    LIGHT_QSS,
-    DARK_QSS,
 )
+from .theme import _toggle_theme
 from .team_entry_dialog import TeamEntryDialog
 from .exhibition_game_dialog import ExhibitionGameDialog
 from .playbalance_editor import PlayBalanceEditor
@@ -299,7 +298,7 @@ class MainWindow(QMainWindow):
 
         view_menu = self.menuBar().addMenu("&View")
         theme_action = QAction("Toggle Dark Mode", self)
-        theme_action.triggered.connect(self._toggle_theme)
+        theme_action.triggered.connect(lambda: _toggle_theme(self.statusBar()))
         view_menu.addAction(theme_action)
 
     def _go(self, key: str) -> None:
@@ -307,10 +306,6 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(idx)
         self.statusBar().showMessage(f"Ready • {key.capitalize()}")
 
-    def _toggle_theme(self) -> None:
-        is_dark = "0f1623" in QApplication.instance().styleSheet()
-        QApplication.instance().setStyleSheet(LIGHT_QSS if is_dark else DARK_QSS)
-        self.statusBar().showMessage("Dark theme" if not is_dark else "Light theme")
 
     # ------------------------------------------------------------------
     # Existing behaviours

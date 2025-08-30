@@ -1,7 +1,6 @@
 """Dialog for displaying a player's profile with avatar, info,
 ratings and stats."""
 
-import os
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
@@ -73,7 +72,6 @@ class PlayerProfileDialog(QDialog):
         layout.addWidget(self._build_stats_table(stats_history))
 
         self.setLayout(layout)
-        self._apply_espn_style()
         self.adjustSize()
         self.setFixedSize(self.sizeHint())
 
@@ -275,14 +273,6 @@ class PlayerProfileDialog(QDialog):
         group.setLayout(grid)
         return group
 
-    def _apply_espn_style(self) -> None:
-        """Apply ESPN-like color scheme."""
-        qss_path = os.path.join(
-            os.path.dirname(__file__), "resources", "espn.qss"
-        )
-        if os.path.exists(qss_path) and callable(getattr(self, "setStyleSheet", None)):
-            with open(qss_path, "r", encoding="utf-8") as qss_file:
-                self.setStyleSheet(qss_file.read())
 
     def _calculate_age(self, birthdate_str: str):
         try:
