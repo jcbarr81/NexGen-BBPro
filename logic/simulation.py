@@ -1465,7 +1465,8 @@ class GameSimulation:
                     * contact_quality
                     * contact_factor
                     * movement_factor
-                ),
+                )
+                + 0.05,
             ),
         )
         # Modify hit probability based on current defensive alignment.
