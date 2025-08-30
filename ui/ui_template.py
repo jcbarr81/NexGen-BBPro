@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .components import Card, NavButton, section_title
-from .theme import LIGHT_QSS, _toggle_theme
+from .theme import DARK_QSS, _toggle_theme
 
 # ------------------------------------------------------------
 # Pages
@@ -242,7 +242,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyleSheet(LIGHT_QSS)  # start in light; toggle with View > Toggle Dark Mode
+    app.setStyleSheet(DARK_QSS)  # start in dark; toggle with View > Toggle Dark Mode
     w = MainWindow()
     w.show()
     sys.exit(app.exec())
