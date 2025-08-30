@@ -499,7 +499,8 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(dialog, "Error", "Username and password required")
                 return
             try:
-                add_user(username, password, team_id, data_dir / "users.txt")
+                role = "owner" if team_id else "admin"
+                add_user(username, password, role, team_id, data_dir / "users.txt")
             except ValueError as e:
                 QMessageBox.warning(dialog, "Error", str(e))
                 return
