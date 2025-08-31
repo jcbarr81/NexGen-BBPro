@@ -65,6 +65,8 @@ class BatterState:
     pitches: int = 0  # Pitches seen
     lob: int = 0  # Left on base
     lead: int = 0  # Lead level
+    gb: int = 0  # Ground balls put in play
+    fb: int = 0  # Fly balls put in play
 
 
 @dataclass
@@ -113,6 +115,8 @@ class PitcherState:
     consecutive_baserunners: int = 0  # Consecutive batters reaching base
     is_toast: bool = False  # Reliever toast flag
     allowed_hr: bool = False  # True if last batter hit a home run
+    gb: int = 0  # Ground balls induced
+    fb: int = 0  # Fly balls induced
 
     # Backwards compatibility accessors
     @property
@@ -1081,6 +1085,8 @@ class GameSimulation:
                         batter,
                         pitcher,
                         defense,
+                        batter_state,
+                        pitcher_state,
                         pitch_speed=pitch_speed,
                         rand=dec_r,
                         contact_quality=contact_quality,
@@ -1481,6 +1487,8 @@ class GameSimulation:
         batter: Player,
         pitcher: Pitcher,
         defense: TeamState,
+        batter_state: BatterState,
+        pitcher_state: PitcherState,
         *,
         pitch_speed: float,
         rand: float,
@@ -1502,6 +1510,12 @@ class GameSimulation:
         launch_angle = swing_angle + vert_angle + power_adjust
         self.last_batted_ball_type = "ground" if launch_angle < 0 else "fly"
         self.last_batted_ball_angles = (swing_angle, vert_angle)
+        if self.last_batted_ball_type == "ground":
+            self._add_stat(batter_state, "gb")
+            pitcher_state.gb += 1
+        else:
+            self._add_stat(batter_state, "fb")
+            pitcher_state.fb += 1
         roll_dist = self.physics.ball_roll_distance(
             bat_speed,
             self.surface,

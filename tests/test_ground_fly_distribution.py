@@ -1,7 +1,12 @@
 import random
 import pytest
 
-from logic.simulation import GameSimulation, TeamState
+from logic.simulation import (
+    BatterState,
+    GameSimulation,
+    PitcherState,
+    TeamState,
+)
 from logic.playbalance_config import PlayBalanceConfig
 from tests.test_physics import make_player, make_pitcher
 
@@ -14,11 +19,15 @@ def test_ground_fly_distribution():
     defense = TeamState(lineup=[make_player("d")], bench=[], pitchers=[pitcher])
     offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
     sim = GameSimulation(defense, offense, cfg, rng)
+    b_state = BatterState(batter)
+    p_state = PitcherState(pitcher)
 
     total = 5000
     ground = fly = 0
     for _ in range(total):
-        sim._swing_result(batter, pitcher, defense, pitch_speed=90, rand=rng.random())
+        sim._swing_result(
+            batter, pitcher, defense, b_state, p_state, pitch_speed=90, rand=rng.random()
+        )
         if sim.last_batted_ball_type == "ground":
             ground += 1
         else:
