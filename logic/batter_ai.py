@@ -351,10 +351,10 @@ class BatterAI:
             success = int(type_id) + int(loc_id) + int(time_id)
             self.last_misread = success == 0
             if self.last_misread:
-                contact = min(
-                    getattr(batter, "ch", 0) / 1000.0,
-                    float(self.config.get("minMisreadContact", 0.15)),
-                )
+                ch = getattr(batter, "ch", 0)
+                base_floor = float(self.config.get("minMisreadContact", 0.15))
+                scaled_floor = base_floor * ch / 100.0
+                contact = max(ch / 1000.0, scaled_floor)
             else:
                 ch_factor = getattr(batter, "ch", 0) / 100.0
                 weights = [
