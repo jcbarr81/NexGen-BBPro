@@ -433,6 +433,7 @@ class Physics:
         pl: int,
         swing_angle: float,
         vertical_hit_angle: float,
+        swing_type: str = "normal",
     ) -> tuple[float, float, float]:
         """Return velocity components for a batted ball.
 
@@ -447,6 +448,14 @@ class Physics:
 
         # Scale down raw power so balls carry a bit less distance
         speed_mph = 50 + ph * 0.45
+        speed_mph += self.config.exit_velo_base
+        speed_mph += ph * self.config.exit_velo_ph_pct / 100.0
+        scale_pct = {
+            "power": self.config.exit_velo_power_pct,
+            "contact": self.config.exit_velo_contact_pct,
+            "normal": self.config.exit_velo_normal_pct,
+        }.get(swing_type, self.config.exit_velo_normal_pct)
+        speed_mph *= scale_pct / 100.0
         speed_fps = speed_mph * 5280 / 3600
 
         power_adjust = (ph - 50) * 0.08

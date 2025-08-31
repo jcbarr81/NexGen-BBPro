@@ -127,12 +127,15 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
-    "exitVeloBase": -3,
+    "exitVeloBase": 0,
     "exitVeloPHPct": 0,
-    "vertAngleGFPct": -5,
+    "exitVeloPowerPct": 100,
+    "exitVeloNormalPct": 100,
+    "exitVeloContactPct": 100,
+    "vertAngleGFPct": 0,
     "sprayAnglePLPct": 0,
-    "groundBallBaseRate": 50,
-    "flyBallBaseRate": 50,
+    "groundBallBaseRate": 45,
+    "flyBallBaseRate": 55,
     # Hit type distribution reflecting MLB averages
     "hit1BProb": 64,
     "hit2BProb": 20,
@@ -611,6 +614,21 @@ class PlayBalanceConfig:
     def exit_velo_ph_pct(self) -> int:
         """Pinch hitter adjustment percentage for exit velocity."""
         return int(self.exitVeloPHPct)
+
+    @property
+    def exit_velo_power_pct(self) -> int:
+        """Exit velocity percentage for power swings."""
+        return int(self.exitVeloPowerPct)
+
+    @property
+    def exit_velo_normal_pct(self) -> int:
+        """Exit velocity percentage for normal swings."""
+        return int(self.exitVeloNormalPct)
+
+    @property
+    def exit_velo_contact_pct(self) -> int:
+        """Exit velocity percentage for contact swings."""
+        return int(self.exitVeloContactPct)
 
     @property
     def vert_angle_gf_pct(self) -> int:

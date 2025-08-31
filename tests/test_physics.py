@@ -1,4 +1,5 @@
 import random
+import math
 
 import pytest
 
@@ -86,8 +87,8 @@ def make_pitcher(pid: str) -> Pitcher:
 @pytest.mark.parametrize(
     "ph,pl,swing,vert,vx,vy,vz",
     [
-        (50, 50, 5.0, 10.0, 106.25, 0.0, 28.47),
-        (80, 80, 5.0, 20.0, 103.85, 52.91, 61.97),
+        (50, 50, 5.0, 10.0, 102.71, 0.0, 27.52),
+        (80, 80, 5.0, 20.0, 99.78, 50.84, 58.05),
     ],
 )
 def test_launch_vector_returns_expected_components(ph, pl, swing, vert, vx, vy, vz):
@@ -98,11 +99,21 @@ def test_launch_vector_returns_expected_components(ph, pl, swing, vert, vx, vy, 
     assert result[2] == pytest.approx(vz, abs=0.01)
 
 
+def test_launch_vector_respects_exit_velo_scales():
+    cfg = make_cfg(exitVeloPowerPct=200, exitVeloContactPct=50)
+    physics = Physics(cfg, random.Random(0))
+    vxp, vyp, vzp = physics.launch_vector(50, 50, 5.0, 10.0, swing_type="power")
+    vxc, vyc, vzc = physics.launch_vector(50, 50, 5.0, 10.0, swing_type="contact")
+    speed_power = math.sqrt(vxp**2 + vyp**2 + vzp**2)
+    speed_contact = math.sqrt(vxc**2 + vyc**2 + vzc**2)
+    assert speed_power > speed_contact
+
+
 @pytest.mark.parametrize(
     "ph,pl,swing,vert,x,y,t",
     [
-        (50, 50, 5.0, 10.0, 198.64, 0.0, 1.8695),
-        (80, 80, 5.0, 20.0, 405.00, 206.36, 3.9000),
+        (50, 50, 5.0, 10.0, 186.27, 0.0, 1.8136),
+        (80, 80, 5.0, 20.0, 365.11, 186.03, 3.6593),
     ],
 )
 def test_landing_point_returns_expected_coordinates(ph, pl, swing, vert, x, y, t):

@@ -13,6 +13,9 @@ def test_playbalance_config_defaults():
     assert cfg.swingAngleTenthDegreesBase == 44
     assert cfg.exit_velo_base == 0
     assert cfg.exit_velo_ph_pct == 0
+    assert cfg.exit_velo_power_pct == 100
+    assert cfg.exit_velo_normal_pct == 100
+    assert cfg.exit_velo_contact_pct == 100
     assert cfg.vert_angle_gf_pct == 0
     assert cfg.spray_angle_pl_pct == 0
     assert cfg.ground_ball_base_rate == 45
