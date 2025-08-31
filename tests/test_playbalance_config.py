@@ -16,6 +16,7 @@ def test_playbalance_config_defaults():
     assert cfg.spray_angle_pl_pct == 0
     assert cfg.foulStrikeBasePct == 30.0
     assert cfg.foulContactTrendPct == 1.5
+    assert cfg.minMisreadContact == 0.15
 
     # Pitcher AI defaults
     assert cfg.pitchRatVariationCount == 1

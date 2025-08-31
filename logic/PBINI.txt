@@ -1535,6 +1535,8 @@ failedCheckContactChance = 0   ; If a player checks his swing and the bat
 ;                                  happens to be in the way of the ball, this
 ;                                  is the percent of time that contact will
 ;                                  actually be made
+minMisreadContact=0.15          ; Minimum contact quality when a batter
+;                                  completely misidentifies a pitch
 ;
 ; FOUL BALL RATES
 ; Base foul-strike percentage and change per 20 pt contact edge
