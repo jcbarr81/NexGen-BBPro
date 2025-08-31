@@ -1046,13 +1046,43 @@ class GameSimulation:
             if swing:
                 if contact > 0:
                     self.infield_fly = False
+                    out_of_zone = dist > 3
+                    if out_of_zone and self.rng.random() >= self.config.get(
+                        "outOfZoneContactHitChance", 0.1
+                    ):
+                        pitcher_state.balls_thrown += 1
+                        self._add_stat(batter_state, "ab")
+                        outs += 1
+                        pitcher_state.toast += self.config.get(
+                            "pitchScoringOut", 0
+                        )
+                        pitcher_state.consecutive_hits = 0
+                        pitcher_state.consecutive_baserunners = 0
+                        self._add_stat(
+                            batter_state,
+                            "pitches",
+                            pitcher_state.pitches_thrown - start_pitches,
+                        )
+                        pitcher_state.outs += outs
+                        run_diff = offense.runs - defense.runs
+                        self.subs.maybe_warm_reliever(
+                            defense,
+                            inning=inning,
+                            run_diff=run_diff,
+                            home_team=home_team,
+                        )
+                        return outs + outs_from_pick
+
+                    contact_quality = contact
+                    if out_of_zone:
+                        contact_quality = max(0.1, contact_quality * 0.25)
                     bases, error = self._swing_result(
                         batter,
                         pitcher,
                         defense,
                         pitch_speed=pitch_speed,
                         rand=dec_r,
-                        contact_quality=contact,
+                        contact_quality=contact_quality,
                     )
                     if self.infield_fly:
                         if dist <= 3:
