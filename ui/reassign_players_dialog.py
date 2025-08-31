@@ -14,6 +14,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QPushButton,
+    QInputDialog,
+    QMessageBox,
 )
 
 from models.base_player import BasePlayer
@@ -28,6 +30,7 @@ class ReassignPlayersDialog(QDialog):
     def __init__(self, players: Dict[str, BasePlayer], roster: Roster, parent=None):
         super().__init__(parent)
         self.players = players
+        self.roster = roster
 
         self.setWindowTitle("Reassign Players")
 
@@ -46,7 +49,7 @@ class ReassignPlayersDialog(QDialog):
             lw.setDefaultDropAction(Qt.DropAction.MoveAction)
             self.lists[level] = lw
 
-            for pid in getattr(roster, level):
+            for pid in getattr(self.roster, level):
                 player = players.get(pid)
                 if not player:
                     continue
@@ -87,4 +90,39 @@ class ReassignPlayersDialog(QDialog):
             return "?"
 
     def _apply_moves(self) -> None:
-        self.accept()
+        selected_item = None
+        from_level = None
+        for level, lw in self.lists.items():
+            items = lw.selectedItems()
+            if items:
+                selected_item = items[0]
+                from_level = level
+                break
+
+        if not selected_item or not from_level:
+            QMessageBox.warning(self, "Reassign Player", "Select a player first.")
+            return
+
+        pid = selected_item.data(Qt.ItemDataRole.UserRole)
+        options = [lvl.upper() for lvl in self.levels if lvl != from_level]
+        choice, ok = QInputDialog.getItem(
+            self, "Reassign Player", "Move to:", options, 0, False
+        )
+        if not ok:
+            return
+        to_level = choice.lower()
+
+        try:
+            self.roster.move_player(pid, from_level, to_level)
+        except ValueError:
+            QMessageBox.critical(
+                self, "Error", f"Failed to move player {pid} from {from_level}"
+            )
+            return
+
+        self.lists[from_level].takeItem(self.lists[from_level].row(selected_item))
+        self.lists[to_level].addItem(selected_item)
+
+        self.lists[from_level].update()
+        self.lists[to_level].update()
+        self.update()
