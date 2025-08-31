@@ -204,6 +204,7 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating30CountAdjust": 55,
     "disciplineRating31CountAdjust": 0,
     "disciplineRating32CountAdjust": 10,
+    "minMisreadContact": 0.15,
     # Timing curve thresholds and dice ------------------------------------
     "timingVeryBadThresh": 55,
     "timingVeryBadCount": 7,
