@@ -246,6 +246,7 @@ class GameSimulation:
         self.wind_speed = wind_speed
         self.stadium = stadium or Stadium()
         self.last_batted_ball_angles: tuple[float, float] | None = None
+        self.last_batted_ball_type: str | None = None
         self.last_pitch_speed: float | None = None
 
     # ------------------------------------------------------------------
@@ -1489,7 +1490,17 @@ class GameSimulation:
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
         # Calculate and store angles for potential future physics steps.
         swing_angle = self.physics.swing_angle(batter.gf)
-        vert_angle = self.physics.vertical_hit_angle()
+        vert_base = abs(self.physics.vertical_hit_angle())
+        power_adjust = (getattr(batter, "ph", 50) - 50) * 0.1
+        gb = self.config.ground_ball_base_rate
+        fb = self.config.fly_ball_base_rate
+        total = max(1, gb + fb)
+        if self.rng.random() * total < gb:
+            vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
+        else:
+            vert_angle = vert_base
+        launch_angle = swing_angle + vert_angle + power_adjust
+        self.last_batted_ball_type = "ground" if launch_angle < 0 else "fly"
         self.last_batted_ball_angles = (swing_angle, vert_angle)
         roll_dist = self.physics.ball_roll_distance(
             bat_speed,
