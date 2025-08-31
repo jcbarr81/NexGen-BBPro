@@ -68,6 +68,8 @@ class BatterAI:
 
     # Last ``(swing, contact_quality)`` decision made.  Useful for tests.
     last_decision: Tuple[bool, float] | None = None
+    # Whether the last swing completely misread the pitch
+    last_misread: bool = False
 
     def __post_init__(self) -> None:  # pragma: no cover - simple initialiser
         if self._primary_cache is None:
@@ -235,6 +237,7 @@ class BatterAI:
         the outcome of the check-swing roll.
         """
 
+        self.last_misread = False
         p_class = self.pitch_class(dist)
         is_strike = p_class in {"sure strike", "close strike"}
 
@@ -326,8 +329,8 @@ class BatterAI:
             swing_probs = {
                 "sure strike": 0.75,
                 "close strike": 0.5,
-                "close ball": 0.25,
-                "sure ball": 0.0,
+                "close ball": 0.35,
+                "sure ball": 0.1,
             }
             swing_prob = swing_probs[p_class]
             if p_class in {"close ball", "sure ball"}:
@@ -346,8 +349,12 @@ class BatterAI:
             contact = 0.0
         else:
             success = int(type_id) + int(loc_id) + int(time_id)
-            if success == 0:
-                contact = min(getattr(batter, "ch", 0) / 1000.0, 0.1)
+            self.last_misread = success == 0
+            if self.last_misread:
+                contact = min(
+                    getattr(batter, "ch", 0) / 1000.0,
+                    float(self.config.get("minMisreadContact", 0.15)),
+                )
             else:
                 ch_factor = getattr(batter, "ch", 0) / 100.0
                 weights = [

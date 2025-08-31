@@ -59,14 +59,16 @@ impact【F:logic/physics.py†L8-L75】【F:logic/physics.py†L92-L130】.
 ## Foul Balls
 
 Foul tips are modeled through `_foul_probability`, which derives the chance of a
-foul ball from player ratings and configuration. The formula starts with
-`foulStrikeBasePct`—the share of strikes that are fouls in MLB (27.8% in recent
-seasons, with a 30% default to slightly boost foul rates)—and adjusts it by
-`foulContactTrendPct` (default 1.5 percentage points) for every 20 point contact
-edge the batter holds over the pitcher. The resulting percentage is converted to
-a foul-to-balls-in-play ratio and scaled so that an average matchup yields a 1:1
-split between foul balls and contacted pitches put in play, with the final
-probability clamped between 0 and 0.5 to avoid unrealistic extremes【F:logic/simulation.py†L1339-L1357】.
+foul ball from player ratings, pitch location and configuration. The formula
+starts with `foulStrikeBasePct`—the share of strikes that are fouls in MLB (27.8%
+in recent seasons, with a 30% default to slightly boost foul rates)—and adjusts
+it by `foulContactTrendPct` (default 1.5 percentage points) for every 20 point
+contact edge the batter holds over the pitcher. The resulting percentage is
+converted to a foul-to-balls-in-play ratio and then scaled so that an average
+matchup yields a 1:1 split between foul balls and contacted pitches put in play.
+Out-of-zone distance reduces the probability while a complete pitch misread
+boosts it, nudging such swings toward foul tips instead of whiffs. The final
+probability is clamped between 0 and 0.5 to avoid unrealistic extremes【F:logic/simulation.py†L1339-L1369】.
 
 Historical foul-strike rates have changed gradually over time:
 
@@ -102,4 +104,6 @@ Key entries now available include:
 - **`exitVeloPHPct`** – percentage boost to exit velocity for pinch hitters.
 - **`vertAngleGFPct`** – ground/fly ratio adjustment for vertical launch angles.
 - **`sprayAnglePLPct`** – pull/line tendency applied to spray angle calculations.
+- **`minMisreadContact`** – minimum contact quality applied when a batter
+  completely misidentifies a pitch.
 

@@ -1210,7 +1210,9 @@ class GameSimulation:
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
                         return outs + outs_from_pick
-                    foul_chance = self._foul_probability(batter, pitcher)
+                    foul_chance = self._foul_probability(
+                        batter, pitcher, dist=dist, misread=self.batter_ai.last_misread
+                    )
                     if self.rng.random() < foul_chance:
                         if dist > 3:
                             pitcher_state.balls_thrown += 1
@@ -1363,7 +1365,14 @@ class GameSimulation:
     # ------------------------------------------------------------------
     # Swing outcome
     # ------------------------------------------------------------------
-    def _foul_probability(self, batter: Player, pitcher: Pitcher) -> float:
+    def _foul_probability(
+        self,
+        batter: Player,
+        pitcher: Pitcher,
+        *,
+        dist: float = 0.0,
+        misread: bool = False,
+    ) -> float:
         """Return foul ball probability derived from configuration and ratings.
 
         ``foulStrikeBasePct`` represents the percentage of strikes that are
@@ -1372,6 +1381,10 @@ class GameSimulation:
         contact over pitcher movement. The percentage is converted to a
         foul-to-balls-in-play ratio and then scaled so that an average matchup
         produces a 1:1 split between foul balls and balls put in play.
+
+        ``dist`` allows far out-of-zone pitches to reduce foul likelihood while
+        ``misread`` boosts the chance so complete misreads produce foul tips
+        instead of whiffs.
 
         The final probability is clamped to ``0``–``0.5`` to avoid unrealistic
         behaviour.
@@ -1392,6 +1405,11 @@ class GameSimulation:
         base_prob = base_ratio / (1.0 + base_ratio)
         if base_prob:
             prob *= 0.5 / base_prob
+
+        if dist > 0:
+            prob *= max(0.0, 1.0 - dist * 0.1)
+        if misread:
+            prob *= 1.5
 
         return max(0.0, min(0.5, prob))
 
