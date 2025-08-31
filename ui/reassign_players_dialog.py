@@ -23,6 +23,26 @@ from models.roster import Roster
 from utils.roster_loader import save_roster
 
 
+class RosterListWidget(QListWidget):
+    """List widget that syncs roster data on drag and drop."""
+
+    def __init__(self, level: str, dialog: "ReassignPlayersDialog") -> None:
+        super().__init__()
+        self.level = level
+        self.dialog = dialog
+        self.setObjectName(level)
+        self.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+
+    def dropEvent(self, event) -> None:  # type: ignore[override]
+        """Handle drag-and-drop moves and refresh counts."""
+        super().dropEvent(event)
+        self.dialog._sync_roster_from_lists()
+        self.dialog._update_counts()
+
 class ReassignPlayersDialog(QDialog):
     """Dialog for reassigning players to different roster levels."""
 
@@ -35,7 +55,7 @@ class ReassignPlayersDialog(QDialog):
 
         self.setWindowTitle("Reassign Players")
 
-        self.lists: Dict[str, QListWidget] = {}
+        self.lists: Dict[str, RosterListWidget] = {}
         self.labels: Dict[str, QLabel] = {}
         self.max_counts: Dict[str, int] = {"act": 25, "aaa": 15, "low": 10}
 
@@ -45,13 +65,7 @@ class ReassignPlayersDialog(QDialog):
             label = QLabel()
             vbox.addWidget(label)
             self.labels[level] = label
-            lw = QListWidget()
-            lw.setObjectName(level)
-            lw.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-            lw.setDragEnabled(True)
-            lw.setAcceptDrops(True)
-            lw.setDropIndicatorShown(True)
-            lw.setDefaultDropAction(Qt.DropAction.MoveAction)
+            lw = RosterListWidget(level, self)
             self.lists[level] = lw
 
             for pid in getattr(self.roster, level):
@@ -150,8 +164,19 @@ class ReassignPlayersDialog(QDialog):
 
         self.lists[from_level].update()
         self.lists[to_level].update()
+        self._sync_roster_from_lists()
         self._update_counts()
         self.update()
+
+    def _sync_roster_from_lists(self) -> None:
+        """Sync internal roster lists with the GUI widgets."""
+        for level, lw in self.lists.items():
+            ids: List[str] = []
+            for i in range(lw.count()):
+                item = lw.item(i)
+                pid = item.data(Qt.ItemDataRole.UserRole)
+                ids.append(pid)
+            setattr(self.roster, level, ids)
 
     def _update_counts(self) -> None:
         """Refresh roster counts displayed above each column."""
