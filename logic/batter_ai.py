@@ -326,13 +326,13 @@ class BatterAI:
         if type_id or loc_id:
             swing = is_strike
         else:
-            swing_probs = {
-                "sure strike": 0.75,
-                "close strike": 0.5,
-                "close ball": 0.35,
-                "sure ball": 0.1,
-            }
-            swing_prob = swing_probs[p_class]
+            cfg = self.config
+            swing_prob = {
+                "sure strike": cfg.get("swingProbSureStrike", 0.75),
+                "close strike": cfg.get("swingProbCloseStrike", 0.5),
+                "close ball": cfg.get("swingProbCloseBall", 0.35),
+                "sure ball": cfg.get("swingProbSureBall", 0.1),
+            }[p_class]
             if p_class in {"close ball", "sure ball"}:
                 swing_prob = max(
                     0.0, swing_prob - getattr(batter, "ch", 0) / 400.0
