@@ -114,7 +114,22 @@ class ReassignPlayersDialog(QDialog):
             return
 
         pid = selected_item.data(Qt.ItemDataRole.UserRole)
-        options = [lvl.upper() for lvl in self.levels if lvl != from_level]
+
+        player = self.players.get(pid)
+        age = self._calculate_age(player.birthdate) if player else None
+
+        options = []
+        for level in self.levels:
+            if level == from_level:
+                continue
+            if level == "low" and isinstance(age, int) and age >= 27:
+                continue
+            options.append(level.upper())
+
+        if not options:
+            QMessageBox.warning(self, "Reassign Player", "No valid destination rosters.")
+            return
+
         choice, ok = QInputDialog.getItem(
             self, "Reassign Player", "Move to:", options, 0, False
         )
