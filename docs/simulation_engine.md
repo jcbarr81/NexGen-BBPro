@@ -94,5 +94,7 @@ Key entries now available include:
   toward an even ground/fly distribution.
 - **`sprayAnglePLPct`** – pull/line tendency applied to spray angle calculations.
 - **`minMisreadContact`** – minimum contact quality applied when a batter
-  completely misidentifies a pitch.
+  completely misidentifies a pitch.  The value acts as a floor scaled by the
+  batter's contact rating so weak hitters still produce occasional foul tips
+  without generating excessive hits.
 

@@ -53,6 +53,46 @@ def test_misidentification_reduces_contact():
     assert contact == 0.0
 
 
+def test_misread_contact_has_scaled_floor():
+    cfg = make_cfg(
+        idRatingBase=0,
+        idRatingCHPct=0,
+        idRatingExpPct=0,
+        idRatingPitchRatPct=0,
+        minMisreadContact=0.2,
+    )
+    ai = BatterAI(cfg)
+    pitcher = make_pitcher("p1")
+
+    batter_low = make_player("low", ch=20)
+    batter_high = make_player("high", ch=80)
+
+    swing_low, contact_low = ai.decide_swing(
+        batter_low,
+        pitcher,
+        pitch_type="fb",
+        balls=0,
+        strikes=0,
+        dist=0,
+        random_value=0.0,
+    )
+
+    swing_high, contact_high = ai.decide_swing(
+        batter_high,
+        pitcher,
+        pitch_type="fb",
+        balls=0,
+        strikes=0,
+        dist=0,
+        random_value=0.0,
+    )
+
+    assert swing_low is True and swing_high is True
+    assert contact_low == pytest.approx(0.04)
+    assert contact_high == pytest.approx(0.16)
+    assert contact_high > contact_low
+
+
 def test_primary_look_adjust_increases_swings():
     cfg = load_config()
     cfg.values.update(
