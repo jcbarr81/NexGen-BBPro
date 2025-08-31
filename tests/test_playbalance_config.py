@@ -2,6 +2,7 @@ import logic.playbalance_config as playbalance_config
 from logic.playbalance_config import PlayBalanceConfig
 from logic.simulation import GameSimulation, TeamState, BatterState
 from tests.test_physics import make_player, make_pitcher, MockRandom
+import pytest
 
 
 def test_playbalance_config_defaults():
@@ -14,7 +15,8 @@ def test_playbalance_config_defaults():
     assert cfg.exit_velo_ph_pct == 0
     assert cfg.vert_angle_gf_pct == 0
     assert cfg.spray_angle_pl_pct == 0
-    assert cfg.foulStrikeBasePct == 30.0
+    assert cfg.foulPitchBasePct == 18.3
+    assert cfg.foulStrikeBasePct == pytest.approx(27.8, abs=0.01)
     assert cfg.foulContactTrendPct == 1.5
     assert cfg.minMisreadContact == 0.15
 
