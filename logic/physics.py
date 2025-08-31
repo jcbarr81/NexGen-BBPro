@@ -445,10 +445,11 @@ class Physics:
         velocities.
         """
 
-        speed_mph = 50 + ph * 0.5
+        # Scale down raw power so balls carry a bit less distance
+        speed_mph = 50 + ph * 0.45
         speed_fps = speed_mph * 5280 / 3600
 
-        power_adjust = (ph - 50) * 0.1
+        power_adjust = (ph - 50) * 0.08
         vert_angle = swing_angle + vertical_hit_angle + power_adjust
         horiz_angle = -45 + pl * 0.9
 

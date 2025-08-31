@@ -127,17 +127,17 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
-    "exitVeloBase": 0,
+    "exitVeloBase": -3,
     "exitVeloPHPct": 0,
-    "vertAngleGFPct": 0,
+    "vertAngleGFPct": -5,
     "sprayAnglePLPct": 0,
-    "groundBallBaseRate": 45,
-    "flyBallBaseRate": 55,
+    "groundBallBaseRate": 50,
+    "flyBallBaseRate": 50,
     # Hit type distribution reflecting MLB averages
     "hit1BProb": 64,
     "hit2BProb": 20,
     "hit3BProb": 2,
-    "hitHRProb": 14,
+    "hitHRProb": 10,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls; strike-based rate is derived from all pitches.
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,

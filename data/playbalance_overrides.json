@@ -1,4 +1,9 @@
 {
+  "exitVeloBase": -3,
+  "vertAngleGFPct": -5,
+  "groundBallBaseRate": 50,
+  "flyBallBaseRate": 50,
+  "hitHRProb": 10,
   "idRatingBase": 44,
   "idRatingCHPct": 90,
   "idRatingExpPct": 80,
