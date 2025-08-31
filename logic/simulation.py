@@ -1437,7 +1437,7 @@ class GameSimulation:
         bat_speed = self.physics.bat_speed(batter.ph, pitch_speed=pitch_speed)
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
         swing_angle = self.physics.swing_angle(batter.gf)
-        vert_angle = self.physics.vertical_hit_angle()
+        vert_angle = self.physics.vertical_hit_angle(gf=batter.gf)
         vx, vy, vz = self.physics.launch_vector(
             getattr(batter, "ph", 50),
             getattr(batter, "pl", 50),
@@ -1498,7 +1498,7 @@ class GameSimulation:
         bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
         # Calculate and store angles for potential future physics steps.
         swing_angle = self.physics.swing_angle(batter.gf)
-        vert_base = abs(self.physics.vertical_hit_angle())
+        vert_base = abs(self.physics.vertical_hit_angle(gf=batter.gf))
         power_adjust = (getattr(batter, "ph", 50) - 50) * 0.1
         gb = self.config.ground_ball_base_rate
         fb = self.config.fly_ball_base_rate

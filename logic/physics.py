@@ -316,11 +316,14 @@ class Physics:
     # ------------------------------------------------------------------
     # Vertical hit angle
     # ------------------------------------------------------------------
-    def vertical_hit_angle(self, swing_type: str = "normal") -> float:
+    def vertical_hit_angle(self, swing_type: str = "normal", gf: int = 50) -> float:
         """Return vertical launch angle offset for ``swing_type``.
 
-        The original game determines the vertical angle of the ball off the bat
-        by rolling a configurable number of dice.  Each swing type uses its own
+        ``gf`` is the batter's ground/fly rating.  When the configuration
+        entry ``vertAngleGFPct`` is non-zero the angle is nudged by ``gf`` so
+        high values yield more fly balls and low values more grounders.  The
+        original game determines the vertical angle of the ball off the bat by
+        rolling a configurable number of dice.  Each swing type uses its own
         ``hitAngleCount*``, ``hitAngleFaces*`` and ``hitAngleBase*`` values from
         :class:`PlayBalanceConfig`.  The dice results are summed, adjusted by the
         base value and then converted into an angle between ``-90`` and ``+90``
@@ -338,7 +341,12 @@ class Physics:
             roll += self.rng.randint(1, max(1, faces))
 
         roll = max(1, min(59, roll))
-        return (roll - 30) * (180.0 / 58.0)
+        angle = (roll - 30) * (180.0 / 58.0)
+
+        gf_pct = getattr(self.config, "vertAngleGFPct")
+        angle += (gf - 50) * gf_pct / 100.0
+
+        return angle
 
     # ------------------------------------------------------------------
     # Ball physics
