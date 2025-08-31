@@ -26,16 +26,24 @@ class LineupEditor(QDialog):
         self.field_label = QLabel()
         field_path = get_base_dir() / "assets" / "field_diagram.png"
         if field_path.exists():
-            pixmap = QPixmap(str(field_path)).scaledToWidth(400, Qt.TransformationMode.SmoothTransformation)
+            pixmap = QPixmap(str(field_path)).scaledToWidth(
+                400, Qt.TransformationMode.SmoothTransformation
+            )
             self.field_label.setPixmap(pixmap)
+            overlay_w, overlay_h = pixmap.width(), pixmap.height()
         else:
             self.field_label.setText("Field Image Placeholder")
             self.field_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            overlay_w, overlay_h = 400, 500
+        self.field_label.setFixedSize(overlay_w, overlay_h)
         field_layout.addWidget(self.field_label)
 
         self.field_overlay = QWidget(self.field_label)
-        self.field_overlay.setGeometry(0, 0, 400, 500)
-        self.field_overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.field_overlay.setGeometry(0, 0, overlay_w, overlay_h)
+        self.field_overlay.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents
+        )
+        self.field_overlay.setStyleSheet("background: transparent;")
 
         self.position_labels = {}
         y_offset = 10
@@ -80,9 +88,10 @@ class LineupEditor(QDialog):
         self.position_dropdowns = []
 
         self.players_dict = self.load_players_dict()
+        self.act_level_ids = self.get_act_level_ids()
         self.act_players = [
             (pid, pdata["name"]) for pid, pdata in self.players_dict.items()
-            if not pdata.get("is_pitcher") and pid in self.get_act_level_ids()
+            if not pdata.get("is_pitcher") and pid in self.act_level_ids
         ]
 
         for i in range(9):
@@ -271,10 +280,14 @@ class LineupEditor(QDialog):
 
     def update_bench_display(self):
         used_ids = set(self.player_dropdowns[i].currentData() for i in range(9))
-        act_ids = self.get_act_level_ids()
         bench_players = sorted(
-            [pdata["name"] for pid, pdata in self.players_dict.items()
-             if pid in act_ids and pid not in used_ids and not get_role(pdata)]
+            [
+                pdata["name"]
+                for pid, pdata in self.players_dict.items()
+                if pid in self.act_level_ids
+                and pid not in used_ids
+                and not get_role(pdata)
+            ]
         )
 
         columns = [[], [], []]
@@ -332,7 +345,7 @@ class LineupEditor(QDialog):
         dropdown = self.player_dropdowns[index]
         dropdown.clear()
         for pid, pdata in self.players_dict.items():
-            if pid not in self.get_act_level_ids():
+            if pid not in self.act_level_ids:
                 continue
             primary = pdata.get("primary_position")
             others = pdata.get("other_positions", [])
