@@ -23,7 +23,7 @@ def test_playbalance_config_defaults():
     assert cfg.foulPitchBasePct == 18.3
     assert cfg.foulStrikeBasePct == pytest.approx(27.8, abs=0.01)
     assert cfg.foulContactTrendPct == 1.5
-    assert cfg.minMisreadContact == 0.2
+    assert cfg.minMisreadContact == 0.4
 
     # Pitcher AI defaults
     assert cfg.pitchRatVariationCount == 1
