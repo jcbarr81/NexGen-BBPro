@@ -141,6 +141,12 @@ _DEFAULTS: Dict[str, Any] = {
     "hit2BProb": 20,
     "hit3BProb": 2,
     "hitHRProb": 10,
+    # Hit probability tuning ----------------------------------------
+    "hitProbBase": 0.02,
+    "contactFactorBase": 0.8,
+    "contactFactorDiv": 280.0,
+    "movementFactorMin": 0.15,
+    "movementFactorDiv": 90.0,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls; strike-based rate is derived from all pitches.
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
@@ -649,6 +655,31 @@ class PlayBalanceConfig:
     def fly_ball_base_rate(self) -> int:
         """Baseline percentage of batted balls that are fly balls."""
         return int(self.flyBallBaseRate)
+
+    @property
+    def hit_prob_base(self) -> float:
+        """Baseline additive probability for a ball in play to become a hit."""
+        return float(self.hitProbBase)
+
+    @property
+    def contact_factor_base(self) -> float:
+        """Base multiplier applied to the batter's contact rating."""
+        return float(self.contactFactorBase)
+
+    @property
+    def contact_factor_div(self) -> float:
+        """Divisor for converting contact rating into the hit calculation."""
+        return float(self.contactFactorDiv)
+
+    @property
+    def movement_factor_min(self) -> float:
+        """Minimum adjustment from pitcher movement in hit probability."""
+        return float(self.movementFactorMin)
+
+    @property
+    def movement_factor_div(self) -> float:
+        """Divisor for scaling pitcher movement in the hit calculation."""
+        return float(self.movementFactorDiv)
 
     # ------------------------------------------------------------------
     # Mapping style helpers
