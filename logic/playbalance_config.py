@@ -12,6 +12,10 @@ from .pbini_loader import load_pbini
 DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
+# MLB averages used to derive strike-based foul rates from all pitches.
+_FOUL_PITCH_BASE_PCT = 18.3  # Percent of all pitches that are fouls
+_LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
+
 # Default values for PlayBalance configuration entries used throughout the
 # simplified game logic.  Missing keys will fall back to these values when
 # accessed as attributes.  The majority of values default to ``0`` which keeps
@@ -133,7 +137,11 @@ _DEFAULTS: Dict[str, Any] = {
     "hit3BProb": 2,
     "hitHRProb": 14,
     # Foul ball tuning -----------------------------------------------
-    "foulStrikeBasePct": 30.0,
+    # Percentages for foul balls; strike-based rate is derived from all pitches.
+    "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
+    "foulStrikeBasePct": round(
+        _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
+    ),
     "foulContactTrendPct": 1.5,
     "ballInPlayOuts": 1,
     # Pitcher AI ------------------------------------------------------

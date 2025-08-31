@@ -1539,8 +1539,8 @@ minMisreadContact=0.15          ; Minimum contact quality when a batter
 ;                                  completely misidentifies a pitch
 ;
 ; FOUL BALL RATES
-; Base foul-strike percentage and change per 20 pt contact edge
-foulStrikeBasePct=30.0
+; Base foul-strike percentage derived from an 18.3% foul-per-pitch rate
+foulStrikeBasePct=27.8
 foulContactTrendPct=1.5
 ;
 ; AVOIDING HIT BY PITCH
