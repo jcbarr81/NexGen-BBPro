@@ -181,7 +181,7 @@ class ReassignPlayersDialog(QDialog):
     def _update_counts(self) -> None:
         """Refresh roster counts displayed above each column."""
         for level, label in self.labels.items():
-            count = len(getattr(self.roster, level))
+            count = self.lists[level].count()
             max_count = self.max_counts.get(level)
             label.setText(f"{level.upper()} ({count}/{max_count})")
 
