@@ -1384,22 +1384,22 @@ idRatingTimingWeight=100    ; Percent multiplier on chance to ID pitch timing
 ; result so that it centers on 0.  Note that die can have an odd number of
 ; faces.
 ;
-timingVeryBadThresh=55      ; Max base ID chance to use with this curve
+timingVeryBadThresh=50      ; Max base ID chance to use with this curve
 timingVeryBadCount=7        ; number of die used
 timingVeryBadFaces=16       ; number of sides to each die
 timingVeryBadBase=-59       ; number to add to result
 ;
-timingBadThresh=70
+timingBadThresh=65
 timingBadCount=7
 timingBadFaces=16
 timingBadBase=-59
 ;
-timingMedThresh=80
+timingMedThresh=75
 timingMedCount=7
 timingMedFaces=15
 timingMedBase=-56
 ;
-timingGoodThresh=86
+timingGoodThresh=82
 timingGoodCount=7
 timingGoodFaces=15
 timingGoodBase=-56
@@ -1496,25 +1496,25 @@ disciplineRatingNoPitchesAdjust=0       ; If the pitcher has not thrown any
 ;                                          pitches in the game
 disciplineRatingScoringPosAdjust=0      ; With runners in scoring position
 disciplineRatingOnThird01OutsAdjust=0   ; With runner on 3rd, less than 2 outs
-disciplineRatingPlusZoneAdjust=-10      ; Pitch is in it's plus zone
-disciplineRatingMinusZoneAdjust=-35     ; Pitch is in it's minus zone
-disciplineRatingLocNextToLookAdjust=-10 ; Pitch is in location next to look loc
-disciplineRatingFBDownMiddleAdjust=-45  ; Pitch is a fastball down the middle
+disciplineRatingPlusZoneAdjust=-5      ; Pitch is in it's plus zone
+disciplineRatingMinusZoneAdjust=-25     ; Pitch is in it's minus zone
+disciplineRatingLocNextToLookAdjust=-5 ; Pitch is in location next to look loc
+disciplineRatingFBDownMiddleAdjust=-30  ; Pitch is a fastball down the middle
 ;
 ; Adjustments to discipline based on the pitch count
 ;
-disciplineRating00CountAdjust=0     ; Adjustment on 0-0 counts
-disciplineRating01CountAdjust=30    ; Adjustment on 0-1 counts
-disciplineRating02CountAdjust=10    ; Adjustment on 0-2 counts
-disciplineRating10CountAdjust=-10   ; Adjustment on 1-0 counts
-disciplineRating11CountAdjust=10    ; Adjustment on 1-1 counts
-disciplineRating12CountAdjust=0     ; Adjustment on 1-2 counts
-disciplineRating20CountAdjust=-5    ; Adjustment on 2-0 counts
-disciplineRating21CountAdjust=5     ; Adjustment on 2-1 counts
-disciplineRating22CountAdjust=10    ; Adjustment on 2-2 counts
-disciplineRating30CountAdjust=55    ; Adjustment on 3-0 counts
-disciplineRating31CountAdjust=0     ; Adjustment on 3-1 counts
-disciplineRating32CountAdjust=10    ; Adjustment on 3-2 counts
+disciplineRating00CountAdjust=5     ; Adjustment on 0-0 counts
+disciplineRating01CountAdjust=35    ; Adjustment on 0-1 counts
+disciplineRating02CountAdjust=15    ; Adjustment on 0-2 counts
+disciplineRating10CountAdjust=-5   ; Adjustment on 1-0 counts
+disciplineRating11CountAdjust=15    ; Adjustment on 1-1 counts
+disciplineRating12CountAdjust=5     ; Adjustment on 1-2 counts
+disciplineRating20CountAdjust=0    ; Adjustment on 2-0 counts
+disciplineRating21CountAdjust=10     ; Adjustment on 2-1 counts
+disciplineRating22CountAdjust=15    ; Adjustment on 2-2 counts
+disciplineRating30CountAdjust=60    ; Adjustment on 3-0 counts
+disciplineRating31CountAdjust=5     ; Adjustment on 3-1 counts
+disciplineRating32CountAdjust=15    ; Adjustment on 3-2 counts
 ;
 ; CHECK SWING CHANCE
 ; If the batter has started his swing then determines that the actual pitch
@@ -1523,19 +1523,19 @@ disciplineRating32CountAdjust=10    ; Adjustment on 3-2 counts
 ; swing.  The following entries determine his chance of successfully checking
 ; his swing.
 ;
-checkChanceBasePower=100    ; Base chance to check a Power swing
-checkChanceBaseNormal=200   ; Base chance to check a Normal swing
-checkChanceBaseContact=300  ; Base chance to check a Contact swing
-checkChanceBaseBunt=100     ; Base chance to check a Bunt swing
-checkChanceCHPctPower=200   ; Pct mult to CH to add to base for Power swing
-checkChanceCHPctNormal=240  ; Pct mult to CH to add to base for Normal swing
-checkChanceCHPctContact=280 ; Pct mult to CH to add to base for Contact swing
+checkChanceBasePower=150    ; Base chance to check a Power swing
+checkChanceBaseNormal=250   ; Base chance to check a Normal swing
+checkChanceBaseContact=350  ; Base chance to check a Contact swing
+checkChanceBaseBunt=150     ; Base chance to check a Bunt swing
+checkChanceCHPctPower=225   ; Pct mult to CH to add to base for Power swing
+checkChanceCHPctNormal=265  ; Pct mult to CH to add to base for Normal swing
+checkChanceCHPctContact=305 ; Pct mult to CH to add to base for Contact swing
 checkChanceCHPctBunt=0      ; Pct mult to CH to add to base for Bunt swing
 failedCheckContactChance = 0   ; If a player checks his swing and the bat
 ;                                  happens to be in the way of the ball, this
 ;                                  is the percent of time that contact will
 ;                                  actually be made
-minMisreadContact=0.15          ; Minimum contact quality when a batter
+minMisreadContact=0.2          ; Minimum contact quality when a batter
 ;                                  completely misidentifies a pitch
 ;
 ; FOUL BALL RATES
