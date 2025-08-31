@@ -171,6 +171,11 @@ _DEFAULTS: Dict[str, Any] = {
     "sureStrikeDist": 4,
     "closeStrikeDist": 5,
     "closeBallDist": 4,
+    # Baseline swing probabilities reflecting MLB averages
+    "swingProbSureStrike": 0.75,
+    "swingProbCloseStrike": 0.5,
+    "swingProbCloseBall": 0.35,
+    "swingProbSureBall": 0.1,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
