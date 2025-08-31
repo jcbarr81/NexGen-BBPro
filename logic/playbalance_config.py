@@ -145,8 +145,8 @@ _DEFAULTS: Dict[str, Any] = {
     "hitProbBase": 0.02,
     "contactFactorBase": 0.8,
     "contactFactorDiv": 280.0,
-    "movementFactorMin": 0.15,
-    "movementFactorDiv": 90.0,
+    "movementFactorMin": 0.3,
+    "movementImpactScale": 1.0,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls; strike-based rate is derived from all pitches.
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
@@ -682,9 +682,9 @@ class PlayBalanceConfig:
         return float(self.movementFactorMin)
 
     @property
-    def movement_factor_div(self) -> float:
-        """Divisor for scaling pitcher movement in the hit calculation."""
-        return float(self.movementFactorDiv)
+    def movement_impact_scale(self) -> float:
+        """Scale applied to pitcher movement's effect in hit probability."""
+        return float(self.movementImpactScale)
 
     # ------------------------------------------------------------------
     # Mapping style helpers
