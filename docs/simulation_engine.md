@@ -58,33 +58,13 @@ impact【F:logic/physics.py†L8-L75】【F:logic/physics.py†L92-L130】.
 
 ## Foul Balls
 
-Foul tips are modeled through `_foul_probability`, which derives the chance of a
-foul ball from player ratings, pitch location and configuration. The formula
-starts with `foulStrikeBasePct`—the share of strikes that are fouls in MLB. It is
-derived from an `18.3%` foul-per-pitch rate and a `65.9%` strike rate, yielding a
-baseline `27.8%` of strikes that become fouls—and adjusts it by
-`foulContactTrendPct` (default 1.5 percentage points) for every 20 point contact
-edge the batter holds over the pitcher. The resulting percentage is converted to
-a foul-to-balls-in-play ratio and then scaled so that an average matchup yields a
-1:1 split between foul balls and contacted pitches put in play.
-Out-of-zone distance reduces the probability while a complete pitch misread
-boosts it, nudging such swings toward foul tips instead of whiffs. The final
-probability is clamped between 0 and 0.5 to avoid unrealistic extremes【F:logic/simulation.py†L1339-L1369】.
-
-Historical foul-strike rates have changed gradually over time:
-
-| Season | Foul/Strike % |
-|-------:|--------------:|
-| 1988   | 23.0% |
-| 1998   | 25.1% |
-| 2008   | 26.4% |
-| 2018   | 27.3% |
-| 2023   | 27.8% |
-
-To explore these eras, tweak the `PlayBalanceConfig` values. Setting
-`foulStrikeBasePct` to one of the percentages above shifts the league-wide foul
-rate, while `foulContactTrendPct` controls how strongly batter contact versus
-pitcher movement affects foul frequency【F:logic/playbalance_config.py†L136-L138】.
+MLB pitch tracking shows roughly **18.3%** of all pitches are fouled off. When
+batters put the ball in play, about **42.3%** become grounders and roughly
+**30–35%** are fly balls, with the remainder line drives or bunts. These averages
+seed the simulation's batted-ball model. `PlayBalanceConfig` exposes knobs to
+tune them: `foulPitchBasePct` sets the foul-per-pitch rate【F:logic/playbalance_config.py†L142-L147】,
+while `groundBallBaseRate` and `flyBallBaseRate` establish grounder and fly-ball
+shares that influence vertical launch angles【F:logic/playbalance_config.py†L134-L135】.
 
 ## Statistics
 
@@ -103,7 +83,8 @@ Key entries now available include:
 
 - **`exitVeloBase`** – baseline exit velocity applied to all batted balls.
 - **`exitVeloPHPct`** – percentage boost to exit velocity for pinch hitters.
-- **`vertAngleGFPct`** – ground/fly ratio adjustment for vertical launch angles.
+- **`groundBallBaseRate`** – baseline percentage of balls in play that become grounders【F:logic/playbalance_config.py†L134】.
+- **`flyBallBaseRate`** – baseline percentage of balls in play that become fly balls【F:logic/playbalance_config.py†L135】.
 - **`sprayAnglePLPct`** – pull/line tendency applied to spray angle calculations.
 - **`minMisreadContact`** – minimum contact quality applied when a batter
   completely misidentifies a pitch.
