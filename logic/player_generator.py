@@ -145,15 +145,15 @@ PRIMARY_POSITION_WEIGHTS = {
 # values were taken from the original ARR data file (lines 71-86) and represent
 # how many parts of a shared rating pool should be assigned to each attribute.
 HITTER_RATING_WEIGHTS: Dict[str, Dict[str, int]] = {
-    "P": {"ch": 20, "ph": 127, "sp": 393, "fa": 557, "arm": 0},
-    "C": {"ch": 169, "ph": 183, "sp": 166, "fa": 214, "arm": 269},
-    "1B": {"ch": 193, "ph": 198, "sp": 163, "fa": 226, "arm": 221},
-    "2B": {"ch": 180, "ph": 155, "sp": 206, "fa": 220, "arm": 239},
-    "SS": {"ch": 167, "ph": 153, "sp": 199, "fa": 225, "arm": 256},
-    "3B": {"ch": 181, "ph": 182, "sp": 175, "fa": 221, "arm": 240},
-    "LF": {"ch": 175, "ph": 185, "sp": 202, "fa": 218, "arm": 220},
-    "CF": {"ch": 182, "ph": 164, "sp": 235, "fa": 206, "arm": 213},
-    "RF": {"ch": 173, "ph": 195, "sp": 187, "fa": 212, "arm": 233},
+    "P": {"ch": 40, "ph": 107, "sp": 393, "fa": 557, "arm": 0},
+    "C": {"ch": 189, "ph": 163, "sp": 166, "fa": 214, "arm": 269},
+    "1B": {"ch": 213, "ph": 178, "sp": 163, "fa": 226, "arm": 221},
+    "2B": {"ch": 200, "ph": 135, "sp": 206, "fa": 220, "arm": 239},
+    "SS": {"ch": 187, "ph": 133, "sp": 199, "fa": 225, "arm": 256},
+    "3B": {"ch": 201, "ph": 162, "sp": 175, "fa": 221, "arm": 240},
+    "LF": {"ch": 195, "ph": 165, "sp": 202, "fa": 218, "arm": 220},
+    "CF": {"ch": 202, "ph": 144, "sp": 235, "fa": 206, "arm": 213},
+    "RF": {"ch": 193, "ph": 175, "sp": 187, "fa": 212, "arm": 233},
 }
 
 PITCHER_RATING_WEIGHTS: Dict[str, int] = {
