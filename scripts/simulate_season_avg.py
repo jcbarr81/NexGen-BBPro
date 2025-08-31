@@ -188,7 +188,7 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
     # pickling errors, so fall back to a simple sequential loop when the
     # ``spawn`` method is active.  This keeps the function usable on Windows
     # while still taking advantage of multiprocessing on Unix-like systems.
-    use_pool = mp.get_start_method(allow_none=True) != "spawn"
+    use_pool = mp.get_start_method() != "spawn"
 
     if use_pool:
         with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
