@@ -65,10 +65,10 @@ seed the simulation's batted-ball model. `PlayBalanceConfig` exposes knobs to
 tune them: `foulPitchBasePct` sets the foul-per-pitch rate【F:logic/playbalance_config.py†L142-L147】,
 while `groundBallBaseRate` and `flyBallBaseRate` establish grounder and fly-ball
 shares that influence vertical launch angles【F:logic/playbalance_config.py†L134-L135】.
-`vertAngleGFPct` further adjusts the vertical angle based on a batter's
-ground/fly rating—positive values push fly-ball hitters to loft the ball and
-ground-ball hitters to keep it down. The default of ``0`` preserves the MLB
-average split of roughly 45% grounders and 55% flies.
+A slight negative `vertAngleGFPct` flattens trajectories, nudging extreme
+ground- or fly-ball hitters toward the middle. The defaults now bias outcomes
+toward an even **50/50** split rather than the previous MLB-average of roughly
+45% grounders and 55% flies.
 
 ## Statistics
 
@@ -90,8 +90,8 @@ Key entries now available include:
 - **`groundBallBaseRate`** – baseline percentage of balls in play that become grounders【F:logic/playbalance_config.py†L134】.
 - **`flyBallBaseRate`** – baseline percentage of balls in play that become fly balls【F:logic/playbalance_config.py†L135】.
 - **`vertAngleGFPct`** – percentage adjustment to vertical launch angle based on a
-  batter's ground/fly rating; the default ``0`` yields MLB-average ground/fly
-  proportions.
+  batter's ground/fly rating; the default ``-5`` gently flattens launch angles
+  toward an even ground/fly distribution.
 - **`sprayAnglePLPct`** – pull/line tendency applied to spray angle calculations.
 - **`minMisreadContact`** – minimum contact quality applied when a batter
   completely misidentifies a pitch.
