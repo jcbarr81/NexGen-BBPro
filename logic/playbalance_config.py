@@ -217,7 +217,7 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating30CountAdjust": 60,
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
-    "minMisreadContact": 0.2,
+    "minMisreadContact": 0.4,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
