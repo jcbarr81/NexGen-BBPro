@@ -1542,7 +1542,7 @@ class GameSimulation:
             temperature=self.temperature,
         )
         movement_factor = max(0.1, (100 - pitcher.movement) / 100.0)
-        contact_factor = 0.8 + getattr(batter, "ch", 50) / 250.0
+        contact_factor = 0.75 + getattr(batter, "ch", 50) / 300.0
         hit_prob = max(
             0.0,
             min(
@@ -1553,7 +1553,7 @@ class GameSimulation:
                     * contact_factor
                     * movement_factor
                 )
-                + 0.05,
+                + 0.02,
             ),
         )
         # Modify hit probability based on current defensive alignment.
