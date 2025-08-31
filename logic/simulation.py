@@ -1543,7 +1543,8 @@ class GameSimulation:
         )
         movement_factor = max(
             self.config.movement_factor_min,
-            (100 - pitcher.movement) / self.config.movement_factor_div,
+            ((100 - pitcher.movement) / 120)
+            * self.config.movement_impact_scale,
         )
         contact_factor = (
             self.config.contact_factor_base
