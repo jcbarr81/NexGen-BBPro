@@ -3,6 +3,7 @@ import random
 from logic.simulation import (
     BatterState,
     GameSimulation,
+    PitcherState,
     TeamState,
     generate_boxscore,
 )
@@ -862,8 +863,7 @@ def test_throw_error_results_in_roe(monkeypatch):
     pitcher = make_pitcher("p")
     defense = TeamState(lineup=[make_player("d")], bench=[], pitchers=[pitcher])
     offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
-    rng = MockRandom([0.0, 1.0, 1.0])
-    sim = GameSimulation(offense, defense, cfg, rng)
+    sim = GameSimulation(offense, defense, cfg, random.Random())
     batter_state = BatterState(batter)
     offense.lineup_stats[batter.player_id] = batter_state
 
@@ -873,14 +873,15 @@ def test_throw_error_results_in_roe(monkeypatch):
     monkeypatch.setattr(
         sim.physics, "landing_point", lambda vx, vy, vz: (px, py, 1.0)
     )
-    monkeypatch.setattr(
-        sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0.0
+    monkeypatch.setattr(sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0.0)
+    monkeypatch.setattr(sim.physics, "ball_bounce", lambda *args, **kwargs: (0.0, 0.0))
+    monkeypatch.setattr(sim.fielding_ai, "catch_action", lambda *a, **k: "throw")
+    monkeypatch.setattr(sim.fielding_ai, "catch_probability", lambda *a, **k: 1.0)
+    monkeypatch.setattr(sim.fielding_ai, "resolve_throw", lambda *a, **k: (False, True))
+    pitcher_state = PitcherState(pitcher)
+    bases, error = sim._swing_result(
+        batter, pitcher, defense, batter_state, pitcher_state, pitch_speed=50, rand=0.0
     )
-    monkeypatch.setattr(
-        sim.physics, "ball_bounce", lambda *args, **kwargs: (0.0, 0.0)
-    )
-
-    bases, error = sim._swing_result(batter, pitcher, defense, pitch_speed=50, rand=0.0)
     assert error and bases == 1
     sim._advance_runners(offense, defense, batter_state, bases=bases, error=error)
 

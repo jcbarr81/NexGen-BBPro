@@ -1,7 +1,12 @@
 import random
 
 from logic.field_geometry import Stadium
-from logic.simulation import GameSimulation, TeamState
+from logic.simulation import (
+    BatterState,
+    GameSimulation,
+    PitcherState,
+    TeamState,
+)
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import make_cfg
@@ -69,7 +74,11 @@ def test_custom_stadium_affects_hit_value(monkeypatch):
     monkeypatch.setattr(sim.physics, "ball_roll_distance", lambda *a, **k: 0.0)
     monkeypatch.setattr(sim.physics, "ball_bounce", lambda *a, **k: (0.0, 0.0))
 
-    bases, _ = sim._swing_result(batter, pitcher, home, pitch_speed=50, rand=0.0)
+    b_state = BatterState(batter)
+    p_state = PitcherState(pitcher)
+    bases, _ = sim._swing_result(
+        batter, pitcher, home, b_state, p_state, pitch_speed=50, rand=0.0
+    )
     assert bases == 3
 
     small = Stadium(left=300.0, center=300.0, right=300.0)
@@ -83,8 +92,10 @@ def test_custom_stadium_affects_hit_value(monkeypatch):
         sim_small.physics, "ball_bounce", lambda *a, **k: (0.0, 0.0)
     )
 
+    b_state = BatterState(batter)
+    p_state = PitcherState(pitcher)
     bases_small, _ = sim_small._swing_result(
-        batter, pitcher, home, pitch_speed=50, rand=0.0
+        batter, pitcher, home, b_state, p_state, pitch_speed=50, rand=0.0
     )
     assert bases_small == 4
 
