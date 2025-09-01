@@ -158,7 +158,7 @@ _DEFAULTS: Dict[str, Any] = {
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
     "foulContactTrendPct": 1.5,
-    "ballInPlayPitchPct": 70,
+    "ballInPlayPitchPct": 20,
     "ballInPlayOuts": 1,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
