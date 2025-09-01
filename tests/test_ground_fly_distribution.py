@@ -35,9 +35,11 @@ def test_ground_air_distribution():
         else:
             fly += 1
     gb_rate = cfg.ground_ball_base_rate
+    ld_rate = cfg.line_drive_base_rate
     fb_rate = cfg.fly_ball_base_rate
-    expected_ground = gb_rate / (gb_rate + fb_rate)
-    expected_air = fb_rate / (gb_rate + fb_rate)
+    total_rate = gb_rate + ld_rate + fb_rate
+    expected_ground = gb_rate / total_rate
+    expected_air = (ld_rate + fb_rate) / total_rate
     air = line + fly
     assert ground / total == pytest.approx(expected_ground, abs=0.02)
     assert air / total == pytest.approx(expected_air, abs=0.02)

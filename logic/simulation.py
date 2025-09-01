@@ -1514,19 +1514,27 @@ class GameSimulation:
         )
         power_adjust = (getattr(batter, "ph", 50) - 50) * 0.1
         gb = self.config.ground_ball_base_rate
+        ld = self.config.line_drive_base_rate
         fb = self.config.fly_ball_base_rate
-        total = max(1, gb + fb)
-        if self.rng.random() * total < gb:
+        total = max(1, gb + ld + fb)
+        roll = self.rng.random() * total
+        if roll < gb:
             vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
+            outcome = "ground"
+        elif roll < gb + ld:
+            vert_angle = max(0.0, vert_base - 4)
+            launch = swing_angle + vert_angle + power_adjust
+            if launch > 15:
+                vert_angle -= launch - 15
+            outcome = "line"
         else:
             vert_angle = max(0.0, vert_base - 4)
+            launch = swing_angle + vert_angle + power_adjust
+            if launch <= 15:
+                vert_angle += 16 - launch
+            outcome = "fly"
         launch_angle = swing_angle + vert_angle + power_adjust
-        if launch_angle < 0:
-            self.last_batted_ball_type = "ground"
-        elif launch_angle <= 15:
-            self.last_batted_ball_type = "line"
-        else:
-            self.last_batted_ball_type = "fly"
+        self.last_batted_ball_type = outcome
         self.last_batted_ball_angles = (swing_angle, vert_angle)
         if self.last_batted_ball_type == "ground":
             self._add_stat(batter_state, "gb")

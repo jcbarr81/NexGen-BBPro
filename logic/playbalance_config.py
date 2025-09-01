@@ -135,8 +135,10 @@ _DEFAULTS: Dict[str, Any] = {
     "exitVeloContactPct": 100,
     "vertAngleGFPct": 0,
     "sprayAnglePLPct": 0,
-    "groundBallBaseRate": 45,
-    "flyBallBaseRate": 55,
+    # Baseline batted ball type distribution (ground/line/fly)
+    "groundBallBaseRate": 44,
+    "flyBallBaseRate": 35,
+    "lineDriveBaseRate": 21,
     # Hit type distribution reflecting MLB averages
     "hit1BProb": 64,
     "hit2BProb": 20,
@@ -671,6 +673,11 @@ class PlayBalanceConfig:
     def fly_ball_base_rate(self) -> int:
         """Baseline percentage of batted balls that are fly balls."""
         return int(self.flyBallBaseRate)
+
+    @property
+    def line_drive_base_rate(self) -> int:
+        """Baseline percentage of batted balls that are line drives."""
+        return int(self.lineDriveBaseRate)
 
     @property
     def hit_prob_base(self) -> float:
