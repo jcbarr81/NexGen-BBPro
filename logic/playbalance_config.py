@@ -184,10 +184,10 @@ _DEFAULTS: Dict[str, Any] = {
     # Baseline swing probabilities reflecting MLB averages
     "swingProbSureStrike": 0.85,
     "swingProbCloseStrike": 0.6,
-    "swingProbCloseBall": 0.25,
+    "swingProbCloseBall": 0.3,
     "swingProbSureBall": 0.05,
     # Global swing probability scaling factor
-    "swingProbScale": 1.18,
+    "swingProbScale": 1.2,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
@@ -244,7 +244,7 @@ _DEFAULTS: Dict[str, Any] = {
     "minMisreadContact": 0.15,
     # Final contact multiplier applied to swing decisions
     # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
-    "contactQualityScale": 2.3,
+    "contactQualityScale": 1.0,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
