@@ -146,7 +146,7 @@ _DEFAULTS: Dict[str, Any] = {
     "hitHRProb": 10,
     # Hit probability tuning ----------------------------------------
     "hitProbBase": 0.03,
-    "contactFactorBase": 0.85,
+    "contactFactorBase": 1.0,
     "contactFactorDiv": 280.0,
     "movementFactorMin": 0.3,
     "movementImpactScale": 1.0,
