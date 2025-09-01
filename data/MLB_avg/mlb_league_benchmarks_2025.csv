@@ -1,0 +1,61 @@
+metric_key,description,value,unit,season,notes
+pitches_put_in_play_pct,Share of all pitches that result in a ball put into play,,proportion,2025_YTD,League-wide figure not reliably published; leave blank or compute from detailed pitch data
+bip_gb_pct,Ground-ball share of all balls in play,0.44,proportion,2025_YTD,Approx league range 0.43–0.44
+bip_fb_pct,Fly-ball share of all balls in play (excludes line drives),0.35,proportion,2025_YTD,Approx league range 0.33–0.36
+bip_ld_pct,Line-drive share of all balls in play,0.21,proportion,2025_YTD,Approx league range 0.21–0.24
+bip_double_play_pct,Share of balls in play that become double plays,0.028,proportion,2025_YTD,Rule-of-thumb derived from DP/game and outs; refine with BIP totals
+pitches_per_pa,Average pitches per plate appearance,3.86,pitches,2025_YTD,League average trend ~3.86 in 2025
+babip,Batting average on balls in play,0.291,rate,2025_YTD,League baseline near .300; YTD near .29x
+avg,Batting average,0.245,rate,2025_YTD,League AVG around .245 in 2025
+obp,On-base percentage,0.313,rate,2025_YTD,Approximated from 2025 league pages
+slg,Slugging percentage,0.392,rate,2025_YTD,Approximate league SLG in 2025
+swstr_pct,Swinging strike rate (share of all pitches that are swung at and missed),0.11,proportion,2025_YTD,League SwStr% ~10–11% in recent years
+called_third_strike_share_of_so,Share of strikeouts that end on a called third strike (strikeout looking),0.23,proportion,2025_YTD,Recent MLB seasons ~22–23%
+o_swing_pct,Outside-zone swing rate,,proportion,2025_YTD,
+z_swing_pct,In-zone swing rate,,proportion,2025_YTD,
+swing_pct,Overall swing rate,,proportion,2025_YTD,
+z_contact_pct,In-zone contact rate,,proportion,2025_YTD,
+o_contact_pct,Outside-zone contact rate,,proportion,2025_YTD,
+contact_pct,Overall contact rate,,proportion,2025_YTD,
+first_pitch_strike_pct,First-pitch strike percentage,,proportion,2025_YTD,
+zone_pct,Rate of pitches thrown in the strike zone,,proportion,2025_YTD,
+csw_pct,Called + swinging strikes percentage,,proportion,2025_YTD,
+avg_exit_velocity,Average exit velocity of batted balls,,mph,2025_YTD,
+avg_launch_angle,Average launch angle of batted balls,,degrees,2025_YTD,
+hard_hit_pct,Share of batted balls hit ≥95 mph,,proportion,2025_YTD,
+barrel_pct,Share of batted balls classified as barrels,,proportion,2025_YTD,
+sweet_spot_pct,Share of batted balls hit in 8–32° launch window,,proportion,2025_YTD,
+iffb_pct,Infield fly-ball percentage (of fly balls),,proportion,2025_YTD,
+pull_pct,Pulled-ball percentage,,proportion,2025_YTD,
+straight_pct,Up-the-middle percentage,,proportion,2025_YTD,
+oppo_pct,Opposite-field percentage,,proportion,2025_YTD,
+woba,Weighted On-Base Average,,rate,2025_YTD,
+xwoba,Expected wOBA (contact quality),,rate,2025_YTD,
+wrc_plus,"Weighted Runs Created Plus (park & era adj., 100 = average)",,index,2025_YTD,
+ops,On-base plus slugging,,rate,2025_YTD,
+ops_plus,"OPS+ (park & era adjusted, 100 = average)",,index,2025_YTD,
+iso,Isolated power (SLG - AVG),,rate,2025_YTD,
+sb_pct,Stolen-base success rate,,proportion,2025_YTD,
+sba_per_pa,Stolen-base attempt rate per plate appearance,,per_PA,2025_YTD,
+extra_base_advance_rate,Rate that runners take an extra base on hits,,proportion,2025_YTD,
+defensive_efficiency,Balls-in-play turned into outs (team/league DER),,rate,2025_YTD,
+oaa_index,Outs Above Average — league index for tuning defense,,index,2025_YTD,
+drs_index,Defensive Runs Saved — league index for tuning defense,,index,2025_YTD,
+k_pct,Strikeout rate (K%),,proportion,2025_YTD,
+bb_pct,Walk rate (BB%),,proportion,2025_YTD,
+hr_per_fb_pct,Home runs per fly ball,,proportion,2025_YTD,
+k_minus_bb_pct,K% minus BB%,,proportion,2025_YTD,
+fip,Fielding Independent Pitching,,rate,2025_YTD,
+xfip,Expected FIP (normalizes HR/FB),,rate,2025_YTD,
+siera,Skill-Interactive ERA,,rate,2025_YTD,
+tto_penalty_runs,Times-through-order penalty (runs/9 relative to first pass),,runs_per_9,2025_YTD,
+stamina_decay_rate,Pitcher stamina decay per pitch or per PA,,index,2025_YTD,
+park_factor_overall,Overall park factor (100 = neutral),,index,2025_YTD,
+park_factor_1b,Park factor for singles (100 = neutral),,index,2025_YTD,
+park_factor_2b,Park factor for doubles (100 = neutral),,index,2025_YTD,
+park_factor_3b,Park factor for triples (100 = neutral),,index,2025_YTD,
+park_factor_hr,Park factor for home runs (100 = neutral),,index,2025_YTD,
+weather_temp_mean,Average in-game temperature (league),,F,2025_YTD,
+wind_speed_mean,Average in-game wind speed (league),,mph,2025_YTD,
+umpire_called_strike_pct,Called strike rate (all pitches not swung at),,proportion,2025_YTD,
+catcher_framing_runs_index,Catcher framing impact index (100 = average),,index,2025_YTD,
