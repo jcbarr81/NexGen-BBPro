@@ -1382,46 +1382,46 @@ class GameSimulation:
     ) -> float:
         """Return foul ball probability derived from configuration and ratings.
 
-        ``foulStrikeBasePct`` represents the percentage of strikes that are
-        fouls in the source data. It is derived from an MLB foul-per-pitch rate
-        of ``18.3%`` and a league strike rate of ``65.9%`` which yields roughly
-        ``27.8%`` of strikes becoming fouls. ``foulContactTrendPct`` adds roughly
-        ``+1.5`` percentage points for every 20 point edge in batter contact over
-        pitcher movement. The percentage is converted to a foul-to-balls-in-play
-        ratio and then scaled so that an average matchup produces a 1:1 split
-        between foul balls and balls put in play.
+        ``foulPitchBasePct`` is the league-wide percentage of pitches that end
+        in a foul ball while ``foulStrikeBasePct`` expresses that rate on a
+        per-strike basis (~27.8% of strikes become fouls). ``ballInPlayPitchPct``
+        represents the share of all pitches put in play and is used together
+        with ``foulPitchBasePct`` to determine the overall contact rate. The
+        resulting conversion yields roughly 70% of contacted pitches as balls in
+        play and preserves the strike-based foul percentage without forcing a
+        1:1 split.
 
-        ``dist`` allows far out-of-zone pitches to reduce foul likelihood while
+        ``foulContactTrendPct`` adds roughly ``+1.5`` percentage points for
+        every 20 point edge in batter contact over pitcher movement. ``dist``
+        allows far out-of-zone pitches to reduce foul likelihood while
         ``misread`` boosts the chance so complete misreads produce foul tips
         instead of whiffs.
-
-        The final probability is clamped to ``0``–``0.5`` to avoid unrealistic
-        behaviour.
         """
 
         cfg = self.config
-        # Strike-based foul rate, derived from per-pitch data
-        base_pct = float(cfg.get("foulStrikeBasePct", 27.8))
+        strike_base_pct = float(cfg.get("foulStrikeBasePct", 27.8))
+        pitch_base_pct = float(cfg.get("foulPitchBasePct", 18.3)) / 100.0
+        bip_pitch_pct = float(cfg.get("ballInPlayPitchPct", 70.0)) / 100.0
         trend_pct = float(cfg.get("foulContactTrendPct", 1.5))
 
+        # Convert strike-based foul percentage to per-pitch using league strike
+        # rate derived from the base configuration
+        strike_rate = pitch_base_pct / (strike_base_pct / 100.0) if strike_base_pct else 0.0
+
         contact_delta = getattr(batter, "ch", 50) - getattr(pitcher, "movement", 50)
-        foul_pct = base_pct + (contact_delta / 20.0) * trend_pct
+        foul_pct = strike_base_pct + (contact_delta / 20.0) * trend_pct
         foul_pct = max(0.0, min(95.0, foul_pct))
 
-        foul_ratio = foul_pct / (100.0 - foul_pct)
-        prob = foul_ratio / (1.0 + foul_ratio)
-
-        base_ratio = base_pct / (100.0 - base_pct)
-        base_prob = base_ratio / (1.0 + base_ratio)
-        if base_prob:
-            prob *= 0.5 / base_prob
+        foul_per_pitch = strike_rate * (foul_pct / 100.0)
+        contact_rate = foul_per_pitch + bip_pitch_pct
+        prob = foul_per_pitch / contact_rate if contact_rate > 0 else 0.0
 
         if dist > 0:
             prob *= max(0.0, 1.0 - dist * 0.1)
         if misread:
             prob *= 1.5
 
-        return max(0.0, min(0.5, prob))
+        return max(0.0, min(1.0, prob))
 
     def _attempt_foul_catch(
         self,

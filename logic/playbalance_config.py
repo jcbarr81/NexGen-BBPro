@@ -149,12 +149,14 @@ _DEFAULTS: Dict[str, Any] = {
     "movementFactorMin": 0.3,
     "movementImpactScale": 1.0,
     # Foul ball tuning -----------------------------------------------
-    # Percentages for foul balls; strike-based rate is derived from all pitches.
+    # Percentages for foul balls and balls put in play; strike-based rate is
+    # derived from all pitches.
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
     "foulStrikeBasePct": round(
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
     "foulContactTrendPct": 1.5,
+    "ballInPlayPitchPct": 70,
     "ballInPlayOuts": 1,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
