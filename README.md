@@ -93,6 +93,12 @@ Run a full 162-game season and print average box score statistics with:
 python scripts/simulate_season_avg.py
 ```
 
+Or simulate a half 81-game season using:
+
+```bash
+python scripts/sim_halfseason_avg.py
+```
+
 For lengthy headless simulations consider running under
 [PyPy](https://www.pypy.org/) or invoking CPython with
 `python -O` to enable optimizations and remove asserts. PyPy's JIT can
