@@ -13,8 +13,8 @@ DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # MLB averages used to derive strike-based foul rates from all pitches.
-# Roughly 18 percent of MLB pitches are fouled off.
-_FOUL_PITCH_BASE_PCT = 18  # Percent of all pitches that are fouls
+# Roughly 24 percent of MLB pitches are fouled off in modern play.
+_FOUL_PITCH_BASE_PCT = 24  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
@@ -141,10 +141,10 @@ _DEFAULTS: Dict[str, Any] = {
     "flyBallBaseRate": 35,
     "lineDriveBaseRate": 21,
     # Hit type distribution reflecting MLB averages
-    "hit1BProb": 64,
+    "hit1BProb": 58,
     "hit2BProb": 20,
     "hit3BProb": 2,
-    "hitHRProb": 10,
+    "hitHRProb": 20,
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability; ~0.24 approximates a .240 average
     # after other modifiers.
@@ -161,9 +161,11 @@ _DEFAULTS: Dict[str, Any] = {
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
     "foulContactTrendPct": 1.5,
-    # Target roughly 18% of all pitches being put into play
-    "ballInPlayPitchPct": 18,
+    # Target roughly 25% of all pitches being put into play
+    "ballInPlayPitchPct": 25,
     "ballInPlayOuts": 1,
+    # Probability that a ground ball with a force at second becomes a double play
+    "doublePlayProb": 0.05,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 60,
     # Pitcher AI ------------------------------------------------------

@@ -1765,15 +1765,19 @@ class GameSimulation:
                         new_bp[1] = bp[0]
 
             if runner_on_first_out:
-                batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
-                relay_time = self.physics.reaction_delay("2B", 0) + self.physics.throw_time(0, 90, "2B")
-                if self.fielding_ai.should_relay_throw(relay_time, batter_time) and self.fielding_ai.should_tag_runner(relay_time, batter_time):
+                if self.rng.random() < self.config.get("doublePlayProb", 0):
                     outs += 1
                     self._add_stat(batter_state, "gidp")
                 else:
-                    new_bases[0] = batter_state
-                    new_bp[0] = defense.current_pitcher_state
-                    self._add_stat(batter_state, "fc")
+                    batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
+                    relay_time = self.physics.reaction_delay("2B", 0) + self.physics.throw_time(0, 90, "2B")
+                    if self.fielding_ai.should_relay_throw(relay_time, batter_time) and self.fielding_ai.should_tag_runner(relay_time, batter_time):
+                        outs += 1
+                        self._add_stat(batter_state, "gidp")
+                    else:
+                        new_bases[0] = batter_state
+                        new_bp[0] = defense.current_pitcher_state
+                        self._add_stat(batter_state, "fc")
             else:
                 new_bases[0] = batter_state
                 new_bp[0] = defense.current_pitcher_state
