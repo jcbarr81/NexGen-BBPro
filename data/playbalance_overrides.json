@@ -53,5 +53,7 @@
   "timingGoodBase": -56,
   "timingVeryGoodCount": 9,
   "timingVeryGoodFaces": 13,
-  "timingVeryGoodBase": -63
+  "timingVeryGoodBase": -63,
+  "controlScale": 225,
+  "controlBoxIncreaseEffCOPct": 15
 }
