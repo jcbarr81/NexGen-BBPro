@@ -58,11 +58,14 @@ impact【F:logic/physics.py†L8-L75】【F:logic/physics.py†L92-L130】.
 
 ## Foul Balls
 
-MLB pitch tracking shows roughly **18.3%** of all pitches are fouled off. When
-batters put the ball in play, about **42.3%** become grounders and roughly
+MLB pitch tracking shows roughly **18%** of all pitches are fouled off and a
+similar **18%** are put into play. When batters put the ball in play, about
+**42.3%** become grounders and roughly
 **30–35%** are fly balls, with the remainder line drives or bunts. These averages
 seed the simulation's batted-ball model. `PlayBalanceConfig` exposes knobs to
-tune them: `foulPitchBasePct` sets the foul-per-pitch rate【F:logic/playbalance_config.py†L142-L147】,
+tune them: `foulPitchBasePct` sets the foul-per-pitch rate and
+`ballInPlayPitchPct` the share of pitches turned into balls in play
+【F:logic/playbalance_config.py†L142-L148】【F:logic/playbalance_config.py†L154】,
 while `groundBallBaseRate` and `flyBallBaseRate` establish grounder and fly-ball
 shares that influence vertical launch angles【F:logic/playbalance_config.py†L134-L135】.
 A slight negative `vertAngleGFPct` flattens trajectories, nudging extreme

@@ -1,6 +1,6 @@
 {
   "ballAirResistancePct": 95,
-  "ballInPlayPitchPct": 40,
+  "ballInPlayPitchPct": 18,
   "catchBaseChance": 92,
   "contactFactorBase": 0.8,
   "contactFactorDiv": 350,
@@ -34,8 +34,8 @@
   "exitVeloPowerPct": 85,
   "flyBallBaseRate": 35,
   "foulContactTrendPct": 2.0,
-  "foulPitchBasePct": 15,
-  "foulStrikeBasePct": 31,
+  "foulPitchBasePct": 18,
+  "foulStrikeBasePct": 27,
   "groundBallBaseRate": 44,
   "hbpBatterStepOutChance": 60,
   "hitHRProb": 10,

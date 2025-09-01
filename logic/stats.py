@@ -44,6 +44,7 @@ def compute_batting_rates(stats: 'BatterState') -> Dict[str, float]:
     bb_pct = bb / pa if pa else 0.0
     k_pct = stats.so / pa if pa else 0.0
     bb_k = bb / stats.so if stats.so else 0.0
+    so_looking_pct = stats.so_looking / stats.so if stats.so else 0.0
     sb_den = stats.sb + stats.cs
     sb_pct = stats.sb / sb_den if sb_den else 0.0
     gb_pct = stats.gb / bip_den if bip_den else 0.0
@@ -62,6 +63,7 @@ def compute_batting_rates(stats: 'BatterState') -> Dict[str, float]:
         "bb_pct": bb_pct,
         "k_pct": k_pct,
         "bb_k": bb_k,
+        "so_looking_pct": so_looking_pct,
         "sb_pct": sb_pct,
         "gb_pct": gb_pct,
         "ld_pct": ld_pct,
@@ -128,6 +130,12 @@ def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
     fb_pct = stats.fb / bip_den if bip_den else 0.0
     gb_fb = stats.gb / stats.fb if stats.fb else 0.0
     ld_fb_ratio = stats.ld / stats.fb if stats.fb else 0.0
+    swings = stats.zone_swings + stats.o_zone_swings
+    contacts = stats.zone_contacts + stats.o_zone_contacts
+    swstr_pct = (
+        (swings - contacts) / stats.pitches_thrown if stats.pitches_thrown else 0.0
+    )
+    so_looking_pct = stats.so_looking / stats.so if stats.so else 0.0
 
     return {
         "h9": h9,
@@ -146,6 +154,8 @@ def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
         "ozone_pct": ozone_pct,
         "ozone_swing_pct": ozone_swing_pct,
         "ozone_contact_pct": ozone_contact_pct,
+        "swstr_pct": swstr_pct,
+        "so_looking_pct": so_looking_pct,
         "gb_pct": gb_pct,
         "ld_pct": ld_pct,
         "fb_pct": fb_pct,

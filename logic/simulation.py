@@ -52,6 +52,8 @@ class BatterState:
     ibb: int = 0  # Intentional walks
     hbp: int = 0  # Hit by pitch
     so: int = 0  # Strikeouts
+    so_looking: int = 0  # Called third strikes
+    so_swinging: int = 0  # Swinging strikeouts
     sh: int = 0  # Sacrifice hits
     sf: int = 0  # Sacrifice flies
     roe: int = 0  # Reached on error
@@ -90,6 +92,8 @@ class PitcherState:
     ibb: int = 0  # Intentional walks issued
     hbp: int = 0  # Hit batters
     so: int = 0  # Strikeouts
+    so_looking: int = 0  # Called third strikes
+    so_swinging: int = 0  # Swinging strikeouts
     wp: int = 0  # Wild pitches
     bk: int = 0  # Balks
     pk: int = 0  # Pickoffs
@@ -1345,6 +1349,12 @@ class GameSimulation:
             if strikes >= 3:
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
+                if swing:
+                    self._add_stat(batter_state, "so_swinging")
+                    pitcher_state.so_swinging += 1
+                else:
+                    self._add_stat(batter_state, "so_looking")
+                    pitcher_state.so_looking += 1
                 pitcher_state.so += 1
                 outs += 1
                 pitcher_state.toast += self.config.get("pitchScoringOut", 0)
