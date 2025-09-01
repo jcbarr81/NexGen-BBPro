@@ -185,7 +185,7 @@ _DEFAULTS: Dict[str, Any] = {
     "swingProbCloseBall": 0.25,
     "swingProbSureBall": 0.05,
     # Global swing probability scaling factor
-    "swingProbScale": 1.0,
+    "swingProbScale": 1.18,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
