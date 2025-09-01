@@ -71,6 +71,7 @@ _DEFAULTS: Dict[str, Any] = {
     "siControlBoxWidth": 1,
     "siControlBoxHeight": 1,
     "controlBoxIncreaseEffCOPct": 15,
+    "controlScale": 170,
     "speedReductionBase": 3,
     "speedReductionRange": 3,
     "speedReductionEffMOPct": 5,
@@ -167,6 +168,9 @@ _DEFAULTS: Dict[str, Any] = {
     "pitchObj00CountBestCenterWeight": 0,
     "pitchObj00CountFastCenterWeight": 0,
     "pitchObj00CountPlusWeight": 60,
+    "pitchObj10CountOutsideWeight": 30,
+    "pitchObj11CountOutsideWeight": 30,
+    "pitchObj20CountOutsideWeight": 30,
     # Batter AI -------------------------------------------------------
     "sureStrikeDist": 4,
     "closeStrikeDist": 5,
