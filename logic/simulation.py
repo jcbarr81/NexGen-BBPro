@@ -316,7 +316,7 @@ class GameSimulation:
     def _set_runner_leads(self, offense: TeamState) -> None:
         """Update lead state for runners on first or second base."""
 
-        long_speed = self.config.get("longLeadSpeed", 0)
+        long_speed = self.config.get("longLeadSpeed", 70)
         for base in (0, 1):
             runner = offense.bases[base]
             if runner is None:
@@ -1952,7 +1952,9 @@ class GameSimulation:
             fa = catcher_fs.player.fa if catcher_fs else 0
             delay = self.physics.reaction_delay("C", fa)
             tag_out = self.fielding_ai.should_tag_runner(delay, 10)
-            success_prob = 0.3 if tag_out else 0.7
+            tag_pct = self.config.get("stealSuccessTagOutPct", 20) / 100.0
+            safe_pct = self.config.get("stealSuccessSafePct", 60) / 100.0
+            success_prob = tag_pct if tag_out else safe_pct
             if self.rng.random() < success_prob:
                 ps_runner = offense.base_pitchers[base_idx]
                 offense.bases[base_idx] = None
