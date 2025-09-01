@@ -230,9 +230,9 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating30CountAdjust": 60,
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
-    "minMisreadContact": 0.3,
+    "minMisreadContact": 0.4,
     # Final contact multiplier applied to swing decisions
-    "contactQualityScale": 1.0,
+    "contactQualityScale": 1.5,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,

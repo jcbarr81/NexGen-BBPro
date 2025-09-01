@@ -97,4 +97,6 @@ Key entries now available include:
   completely misidentifies a pitch.  The value acts as a floor scaled by the
   batter's contact rating so weak hitters still produce occasional foul tips
   without generating excessive hits.
+- **`contactQualityScale`** – multiplier applied to raw contact quality.  Raising
+  this value increases fouls and balls in play, reducing strikeout rates.
 
