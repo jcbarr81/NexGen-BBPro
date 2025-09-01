@@ -238,10 +238,11 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating30CountAdjust": 60,
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
-    "minMisreadContact": 0.4,
+    # Baseline contact chance when the batter misreads the pitch
+    "minMisreadContact": 0.5,
     # Final contact multiplier applied to swing decisions
-    # Further increased to align strikeout rates with MLB norms
-    "contactQualityScale": 4.7,
+    # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
+    "contactQualityScale": 2.3,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
