@@ -98,6 +98,6 @@ Key entries now available include:
   batter's contact rating so weak hitters still produce occasional foul tips
   without generating excessive hits.
  - **`contactQualityScale`** – multiplier applied to raw contact quality.  The
-   default of **3.5** boosts contact to curb strikeouts; raising it further
-   increases fouls and balls in play while lowering whiff rates.
+   default of **4.7** boosts contact to curb strikeouts; increasing it further
+   produces more fouls and balls in play while lowering whiff rates.
 

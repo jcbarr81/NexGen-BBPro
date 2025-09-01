@@ -236,8 +236,8 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating32CountAdjust": 15,
     "minMisreadContact": 0.4,
     # Final contact multiplier applied to swing decisions
-    # Increased to encourage contact and curb extreme strikeout rates
-    "contactQualityScale": 3.5,
+    # Further increased to align strikeout rates with MLB norms
+    "contactQualityScale": 4.7,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
