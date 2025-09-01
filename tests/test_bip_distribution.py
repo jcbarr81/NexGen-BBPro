@@ -21,6 +21,9 @@ def test_bip_distribution():
     foul_pitch_pct = PB_CFG.foulPitchBasePct / 100.0
     bip_pitch_pct = PB_CFG.ballInPlayPitchPct / 100.0
     contact_rate = foul_pitch_pct + bip_pitch_pct
+    prob = GameSimulation._foul_probability(sim_stub, batter, pitcher)
+    expected_foul_pct = contact_rate * prob
+    expected_bip_pct = contact_rate - expected_foul_pct
 
     total_pitches = 100_000
     fouls = 0
@@ -37,5 +40,5 @@ def test_bip_distribution():
     bip_pct = balls_in_play / total_pitches
     foul_pct = fouls / total_pitches
 
-    assert bip_pct == pytest.approx(bip_pitch_pct, abs=0.02)
-    assert foul_pct == pytest.approx(foul_pitch_pct, abs=0.02)
+    assert bip_pct == pytest.approx(expected_bip_pct, abs=0.02)
+    assert foul_pct == pytest.approx(expected_foul_pct, abs=0.02)
