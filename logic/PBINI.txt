@@ -1364,10 +1364,10 @@ lookBestType32CountAdjust=0     ; Adjustment to best pitch on 3-2 counts
 ; pitch is based on the formula:
 ;       Base + (( CH + EXP + (100 - PitchRating) / 2 )
 ;
-idRatingBase=44             ; Base identification chance
-idRatingCHPct=90            ; Percent multiplier on CH component of formula
-idRatingExpPct=80           ; Percent multiplier on EXP component of formula
-idRatingPitchRatPct=100     ; Percent multiplier on Pitch component of formula
+idRatingBase=10             ; Base identification chance
+idRatingCHPct=40            ; Percent multiplier on CH component of formula
+idRatingExpPct=30           ; Percent multiplier on EXP component of formula
+idRatingPitchRatPct=0       ; Percent multiplier on Pitch component of formula
 idRatingTypeWeight=100      ; Percent multiplier on chance to ID pitch type
 idRatingLocWeight=100       ; Percent multiplier on chance to ID pitch location
 idRatingTimingWeight=100    ; Percent multiplier on chance to ID pitch timing
@@ -1535,7 +1535,7 @@ failedCheckContactChance = 0   ; If a player checks his swing and the bat
 ;                                  happens to be in the way of the ball, this
 ;                                  is the percent of time that contact will
 ;                                  actually be made
-minMisreadContact=0.2          ; Minimum contact quality when a batter
+minMisreadContact=0.15         ; Minimum contact quality when a batter
 ;                                  completely misidentifies a pitch
 ;
 ; FOUL BALL RATES

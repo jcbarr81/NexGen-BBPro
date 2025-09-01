@@ -211,10 +211,10 @@ _DEFAULTS: Dict[str, Any] = {
     "lookBestType31CountAdjust": 15,
     "lookBestType32CountAdjust": 0,
     # Pitch identification and discipline ---------------------------------
-    "idRatingBase": 50,
-    "idRatingCHPct": 90,
-    "idRatingExpPct": 80,
-    "idRatingPitchRatPct": 100,
+    "idRatingBase": 10,
+    "idRatingCHPct": 40,
+    "idRatingExpPct": 30,
+    "idRatingPitchRatPct": 0,
     "disciplineRatingBase": 0,
     "disciplineRatingCHPct": 150,
     "disciplineRatingExpPct": 100,
@@ -239,7 +239,7 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
     # Baseline contact chance when the batter misreads the pitch
-    "minMisreadContact": 0.5,
+    "minMisreadContact": 0.15,
     # Final contact multiplier applied to swing decisions
     # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
     "contactQualityScale": 2.3,
