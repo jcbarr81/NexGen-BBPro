@@ -39,8 +39,8 @@ class Stadium:
     left: float = 330.0
     center: float = 400.0
     right: float = 330.0
-    double: float = 200.0 / 380.0
-    triple: float = 360.0 / 380.0
+    double: float = 250.0 / 380.0
+    triple: float = 0.99
 
     def wall_distance(self, angle: float) -> float:
         """Return the distance to the wall at ``angle`` in radians.

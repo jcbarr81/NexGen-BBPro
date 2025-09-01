@@ -79,7 +79,7 @@ def test_custom_stadium_affects_hit_value(monkeypatch):
     bases, _ = sim._swing_result(
         batter, pitcher, home, b_state, p_state, pitch_speed=50, rand=0.0
     )
-    assert bases == 3
+    assert bases == 2
 
     small = Stadium(left=300.0, center=300.0, right=300.0)
     sim_small = GameSimulation(home, away, cfg, random.Random(), stadium=small)

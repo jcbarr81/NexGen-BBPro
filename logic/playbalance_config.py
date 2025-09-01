@@ -13,7 +13,7 @@ DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # MLB averages used to derive strike-based foul rates from all pitches.
-_FOUL_PITCH_BASE_PCT = 18.3  # Percent of all pitches that are fouls
+_FOUL_PITCH_BASE_PCT = 15  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
@@ -71,7 +71,7 @@ _DEFAULTS: Dict[str, Any] = {
     "siControlBoxWidth": 1,
     "siControlBoxHeight": 1,
     "controlBoxIncreaseEffCOPct": 15,
-    "controlScale": 170,
+    "controlScale": 110,
     "speedReductionBase": 3,
     "speedReductionRange": 3,
     "speedReductionEffMOPct": 5,
@@ -85,7 +85,7 @@ _DEFAULTS: Dict[str, Any] = {
     "swingAngleTenthDegreesOutsideAdjust": 0,
     "rollFrictionGrass": 12,
     "rollFrictionTurf": 10,
-    "ballAirResistancePct": 99,
+    "ballAirResistancePct": 95,
     "ballAltitudePct": 100,
     "ballBaseAltitude": 0,
     "ballTempPct": 33,
@@ -130,8 +130,8 @@ _DEFAULTS: Dict[str, Any] = {
     # Exit velocity and launch characteristics
     "exitVeloBase": 0,
     "exitVeloPHPct": 0,
-    "exitVeloPowerPct": 100,
-    "exitVeloNormalPct": 100,
+    "exitVeloPowerPct": 85,
+    "exitVeloNormalPct": 85,
     "exitVeloContactPct": 100,
     "vertAngleGFPct": 0,
     "sprayAnglePLPct": 0,
@@ -147,11 +147,11 @@ _DEFAULTS: Dict[str, Any] = {
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability; ~0.24 approximates a .240 average
     # after other modifiers.
-    "hitProbBase": 0.24,
-    "contactFactorBase": 1.0,
-    "contactFactorDiv": 280.0,
-    "movementFactorMin": 0.3,
-    "movementImpactScale": 1.0,
+    "hitProbBase": 0.06,
+    "contactFactorBase": 0.8,
+    "contactFactorDiv": 350,
+    "movementFactorMin": 0.2,
+    "movementImpactScale": 0.8,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
@@ -160,8 +160,10 @@ _DEFAULTS: Dict[str, Any] = {
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
     "foulContactTrendPct": 1.5,
-    "ballInPlayPitchPct": 20,
+    "ballInPlayPitchPct": 30,
     "ballInPlayOuts": 1,
+    # Hit by pitch avoidance ----------------------------------------
+    "hbpBatterStepOutChance": 60,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
     "pitchRatVariationFaces": 3,
@@ -182,12 +184,12 @@ _DEFAULTS: Dict[str, Any] = {
     "closeStrikeDist": 5,
     "closeBallDist": 4,
     # Baseline swing probabilities reflecting MLB averages
-    "swingProbSureStrike": 0.85,
-    "swingProbCloseStrike": 0.6,
+    "swingProbSureStrike": 0.9,
+    "swingProbCloseStrike": 0.7,
     "swingProbCloseBall": 0.3,
-    "swingProbSureBall": 0.05,
+    "swingProbSureBall": 0.1,
     # Global swing probability scaling factor
-    "swingProbScale": 1.2,
+    "swingProbScale": 1.0,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
@@ -276,6 +278,8 @@ _DEFAULTS: Dict[str, Any] = {
     "timingVeryGoodBase": -63,
     # Offensive manager ----------------------------------------------------
     "offManStealChancePct": 0,
+    "stealSuccessTagOutPct": 20,
+    "stealSuccessSafePct": 60,
     "stealChanceVerySlowThresh": 0,
     "stealChanceVerySlowAdjust": 0,
     "stealChanceSlowThresh": 0,
