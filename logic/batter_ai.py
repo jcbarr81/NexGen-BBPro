@@ -337,6 +337,8 @@ class BatterAI:
                 swing_prob = max(
                     0.0, swing_prob - getattr(batter, "ch", 0) / 400.0
                 )
+            swing_prob *= cfg.get("swingProbScale", 1.0)
+            swing_prob = max(0.0, min(1.0, swing_prob))
             swing = rand_type < swing_prob
 
         if swing and p_class in {"close ball", "sure ball"}:
@@ -384,6 +386,10 @@ class BatterAI:
                     contact = 0.1
                 else:
                     contact = 0.0
+
+        if swing:
+            contact *= self.config.get("contactQualityScale", 1.0)
+            contact = max(0.0, min(1.0, contact))
 
         self.last_decision = (swing, contact)
         return self.last_decision

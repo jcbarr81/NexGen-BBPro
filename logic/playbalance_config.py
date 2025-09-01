@@ -143,7 +143,7 @@ _DEFAULTS: Dict[str, Any] = {
     "hitHRProb": 10,
     # Hit probability tuning ----------------------------------------
     "hitProbBase": 0.02,
-    "contactFactorBase": 0.8,
+    "contactFactorBase": 0.9,
     "contactFactorDiv": 280.0,
     "movementFactorMin": 0.3,
     "movementImpactScale": 1.0,
@@ -172,10 +172,12 @@ _DEFAULTS: Dict[str, Any] = {
     "closeStrikeDist": 5,
     "closeBallDist": 4,
     # Baseline swing probabilities reflecting MLB averages
-    "swingProbSureStrike": 0.75,
-    "swingProbCloseStrike": 0.5,
-    "swingProbCloseBall": 0.35,
-    "swingProbSureBall": 0.1,
+    "swingProbSureStrike": 0.85,
+    "swingProbCloseStrike": 0.6,
+    "swingProbCloseBall": 0.25,
+    "swingProbSureBall": 0.05,
+    # Global swing probability scaling factor
+    "swingProbScale": 1.0,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
@@ -201,7 +203,7 @@ _DEFAULTS: Dict[str, Any] = {
     "lookBestType31CountAdjust": 15,
     "lookBestType32CountAdjust": 0,
     # Pitch identification and discipline ---------------------------------
-    "idRatingBase": 44,
+    "idRatingBase": 50,
     "idRatingCHPct": 90,
     "idRatingExpPct": 80,
     "idRatingPitchRatPct": 100,
@@ -228,7 +230,9 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating30CountAdjust": 60,
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
-    "minMisreadContact": 0.4,
+    "minMisreadContact": 0.3,
+    # Final contact multiplier applied to swing decisions
+    "contactQualityScale": 1.0,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
