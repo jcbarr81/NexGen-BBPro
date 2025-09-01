@@ -66,6 +66,7 @@ class BatterState:
     lob: int = 0  # Left on base
     lead: int = 0  # Lead level
     gb: int = 0  # Ground balls put in play
+    ld: int = 0  # Line drives put in play
     fb: int = 0  # Fly balls put in play
 
 
@@ -116,6 +117,7 @@ class PitcherState:
     is_toast: bool = False  # Reliever toast flag
     allowed_hr: bool = False  # True if last batter hit a home run
     gb: int = 0  # Ground balls induced
+    ld: int = 0  # Line drives induced
     fb: int = 0  # Fly balls induced
 
     # Backwards compatibility accessors
@@ -1517,13 +1519,21 @@ class GameSimulation:
         if self.rng.random() * total < gb:
             vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
         else:
-            vert_angle = vert_base
+            vert_angle = max(0.0, vert_base - 4)
         launch_angle = swing_angle + vert_angle + power_adjust
-        self.last_batted_ball_type = "ground" if launch_angle < 0 else "fly"
+        if launch_angle < 0:
+            self.last_batted_ball_type = "ground"
+        elif launch_angle <= 15:
+            self.last_batted_ball_type = "line"
+        else:
+            self.last_batted_ball_type = "fly"
         self.last_batted_ball_angles = (swing_angle, vert_angle)
         if self.last_batted_ball_type == "ground":
             self._add_stat(batter_state, "gb")
             pitcher_state.gb += 1
+        elif self.last_batted_ball_type == "line":
+            self._add_stat(batter_state, "ld")
+            pitcher_state.ld += 1
         else:
             self._add_stat(batter_state, "fb")
             pitcher_state.fb += 1

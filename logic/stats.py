@@ -31,7 +31,7 @@ def compute_batting_rates(stats: 'BatterState') -> Dict[str, float]:
     hbp = stats.hbp
     sf = stats.sf
     tb = derived["tb"]
-    gb_fb_den = stats.gb + stats.fb
+    bip_den = stats.gb + stats.ld + stats.fb
 
     avg = h / ab if ab else 0.0
     obp_den = ab + bb + hbp + sf
@@ -46,9 +46,11 @@ def compute_batting_rates(stats: 'BatterState') -> Dict[str, float]:
     bb_k = bb / stats.so if stats.so else 0.0
     sb_den = stats.sb + stats.cs
     sb_pct = stats.sb / sb_den if sb_den else 0.0
-    gb_pct = stats.gb / gb_fb_den if gb_fb_den else 0.0
-    fb_pct = stats.fb / gb_fb_den if gb_fb_den else 0.0
+    gb_pct = stats.gb / bip_den if bip_den else 0.0
+    ld_pct = stats.ld / bip_den if bip_den else 0.0
+    fb_pct = stats.fb / bip_den if bip_den else 0.0
     gb_fb = stats.gb / stats.fb if stats.fb else 0.0
+    ld_fb_ratio = stats.ld / stats.fb if stats.fb else 0.0
 
     return {
         "avg": avg,
@@ -62,8 +64,10 @@ def compute_batting_rates(stats: 'BatterState') -> Dict[str, float]:
         "bb_k": bb_k,
         "sb_pct": sb_pct,
         "gb_pct": gb_pct,
+        "ld_pct": ld_pct,
         "fb_pct": fb_pct,
         "gb_fb": gb_fb,
+        "ld_fb_ratio": ld_fb_ratio,
     }
 
 
@@ -118,10 +122,12 @@ def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
         stats.o_zone_contacts / stats.o_zone_swings if stats.o_zone_swings else 0.0
     )
     ozone_pct = o_zone_pitches / stats.pitches_thrown if stats.pitches_thrown else 0.0
-    gb_fb_den = stats.gb + stats.fb
-    gb_pct = stats.gb / gb_fb_den if gb_fb_den else 0.0
-    fb_pct = stats.fb / gb_fb_den if gb_fb_den else 0.0
+    bip_den = stats.gb + stats.ld + stats.fb
+    gb_pct = stats.gb / bip_den if bip_den else 0.0
+    ld_pct = stats.ld / bip_den if bip_den else 0.0
+    fb_pct = stats.fb / bip_den if bip_den else 0.0
     gb_fb = stats.gb / stats.fb if stats.fb else 0.0
+    ld_fb_ratio = stats.ld / stats.fb if stats.fb else 0.0
 
     return {
         "h9": h9,
@@ -141,8 +147,10 @@ def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
         "ozone_swing_pct": ozone_swing_pct,
         "ozone_contact_pct": ozone_contact_pct,
         "gb_pct": gb_pct,
+        "ld_pct": ld_pct,
         "fb_pct": fb_pct,
         "gb_fb": gb_fb,
+        "ld_fb_ratio": ld_fb_ratio,
     }
 
 
