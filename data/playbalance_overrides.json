@@ -1,6 +1,6 @@
 {
   "ballAirResistancePct": 95,
-  "ballInPlayPitchPct": 30,
+  "ballInPlayPitchPct": 40,
   "catchBaseChance": 92,
   "contactFactorBase": 0.8,
   "contactFactorDiv": 350,
@@ -39,7 +39,7 @@
   "groundBallBaseRate": 44,
   "hbpBatterStepOutChance": 60,
   "hitHRProb": 10,
-  "hitProbBase": 0.06,
+  "hitProbBase": 0.12,
   "idRatingBase": 50,
   "idRatingCHPct": 100,
   "idRatingExpPct": 90,
