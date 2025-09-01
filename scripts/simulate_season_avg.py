@@ -132,6 +132,10 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
         totals["StolenBases"] += sum(p["sb"] for p in batting)
         totals["CaughtStealing"] += sum(p["cs"] for p in batting)
         totals["HitByPitch"] += sum(p["hbp"] for p in batting)
+        totals["PlateAppearances"] += sum(p["pa"] for p in batting)
+        totals["AtBats"] += sum(p["ab"] for p in batting)
+        totals["SacFlies"] += sum(p.get("sf", 0) for p in batting)
+        totals["GIDP"] += sum(p.get("gidp", 0) for p in batting)
         totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
         totals["Strikes"] += sum(p["strikes"] for p in pitching)
     return totals
@@ -219,6 +223,23 @@ def simulate_season_average(
         print(
             f"{key}: MLB {mlb_val:.2f}, Sim {sim_val:.2f}, Diff {diff:+.2f}"
         )
+
+    total_pitches = totals["TotalPitchesThrown"]
+    total_pa = totals.get("PlateAppearances", 0)
+    p_pa = total_pitches / total_pa if total_pa else 0.0
+    babip_den = (
+        totals.get("AtBats", 0)
+        - totals["Strikeouts"]
+        - totals["HomeRuns"]
+        + totals.get("SacFlies", 0)
+    )
+    babip = (
+        (totals["Hits"] - totals["HomeRuns"]) / babip_den if babip_den else 0.0
+    )
+    dp_rate = totals.get("GIDP", 0) / babip_den if babip_den else 0.0
+    print(f"Pitches/PA: {p_pa:.2f}")
+    print(f"BABIP: {babip:.3f}")
+    print(f"DoublePlayRate: {dp_rate:.3f}")
 
 
 if __name__ == "__main__":
