@@ -1,8 +1,9 @@
 {
   "exitVeloBase": 0,
   "vertAngleGFPct": 0,
-  "groundBallBaseRate": 45,
-  "flyBallBaseRate": 55,
+  "groundBallBaseRate": 44,
+  "flyBallBaseRate": 35,
+  "lineDriveBaseRate": 21,
   "hitHRProb": 10,
   "idRatingBase": 50,
   "idRatingCHPct": 100,
