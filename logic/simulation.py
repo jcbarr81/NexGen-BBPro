@@ -1001,7 +1001,7 @@ class GameSimulation:
             pitch_speed = self.physics.pitch_velocity(
                 pitch_type, pitcher.arm, rand=loc_r
             )
-            control_scale = self.config.get("controlScale", 150)
+            control_scale = self.config.controlScale
             jitter = self.rng.uniform(-5, 5)
             control_chance = (pitcher.control + jitter) / control_scale
             control_chance = max(0.0, min(1.0, control_chance))
