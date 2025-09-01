@@ -149,7 +149,7 @@ def simulate_halfseason_average(use_tqdm: bool = True) -> None:
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = 0
+    cfg.ballInPlayOuts = 1
 
     csv_path = (
         get_base_dir()
