@@ -101,6 +101,7 @@ class FieldingAI:
             "RF": self.config.catchChanceRightFieldAdjust,
         }
         chance += pos_adjust.get(position, 0)
+        chance *= self.config.get("fielderReactionScale", 1.0)
 
         return max(0.0, min(1.0, chance / 100))
 
@@ -152,6 +153,7 @@ class FieldingAI:
             "RF": self.config.goodThrowChanceRightField,
         }
         chance += pos_adjust.get(position, 0)
+        chance *= self.config.get("throwSuccessScale", 1.0)
 
         return max(0.0, min(1.0, chance / 100))
 

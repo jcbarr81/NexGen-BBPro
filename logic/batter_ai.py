@@ -388,7 +388,19 @@ class BatterAI:
                     contact = 0.0
 
         if swing:
-            contact *= self.config.get("contactQualityScale", 1.0)
+            ch = getattr(batter, "ch", 0)
+            ch_adj = 1.0 + (
+                (ch - 50) / 50.0 * self.config.get("contactAbilityScale", 0.0)
+            )
+            disc = self._discipline_rating(batter, balls, strikes)
+            disc_adj = 1.0 + (
+                (disc - 50) / 50.0
+            ) * self.config.get("contactDisciplineScale", 0.0)
+            contact *= (
+                self.config.get("contactQualityScale", 1.0)
+                * ch_adj
+                * disc_adj
+            )
             contact = max(0.0, min(1.0, contact))
 
         self.last_decision = (swing, contact)
