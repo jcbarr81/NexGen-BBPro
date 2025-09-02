@@ -129,10 +129,10 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
-    "exitVeloBase": 0,
+    "exitVeloBase": 20,
     "exitVeloPHPct": 0,
-    "exitVeloPowerPct": 85,
-    "exitVeloNormalPct": 85,
+    "exitVeloPowerPct": 110,
+    "exitVeloNormalPct": 95,
     "exitVeloContactPct": 100,
     "vertAngleGFPct": 0,
     "sprayAnglePLPct": 0,
@@ -141,10 +141,10 @@ _DEFAULTS: Dict[str, Any] = {
     "flyBallBaseRate": 35,
     "lineDriveBaseRate": 21,
     # Hit type distribution reflecting MLB averages
-    "hit1BProb": 58,
-    "hit2BProb": 20,
+    "hit1BProb": 63,
+    "hit2BProb": 21,
     "hit3BProb": 2,
-    "hitHRProb": 20,
+    "hitHRProb": 14,
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability; ~0.24 approximates a .240 average
     # after other modifiers.
