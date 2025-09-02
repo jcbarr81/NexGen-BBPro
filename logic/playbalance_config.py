@@ -253,6 +253,9 @@ _DEFAULTS: Dict[str, Any] = {
     # Final contact multiplier applied to swing decisions
     # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
     "contactQualityScale": 1.0,
+    # Scaling factors for batter skills impacting contact quality
+    "contactAbilityScale": 0.0,
+    "contactDisciplineScale": 0.0,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
@@ -559,6 +562,9 @@ _DEFAULTS: Dict[str, Any] = {
     "stepOnBagSlop": -5,
     "tagAtBagSlop": 4,
     "throwToBagSlop": 8,
+    # Multipliers improving defensive efficiency
+    "fielderReactionScale": 1.0,
+    "throwSuccessScale": 1.0,
 }
 _BASE_DEFAULTS = dict(_DEFAULTS)
 

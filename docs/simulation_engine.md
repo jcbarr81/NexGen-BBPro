@@ -102,7 +102,15 @@ Key entries now available include:
   completely misidentifies a pitch.  The value acts as a floor scaled by the
   batter's contact rating so weak hitters still produce occasional foul tips
   without generating excessive hits.
- - **`contactQualityScale`** – multiplier applied to raw contact quality.  The
-   default of **4.7** boosts contact to curb strikeouts; increasing it further
-   produces more fouls and balls in play while lowering whiff rates.
+- **`contactQualityScale`** – multiplier applied to raw contact quality. Values
+  above ``1.0`` generate more fouls and balls in play while lower values
+  increase whiffs.
+- **`contactAbilityScale`** – scales contact quality based on a batter's
+  contact rating, letting elite hitters put more balls in play.
+- **`contactDisciplineScale`** – scales contact quality using the plate
+  discipline calculation so patient hitters make more quality contact.
+- **`fielderReactionScale`** – boosts the probability that a fielder reacts to
+  and catches a ball in play.
+- **`throwSuccessScale`** – adjusts the chance of completing an accurate throw,
+  improving double plays and other outs.
 
