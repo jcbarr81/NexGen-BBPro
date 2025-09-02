@@ -13,8 +13,8 @@ DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # MLB averages used to derive strike-based foul rates from all pitches.
-# Roughly 24 percent of MLB pitches are fouled off in modern play.
-_FOUL_PITCH_BASE_PCT = 24  # Percent of all pitches that are fouls
+# Roughly 26 percent of MLB pitches are fouled off in modern play.
+_FOUL_PITCH_BASE_PCT = 26  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
@@ -190,9 +190,9 @@ _DEFAULTS: Dict[str, Any] = {
     "closeStrikeDist": 5,
     "closeBallDist": 4,
     # Baseline swing probabilities reflecting MLB averages
-    "swingProbSureStrike": 0.9,
-    "swingProbCloseStrike": 0.7,
-    "swingProbCloseBall": 0.3,
+    "swingProbSureStrike": 0.85,
+    "swingProbCloseStrike": 0.6,
+    "swingProbCloseBall": 0.25,
     "swingProbSureBall": 0.1,
     # Global swing probability scaling factor
     "swingProbScale": 1.0,
