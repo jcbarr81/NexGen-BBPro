@@ -1397,12 +1397,12 @@ class GameSimulation:
 
         ``foulPitchBasePct`` is the league-wide percentage of pitches that end
         in a foul ball while ``foulStrikeBasePct`` expresses that rate on a
-        per-strike basis (~27.8% of strikes become fouls). ``ballInPlayPitchPct``
+        per-strike basis (~36% of strikes become fouls). ``ballInPlayPitchPct``
         represents the share of all pitches put in play and is used together
         with ``foulPitchBasePct`` to determine the overall contact rate. The
-        resulting conversion yields roughly 70% of contacted pitches as balls in
-        play and preserves the strike-based foul percentage without forcing a
-        1:1 split.
+        resulting conversion yields roughly half of contacted pitches as balls
+        in play and preserves the strike-based foul percentage without forcing
+        a 1:1 split.
 
         ``foulContactTrendPct`` adds roughly ``+1.5`` percentage points for
         every 20 point edge in batter contact over pitcher movement. ``dist``
@@ -1412,9 +1412,9 @@ class GameSimulation:
         """
 
         cfg = self.config
-        strike_base_pct = float(cfg.get("foulStrikeBasePct", 27.8))
-        pitch_base_pct = float(cfg.get("foulPitchBasePct", 18.3)) / 100.0
-        bip_pitch_pct = float(cfg.get("ballInPlayPitchPct", 70.0)) / 100.0
+        strike_base_pct = float(cfg.get("foulStrikeBasePct", 36.4))
+        pitch_base_pct = float(cfg.get("foulPitchBasePct", 24.0)) / 100.0
+        bip_pitch_pct = float(cfg.get("ballInPlayPitchPct", 25.0)) / 100.0
         trend_pct = float(cfg.get("foulContactTrendPct", 1.5))
 
         # Convert strike-based foul percentage to per-pitch using league strike
@@ -1693,6 +1693,7 @@ class GameSimulation:
         new_bp: List[Optional[PitcherState]] = [None, None, None]
         runs_scored = 0
         outs = 0
+        aggression = float(self.config.get("baserunningAggression", 0.5))
 
         if error:
             self._add_stat(batter_state, "roe")
@@ -1723,9 +1724,13 @@ class GameSimulation:
                     wet=self.wet,
                     temperature=self.temperature,
                 )
-                if roll_dist + bounce_dist >= 25:
+                attempt_home = roll_dist + bounce_dist >= 25 or self.rng.random() < aggression
+                if attempt_home:
                     runner_time = 180 / spd
-                    fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(0, 180, "LF")
+                    fielder_time = (
+                        self.physics.reaction_delay("LF", 0)
+                        + self.physics.throw_time(0, 180, "LF")
+                    )
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
                     else:
@@ -1750,16 +1755,28 @@ class GameSimulation:
                     wet=self.wet,
                     temperature=self.temperature,
                 )
-                if roll_dist + bounce_dist >= 25:
-                    if new_bases[2] is None:
-                        new_bases[2] = b[0]
-                        new_bp[2] = bp[0]
+                attempt_third = roll_dist + bounce_dist >= 25 or self.rng.random() < aggression
+                if attempt_third:
+                    runner_time = 180 / spd
+                    fielder_time = (
+                        self.physics.reaction_delay("LF", 0)
+                        + self.physics.throw_time(0, 180, "LF")
+                    )
+                    if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
+                        outs += 1
                     else:
-                        new_bases[1] = b[0]
-                        new_bp[1] = bp[0]
+                        if new_bases[2] is None:
+                            new_bases[2] = b[0]
+                            new_bp[2] = bp[0]
+                        else:
+                            new_bases[1] = b[0]
+                            new_bp[1] = bp[0]
                 else:
                     runner_time = 90 / spd
-                    fielder_time = self.physics.reaction_delay("SS", 0) + self.physics.throw_time(0, 90, "SS")
+                    fielder_time = (
+                        self.physics.reaction_delay("SS", 0)
+                        + self.physics.throw_time(0, 90, "SS")
+                    )
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
                         runner_on_first_out = True

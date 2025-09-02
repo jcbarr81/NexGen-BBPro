@@ -148,7 +148,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability; ~0.24 approximates a .240 average
     # after other modifiers.
-    "hitProbBase": 0.06,
+    "hitProbBase": 0.05,
     "contactFactorBase": 0.8,
     "contactFactorDiv": 350,
     "movementFactorMin": 0.2,
@@ -165,7 +165,9 @@ _DEFAULTS: Dict[str, Any] = {
     "ballInPlayPitchPct": 25,
     "ballInPlayOuts": 1,
     # Probability that a ground ball with a force at second becomes a double play
-    "doublePlayProb": 0.05,
+    "doublePlayProb": 0.1,
+    # Baseline aggression for runners attempting extra bases
+    "baserunningAggression": 0.5,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 60,
     # Pitcher AI ------------------------------------------------------
@@ -552,8 +554,8 @@ _DEFAULTS: Dict[str, Any] = {
     "couldBeCaughtSlop": -18,
     "shouldBeCaughtSlop": 6,
     "generalSlop": 9,
-    "relaySlop": 12,
-    "tagTimeSlop": 6,
+    "relaySlop": 8,
+    "tagTimeSlop": 3,
     "stepOnBagSlop": -5,
     "tagAtBagSlop": 4,
     "throwToBagSlop": 8,
