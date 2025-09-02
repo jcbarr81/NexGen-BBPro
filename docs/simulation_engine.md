@@ -90,8 +90,10 @@ Key entries now available include:
 
 - **`exitVeloBase`** – baseline exit velocity applied to all batted balls.
 - **`exitVeloPHPct`** – percentage boost to exit velocity for pinch hitters.
-- **`groundBallBaseRate`** – baseline percentage of balls in play that become grounders【F:logic/playbalance_config.py†L134】.
-- **`flyBallBaseRate`** – baseline percentage of balls in play that become fly balls【F:logic/playbalance_config.py†L135】.
+- **`hit1BProb`**, **`hit2BProb`**, **`hit3BProb`**, **`hitHRProb`** – distribution of hit outcomes
+  tuned to MLB rates (63% singles, 21% doubles, 2% triples, 14% homers)【F:logic/playbalance_config.py†L144-L147】.
+- **`groundBallBaseRate`** – baseline percentage of balls in play that become grounders【F:logic/playbalance_config.py†L140】.
+- **`flyBallBaseRate`** – baseline percentage of balls in play that become fly balls【F:logic/playbalance_config.py†L141】.
 - **`vertAngleGFPct`** – percentage adjustment to vertical launch angle based on a
   batter's ground/fly rating; the default ``-5`` gently flattens launch angles
   toward an even ground/fly distribution.
