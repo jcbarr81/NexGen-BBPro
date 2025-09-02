@@ -54,6 +54,11 @@ class OffensiveManager:
         cfg = self.config
         chance = 0.0
 
+        med_sp_thresh = cfg.get("stealChanceMedThresh", 0)
+        low_hold_thresh = cfg.get("stealChanceLowHoldThresh", 100)
+        if runner_sp < med_sp_thresh or pitcher_hold > low_hold_thresh:
+            return 0.0
+
         count_key = f"stealChance{balls}{strikes}Count"
         chance += cfg.get(count_key, 0)
 

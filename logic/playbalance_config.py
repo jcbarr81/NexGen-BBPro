@@ -295,7 +295,7 @@ _DEFAULTS: Dict[str, Any] = {
     "stealChanceVeryFastAdjust": 0,
     "stealChanceVeryLowHoldThresh": 0,
     "stealChanceVeryLowHoldAdjust": 0,
-    "stealChanceLowHoldThresh": 0,
+    "stealChanceLowHoldThresh": 100,
     "stealChanceLowHoldAdjust": 0,
     "stealChanceMedHoldThresh": 0,
     "stealChanceMedHoldAdjust": 0,
