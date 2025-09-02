@@ -140,15 +140,15 @@ _DEFAULTS: Dict[str, Any] = {
     "groundBallBaseRate": 44,
     "flyBallBaseRate": 35,
     "lineDriveBaseRate": 21,
-    # Hit type distribution reflecting MLB averages
-    "hit1BProb": 63,
-    "hit2BProb": 21,
+    # Hit type distribution reflecting recent MLB averages
+    "hit1BProb": 64,
+    "hit2BProb": 20,
     "hit3BProb": 2,
     "hitHRProb": 14,
     # Hit probability tuning ----------------------------------------
-    # Baseline additive hit probability; ~0.24 approximates a .240 average
+    # Baseline additive hit probability tuned for roughly a .245 average
     # after other modifiers.
-    "hitProbBase": 0.05,
+    "hitProbBase": 0.045,
     "contactFactorBase": 0.8,
     "contactFactorDiv": 350,
     "movementFactorMin": 0.2,
@@ -161,9 +161,9 @@ _DEFAULTS: Dict[str, Any] = {
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
     "foulContactTrendPct": 1.5,
-    # Target roughly 25% of all pitches being put into play
-    "ballInPlayPitchPct": 25,
-    "ballInPlayOuts": 1,
+    # Target roughly 18% of all pitches being put into play
+    "ballInPlayPitchPct": 18,
+    "ballInPlayOuts": 0,
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.1,
     # Baseline aggression for runners attempting extra bases
