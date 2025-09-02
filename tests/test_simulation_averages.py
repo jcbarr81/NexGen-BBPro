@@ -45,6 +45,9 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
         sim_part = next(p for p in parts if p.startswith("Sim"))
         simulated[stat.strip()] = float(sim_part.split()[1])
 
+    # Approximate at-bats using a 54-out baseline for both teams
+    simulated["AtBats"] = simulated["Hits"] + 54
+
     # Load MLB benchmark averages from CSV
     csv_path = (
         Path(__file__).resolve().parents[1]
@@ -56,10 +59,10 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
         row = next(csv.DictReader(f))
     benchmarks = {stat: float(value) for stat, value in row.items() if stat}
 
-    # Assert simulated values are within a generous tolerance of MLB averages
+    # Assert simulated values are close to MLB averages
     for stat, mlb_val in benchmarks.items():
         sim_val = simulated[stat]
-        assert math.isclose(sim_val, mlb_val, rel_tol=3.0), stat
+        assert math.isclose(sim_val, mlb_val, rel_tol=0.1), stat
 
     # Derived rate statistics using simple approximations
     hits = simulated["Hits"]
@@ -72,8 +75,8 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
     mlb_triples = benchmarks["Triples"]
     mlb_homers = benchmarks["HomeRuns"]
 
-    ab = hits + 54
-    mlb_ab = mlb_hits + 54
+    ab = simulated["AtBats"]
+    mlb_ab = benchmarks["AtBats"]
     singles = hits - doubles - triples - homers
     mlb_singles = mlb_hits - mlb_doubles - mlb_triples - mlb_homers
     total_bases = singles + 2 * doubles + 3 * triples + 4 * homers
@@ -91,4 +94,4 @@ def test_simulated_averages_close_to_mlb(monkeypatch):
         ("SLG", slg, mlb_slg),
         ("HR_rate", hr_rate, mlb_hr_rate),
     ]:
-        assert math.isclose(sim_val, mlb_val, rel_tol=3.0), stat
+        assert math.isclose(sim_val, mlb_val, rel_tol=0.1), stat
