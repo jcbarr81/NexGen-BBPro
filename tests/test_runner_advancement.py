@@ -36,10 +36,18 @@ def test_double_play_records_gidp(monkeypatch):
     runner = BatterState(make_player("r1"))
     offense.bases[0] = runner
 
+    monkeypatch.setattr(
+        sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0
+    )
+    monkeypatch.setattr(sim.physics, "ball_bounce", lambda *args, **kwargs: (0, 0))
+
     monkeypatch.setattr(sim.physics, "player_speed", lambda sp: 10)
     monkeypatch.setattr(sim.physics, "reaction_delay", lambda pos, fa: 0)
     times = iter([8, 8])
     monkeypatch.setattr(sim.physics, "throw_time", lambda as_rating, distance, position: next(times))
+
+    random_values = iter([0.6, 0.6])
+    monkeypatch.setattr(sim.rng, "random", lambda: next(random_values))
 
     outs = sim._advance_runners(offense, defense, batter_state, bases=1)
 
@@ -53,10 +61,18 @@ def test_fielders_choice_records_fc(monkeypatch):
     runner = BatterState(make_player("r1"))
     offense.bases[0] = runner
 
+    monkeypatch.setattr(
+        sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0
+    )
+    monkeypatch.setattr(sim.physics, "ball_bounce", lambda *args, **kwargs: (0, 0))
+
     monkeypatch.setattr(sim.physics, "player_speed", lambda sp: 10)
     monkeypatch.setattr(sim.physics, "reaction_delay", lambda pos, fa: 0)
     times = iter([8, 10])
     monkeypatch.setattr(sim.physics, "throw_time", lambda as_rating, distance, position: next(times))
+
+    random_values = iter([0.6, 0.6])
+    monkeypatch.setattr(sim.rng, "random", lambda: next(random_values))
 
     outs = sim._advance_runners(offense, defense, batter_state, bases=1)
 
@@ -64,3 +80,32 @@ def test_fielders_choice_records_fc(monkeypatch):
     assert offense.bases[0] is batter_state
     assert offense.bases[1] is None
     assert batter_state.fc == 1
+
+
+def test_double_play_prob_triggers(monkeypatch):
+    sim, offense, defense, batter_state = setup_sim()
+    sim.config.values["doublePlayProb"] = 1
+    runner = BatterState(make_player("r1"))
+    offense.bases[0] = runner
+
+    monkeypatch.setattr(
+        sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0
+    )
+    monkeypatch.setattr(sim.physics, "ball_bounce", lambda *args, **kwargs: (0, 0))
+
+    monkeypatch.setattr(sim.physics, "player_speed", lambda sp: 10)
+    monkeypatch.setattr(sim.physics, "reaction_delay", lambda pos, fa: 0)
+
+    def throw_time(as_rating, distance, position):
+        return 8 if position == "SS" else 20
+
+    monkeypatch.setattr(sim.physics, "throw_time", throw_time)
+
+    random_values = iter([0.6, 0.0])
+    monkeypatch.setattr(sim.rng, "random", lambda: next(random_values))
+
+    outs = sim._advance_runners(offense, defense, batter_state, bases=1)
+
+    assert outs == 2
+    assert offense.bases == [None, None, None]
+    assert batter_state.gidp == 1

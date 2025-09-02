@@ -1700,6 +1700,8 @@ class GameSimulation:
 
         if bases == 1:
             runner_on_first_out = False
+            force_runner_time: Optional[float] = None
+            force_fielder_time: Optional[float] = None
             if b[2]:
                 runner_time = 90 / self.physics.player_speed(b[2].player.sp)
                 fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(0, 90, "LF")
@@ -1780,24 +1782,39 @@ class GameSimulation:
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
                         runner_on_first_out = True
+                        force_runner_time = runner_time
+                        force_fielder_time = fielder_time
                     else:
                         new_bases[1] = b[0]
                         new_bp[1] = bp[0]
 
             if runner_on_first_out:
-                if self.rng.random() < self.config.get("doublePlayProb", 0):
+                batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
+                relay_time = (
+                    self.physics.reaction_delay("2B", 0)
+                    + self.physics.throw_time(0, 90, "2B")
+                )
+                dp_prob = self.config.get("doublePlayProb", 0)
+                if force_runner_time and force_fielder_time:
+                    margin = force_runner_time - force_fielder_time
+                    if margin > 0:
+                        dp_prob = min(1.0, dp_prob + margin * 0.05)
+                time_margin = batter_time - relay_time
+                if time_margin > 0:
+                    dp_prob = min(1.0, dp_prob + time_margin * 0.05)
+                if self.rng.random() < dp_prob:
+                    outs += 1
+                    self._add_stat(batter_state, "gidp")
+                elif (
+                    self.fielding_ai.should_relay_throw(relay_time, batter_time)
+                    and self.fielding_ai.should_tag_runner(relay_time, batter_time)
+                ):
                     outs += 1
                     self._add_stat(batter_state, "gidp")
                 else:
-                    batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
-                    relay_time = self.physics.reaction_delay("2B", 0) + self.physics.throw_time(0, 90, "2B")
-                    if self.fielding_ai.should_relay_throw(relay_time, batter_time) and self.fielding_ai.should_tag_runner(relay_time, batter_time):
-                        outs += 1
-                        self._add_stat(batter_state, "gidp")
-                    else:
-                        new_bases[0] = batter_state
-                        new_bp[0] = defense.current_pitcher_state
-                        self._add_stat(batter_state, "fc")
+                    new_bases[0] = batter_state
+                    new_bp[0] = defense.current_pitcher_state
+                    self._add_stat(batter_state, "fc")
             else:
                 new_bases[0] = batter_state
                 new_bp[0] = defense.current_pitcher_state
