@@ -166,7 +166,7 @@ _DEFAULTS: Dict[str, Any] = {
     "ballInPlayPitchPct": 15,
     "ballInPlayOuts": 0,
     # Probability that a ground ball with a force at second becomes a double play
-    "doublePlayProb": 0.25,
+    "doublePlayProb": 0.35,
     # Baseline aggression for runners attempting extra bases
     "baserunningAggression": 0.45,
     # Hit by pitch avoidance ----------------------------------------
@@ -557,15 +557,15 @@ _DEFAULTS: Dict[str, Any] = {
     # Fielding AI -------------------------------------------------------
     "couldBeCaughtSlop": -18,
     "shouldBeCaughtSlop": 6,
-    "generalSlop": 9,
+    "generalSlop": 6,
     "relaySlop": 8,
-    "tagTimeSlop": 3,
+    "tagTimeSlop": 1,
     "stepOnBagSlop": -5,
     "tagAtBagSlop": 4,
     "throwToBagSlop": 8,
     # Multipliers improving defensive efficiency
     "fielderReactionScale": 1.0,
-    "throwSuccessScale": 1.0,
+    "throwSuccessScale": 1.1,
 }
 _BASE_DEFAULTS = dict(_DEFAULTS)
 
