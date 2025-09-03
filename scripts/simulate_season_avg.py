@@ -6,7 +6,40 @@ C extensions such as ``bcrypt`` are available; GUI-focused modules like
 ``PyQt6`` are not needed here.
 """
 
+
+
+
 from __future__ import annotations
+import os
+
+try:
+    import psutil
+
+    p = psutil.Process()
+
+    # --- Set priority ---
+    try:
+        # Default: High priority
+        p.nice(psutil.HIGH_PRIORITY_CLASS)
+        # Alternatives:
+        # p.nice(psutil.REALTIME_PRIORITY_CLASS)   # DANGEROUS: may freeze system
+        # p.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
+        print(f"[PerfTune] Process priority set to High")
+    except Exception as e:
+        print(f"[PerfTune] Could not set priority: {e}")
+
+    # --- Set CPU affinity (all logical CPUs) ---
+    try:
+        cpu_count = os.cpu_count() or 1
+        p.cpu_affinity(list(range(cpu_count)))
+        print(f"[PerfTune] CPU affinity set to all {cpu_count} cores")
+    except Exception as e:
+        print(f"[PerfTune] Could not set CPU affinity: {e}")
+
+except ImportError:
+    print("[PerfTune] psutil not installed; skipping priority/affinity tuning")
+
+# --- Threading environment (vectorized libs like numpy, MKL, OpenMP) ---
 
 from collections import Counter
 from copy import deepcopy
@@ -14,10 +47,21 @@ from datetime import date
 from pathlib import Path
 import argparse
 import csv
-import os
 import random
 import sys
 import multiprocessing as mp
+
+
+cpu_count = os.cpu_count() or 1
+os.environ.setdefault("OMP_NUM_THREADS", str(cpu_count))
+os.environ.setdefault("MKL_NUM_THREADS", str(cpu_count))
+os.environ.setdefault("NUMEXPR_MAX_THREADS", str(cpu_count))
+os.environ.setdefault("NUMEXPR_NUM_THREADS", str(cpu_count))
+os.environ.setdefault("KMP_AFFINITY", "granularity=fine,compact,1,0")
+os.environ.setdefault("OMP_PROC_BIND", "true")
+
+print(f"[PerfTune] Threading env set for {cpu_count} cores")
+# -----------------------------------------------------------------------
 
 try:
     from tqdm import tqdm
