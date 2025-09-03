@@ -162,6 +162,8 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
         totals["HitByPitch"] += sum(p["hbp"] for p in batting)
         totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
         totals["Strikes"] += sum(p["strikes"] for p in pitching)
+    totals["TwoStrikeCounts"] += sim.two_strike_counts
+    totals["ThreeBallCounts"] += sim.three_ball_counts
     return totals
 
 
@@ -247,6 +249,8 @@ def simulate_halfseason_average(
         print(
             f"{key}: MLB {mlb_val:.2f}, Sim {sim_val:.2f}, Diff {diff:+.2f}"
         )
+    print(f"Total two-strike counts: {totals['TwoStrikeCounts']}")
+    print(f"Total three-ball counts: {totals['ThreeBallCounts']}")
 
 
 if __name__ == "__main__":
