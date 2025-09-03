@@ -125,9 +125,11 @@ _DEFAULTS: Dict[str, Any] = {
     "maxThrowDistASPct": 100,
     "throwSpeedIFBase": 52,
     "throwSpeedIFDistPct": 3,
+    "throwSpeedIFASPct": 0,
     "throwSpeedIFMax": 92,
     "throwSpeedOFBase": 52,
     "throwSpeedOFDistPct": 3,
+    "throwSpeedOFASPct": 0,
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
     "exitVeloBase": 20,
