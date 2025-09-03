@@ -1608,9 +1608,11 @@ maxThrowDistASPct=100   ; Percent multiplier to AS to add to base distance
 ;
 throwSpeedIFBase=52     ; Infielder base speed
 throwSpeedIFDistPct=3   ; Infielder percent multiplier to distance
+throwSpeedIFASPct=0     ; Infielder percent multiplier to AS
 throwSpeedIFMax=92      ; Infielder maximum throwing speed
 throwSpeedOFBase=52     ; Outfielder base speed
 throwSpeedOFDistPct=3   ; Outfielder percent multiplier to distance
+throwSpeedOFASPct=0     ; Outfielder percent multiplier to AS
 throwSpeedOFMax=92      ; Outfielder maximum throwing speed
 ;
 ; CHANCE OF THROWING ERRORS

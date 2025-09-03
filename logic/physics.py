@@ -64,14 +64,17 @@ class Physics:
         pct = getattr(self.config, "maxThrowDistASPct")
         return base + pct * as_rating / 100.0
 
-    def throw_velocity(self, distance: float, *, outfield: bool) -> float:
-        """Return throw velocity for ``distance`` and fielder type."""
+    def throw_velocity(self, distance: float, as_rating: int, *, outfield: bool) -> float:
+        """Return throw velocity for ``distance``, ``as_rating`` and fielder type."""
 
         prefix = "OF" if outfield else "IF"
         base = getattr(self.config, f"throwSpeed{prefix}Base")
-        pct = getattr(self.config, f"throwSpeed{prefix}DistPct")
+        dist_pct = getattr(self.config, f"throwSpeed{prefix}DistPct")
+        as_pct = getattr(self.config, f"throwSpeed{prefix}ASPct")
         max_speed = getattr(self.config, f"throwSpeed{prefix}Max")
-        speed = base + pct * distance / 100.0
+        speed = base
+        speed += dist_pct * distance / 100.0
+        speed += as_pct * as_rating / 100.0
         return min(speed, max_speed)
 
     def throw_time(self, as_rating: int, distance: float, position: str) -> float:
@@ -81,7 +84,7 @@ class Physics:
         if distance > max_dist:
             return float("inf")
         outfield = position.upper() in {"LF", "CF", "RF"}
-        speed = self.throw_velocity(distance, outfield=outfield)
+        speed = self.throw_velocity(distance, as_rating, outfield=outfield)
         fps = speed * 5280 / 3600
         if fps <= 0:
             return float("inf")

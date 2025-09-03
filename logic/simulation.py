@@ -1694,6 +1694,7 @@ class GameSimulation:
         runs_scored = 0
         outs = 0
         aggression = float(self.config.get("baserunningAggression", 0.5))
+        arm = getattr(defense.lineup[0], "arm", 0) if defense.lineup else 0
 
         if error:
             self._add_stat(batter_state, "roe")
@@ -1704,7 +1705,7 @@ class GameSimulation:
             force_fielder_time: Optional[float] = None
             if b[2]:
                 runner_time = 90 / self.physics.player_speed(b[2].player.sp)
-                fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(0, 90, "LF")
+                fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(arm, 90, "LF")
                 if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                     outs += 1
                 else:
@@ -1731,7 +1732,7 @@ class GameSimulation:
                     runner_time = 180 / spd
                     fielder_time = (
                         self.physics.reaction_delay("LF", 0)
-                        + self.physics.throw_time(0, 180, "LF")
+                        + self.physics.throw_time(arm, 180, "LF")
                     )
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
@@ -1762,7 +1763,7 @@ class GameSimulation:
                     runner_time = 180 / spd
                     fielder_time = (
                         self.physics.reaction_delay("LF", 0)
-                        + self.physics.throw_time(0, 180, "LF")
+                        + self.physics.throw_time(arm, 180, "LF")
                     )
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
@@ -1777,7 +1778,7 @@ class GameSimulation:
                     runner_time = 90 / spd
                     fielder_time = (
                         self.physics.reaction_delay("SS", 0)
-                        + self.physics.throw_time(0, 90, "SS")
+                        + self.physics.throw_time(arm, 90, "SS")
                     )
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
@@ -1792,7 +1793,7 @@ class GameSimulation:
                 batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
                 relay_time = (
                     self.physics.reaction_delay("2B", 0)
-                    + self.physics.throw_time(0, 90, "2B")
+                    + self.physics.throw_time(arm, 90, "2B")
                 )
                 dp_prob = self.config.get("doublePlayProb", 0)
                 if force_runner_time and force_fielder_time:
