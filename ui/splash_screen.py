@@ -44,4 +44,9 @@ class SplashScreen(QWidget):
         self.login_button.setEnabled(False)
 
         self.login_window = LoginWindow(self)
+        # Ensure the login window (certificate selector) isn't hidden behind
+        # other applications by forcing it to the foreground.
+        self.login_window.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         self.login_window.show()
+        self.login_window.raise_()
+        self.login_window.activateWindow()
