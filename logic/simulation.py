@@ -19,6 +19,7 @@ from logic.bullpen import WarmupTracker
 from logic.fielding_ai import FieldingAI
 from logic.field_geometry import DEFAULT_POSITIONS, Stadium
 from utils.path_utils import get_base_dir
+from utils.putout_probabilities import load_putout_probabilities
 from utils.stats_persistence import save_stats
 from .stats import (
     compute_batting_derived,
@@ -258,6 +259,26 @@ class GameSimulation:
         self.last_batted_ball_angles: tuple[float, float] | None = None
         self.last_batted_ball_type: str | None = None
         self.last_pitch_speed: float | None = None
+        base = get_base_dir()
+        data_path = (
+            base
+            / "data"
+            / "MLB_avg"
+            / "Average_Putouts_per_Game_by_Position__Last_5_Years_.csv"
+        )
+        self.target_putout_probs = load_putout_probabilities(data_path)
+        self.outs_by_position: Dict[str, int] = {
+            "P": 0,
+            "C": 0,
+            "1B": 0,
+            "2B": 0,
+            "3B": 0,
+            "SS": 0,
+            "LF": 0,
+            "CF": 0,
+            "RF": 0,
+        }
+        self.total_putouts = 0
         self.two_strike_counts = 0
         self.three_ball_counts = 0
 
@@ -309,8 +330,20 @@ class GameSimulation:
             state.player.season_stats = season
         season[attr] = season.get(attr, 0) + amount
 
-    def _add_fielding_stat(self, state: FieldingState, attr: str, amount: int = 1) -> None:
-        """Increment ``attr`` on ``state`` and season totals."""
+    def _add_fielding_stat(
+        self,
+        state: FieldingState,
+        attr: str,
+        amount: int = 1,
+        *,
+        position: str | None = None,
+    ) -> None:
+        """Increment ``attr`` on ``state`` and season totals.
+
+        When recording a putout the credited position is tracked to allow
+        comparison with MLB averages and to dynamically adjust fielding
+        behaviour.
+        """
 
         setattr(state, attr, getattr(state, attr) + amount)
         season = getattr(state.player, "season_stats", None)
@@ -318,6 +351,40 @@ class GameSimulation:
             season = {}
             state.player.season_stats = season
         season[attr] = season.get(attr, 0) + amount
+
+        if attr == "po":
+            pos = (position or getattr(state.player, "primary_position", "")).upper()
+            if pos:
+                self.outs_by_position[pos] = self.outs_by_position.get(pos, 0) + amount
+                self.total_putouts += amount
+                self._adjust_fielding_config(pos)
+
+    def _adjust_fielding_config(self, position: str) -> None:
+        """Adjust fielding parameters to target MLB putout rates."""
+
+        target = self.target_putout_probs.get(position)
+        if not target or self.total_putouts == 0:
+            return
+        current = self.outs_by_position[position] / self.total_putouts
+        diff = target - current
+        if abs(diff) < 0.01:
+            return
+        mapping = {
+            "P": "catchChancePitcherAdjust",
+            "C": "catchChanceCatcherAdjust",
+            "1B": "catchChanceFirstBaseAdjust",
+            "2B": "catchChanceSecondBaseAdjust",
+            "3B": "catchChanceThirdBaseAdjust",
+            "SS": "catchChanceShortStopAdjust",
+            "LF": "catchChanceLeftFieldAdjust",
+            "CF": "catchChanceCenterFieldAdjust",
+            "RF": "catchChanceRightFieldAdjust",
+        }
+        attr = mapping.get(position)
+        if not attr:
+            return
+        current_adj = getattr(self.config, attr, 0.0)
+        setattr(self.config, attr, current_adj + diff * 5)
 
     def _set_runner_leads(self, offense: TeamState) -> None:
         """Update lead state for runners on first or second base."""
@@ -1382,7 +1449,7 @@ class GameSimulation:
                 pitcher_state.consecutive_baserunners = 0
                 catcher_fs = self._get_fielder(defense, "C")
                 if catcher_fs:
-                    self._add_fielding_stat(catcher_fs, "po")
+                    self._add_fielding_stat(catcher_fs, "po", position="C")
                 p_fs = defense.fielding_stats.get(pitcher_state.player.player_id)
                 if p_fs:
                     self._add_fielding_stat(p_fs, "a")
@@ -1514,7 +1581,7 @@ class GameSimulation:
                 fs = defense.fielding_stats.setdefault(
                     fielder.player_id, FieldingState(fielder)
                 )
-                self._add_fielding_stat(fs, "po")
+                self._add_fielding_stat(fs, "po", position=pos)
                 self.debug_log.append("Foul ball caught")
                 return True
         return False
@@ -2047,7 +2114,11 @@ class GameSimulation:
             else:
                 tagger = self._get_fielder(defense, "3B")
             if tagger:
-                self._add_fielding_stat(tagger, "po")
+                self._add_fielding_stat(
+                    tagger,
+                    "po",
+                    position=getattr(tagger.player, "primary_position", None),
+                )
             return False
         return None
 
