@@ -281,6 +281,9 @@ class GameSimulation:
         self.total_putouts = 0
         self.two_strike_counts = 0
         self.three_ball_counts = 0
+        self.logged_strikeouts = 0
+        self.logged_catcher_putouts = 0
+        self._last_swing_strikeout = False
 
     # ------------------------------------------------------------------
     # Fatigue helpers
@@ -357,6 +360,8 @@ class GameSimulation:
             if pos:
                 self.outs_by_position[pos] = self.outs_by_position.get(pos, 0) + amount
                 self.total_putouts += amount
+                if pos == "C":
+                    self.logged_catcher_putouts += amount
                 self._adjust_fielding_config(pos)
 
     def _adjust_fielding_config(self, position: str) -> None:
@@ -1174,7 +1179,39 @@ class GameSimulation:
                     pitch_speed=pitch_speed,
                     rand=dec_r,
                     contact_quality=contact_quality,
+                    is_third_strike=strikes >= 2,
                 )
+                if self._last_swing_strikeout:
+                    if dist <= 3:
+                        pitcher_state.strikes_thrown += 1
+                    else:
+                        pitcher_state.balls_thrown += 1
+                    self._add_stat(batter_state, "ab")
+                    self._add_stat(batter_state, "so")
+                    self._add_stat(batter_state, "so_swinging")
+                    pitcher_state.so += 1
+                    pitcher_state.so_swinging += 1
+                    outs += 1
+                    pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                    pitcher_state.toast += self.config.get("pitchScoringStrikeOut", 0)
+                    pitcher_state.consecutive_hits = 0
+                    pitcher_state.consecutive_baserunners = 0
+                    p_fs = defense.fielding_stats.get(
+                        pitcher_state.player.player_id
+                    )
+                    if p_fs:
+                        self._add_fielding_stat(p_fs, "a")
+                    self._add_stat(
+                        batter_state,
+                        "pitches",
+                        pitcher_state.pitches_thrown - start_pitches,
+                    )
+                    pitcher_state.outs += outs
+                    run_diff = offense.runs - defense.runs
+                    self.subs.maybe_warm_reliever(
+                        defense, inning=inning, run_diff=run_diff, home_team=home_team
+                    )
+                    return outs + outs_from_pick
                 if self.infield_fly:
                     if dist <= 3:
                         pitcher_state.strikes_thrown += 1
@@ -1433,6 +1470,7 @@ class GameSimulation:
                 )
                 return outs + outs_from_pick
             if strikes >= 3:
+                self.logged_strikeouts += 1
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
                 if swing:
@@ -1598,8 +1636,16 @@ class GameSimulation:
         rand: float,
         contact_quality: float = 1.0,
         swing_type: str = "normal",
+        is_third_strike: bool = False,
     ) -> tuple[Optional[int], bool]:
+        self._last_swing_strikeout = False
         if contact_quality <= 0:
+            if is_third_strike:
+                self._last_swing_strikeout = True
+                self.logged_strikeouts += 1
+                catcher_fs = self._get_fielder(defense, "C")
+                if catcher_fs:
+                    self._add_fielding_stat(catcher_fs, "po", position="C")
             return None, False
         bat_speed = self.physics.bat_speed(
             batter.ph, swing_type=swing_type, pitch_speed=pitch_speed
@@ -1695,6 +1741,12 @@ class GameSimulation:
                 hit_prob *= cur_depth / normal_depth
 
         if rand >= hit_prob:
+            if is_third_strike:
+                self._last_swing_strikeout = True
+                self.logged_strikeouts += 1
+                catcher_fs = self._get_fielder(defense, "C")
+                if catcher_fs:
+                    self._add_fielding_stat(catcher_fs, "po", position="C")
             return None, False
 
         vx, vy, vz = self.physics.launch_vector(
