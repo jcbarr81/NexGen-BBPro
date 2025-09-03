@@ -42,11 +42,11 @@ except ImportError:
 # --- Threading environment (vectorized libs like numpy, MKL, OpenMP) ---
 
 from collections import Counter
-from copy import deepcopy
 from datetime import date
 from pathlib import Path
 import argparse
 import csv
+import pickle
 import random
 import sys
 import multiprocessing as mp
@@ -74,9 +74,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from logic.schedule_generator import generate_mlb_schedule
 from logic.simulation import (
-    FieldingState,
     GameSimulation,
-    PitcherState,
     TeamState,
     generate_boxscore,
 )
@@ -103,40 +101,14 @@ STAT_ORDER = [
 
 
 def clone_team_state(base: TeamState) -> TeamState:
-    """Return a deep-copied ``TeamState`` with per-game fields reset."""
+    """Return a new ``TeamState`` with per-game fields reset."""
 
-    team = deepcopy(base)
-    team.lineup_stats = {}
-    team.pitcher_stats = {}
-    team.fielding_stats = {}
-    team.batting_index = 0
-    team.bases = [None, None, None]
-    team.base_pitchers = [None, None, None]
-    team.runs = 0
-    team.inning_runs = []
-    team.lob = 0
-    team.inning_lob = []
-    team.inning_events = []
-    team.team_stats = {}
-    team.warming_reliever = False
-    team.bullpen_warmups = {}
-    if team.pitchers:
-        starter = team.pitchers[0]
-        state = PitcherState(starter)
-        team.pitcher_stats[starter.player_id] = state
-        team.current_pitcher_state = state
-        state.g += 1
-        state.gs += 1
-        fs = team.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
-        fs.g += 1
-        fs.gs += 1
-    else:
-        team.current_pitcher_state = None
-    for p in team.lineup:
-        fs = team.fielding_stats.setdefault(p.player_id, FieldingState(p))
-        fs.g += 1
-        fs.gs += 1
-    return team
+    return TeamState(
+        lineup=list(base.lineup),
+        bench=list(base.bench),
+        pitchers=list(base.pitchers),
+        team=base.team,
+    )
 
 
 # Global objects used by worker processes
@@ -187,6 +159,12 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
     return totals
 
 
+def _simulate_game_star(args: tuple[str, str, int]) -> Counter[str]:
+    """Helper to unpack arguments for ``imap_unordered``."""
+
+    return _simulate_game(*args)
+
+
 def simulate_season_average(
     use_tqdm: bool = True, ball_in_play_outs: int = 0
 ) -> None:
@@ -200,7 +178,16 @@ def simulate_season_average(
     """
 
     teams = [t.team_id for t in load_teams()]
-    schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
+    schedule_dir = get_base_dir() / "data" / "schedules"
+    schedule_dir.mkdir(parents=True, exist_ok=True)
+    schedule_file = schedule_dir / "2025_schedule.pkl"
+    if schedule_file.exists():
+        with schedule_file.open("rb") as fh:
+            schedule = pickle.load(fh)
+    else:
+        schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
+        with schedule_file.open("wb") as fh:
+            pickle.dump(schedule, fh)
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
@@ -234,28 +221,14 @@ def simulate_season_average(
     games = [
         (g["home"], g["away"], 42 + i) for i, g in enumerate(schedule)
     ]
-    iterator = games
-    if use_tqdm:
-        iterator = tqdm(iterator, total=len(games), desc="Simulating season")
-
-    # ``spawn`` start method on Windows requires all objects to be picklable.
-    # ``TeamState`` and ``PlayBalanceConfig`` are complex and can trigger
-    # pickling errors, so fall back to a simple sequential loop when the
-    # ``spawn`` method is active.  This keeps the function usable on Windows
-    # while still taking advantage of multiprocessing on Unix-like systems.
-    use_pool = mp.get_start_method() != "spawn"
-
-    if use_pool:
-        with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
-            results = pool.starmap(_simulate_game, iterator)
-    else:  # pragma: no cover - exercised only on Windows
-        _init_pool(base_states, cfg)
-        results = [_simulate_game(h, a, s) for h, a, s in iterator]
-
     totals: Counter[str] = Counter()
-    for game_totals in results:
-        totals.update(game_totals)
-    total_games = len(results)
+    with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
+        iterator = pool.imap_unordered(_simulate_game_star, games, chunksize=10)
+        if use_tqdm:
+            iterator = tqdm(iterator, total=len(games), desc="Simulating season")
+        for game_totals in iterator:
+            totals.update(game_totals)
+    total_games = len(games)
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
 
