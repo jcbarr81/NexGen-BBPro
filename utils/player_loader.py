@@ -1,5 +1,6 @@
 import csv
 from pathlib import Path
+from functools import lru_cache
 
 from models.player import Player
 from models.pitcher import Pitcher
@@ -21,6 +22,7 @@ def _optional_int(row, key, default=0):
     return int(value)
 
 
+@lru_cache(maxsize=None)
 def load_players_from_csv(file_path):
     """Load player objects from a CSV file.
 
@@ -32,6 +34,7 @@ def load_players_from_csv(file_path):
         working directory.
     """
 
+    file_path = str(file_path)
     base_path = get_base_dir()
     csv_path = Path(file_path)
     if not csv_path.is_absolute():

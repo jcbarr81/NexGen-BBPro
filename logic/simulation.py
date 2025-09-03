@@ -35,7 +35,7 @@ from .stats import (
 _PITCH_RATINGS = ["fb", "sl", "cu", "cb", "si", "scb", "kn"]
 
 
-@dataclass
+@dataclass(slots=True)
 class BatterState:
     """Tracks state and statistics for a batter during the game."""
 
@@ -73,7 +73,7 @@ class BatterState:
     fb: int = 0  # Fly balls put in play
 
 
-@dataclass
+@dataclass(slots=True)
 class PitcherState:
     """Tracks state for a pitcher."""
 
@@ -143,7 +143,7 @@ class PitcherState:
         self.so = value
 
 
-@dataclass
+@dataclass(slots=True)
 class FieldingState:
     """Tracks defensive statistics for a player."""
 
@@ -162,7 +162,7 @@ class FieldingState:
     sba: int = 0  # Stolen base attempts against
 
 
-@dataclass
+@dataclass(slots=True)
 class TeamState:
     """Mutable state for a team during a game."""
 
@@ -186,6 +186,7 @@ class TeamState:
     team_stats: Dict[str, float] = field(default_factory=dict)
     warming_reliever: bool = False
     bullpen_warmups: Dict[str, WarmupTracker] = field(default_factory=dict)
+    current_pitcher_state: PitcherState | None = None
 
     def __post_init__(self) -> None:
         if self.pitchers:
@@ -204,6 +205,13 @@ class TeamState:
             fs = self.fielding_stats.setdefault(p.player_id, FieldingState(p))
             fs.g += 1
             fs.gs += 1
+
+    def __getstate__(self):
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+
+    def __setstate__(self, state):
+        for name, value in state.items():
+            setattr(self, name, value)
 
 
 class GameSimulation:

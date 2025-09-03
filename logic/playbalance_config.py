@@ -584,6 +584,12 @@ class PlayBalanceConfig:
 
     values: Dict[str, Any] = field(default_factory=dict)
 
+    def __getstate__(self) -> Dict[str, Any]:
+        return self.values
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.values = state
+
     # ------------------------------------------------------------------
     # Construction helpers
     # ------------------------------------------------------------------
