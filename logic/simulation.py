@@ -258,6 +258,8 @@ class GameSimulation:
         self.last_batted_ball_angles: tuple[float, float] | None = None
         self.last_batted_ball_type: str | None = None
         self.last_pitch_speed: float | None = None
+        self.two_strike_counts = 0
+        self.three_ball_counts = 0
 
     # ------------------------------------------------------------------
     # Fatigue helpers
@@ -862,6 +864,8 @@ class GameSimulation:
         outs = 0
         balls = 0
         strikes = 0
+        seen_two_strike = False
+        seen_three_ball = False
 
         if ibb:
             self._add_stat(batter_state, "bb")
@@ -882,6 +886,13 @@ class GameSimulation:
         run_diff = offense.runs - defense.runs
 
         while True:
+            if not seen_two_strike and strikes >= 2:
+                seen_two_strike = True
+                self.two_strike_counts += 1
+            if not seen_three_ball and balls >= 3:
+                seen_three_ball = True
+                self.three_ball_counts += 1
+
             self._update_fatigue(pitcher_state)
             pitcher = self._fatigued_pitcher(pitcher_state.player)
             self._set_runner_leads(offense)
@@ -1330,6 +1341,13 @@ class GameSimulation:
                         pitcher_state.balls_thrown += 1
 
             self._maybe_passed_ball(offense, defense, catcher_fs)
+
+            if not seen_two_strike and strikes >= 2:
+                seen_two_strike = True
+                self.two_strike_counts += 1
+            if not seen_three_ball and balls >= 3:
+                seen_three_ball = True
+                self.three_ball_counts += 1
 
             if balls >= 4:
                 self._add_stat(batter_state, "bb")

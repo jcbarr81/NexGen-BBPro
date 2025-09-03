@@ -182,6 +182,8 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
         totals["GIDP"] += sum(p.get("gidp", 0) for p in batting)
         totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
         totals["Strikes"] += sum(p["strikes"] for p in pitching)
+    totals["TwoStrikeCounts"] += sim.two_strike_counts
+    totals["ThreeBallCounts"] += sim.three_ball_counts
     return totals
 
 
@@ -284,6 +286,8 @@ def simulate_season_average(
     print(f"Pitches/PA: {p_pa:.2f}")
     print(f"BABIP: {babip:.3f}")
     print(f"DoublePlayRate: {dp_rate:.3f}")
+    print(f"Total two-strike counts: {totals['TwoStrikeCounts']}")
+    print(f"Total three-ball counts: {totals['ThreeBallCounts']}")
 
 
 if __name__ == "__main__":
