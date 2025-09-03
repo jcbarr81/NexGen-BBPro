@@ -13,8 +13,9 @@ DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # MLB averages used to derive strike-based foul rates from all pitches.
-# Roughly 26 percent of MLB pitches are fouled off in modern play.
-_FOUL_PITCH_BASE_PCT = 26  # Percent of all pitches that are fouls
+# Roughly 26 percent of MLB pitches are fouled off in modern play; bump to 30
+# to encourage longer at-bats in the simulation.
+_FOUL_PITCH_BASE_PCT = 30  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
@@ -141,15 +142,15 @@ _DEFAULTS: Dict[str, Any] = {
     "flyBallBaseRate": 35,
     "lineDriveBaseRate": 21,
     # Hit type distribution reflecting recent MLB averages
-    "hit1BProb": 64,
-    "hit2BProb": 20,
+    "hit1BProb": 78,
+    "hit2BProb": 15,
     "hit3BProb": 2,
-    "hitHRProb": 14,
+    "hitHRProb": 5,
     # Hit probability tuning ----------------------------------------
-    # Baseline additive hit probability tuned for roughly a .245 average
-    # after other modifiers.
-    "hitProbBase": 0.045,
-    "contactFactorBase": 0.8,
+    # Baseline additive hit probability tuned for a lower league-wide average
+    # to curb excessive offense after other modifiers.
+    "hitProbBase": 0.03,
+    "contactFactorBase": 1.0,
     "contactFactorDiv": 350,
     "movementFactorMin": 0.2,
     "movementImpactScale": 0.8,
@@ -160,14 +161,14 @@ _DEFAULTS: Dict[str, Any] = {
     "foulStrikeBasePct": round(
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
-    "foulContactTrendPct": 1.5,
-    # Target roughly 18% of all pitches being put into play
-    "ballInPlayPitchPct": 18,
+    "foulContactTrendPct": 2.0,
+    # Target roughly 15% of all pitches being put into play
+    "ballInPlayPitchPct": 15,
     "ballInPlayOuts": 0,
     # Probability that a ground ball with a force at second becomes a double play
-    "doublePlayProb": 0.1,
+    "doublePlayProb": 0.25,
     # Baseline aggression for runners attempting extra bases
-    "baserunningAggression": 0.5,
+    "baserunningAggression": 0.45,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 60,
     # Pitcher AI ------------------------------------------------------
@@ -190,12 +191,12 @@ _DEFAULTS: Dict[str, Any] = {
     "closeStrikeDist": 5,
     "closeBallDist": 4,
     # Baseline swing probabilities reflecting MLB averages
-    "swingProbSureStrike": 0.85,
-    "swingProbCloseStrike": 0.6,
-    "swingProbCloseBall": 0.25,
-    "swingProbSureBall": 0.1,
+    "swingProbSureStrike": 0.75,
+    "swingProbCloseStrike": 0.5,
+    "swingProbCloseBall": 0.2,
+    "swingProbSureBall": 0.05,
     # Global swing probability scaling factor
-    "swingProbScale": 1.0,
+    "swingProbScale": 0.9,
     "lookPrimaryType00CountAdjust": 0,
     "lookPrimaryType01CountAdjust": 0,
     "lookPrimaryType02CountAdjust": 0,
