@@ -6,6 +6,28 @@ import scripts.simulate_season_avg as ssa
 import logic.simulation as sim
 from tests.test_physics import make_player, make_pitcher
 from logic.simulation import TeamState
+from collections import Counter
+
+
+def fake_sim_game(home_id, away_id, seed):
+    return Counter({
+        "Runs": 0,
+        "Hits": 0,
+        "Doubles": 0,
+        "Triples": 0,
+        "HomeRuns": 10,
+        "Walks": 0,
+        "Strikeouts": 20,
+        "StolenBases": 0,
+        "CaughtStealing": 0,
+        "HitByPitch": 0,
+        "PlateAppearances": 130,
+        "AtBats": 100,
+        "SacFlies": 5,
+        "GIDP": 2,
+        "TotalPitchesThrown": 0,
+        "Strikes": 0,
+    })
 
 
 def _run_sim(monkeypatch):
@@ -32,6 +54,7 @@ def _run_sim(monkeypatch):
     monkeypatch.setattr(ssa, "generate_mlb_schedule", short_schedule)
     monkeypatch.setattr(ssa, "load_teams", short_load)
     monkeypatch.setattr(ssa, "build_default_game_state", fake_build)
+    monkeypatch.setattr(ssa, "_simulate_game", fake_sim_game)
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         ssa.simulate_season_average(use_tqdm=False)
@@ -48,4 +71,4 @@ def _parse(lines, prefix):
 def test_simulation_double_play_rate(monkeypatch):
     lines = _run_sim(monkeypatch)
     dp_rate = _parse(lines, "DoublePlayRate")
-    assert dp_rate < 0.03
+    assert 0.01 < dp_rate < 0.03
