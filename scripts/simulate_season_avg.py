@@ -224,6 +224,20 @@ def simulate_season_average(
         0,
         100 - cfg.hit1BProb - cfg.hit2BProb - cfg.hit3BProb,
     )
+    at_bats = float(row["AtBats"])
+    walks = float(row["Walks"])
+    hbp = float(row["HitByPitch"])
+    plate_appearances = at_bats + walks + hbp
+    cfg.hitProbBase = hits / plate_appearances if plate_appearances else 0.0
+    total_pitches = float(row["TotalPitchesThrown"])
+    strikeouts = float(row["Strikeouts"])
+    homers = float(row["HomeRuns"])
+    balls_in_play = at_bats - strikeouts - homers
+    cfg.ballInPlayPitchPct = int(
+        round(balls_in_play / total_pitches * 100)
+    )
+    pitches_per_pa = total_pitches / plate_appearances if plate_appearances else 0.0
+    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
