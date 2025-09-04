@@ -25,6 +25,10 @@ _LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
 # number have different sensible defaults, e.g. ``speedBase`` and
 # ``swingSpeedBase`` which mirror the behaviour of the original game engine.
 _DEFAULTS: Dict[str, Any] = {
+    # Simulation sanity limits
+    "halfInningLimitEnabled": 1,
+    "maxHalfInningPA": 50,
+    "maxHalfInningRuns": 30,
     # Physics --------------------------------------------------------
     "speedBase": 19,
     "speedPct": 5,
