@@ -1697,6 +1697,14 @@ class GameSimulation:
         else:
             self._add_stat(batter_state, "fb")
             pitcher_state.fb += 1
+        # Simple defensive outcome to curb inflated offense
+        out_prob = {
+            "ground": self.config.get("groundOutProb", 0.0),
+            "line": self.config.get("lineOutProb", 0.0),
+            "fly": self.config.get("flyOutProb", 0.0),
+        }[self.last_batted_ball_type]
+        if self.rng.random() < out_prob:
+            return 0, False
         roll_dist = self.physics.ball_roll_distance(
             bat_speed,
             self.surface,
@@ -1723,7 +1731,7 @@ class GameSimulation:
         hit_prob = max(
             0.0,
             min(
-                0.95,
+                self.config.get("hitProbCap", 0.95),
                 (
                     (bat_speed / 100.0)
                     * contact_quality
