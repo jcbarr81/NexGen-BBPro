@@ -1,5 +1,8 @@
 """Simulate a full 162-game season and report average box score stats.
 
+The schedule should contain ``len(teams) * games_per_team // 2`` games; a
+length mismatch likely means duplicate entries that would inflate averages.
+
 For lengthy runs this script can benefit from PyPy's JIT or by invoking
 CPython with ``python -O`` to skip asserts. When using PyPy ensure required
 C extensions such as ``bcrypt`` are available; GUI-focused modules like
@@ -244,6 +247,15 @@ def simulate_season_average(
     games = [
         (g["home"], g["away"], 42 + i) for i, g in enumerate(schedule)
     ]
+    # Expect one schedule entry per game; duplicates would inflate averages.
+    games_per_team = 162
+    expected_games = len(teams) * games_per_team // 2
+    if len(games) != expected_games:
+        raise ValueError(
+            f"Schedule length mismatch: expected {expected_games} games "
+            f"but got {len(games)}"
+        )
+
     totals: Counter[str] = Counter()
     with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
         iterator = pool.imap_unordered(_simulate_game_star, games, chunksize=10)
