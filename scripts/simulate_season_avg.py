@@ -12,8 +12,20 @@ C extensions such as ``bcrypt`` are available; GUI-focused modules like
 from __future__ import annotations
 import os
 
-try:
-    import psutil
+
+def configure_perf_tuning() -> None:
+    """Configure process priority and CPU affinity using ``psutil``.
+
+    This function is intended to run only in the main process to avoid
+    repeating the tuning in worker processes spawned by
+    ``multiprocessing``.
+    """
+
+    try:
+        import psutil
+    except ImportError:
+        print("[PerfTune] psutil not installed; skipping priority/affinity tuning")
+        return
 
     p = psutil.Process()
 
@@ -24,8 +36,8 @@ try:
         # Alternatives:
         # p.nice(psutil.REALTIME_PRIORITY_CLASS)   # DANGEROUS: may freeze system
         # p.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)
-        print(f"[PerfTune] Process priority set to High")
-    except Exception as e:
+        print("[PerfTune] Process priority set to High")
+    except Exception as e:  # pragma: no cover - platform dependent
         print(f"[PerfTune] Could not set priority: {e}")
 
     # --- Set CPU affinity (all logical CPUs) ---
@@ -33,11 +45,8 @@ try:
         cpu_count = os.cpu_count() or 1
         p.cpu_affinity(list(range(cpu_count)))
         print(f"[PerfTune] CPU affinity set to all {cpu_count} cores")
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - platform dependent
         print(f"[PerfTune] Could not set CPU affinity: {e}")
-
-except ImportError:
-    print("[PerfTune] psutil not installed; skipping priority/affinity tuning")
 
 # --- Threading environment (vectorized libs like numpy, MKL, OpenMP) ---
 
@@ -285,6 +294,7 @@ if __name__ == "__main__":
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
+    configure_perf_tuning()
     simulate_season_average(
         use_tqdm=use_tqdm, ball_in_play_outs=args.ball_in_play_outs
     )
