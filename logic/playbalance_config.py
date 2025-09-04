@@ -156,6 +156,12 @@ _DEFAULTS: Dict[str, Any] = {
     "contactFactorDiv": 350,
     "movementFactorMin": 0.2,
     "movementImpactScale": 0.8,
+    # Cap on final hit probability to prevent excessive offense
+    "hitProbCap": 0.95,
+    # Baseline probabilities for converting batted balls into outs
+    "groundOutProb": 0.0,
+    "lineOutProb": 0.0,
+    "flyOutProb": 0.0,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
