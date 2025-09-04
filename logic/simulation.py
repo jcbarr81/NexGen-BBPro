@@ -721,10 +721,29 @@ class GameSimulation:
         start_runs = offense.runs
         start_log = len(self.debug_log)
         outs = 0
+        plate_appearances = 0
+        max_pa = self.config.get("maxHalfInningPA", 0)
+        max_runs = self.config.get("maxHalfInningRuns", 0)
+        limits_enabled = bool(self.config.get("halfInningLimitEnabled", 1))
         while outs < 3:
+            if limits_enabled:
+                if max_pa and plate_appearances >= max_pa:
+                    self.debug_log.append(
+                        f"Aborting half-inning after {plate_appearances} plate appearances "
+                        f"(limit {max_pa})"
+                    )
+                    break
+                runs_scored = offense.runs - start_runs
+                if max_runs and runs_scored >= max_runs:
+                    self.debug_log.append(
+                        f"Aborting half-inning after {runs_scored} runs "
+                        f"(limit {max_runs})"
+                    )
+                    break
             self.current_outs = outs
             self._set_defensive_alignment(offense, defense, outs)
             outs += self.play_at_bat(offense, defense)
+            plate_appearances += 1
         inning_events = self.debug_log[start_log:]
         for runner in offense.bases:
             if runner is not None:
