@@ -14,6 +14,187 @@ from utils.openai_client import client
 from utils.team_loader import load_teams
 
 
+# Hair color to hex mapping used for template recoloring
+_HAIR_COLOR_HEX = {
+    "black": "#2b2b2b",
+    "brown": "#5b4632",
+    "blonde": "#d8b25a",
+    "red": "#a64b2a",
+}
+
+
+def _select_template(ethnicity: str, facial_hair: str) -> Path:
+    """Return the appropriate avatar template path.
+
+    Parameters
+    ----------
+    ethnicity:
+        Player ethnicity used to select the template directory. Falls back to
+        ``"Anglo"`` if an unknown value is provided.
+    facial_hair:
+        Style of facial hair. ``"clean_shaven"`` maps to ``"clean.png"``.
+    """
+
+    base = Path("images/avatars/Template")
+    ethnic_dir = base / (ethnicity if (base / ethnicity).exists() else "Anglo")
+    hair_map = {"clean_shaven": "clean"}
+    fname = hair_map.get(facial_hair, facial_hair) + ".png"
+    path = ethnic_dir / fname
+    if not path.exists():
+        path = base / "Anglo" / "clean.png"
+    return path
+
+
+def _hex_to_bgr(h: str):
+    h = h.lstrip("#")
+    if len(h) != 6:
+        raise ValueError("Hex color must be 6 characters like #E00000")
+    r = int(h[0:2], 16)
+    g = int(h[2:4], 16)
+    b = int(h[4:6], 16)
+    return b, g, r
+
+
+def _make_hsv_range(src_hex: str, tol_h=12, tol_s=60, tol_v=60):
+    import numpy as np
+    import cv2
+
+    src_bgr = np.uint8([[list(_hex_to_bgr(src_hex))]])
+    src_hsv = cv2.cvtColor(src_bgr, cv2.COLOR_BGR2HSV)[0, 0]
+    h, s, v = int(src_hsv[0]), int(src_hsv[1]), int(src_hsv[2])
+    low_h = h - tol_h
+    high_h = h + tol_h
+    ranges = []
+    if low_h >= 0 and high_h <= 179:
+        ranges.append(
+            (
+                np.array([low_h, max(0, s - tol_s), max(0, v - tol_v)], dtype=np.uint8),
+                np.array([high_h, min(255, s + tol_s), min(255, v + tol_v)], dtype=np.uint8),
+            )
+        )
+    else:
+        ranges.append(
+            (
+                np.array(
+                    [
+                        max(0, low_h) if low_h >= 0 else 0,
+                        max(0, s - tol_s),
+                        max(0, v - tol_v),
+                    ],
+                    dtype=np.uint8,
+                ),
+                np.array([179, min(255, s + tol_s), min(255, v + tol_v)], dtype=np.uint8),
+            )
+        )
+        ranges.append(
+            (
+                np.array([0, max(0, s - tol_s), max(0, v - tol_v)], dtype=np.uint8),
+                np.array(
+                    [
+                        high_h - 179 if high_h > 179 else high_h,
+                        min(255, s + tol_s),
+                        min(255, v + tol_v),
+                    ],
+                    dtype=np.uint8,
+                ),
+            )
+        )
+    return ranges
+
+
+def _recolor_by_hex(img, src_hex: str, dst_hex: str, feather: float = 3.0,
+                    sat_blend: float = 0.5):
+    import numpy as np
+    import cv2
+
+    has_alpha = img.shape[2] == 4
+    bgr = img[:, :, :3]
+    alpha = img[:, :, 3] if has_alpha else None
+
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    ranges = _make_hsv_range(src_hex)
+    mask = None
+    for lower, upper in ranges:
+        part = cv2.inRange(hsv, lower, upper)
+        mask = part if mask is None else cv2.bitwise_or(mask, part)
+
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
+    if feather > 0:
+        mask = cv2.GaussianBlur(mask, (0, 0), feather)
+
+    target_bgr = np.uint8([[list(_hex_to_bgr(dst_hex))]])
+    target_hsv = cv2.cvtColor(target_bgr, cv2.COLOR_BGR2HSV)[0, 0]
+    th, ts = int(target_hsv[0]), int(target_hsv[1])
+    h, s, v = cv2.split(hsv)
+    alpha_f = (mask.astype(np.float32) / 255.0)[:, :, None]
+    h_f = h.astype(np.float32)
+    s_f = s.astype(np.float32)
+    target_s = (sat_blend * s_f + (1.0 - sat_blend) * ts).astype(np.float32)
+    h_new = (alpha_f * th + (1 - alpha_f) * h_f).astype(np.uint8)
+    s_new = (alpha_f * target_s + (1 - alpha_f) * s_f).astype(np.uint8)
+    hsv_new = cv2.merge([h_new, s_new, v])
+    bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
+    if has_alpha:
+        bgr_new = cv2.merge([bgr_new, alpha])
+    return bgr_new
+
+
+def generate_player_avatars(out_dir: str = "images/avatars",
+                             progress_callback=None) -> str:
+    """Generate avatars for all players using template images.
+
+    The function selects the correct template based on a player's ethnicity and
+    facial hair and recolors the hat, jersey, and hair to match team and player
+    attributes.
+    """
+
+    from utils.player_loader import load_players_from_csv
+    from utils.roster_loader import load_roster
+
+    import cv2
+
+    players = {
+        p.player_id: p for p in load_players_from_csv("data/players.csv")
+    }
+
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    # Collect all player IDs across rosters
+    player_team_pairs = []
+    for team_id in _TEAM_COLOR_MAP:
+        roster = load_roster(team_id)
+        ids = roster.act + roster.aaa + roster.low + roster.dl + roster.ir
+        for pid in ids:
+            player_team_pairs.append((pid, team_id))
+
+    total = len(player_team_pairs) or 1
+    for idx, (pid, team_id) in enumerate(player_team_pairs, start=1):
+        player = players.get(pid)
+        if not player:
+            continue
+
+        template = _select_template(player.ethnicity, player.facial_hair)
+        img = cv2.imread(str(template), cv2.IMREAD_UNCHANGED)
+        if img is None:
+            continue
+
+        colors = _team_colors(team_id)
+        img = _recolor_by_hex(img, "#7A4BD6", colors["primary"])
+        hair_hex = _HAIR_COLOR_HEX.get(player.hair_color.lower())
+        if hair_hex:
+            img = _recolor_by_hex(img, "#5b4632", hair_hex)
+
+        cv2.imwrite(str(out_path / f"{pid}.png"), img)
+
+        if progress_callback is not None:
+            progress_callback(int(idx / total * 100))
+
+    return str(out_path)
+
+
 # Preload team colors once to avoid repeated file reads.
 # Mapping: team_id -> {"primary": color, "secondary": color}
 _TEAM_COLOR_MAP: Dict[str, Dict[str, str]] = {
@@ -148,4 +329,4 @@ def generate_avatar(
         img.save(out_file, format="PNG")
     return out_file
 
-__all__ = ["generate_avatar"]
+__all__ = ["generate_avatar", "generate_player_avatars"]
