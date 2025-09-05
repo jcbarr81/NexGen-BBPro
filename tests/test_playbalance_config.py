@@ -83,3 +83,9 @@ def test_reset_overrides(tmp_path, monkeypatch):
     assert not playbalance_config._OVERRIDE_PATH.exists()
 
 
+def test_get_uses_default(monkeypatch):
+    monkeypatch.setitem(playbalance_config._DEFAULTS, "sampleKey", 99)
+    cfg = PlayBalanceConfig.from_dict({})
+    assert cfg.get("sampleKey") == 99
+
+
