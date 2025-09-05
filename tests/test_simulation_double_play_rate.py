@@ -25,7 +25,7 @@ def fake_sim_game(home_id, away_id, seed):
         "PlateAppearances": 130,
         "AtBats": 100,
         "SacFlies": 5,
-        "GIDP": 2,
+        "GIDP": 8,
         "TotalPitchesThrown": 0,
         "Strikes": 0,
     })
@@ -80,4 +80,4 @@ def _parse(lines, prefix):
 def test_simulation_double_play_rate(monkeypatch):
     lines = _run_sim(monkeypatch)
     dp_rate = _parse(lines, "DoublePlayRate")
-    assert 0.01 < dp_rate < 0.03
+    assert 0.09 < dp_rate < 0.13

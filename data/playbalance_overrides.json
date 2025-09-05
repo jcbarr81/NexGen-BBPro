@@ -64,7 +64,7 @@
   "swingProbScale": 0.9,
   "swingProbSureBall": 0.1,
   "swingProbSureStrike": 0.85,
-  "doublePlayProb": 0.5,
+  "doublePlayProb": 0.8,
   "relaySlop": 8,
   "tagTimeSlop": 1,
   "baserunningAggression": 0.45,
