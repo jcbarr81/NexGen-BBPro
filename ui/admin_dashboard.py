@@ -450,6 +450,18 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", str(exc))
 
     def generate_player_avatars(self) -> None:
+        initial = (
+            QMessageBox.question(
+                self,
+                "Initial Creation",
+                "Is this the initial creation of player avatars?\n"
+                "Yes will remove existing avatars (except Template).",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            == QMessageBox.StandardButton.Yes
+        )
+
         progress = QProgressDialog(
             "Generating player avatars...",
             None,
@@ -465,7 +477,9 @@ class MainWindow(QMainWindow):
         try:
             from utils.avatar_generator import generate_player_avatars
 
-            out_dir = generate_player_avatars(progress_callback=progress.setValue)
+            out_dir = generate_player_avatars(
+                progress_callback=progress.setValue, initial_creation=initial
+            )
             QMessageBox.information(
                 self, "Avatars Generated", f"Player avatars saved to {out_dir}"
             )
