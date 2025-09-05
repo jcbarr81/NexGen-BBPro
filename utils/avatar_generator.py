@@ -41,8 +41,11 @@ _ETHNICITY_DIR = {
 }
 
 # Base colors present in the avatar templates that need to be replaced.
-_HAT_HEX = "#7A4BD6"
-_JERSEY_HEX = "#C9C9C9"
+# These hex values correspond to the default hat and jersey colors in the
+# shipped template images.  Any pixels matching these colors will be
+# recolored to match the player's team colors.
+_HAT_HEX = "#1B437E"
+_JERSEY_HEX = "#B7B8B8"
 
 
 def _select_template(ethnicity: str, facial_hair: str | None) -> Path:
