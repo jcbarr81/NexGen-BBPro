@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import csv
+import shutil
 from collections import Counter, defaultdict
 from io import BytesIO
 from pathlib import Path
@@ -168,13 +169,27 @@ def _recolor_by_hex(img, src_hex: str, dst_hex: str, feather: float = 3.0,
     return bgr_new
 
 
-def generate_player_avatars(out_dir: str = "images/avatars",
-                             progress_callback=None) -> str:
+def generate_player_avatars(
+    out_dir: str = "images/avatars",
+    progress_callback=None,
+    initial_creation: bool = False,
+) -> str:
     """Generate avatars for all players using template images.
 
     The function selects the correct template based on a player's ethnicity and
     facial hair and recolors the hat, jersey, and hair to match team and player
     attributes.
+
+    Parameters
+    ----------
+    out_dir:
+        Directory where avatar images will be written.
+    progress_callback:
+        Optional callable to receive progress percentage updates.
+    initial_creation:
+        When ``True`` all existing player avatars in ``out_dir`` are deleted
+        before generation (the ``Template`` folder is preserved).  When
+        ``False`` avatars are only generated for players missing an image.
     """
 
     from utils.player_loader import load_players_from_csv
@@ -188,6 +203,14 @@ def generate_player_avatars(out_dir: str = "images/avatars",
 
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
+    if initial_creation:
+        for item in out_path.iterdir():
+            if item.name in {"Template", "default.png"}:
+                continue
+            if item.is_file():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
 
     # Collect all player IDs across rosters
     player_team_pairs = []
@@ -201,6 +224,12 @@ def generate_player_avatars(out_dir: str = "images/avatars",
     for idx, (pid, team_id) in enumerate(player_team_pairs, start=1):
         player = players.get(pid)
         if not player:
+            continue
+
+        out_file = out_path / f"{pid}.png"
+        if not initial_creation and out_file.exists():
+            if progress_callback is not None:
+                progress_callback(int(idx / total * 100))
             continue
 
         ethnicity = player.ethnicity or _infer_ethnicity(
@@ -218,7 +247,7 @@ def generate_player_avatars(out_dir: str = "images/avatars",
         if hair_hex:
             img = _recolor_by_hex(img, _HAIR_COLOR_HEX["brown"], hair_hex)
 
-        cv2.imwrite(str(out_path / f"{pid}.png"), img)
+        cv2.imwrite(str(out_file), img)
 
         if progress_callback is not None:
             progress_callback(int(idx / total * 100))
