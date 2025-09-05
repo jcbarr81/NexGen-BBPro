@@ -28,11 +28,15 @@ _ETHNICITY_DIR = {
     "anglo": "Anglo",
     "caucasian": "Anglo",
     "african": "African",
+    "african american": "African",
     "black": "African",
     "asian": "Asian",
+    "asian american": "Asian",
     "pacific islander": "Asian",
     "hispanic": "Hispanic",
+    "hispanic american": "Hispanic",
     "latino": "Hispanic",
+    "latina": "Hispanic",
 }
 
 # Base colors present in the avatar templates that need to be replaced.
@@ -54,7 +58,7 @@ def _select_template(ethnicity: str, facial_hair: str) -> Path:
     """
 
     base = Path("images/avatars/Template")
-    key = ethnicity.strip().lower()
+    key = ethnicity.strip().lower().replace("-", " ")
     ethnic_dir = base / _ETHNICITY_DIR.get(key, "Anglo")
     hair_map = {"clean_shaven": "clean"}
     fname = hair_map.get(facial_hair, facial_hair) + ".png"
