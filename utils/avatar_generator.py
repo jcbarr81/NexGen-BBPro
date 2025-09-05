@@ -11,8 +11,12 @@ from typing import Dict, Tuple
 
 from PIL import Image
 
-from utils.openai_client import client
-from utils.team_loader import load_teams
+try:  # Allow running as a standalone script
+    from utils.openai_client import client
+    from utils.team_loader import load_teams
+except ModuleNotFoundError:  # pragma: no cover - for direct script execution
+    from openai_client import client
+    from team_loader import load_teams
 
 
 # Hair color to hex mapping used for template recoloring
