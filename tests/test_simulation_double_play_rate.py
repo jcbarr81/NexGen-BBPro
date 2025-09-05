@@ -1,6 +1,7 @@
 import contextlib
 import io
 from datetime import timedelta
+from pathlib import Path
 
 import scripts.simulate_season_avg as ssa
 import logic.simulation as sim
@@ -55,9 +56,17 @@ def _run_sim(monkeypatch):
     monkeypatch.setattr(ssa, "load_teams", short_load)
     monkeypatch.setattr(ssa, "build_default_game_state", fake_build)
     monkeypatch.setattr(ssa, "_simulate_game", fake_sim_game)
+    sched_path = (
+        Path(__file__).resolve().parents[1]
+        / "data"
+        / "schedules"
+        / "2025_schedule.pkl"
+    )
+    if sched_path.exists():
+        sched_path.unlink()
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        ssa.simulate_season_average(use_tqdm=False)
+        ssa.simulate_season_average(use_tqdm=False, seed=42)
     return buf.getvalue().splitlines()
 
 

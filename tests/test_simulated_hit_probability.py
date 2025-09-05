@@ -80,7 +80,7 @@ def test_simulated_hit_rate_within_mlb(monkeypatch):
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        ssa.simulate_season_average(use_tqdm=False)
+        ssa.simulate_season_average(use_tqdm=False, seed=42)
     output = buf.getvalue().splitlines()
 
     stat_lines = [
