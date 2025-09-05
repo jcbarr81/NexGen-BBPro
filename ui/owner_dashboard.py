@@ -4,7 +4,11 @@ from datetime import datetime
 from typing import Dict
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QFont
+try:
+    from PyQt6.QtGui import QAction, QFont, QPixmap
+except ImportError:  # pragma: no cover - support test stubs
+    from PyQt6.QtGui import QFont, QPixmap
+    from PyQt6.QtWidgets import QAction
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -39,6 +43,7 @@ from utils.player_loader import load_players_from_csv
 from utils.free_agent_finder import find_free_agents
 from utils.pitcher_role import get_role
 from utils.team_loader import load_teams
+from utils.path_utils import get_base_dir
 
 
 class OwnerDashboard(QMainWindow):
@@ -66,6 +71,16 @@ class OwnerDashboard(QMainWindow):
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(10, 12, 10, 12)
         side.setSpacing(6)
+
+        logo_path = get_base_dir() / "logo" / "teams" / f"{team_id.lower()}.png"
+        if logo_path.exists():
+            logo_label = QLabel()
+            pixmap = QPixmap(str(logo_path)).scaledToWidth(
+                96, Qt.TransformationMode.SmoothTransformation
+            )
+            logo_label.setPixmap(pixmap)
+            logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            side.addWidget(logo_label)
 
         brand = QLabel(f"⚾  {team_id} Owner")
         brand.setStyleSheet("font-weight:900; font-size:16px;")
