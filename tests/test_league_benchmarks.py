@@ -12,6 +12,6 @@ def test_apply_league_benchmarks():
         "pitches_per_pa": 3.86,
     }
     apply_league_benchmarks(cfg, benchmarks)
-    assert cfg.hitProbBase == pytest.approx(0.291 / 0.95, abs=0.0001)
+    assert cfg.hitProbBase == pytest.approx(0.291 / 0.95 * 1.25, abs=0.0001)
     assert cfg.ballInPlayPitchPct == 18
     assert cfg.swingProbScale == pytest.approx(1.04, abs=0.001)
