@@ -1350,6 +1350,20 @@ class GameSimulation:
                         pitcher_state.balls_thrown += 1
                     self._add_stat(batter_state, "ab")
                     outs += 1
+                    if (
+                        self.last_batted_ball_type == "ground"
+                        and offense.bases[0] is not None
+                    ):
+                        if self.rng.random() < self.config.get("doublePlayProb", 0):
+                            outs += 1
+                            self._add_stat(batter_state, "gidp")
+                            offense.bases[0] = None
+                            offense.base_pitchers[0] = None
+                        else:
+                            offense.bases[1] = offense.bases[0]
+                            offense.base_pitchers[1] = offense.base_pitchers[0]
+                            offense.bases[0] = None
+                            offense.base_pitchers[0] = None
                     pitcher_state.toast += self.config.get("pitchScoringOut", 0)
                     pitcher_state.consecutive_hits = 0
                     pitcher_state.consecutive_baserunners = 0
