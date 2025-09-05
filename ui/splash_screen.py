@@ -6,17 +6,17 @@ from ui.login_window import LoginWindow
 from utils.path_utils import get_base_dir
 
 class SplashScreen(QWidget):
-    """Initial splash screen displaying the UBL logo and start button."""
+    """Initial splash screen displaying the NexGen logo and start button."""
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("UBL")
+        self.setWindowTitle("NexGen BBPro")
 
         layout = QVBoxLayout()
         layout.addStretch()
 
         logo_label = QLabel()
-        logo_path = get_base_dir() / "logo" / "UBL.png"
+        logo_path = get_base_dir() / "logo" / "NexGen.png"
         logo_label.setPixmap(QPixmap(str(logo_path)))
         logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(logo_label)
