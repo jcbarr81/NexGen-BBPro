@@ -773,8 +773,6 @@ class PlayBalanceConfig:
             self.values[key] = value
 
 
-PlayBalanceConfig.load_overrides()
-
 if _benchmarks:
     _DEFAULTS["ballInPlayPitchPct"] = int(
         round(_benchmarks.get("pitches_put_in_play_pct", 0.175) * 100)
@@ -784,6 +782,10 @@ if _benchmarks:
     gb_pct = _benchmarks.get("bip_gb_pct", 0.44)
     if gb_pct:
         _DEFAULTS["doublePlayProb"] = round(dp_pct / gb_pct, 3)
+
+# Apply overrides after incorporating league benchmark defaults so that any
+# manual tuning in ``playbalance_overrides.json`` takes precedence.
+PlayBalanceConfig.load_overrides()
 
 
 __all__ = ["PlayBalanceConfig"]

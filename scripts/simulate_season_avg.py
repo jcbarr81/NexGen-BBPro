@@ -192,7 +192,10 @@ def apply_league_benchmarks(
     """
 
     hr_rate = cfg.hitHRProb / 100
-    cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
+    # The raw league BABIP underestimates hits in our simplified physics model.
+    # Apply a modest boost to the baseline hit probability to better match
+    # observed MLB averages.
+    cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate) * 1.25
     cfg.ballInPlayPitchPct = int(
         round(benchmarks["pitches_put_in_play_pct"] * 100)
     )
