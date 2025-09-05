@@ -22,6 +22,23 @@ _HAIR_COLOR_HEX = {
     "red": "#a64b2a",
 }
 
+# Map various ethnicity strings to the available template directories. Any
+# unrecognized value falls back to ``Anglo``.
+_ETHNICITY_DIR = {
+    "anglo": "Anglo",
+    "caucasian": "Anglo",
+    "african": "African",
+    "black": "African",
+    "asian": "Asian",
+    "pacific islander": "Asian",
+    "hispanic": "Hispanic",
+    "latino": "Hispanic",
+}
+
+# Base colors present in the avatar templates that need to be replaced.
+_HAT_HEX = "#7A4BD6"
+_JERSEY_HEX = "#C9C9C9"
+
 
 def _select_template(ethnicity: str, facial_hair: str) -> Path:
     """Return the appropriate avatar template path.
@@ -29,14 +46,16 @@ def _select_template(ethnicity: str, facial_hair: str) -> Path:
     Parameters
     ----------
     ethnicity:
-        Player ethnicity used to select the template directory. Falls back to
-        ``"Anglo"`` if an unknown value is provided.
+        Player ethnicity used to select the template directory. The string is
+        normalized and mapped to one of the available template folders.
+        Unrecognized values default to the ``Anglo`` templates.
     facial_hair:
         Style of facial hair. ``"clean_shaven"`` maps to ``"clean.png"``.
     """
 
     base = Path("images/avatars/Template")
-    ethnic_dir = base / (ethnicity if (base / ethnicity).exists() else "Anglo")
+    key = ethnicity.strip().lower()
+    ethnic_dir = base / _ETHNICITY_DIR.get(key, "Anglo")
     hair_map = {"clean_shaven": "clean"}
     fname = hair_map.get(facial_hair, facial_hair) + ".png"
     path = ethnic_dir / fname
@@ -180,16 +199,20 @@ def generate_player_avatars(out_dir: str = "images/avatars",
         if not player:
             continue
 
-        template = _select_template(player.ethnicity, player.facial_hair)
+        ethnicity = player.ethnicity or _infer_ethnicity(
+            f"{player.first_name} {player.last_name}"
+        )
+        template = _select_template(ethnicity, player.facial_hair)
         img = cv2.imread(str(template), cv2.IMREAD_UNCHANGED)
         if img is None:
             continue
 
         colors = _team_colors(team_id)
-        img = _recolor_by_hex(img, "#7A4BD6", colors["primary"])
+        img = _recolor_by_hex(img, _HAT_HEX, colors["primary"])
+        img = _recolor_by_hex(img, _JERSEY_HEX, colors["secondary"])
         hair_hex = _HAIR_COLOR_HEX.get(player.hair_color.lower())
         if hair_hex:
-            img = _recolor_by_hex(img, "#5b4632", hair_hex)
+            img = _recolor_by_hex(img, _HAIR_COLOR_HEX["brown"], hair_hex)
 
         cv2.imwrite(str(out_path / f"{pid}.png"), img)
 

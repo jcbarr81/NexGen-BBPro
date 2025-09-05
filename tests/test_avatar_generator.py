@@ -18,3 +18,8 @@ def test_select_template_path_resolution():
     assert "Template/Asian/goatee.png" in str(path)
     clean = _select_template("Hispanic", "clean_shaven")
     assert clean.name == "clean.png"
+
+
+def test_select_template_normalizes_ethnicity():
+    path = _select_template("latino", "clean_shaven")
+    assert "Template/Hispanic/clean.png" in str(path)
