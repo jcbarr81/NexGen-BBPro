@@ -45,7 +45,7 @@ _HAT_HEX = "#7A4BD6"
 _JERSEY_HEX = "#C9C9C9"
 
 
-def _select_template(ethnicity: str, facial_hair: str) -> Path:
+def _select_template(ethnicity: str, facial_hair: str | None) -> Path:
     """Return the appropriate avatar template path.
 
     Parameters
@@ -55,17 +55,28 @@ def _select_template(ethnicity: str, facial_hair: str) -> Path:
         normalized and mapped to one of the available template folders.
         Unrecognized values default to the ``Anglo`` templates.
     facial_hair:
-        Style of facial hair. ``"clean_shaven"`` maps to ``"clean.png"``.
+        Style of facial hair. ``None`` or empty strings fall back to
+        ``"clean.png"``. ``"clean_shaven"`` also maps to ``"clean.png"``.
     """
 
     base = Path("images/avatars/Template")
     key = ethnicity.strip().lower().replace("-", " ")
     ethnic_dir = base / _ETHNICITY_DIR.get(key, "Anglo")
+
+    # ``facial_hair`` may be ``None`` or an empty string for clean-shaven
+    # players. Normalize it before constructing the filename so that we use the
+    # correct template directory rather than always falling back to the Anglo
+    # set.
+    fh_key = (facial_hair or "clean").strip().lower()
     hair_map = {"clean_shaven": "clean"}
-    fname = hair_map.get(facial_hair, facial_hair) + ".png"
+    fname = hair_map.get(fh_key, fh_key) + ".png"
     path = ethnic_dir / fname
     if not path.exists():
-        path = base / "Anglo" / "clean.png"
+        # Fall back to the clean template within the selected ethnicity before
+        # ultimately defaulting to the Anglo clean template.
+        path = ethnic_dir / "clean.png"
+        if not path.exists():
+            path = base / "Anglo" / "clean.png"
     return path
 
 
