@@ -16,9 +16,14 @@ from typing import Callable, List, Optional
 
 from PIL import Image
 
-from utils.openai_client import client
-from utils.team_loader import load_teams
-from utils.path_utils import get_base_dir
+try:  # Allow running as a standalone script
+    from utils.openai_client import client
+    from utils.team_loader import load_teams
+    from utils.path_utils import get_base_dir
+except ModuleNotFoundError:  # pragma: no cover - for direct script execution
+    from openai_client import client
+    from team_loader import load_teams
+    from path_utils import get_base_dir
 
 
 def _auto_logo_fallback(
