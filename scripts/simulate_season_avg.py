@@ -177,6 +177,29 @@ def _simulate_game_star(args: tuple[str, str, int]) -> Counter[str]:
     return _simulate_game(*args)
 
 
+def apply_league_benchmarks(
+    cfg: PlayBalanceConfig, benchmarks: dict[str, float]
+) -> None:
+    """Configure ``cfg`` using league-wide benchmark rates.
+
+    Parameters
+    ----------
+    cfg:
+        Play balance configuration instance to modify.
+    benchmarks:
+        Mapping of metric keys to numeric values loaded from
+        ``mlb_league_benchmarks_2025_filled.csv``.
+    """
+
+    hr_rate = cfg.hitHRProb / 100
+    cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
+    cfg.ballInPlayPitchPct = int(
+        round(benchmarks["pitches_put_in_play_pct"] * 100)
+    )
+    pitches_per_pa = benchmarks["pitches_per_pa"]
+    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
+
+
 def simulate_season_average(
     use_tqdm: bool = True, ball_in_play_outs: int = 0, seed: int | None = None
 ) -> None:
@@ -232,17 +255,25 @@ def simulate_season_average(
     at_bats = float(row["AtBats"])
     walks = float(row["Walks"])
     hbp = float(row["HitByPitch"])
-    plate_appearances = at_bats + walks + hbp
-    cfg.hitProbBase = hits / plate_appearances if plate_appearances else 0.0
     total_pitches = float(row["TotalPitchesThrown"])
     strikeouts = float(row["Strikeouts"])
     homers = float(row["HomeRuns"])
+    plate_appearances = at_bats + walks + hbp
     balls_in_play = at_bats - strikeouts - homers
-    cfg.ballInPlayPitchPct = int(
-        round(balls_in_play / plate_appearances * 100)
+
+    bench_path = (
+        get_base_dir()
+        / "data"
+        / "MLB_avg"
+        / "mlb_league_benchmarks_2025_filled.csv"
     )
-    pitches_per_pa = total_pitches / plate_appearances if plate_appearances else 0.0
-    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
+    with bench_path.open(newline="") as bf:
+        benchmarks = {
+            r["metric_key"]: float(r["value"])
+            for r in csv.DictReader(bf)
+        }
+
+    apply_league_benchmarks(cfg, benchmarks)
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
