@@ -137,7 +137,11 @@ def _recolor_by_hex(img, src_hex: str, dst_hex: str, feather: float = 3.0,
     hsv_new = cv2.merge([h_new, s_new, v])
     bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
     if has_alpha:
-        bgr_new = cv2.merge([bgr_new, alpha])
+        # ``cv2.merge`` expects individual single-channel arrays, but ``bgr_new``
+        # is already a 3-channel image. Passing it directly with ``alpha``
+        # triggers an OpenCV assertion error. ``np.dstack`` safely appends the
+        # alpha channel while preserving existing channels and size.
+        bgr_new = np.dstack((bgr_new, alpha))
     return bgr_new
 
 
