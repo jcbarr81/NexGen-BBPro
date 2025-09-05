@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from utils.path_utils import get_base_dir
+from utils.league_benchmarks import load_league_benchmarks
 
 from .pbini_loader import load_pbini
 
@@ -147,6 +148,8 @@ _DEFAULTS: Dict[str, Any] = {
     "groundBallBaseRate": 44,
     "flyBallBaseRate": 35,
     "lineDriveBaseRate": 21,
+    # League average strike percentage
+    "leagueStrikePct": _LEAGUE_STRIKE_PCT,
     # Hit type distribution reflecting recent MLB averages
     "hit1BProb": 78,
     "hit2BProb": 15,
@@ -581,6 +584,15 @@ _DEFAULTS: Dict[str, Any] = {
 }
 _BASE_DEFAULTS = dict(_DEFAULTS)
 
+# League benchmark metrics loaded from CSV for calibration
+_BENCHMARK_PATH = (
+    DATA_DIR / "MLB_avg" / "mlb_league_benchmarks_2025_filled.csv"
+)
+try:
+    _benchmarks = load_league_benchmarks(_BENCHMARK_PATH)
+except OSError:  # pragma: no cover - file may be missing in some envs
+    _benchmarks = {}
+
 
 @dataclass
 class PlayBalanceConfig:
@@ -762,6 +774,16 @@ class PlayBalanceConfig:
 
 
 PlayBalanceConfig.load_overrides()
+
+if _benchmarks:
+    _DEFAULTS["ballInPlayPitchPct"] = int(
+        round(_benchmarks.get("pitches_put_in_play_pct", 0.175) * 100)
+    )
+    _DEFAULTS["targetPitchesPerPA"] = _benchmarks.get("pitches_per_pa", 4.0)
+    dp_pct = _benchmarks.get("bip_double_play_pct", 0.028)
+    gb_pct = _benchmarks.get("bip_gb_pct", 0.44)
+    if gb_pct:
+        _DEFAULTS["doublePlayProb"] = round(dp_pct / gb_pct, 3)
 
 
 __all__ = ["PlayBalanceConfig"]

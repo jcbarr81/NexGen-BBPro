@@ -1108,6 +1108,89 @@ class GameSimulation:
                 pitcher_state.outs += outs
                 return outs + outs_from_pick
 
+            target_pitches = self.config.get("targetPitchesPerPA", 0)
+            strike_rate = (
+                float(self.config.get("leagueStrikePct", 65.9)) / 100.0
+            )
+            pitches_this_pa = pitcher_state.pitches_thrown - start_pitches
+            if target_pitches and pitches_this_pa < target_pitches - 1:
+                continue_prob = 1 - 1 / float(target_pitches)
+                if self.rng.random() < continue_prob:
+                    pitcher_state.pitches_thrown += 1
+                    self.pitches_since_pickoff = min(
+                        self.pitches_since_pickoff + 1, 4
+                    )
+                    if self.rng.random() < strike_rate:
+                        strikes += 1
+                        pitcher_state.strikes_thrown += 1
+                        if strikes >= 3:
+                            self.logged_strikeouts += 1
+                            self._add_stat(batter_state, "ab")
+                            self._add_stat(batter_state, "so")
+                            self._add_stat(batter_state, "so_looking")
+                            pitcher_state.so += 1
+                            pitcher_state.so_looking += 1
+                            outs += 1
+                            pitcher_state.toast += self.config.get(
+                                "pitchScoringOut", 0
+                            )
+                            pitcher_state.toast += self.config.get(
+                                "pitchScoringStrikeOut", 0
+                            )
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners = 0
+                            catcher_fs = self._get_fielder(defense, "C")
+                            if catcher_fs:
+                                self._add_fielding_stat(
+                                    catcher_fs, "po", position="C"
+                                )
+                            p_fs = defense.fielding_stats.get(
+                                pitcher_state.player.player_id
+                            )
+                            if p_fs:
+                                self._add_fielding_stat(p_fs, "a")
+                            self._add_stat(
+                                batter_state,
+                                "pitches",
+                                pitcher_state.pitches_thrown - start_pitches,
+                            )
+                            pitcher_state.outs += outs
+                            run_diff = offense.runs - defense.runs
+                            self.subs.maybe_warm_reliever(
+                                defense,
+                                inning=inning,
+                                run_diff=run_diff,
+                                home_team=home_team,
+                            )
+                            return outs + outs_from_pick
+                    else:
+                        balls += 1
+                        pitcher_state.balls_thrown += 1
+                        if balls >= 4:
+                            self._add_stat(batter_state, "bb")
+                            pitcher_state.bb += 1
+                            pitcher_state.toast += self.config.get(
+                                "pitchScoringWalk", 0
+                            )
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners += 1
+                            self._advance_walk(offense, defense, batter_state)
+                            self._add_stat(
+                                batter_state,
+                                "pitches",
+                                pitcher_state.pitches_thrown - start_pitches,
+                            )
+                            pitcher_state.outs += outs
+                            run_diff = offense.runs - defense.runs
+                            self.subs.maybe_warm_reliever(
+                                defense,
+                                inning=inning,
+                                run_diff=run_diff,
+                                home_team=home_team,
+                            )
+                            return outs + outs_from_pick
+                    continue
+
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
             pitch_type, _ = self.pitcher_ai.select_pitch(
