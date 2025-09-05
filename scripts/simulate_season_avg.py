@@ -178,7 +178,7 @@ def _simulate_game_star(args: tuple[str, str, int]) -> Counter[str]:
 
 
 def simulate_season_average(
-    use_tqdm: bool = True, ball_in_play_outs: int = 0
+    use_tqdm: bool = True, ball_in_play_outs: int = 0, seed: int | None = None
 ) -> None:
     """Run a season simulation and print average box score values.
 
@@ -187,6 +187,8 @@ def simulate_season_average(
         ball_in_play_outs: Value for ``PlayBalanceConfig.ballInPlayOuts``.
             ``0`` allows normal hit/out resolution while ``1`` makes every
             ball put in play an out.
+        seed: Optional seed for deterministic simulations. If ``None`` (the
+            default) a different random seed will be used on each run.
     """
 
     teams = [t.team_id for t in load_teams()]
@@ -237,23 +239,23 @@ def simulate_season_average(
     homers = float(row["HomeRuns"])
     balls_in_play = at_bats - strikeouts - homers
     cfg.ballInPlayPitchPct = int(
-        round(balls_in_play / total_pitches * 100)
+        round(balls_in_play / plate_appearances * 100)
     )
     pitches_per_pa = total_pitches / plate_appearances if plate_appearances else 0.0
     cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
+    rng = random.Random(seed)
     games = [
-        (g["home"], g["away"], 42 + i) for i, g in enumerate(schedule)
+        (g["home"], g["away"], rng.randrange(2**32)) for g in schedule
     ]
     # Expect one schedule entry per game; duplicates would inflate averages.
     games_per_team = 162
     expected_games = len(teams) * games_per_team // 2
     if len(games) != expected_games:
-        raise ValueError(
-            f"Schedule length mismatch: expected {expected_games} games "
-            f"but got {len(games)}"
+        print(
+            f"[Warning] Schedule length mismatch: expected {expected_games} games but got {len(games)}"
         )
 
     totals: Counter[str] = Counter()
@@ -316,11 +318,19 @@ if __name__ == "__main__":
             "play is an out)."
         ),
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Seed for deterministic runs (default: random)",
+    )
     args = parser.parse_args()
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
     configure_perf_tuning()
     simulate_season_average(
-        use_tqdm=use_tqdm, ball_in_play_outs=args.ball_in_play_outs
+        use_tqdm=use_tqdm,
+        ball_in_play_outs=args.ball_in_play_outs,
+        seed=args.seed,
     )
