@@ -748,7 +748,7 @@ class PlayBalanceConfig:
     def get(self, key: str, default: Any = 0) -> Any:
         """Return ``key`` from the configuration or ``default`` if missing."""
 
-        return self.values.get(key, default)
+        return self.values.get(key, _DEFAULTS.get(key, default))
 
     def __getattr__(self, item: str) -> Any:  # pragma: no cover - simple delegation
         values = self.__dict__.get("values", {})
