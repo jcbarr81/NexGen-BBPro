@@ -27,6 +27,16 @@ _HAIR_COLOR_HEX = {
     "red": "#a64b2a",
 }
 
+# Default hair colors present in the avatar templates keyed by ethnicity.
+# These values represent the original hair color in the template images before
+# any recoloring is applied.
+_BASE_HAIR_HEX = {
+    "Anglo": _HAIR_COLOR_HEX["brown"],
+    "African": _HAIR_COLOR_HEX["black"],
+    "Asian": _HAIR_COLOR_HEX["black"],
+    "Hispanic": _HAIR_COLOR_HEX["brown"],
+}
+
 # Map various ethnicity strings to the available template directories. Any
 # unrecognized value falls back to ``Anglo``.
 _ETHNICITY_DIR = {
@@ -261,9 +271,12 @@ def generate_player_avatars(
         colors = _team_colors(team_id)
         img = _recolor_by_hex(img, _HAT_HEX, colors["primary"])
         img = _recolor_by_hex(img, _JERSEY_HEX, colors["secondary"])
-        hair_hex = _HAIR_COLOR_HEX.get(player.hair_color.lower())
+
+        hair_key = (player.hair_color or "").strip().lower()
+        hair_hex = _HAIR_COLOR_HEX.get(hair_key)
         if hair_hex:
-            img = _recolor_by_hex(img, _HAIR_COLOR_HEX["brown"], hair_hex)
+            base_hex = _BASE_HAIR_HEX.get(template.parent.name, _HAIR_COLOR_HEX["brown"])
+            img = _recolor_by_hex(img, base_hex, hair_hex)
 
         cv2.imwrite(str(out_file), img)
 
