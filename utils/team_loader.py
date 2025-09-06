@@ -2,9 +2,18 @@ import csv
 import os
 import re
 from pathlib import Path
-from models.team import Team
-from utils.path_utils import get_base_dir
-from utils.stats_persistence import load_stats
+
+try:  # Allow running as a standalone script
+    from models.team import Team
+    from utils.path_utils import get_base_dir
+    from utils.stats_persistence import load_stats
+except ModuleNotFoundError:  # pragma: no cover - for direct script execution
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+    from models.team import Team
+    from utils.path_utils import get_base_dir
+    from utils.stats_persistence import load_stats
 
 
 def _resolve_path(file_path: str | Path) -> Path:
