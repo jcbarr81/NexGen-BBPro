@@ -402,6 +402,8 @@ class BatterAI:
                 * disc_adj
             )
             contact = max(0.0, min(1.0, contact))
+            contact += self.config.get("contactProbBoost", 0.0)
+            contact = max(0.0, min(1.0, contact))
 
         self.last_decision = (swing, contact)
         return self.last_decision

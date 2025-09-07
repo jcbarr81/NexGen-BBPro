@@ -1938,7 +1938,8 @@ class GameSimulation:
             if action == "no_attempt":
                 continue
             prob = self.fielding_ai.catch_probability(pos, fa, hang_time, action)
-            prob *= out_prob
+            prob *= out_prob * (1 + self.config.get("ballInPlayOuts", 0))
+            prob = min(prob, 1.0)
             if self.rng.random() < prob:
                 caught, error = self.fielding_ai.resolve_throw(pos, fa, hang_time)
                 if caught:
