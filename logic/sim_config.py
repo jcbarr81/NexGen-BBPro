@@ -12,6 +12,10 @@ from utils.path_utils import get_base_dir
 # triple the rate that balls in play become hits.
 # This substantially boosts the simulated BABIP.
 _BABIP_OUT_ADJUST = 0.17
+# Additional scaling factor applied to outs on balls in play.
+# Allow external configuration to raise or lower simulated BABIP
+# without modifying code directly.
+babip_scale: float = 1.0
 
 
 def apply_league_benchmarks(
@@ -36,17 +40,31 @@ def apply_league_benchmarks(
     base_gb, base_ld, base_fb = 0.76, 0.32, 0.86
     weighted_out = base_gb * gb_pct + base_fb * fb_pct + base_ld * ld_pct
     scale = ((1 - babip) / weighted_out) if weighted_out else 1.0
-    scale *= _BABIP_OUT_ADJUST
+    scale *= _BABIP_OUT_ADJUST * getattr(cfg, "babip_scale", babip_scale)
     cfg.groundOutProb = round(min(max(base_gb * scale, 0.0), 1.0), 3)
     cfg.lineOutProb = round(min(max(base_ld * scale, 0.0), 1.0), 3)
     cfg.flyOutProb = round(min(max(base_fb * scale, 0.0), 1.0), 3)
 
 
-def load_tuned_playbalance_config() -> Tuple[PlayBalanceConfig, Dict[str, float]]:
-    """Return a tuned :class:`PlayBalanceConfig` and MLB averages."""
+def load_tuned_playbalance_config(
+    babip_scale_param: float | None = None,
+) -> Tuple[PlayBalanceConfig, Dict[str, float]]:
+    """Return a tuned :class:`PlayBalanceConfig` and MLB averages.
+
+    Parameters
+    ----------
+    babip_scale_param:
+        Optional scale applied to outs on balls in play. When ``None``
+        (the default) the value is read from ``PlayBalanceConfig``.
+    """
 
     base = get_base_dir()
     cfg = PlayBalanceConfig.from_file(base / "logic" / "PBINI.txt")
+
+    global babip_scale
+    babip_scale = cfg.babip_scale if babip_scale_param is None else babip_scale_param
+    if babip_scale_param is not None:
+        cfg.babipScale = babip_scale
 
     csv_path = base / "data" / "MLB_avg" / "mlb_avg_boxscore_2020_2024_both_teams.csv"
     with csv_path.open(newline="") as f:
