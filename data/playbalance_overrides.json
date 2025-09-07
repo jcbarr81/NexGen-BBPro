@@ -3,7 +3,7 @@
   "ballInPlayPitchPct": 15,
   "catchBaseChance": 92,
   "contactFactorBase": 1.0,
-  "contactFactorDiv": 350,
+  "contactFactorDiv": 200,
   "controlBoxIncreaseEffCOPct": 20,
   "controlScale": 100,
   "disciplineRating00CountAdjust": 5,

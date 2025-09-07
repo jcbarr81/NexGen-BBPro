@@ -1840,9 +1840,12 @@ class GameSimulation:
             ((100 - pitcher.movement) / 120)
             * self.config.movement_impact_scale,
         )
+        ch_rating = getattr(batter, "ch", 50)
+        # Center around an average rating of 50 so only above-average
+        # contact skills provide a positive boost.
         contact_factor = (
             self.config.contact_factor_base
-            + getattr(batter, "ch", 50) / self.config.contact_factor_div
+            + (ch_rating - 50) / self.config.contact_factor_div
         )
         hit_prob = max(
             0.0,
