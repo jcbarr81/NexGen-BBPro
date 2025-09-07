@@ -10,10 +10,11 @@ class DummyPlayer:
 
 def test_babip_average():
     bs = BatterState(DummyPlayer())
-    bs.ab = 500
-    bs.h = 132
+    # Values picked to produce a league-average BABIP near .300
+    bs.ab = 490
+    bs.h = 134
     bs.hr = 20
-    bs.so = 100
-    bs.sf = 5
+    bs.so = 90
+    bs.sf = 0
     rates = compute_batting_rates(bs)
-    assert rates["babip"] == pytest.approx(0.291, abs=0.001)
+    assert rates["babip"] == pytest.approx(0.300, abs=0.001)
