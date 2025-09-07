@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Any, Dict, Iterable
 
 import contextlib
+import errno
 import os
+import time
 
 if os.name == "nt":  # pragma: no cover - Windows specific
     import msvcrt
@@ -25,7 +27,9 @@ if os.name == "nt":  # pragma: no cover - Windows specific
         ``msvcrt.locking`` cannot lock a file of zero length.  When the lock
         file is opened with ``"w"`` its size is truncated to ``0`` which would
         trigger ``OSError: [Errno 36]`` on Windows.  To avoid this we write a
-        single byte before acquiring the lock.
+        single byte before acquiring the lock.  The function also retries when
+        the lock is temporarily unavailable, which can otherwise raise
+        ``OSError: [Errno 36]`` (resource deadlock avoided).
         """
         # Ensure the file is at least one byte long before attempting to lock
         file.seek(0, os.SEEK_END)
@@ -33,8 +37,17 @@ if os.name == "nt":  # pragma: no cover - Windows specific
             file.write("0")
             file.flush()
             file.seek(0)
+
+        while True:
+            try:
+                msvcrt.locking(file.fileno(), msvcrt.LK_NBLCK, 1)
+                break
+            except OSError as exc:  # pragma: no cover - depends on timing
+                if exc.errno not in (errno.EACCES, errno.EDEADLK):
+                    raise
+                time.sleep(0.01)
+
         try:
-            msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)
             yield
         finally:
             try:
