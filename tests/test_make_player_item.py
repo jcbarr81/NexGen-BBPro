@@ -27,10 +27,12 @@ qtwidgets = types.ModuleType("PyQt6.QtWidgets")
 widget_names = [
     'QWidget','QLabel','QVBoxLayout','QTabWidget','QListWidget','QTextEdit','QPushButton',
     'QHBoxLayout','QComboBox','QMessageBox','QGroupBox','QMenuBar','QDialog','QFormLayout',
-    'QSpinBox','QGridLayout','QScrollArea','QLineEdit','QTableWidget','QTableWidgetItem'
+    'QSpinBox','QGridLayout','QScrollArea','QLineEdit','QTableWidget','QTableWidgetItem',
+    'QMainWindow','QStackedWidget','QFrame','QStatusBar','QToolButton','QSizePolicy','QSpacerItem','QApplication'
 ]
 for name in widget_names:
     setattr(qtwidgets, name, Dummy)
+qtwidgets.__getattr__ = lambda name: Dummy
 
 class QListWidgetItem:
     def __init__(self, text):

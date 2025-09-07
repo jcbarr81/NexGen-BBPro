@@ -35,10 +35,10 @@ from logic.simulation import (
     TeamState,
     generate_boxscore,
 )
-from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
+from logic.sim_config import load_tuned_playbalance_config
 
 
 STAT_ORDER = [
@@ -94,20 +94,25 @@ def clone_team_state(base: TeamState) -> TeamState:
     return team
 
 
-def simulate_season_average(use_tqdm: bool = True) -> None:
+def simulate_season_average(
+    use_tqdm: bool = True,
+    seed: int | None = None,
+) -> None:
     """Run a season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
+        seed: Optional seed for deterministic simulations. If ``None`` (the
+            default) a different random seed will be used on each run.
     """
 
     teams = [t.team_id for t in load_teams()]
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = 1
-    rng = random.Random(42)
+    cfg, mlb_averages = load_tuned_playbalance_config()
+
+    rng = random.Random(seed)
 
     totals: Counter[str] = Counter()
     total_games = 0
@@ -134,8 +139,15 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
             totals["StolenBases"] += sum(p["sb"] for p in batting)
             totals["CaughtStealing"] += sum(p["cs"] for p in batting)
             totals["HitByPitch"] += sum(p["hbp"] for p in batting)
+            totals["PlateAppearances"] += sum(p["pa"] for p in batting)
+            totals["AtBats"] += sum(p["ab"] for p in batting)
+            totals["SacFlies"] += sum(p.get("sf", 0) for p in batting)
+            totals["GIDP"] += sum(p.get("gidp", 0) for p in batting)
             totals["TotalPitchesThrown"] += sum(p["pitches"] for p in pitching)
             totals["Strikes"] += sum(p["strikes"] for p in pitching)
+
+        totals["TwoStrikeCounts"] += sim.two_strike_counts
+        totals["ThreeBallCounts"] += sim.three_ball_counts
 
         total_games += 1
         return box["home"]["score"], box["away"]["score"]
@@ -149,9 +161,35 @@ def simulate_season_average(use_tqdm: bool = True) -> None:
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
 
+    diffs = {k: averages[k] - mlb_averages.get(k, 0.0) for k in STAT_ORDER}
+
     print("Average box score per game (both teams):")
     for key in STAT_ORDER:
-        print(f"{key}: {averages[key]:.2f}")
+        mlb_val = mlb_averages[key]
+        sim_val = averages[key]
+        diff = diffs[key]
+        print(
+            f"{key}: MLB {mlb_val:.2f}, Sim {sim_val:.2f}, Diff {diff:+.2f}"
+        )
+
+    total_pitches = totals["TotalPitchesThrown"]
+    total_pa = totals.get("PlateAppearances", 0)
+    p_pa = total_pitches / total_pa if total_pa else 0.0
+    babip_den = (
+        totals.get("AtBats", 0)
+        - totals["Strikeouts"]
+        - totals["HomeRuns"]
+        + totals.get("SacFlies", 0)
+    )
+    babip = (
+        (totals["Hits"] - totals["HomeRuns"]) / babip_den if babip_den else 0.0
+    )
+    dp_rate = totals.get("GIDP", 0) / babip_den if babip_den else 0.0
+    print(f"Pitches/PA: {p_pa:.2f}")
+    print(f"BABIP: {babip:.3f}")
+    print(f"DoublePlayRate: {dp_rate:.3f}")
+    print(f"Total two-strike counts: {totals['TwoStrikeCounts']}")
+    print(f"Total three-ball counts: {totals['ThreeBallCounts']}")
 
 
 if __name__ == "__main__":
@@ -163,8 +201,14 @@ if __name__ == "__main__":
         action="store_true",
         help="Disable tqdm progress bar.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Seed for deterministic runs (default: random)",
+    )
     args = parser.parse_args()
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
-    simulate_season_average(use_tqdm=use_tqdm)
+    simulate_season_average(use_tqdm=use_tqdm, seed=args.seed)

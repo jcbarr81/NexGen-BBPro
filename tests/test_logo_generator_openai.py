@@ -65,6 +65,36 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     assert progress == [(1, 1)]
 
 
+def test_existing_logos_are_removed(tmp_path, monkeypatch):
+    team = Team(
+        team_id="TST",
+        name="Testers",
+        city="Testville",
+        abbreviation="TST",
+        division="Test",
+        stadium="Test Field",
+        primary_color="#112233",
+        secondary_color="#445566",
+        owner_id="0",
+    )
+
+    monkeypatch.setattr(logo_generator, "load_teams", lambda _: [team])
+
+    class DummyImages:
+        def generate(self, **kwargs):
+            return SimpleNamespace(data=[SimpleNamespace(b64_json=_fake_b64_png(1024))])
+
+    monkeypatch.setattr(logo_generator, "client", SimpleNamespace(images=DummyImages()))
+
+    stale = tmp_path / "old.png"
+    stale.write_text("old")
+
+    logo_generator.generate_team_logos(out_dir=str(tmp_path))
+
+    assert not stale.exists()
+    assert (tmp_path / "tst.png").exists()
+
+
 def test_auto_logo_fallback_without_client(tmp_path, monkeypatch):
     monkeypatch.setattr(logo_generator, "client", None)
     monkeypatch.setattr(logo_generator, "load_teams", lambda _: [])

@@ -18,7 +18,6 @@ def _simulate(monkeypatch, foul_lambda=None, games: int = 20):
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = 0
 
     rng = random.Random(42)
     total_pitches = 0

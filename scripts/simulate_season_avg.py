@@ -1,5 +1,8 @@
 """Simulate a full 162-game season and report average box score stats.
 
+The schedule should contain ``len(teams) * games_per_team // 2`` games; a
+length mismatch likely means duplicate entries that would inflate averages.
+
 For lengthy runs this script can benefit from PyPy's JIT or by invoking
 CPython with ``python -O`` to skip asserts. When using PyPy ensure required
 C extensions such as ``bcrypt`` are available; GUI-focused modules like
@@ -91,6 +94,16 @@ from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
+import logic.simulation as sim
+
+
+def _no_save_stats(players, teams):
+    """No-op ``save_stats`` to avoid file I/O during benchmarking."""
+
+    return None
+
+
+sim.save_stats = _no_save_stats
 
 
 STAT_ORDER = [
@@ -174,16 +187,51 @@ def _simulate_game_star(args: tuple[str, str, int]) -> Counter[str]:
     return _simulate_game(*args)
 
 
+def apply_league_benchmarks(
+    cfg: PlayBalanceConfig, benchmarks: dict[str, float]
+) -> None:
+    """Configure ``cfg`` using league-wide benchmark rates.
+
+    Parameters
+    ----------
+    cfg:
+        Play balance configuration instance to modify.
+    benchmarks:
+        Mapping of metric keys to numeric values loaded from
+        ``mlb_league_benchmarks_2025_filled.csv``.
+    """
+
+    hr_rate = cfg.hitHRProb / 100
+    # Base hit probability derived directly from league BABIP
+    cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
+    cfg.ballInPlayPitchPct = int(
+        round(benchmarks["pitches_put_in_play_pct"] * 100)
+    )
+    pitches_per_pa = benchmarks["pitches_per_pa"]
+    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
+
+    gb_pct = benchmarks.get("bip_gb_pct", 0.0)
+    fb_pct = benchmarks.get("bip_fb_pct", 0.0)
+    ld_pct = benchmarks.get("bip_ld_pct", 0.0)
+    babip = benchmarks.get("babip", 0.0)
+    base_gb, base_ld, base_fb = 0.76, 0.32, 0.86
+    weighted_out = base_gb * gb_pct + base_fb * fb_pct + base_ld * ld_pct
+    scale = ((1 - babip) / weighted_out) if weighted_out else 1.0
+    cfg.groundOutProb = round(min(max(base_gb * scale, 0.0), 1.0), 3)
+    cfg.lineOutProb = round(min(max(base_ld * scale, 0.0), 1.0), 3)
+    cfg.flyOutProb = round(min(max(base_fb * scale, 0.0), 1.0), 3)
+
+
 def simulate_season_average(
-    use_tqdm: bool = True, ball_in_play_outs: int = 0
+    use_tqdm: bool = True,
+    seed: int | None = None,
 ) -> None:
     """Run a season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
-        ball_in_play_outs: Value for ``PlayBalanceConfig.ballInPlayOuts``.
-            ``0`` allows normal hit/out resolution while ``1`` makes every
-            ball put in play an out.
+        seed: Optional seed for deterministic simulations. If ``None`` (the
+            default) a different random seed will be used on each run.
     """
 
     teams = [t.team_id for t in load_teams()]
@@ -200,7 +248,6 @@ def simulate_season_average(
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = ball_in_play_outs
 
     csv_path = (
         get_base_dir()
@@ -227,23 +274,40 @@ def simulate_season_average(
     at_bats = float(row["AtBats"])
     walks = float(row["Walks"])
     hbp = float(row["HitByPitch"])
-    plate_appearances = at_bats + walks + hbp
-    cfg.hitProbBase = hits / plate_appearances if plate_appearances else 0.0
     total_pitches = float(row["TotalPitchesThrown"])
     strikeouts = float(row["Strikeouts"])
     homers = float(row["HomeRuns"])
+    plate_appearances = at_bats + walks + hbp
     balls_in_play = at_bats - strikeouts - homers
-    cfg.ballInPlayPitchPct = int(
-        round(balls_in_play / total_pitches * 100)
+
+    bench_path = (
+        get_base_dir()
+        / "data"
+        / "MLB_avg"
+        / "mlb_league_benchmarks_2025_filled.csv"
     )
-    pitches_per_pa = total_pitches / plate_appearances if plate_appearances else 0.0
-    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
+    with bench_path.open(newline="") as bf:
+        benchmarks = {
+            r["metric_key"]: float(r["value"])
+            for r in csv.DictReader(bf)
+        }
+
+    apply_league_benchmarks(cfg, benchmarks)
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
+    rng = random.Random(seed)
     games = [
-        (g["home"], g["away"], 42 + i) for i, g in enumerate(schedule)
+        (g["home"], g["away"], rng.randrange(2**32)) for g in schedule
     ]
+    # Expect one schedule entry per game; duplicates would inflate averages.
+    games_per_team = 162
+    expected_games = len(teams) * games_per_team // 2
+    if len(games) != expected_games:
+        print(
+            f"[Warning] Schedule length mismatch: expected {expected_games} games but got {len(games)}"
+        )
+
     totals: Counter[str] = Counter()
     with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
         iterator = pool.imap_unordered(_simulate_game_star, games, chunksize=10)
@@ -296,13 +360,10 @@ if __name__ == "__main__":
         help="Disable tqdm progress bar.",
     )
     parser.add_argument(
-        "--ball-in-play-outs",
+        "--seed",
         type=int,
-        default=0,
-        help=(
-            "Set PlayBalanceConfig.ballInPlayOuts (0 normal, 1 every ball in "
-            "play is an out)."
-        ),
+        default=None,
+        help="Seed for deterministic runs (default: random)",
     )
     args = parser.parse_args()
 
@@ -310,5 +371,6 @@ if __name__ == "__main__":
     use_tqdm = not (args.disable_tqdm or env_disable)
     configure_perf_tuning()
     simulate_season_average(
-        use_tqdm=use_tqdm, ball_in_play_outs=args.ball_in_play_outs
+        use_tqdm=use_tqdm,
+        seed=args.seed,
     )

@@ -61,9 +61,14 @@ class SeasonProgressWindow(QDialog):
                 schedule = list(reader)
         # Persist league data after each game so that standings, schedules and
         # statistics remain current even if a simulation run is interrupted.
-        self.simulator = SeasonSimulator(
-            schedule or [], simulate_game, after_game=self._record_game
-        )
+        if simulate_game is not None:
+            self.simulator = SeasonSimulator(
+                schedule or [], simulate_game, after_game=self._record_game
+            )
+        else:
+            self.simulator = SeasonSimulator(
+                schedule or [], after_game=self._record_game
+            )
         # Track basic win/loss records as games are played so the standings
         # window and schedule pages can reflect results.
         self._standings: dict[str, dict[str, int]] = {}
@@ -190,7 +195,10 @@ class SeasonProgressWindow(QDialog):
                 "training_camp": False,
                 "schedule": False,
             }
-            self.simulator = SeasonSimulator([], self._simulate_game)
+            if self._simulate_game is not None:
+                self.simulator = SeasonSimulator([], self._simulate_game)
+            else:
+                self.simulator = SeasonSimulator([])
             note = f"Retired Players: {len(retired)}"
         else:
             self.manager.advance_phase()
@@ -255,9 +263,14 @@ class SeasonProgressWindow(QDialog):
         start = date(date.today().year, 4, 1)
         schedule = generate_mlb_schedule(teams, start)
         save_schedule(schedule, SCHEDULE_FILE)
-        self.simulator = SeasonSimulator(
-            schedule, self._simulate_game, after_game=self._record_game
-        )
+        if self._simulate_game is not None:
+            self.simulator = SeasonSimulator(
+                schedule, self._simulate_game, after_game=self._record_game
+            )
+        else:
+            self.simulator = SeasonSimulator(
+                schedule, after_game=self._record_game
+            )
         message = f"Schedule generated with {len(schedule)} games."
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
         self.generate_schedule_button.setEnabled(False)

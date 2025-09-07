@@ -2,23 +2,28 @@
 
 Logos are created using OpenAI's image generation API and written to
 ``logo/teams`` relative to the project root. Each logo is named after the
-team's ID (lower-cased). If the OpenAI client is unavailable a fallback to the
-legacy :mod:`images.auto_logo` generator can be enabled.
+team's ID (lower-cased). Existing logos in the output directory are removed
+before new ones are generated. If the OpenAI client is unavailable a fallback
+to the legacy :mod:`images.auto_logo` generator can be enabled.
 """
 
 from __future__ import annotations
 
 import base64
-import os
 from io import BytesIO
 from pathlib import Path
 from typing import Callable, List, Optional
 
 from PIL import Image
 
-from utils.openai_client import client
-from utils.team_loader import load_teams
-from utils.path_utils import get_base_dir
+try:  # Allow running as a standalone script
+    from utils.openai_client import client
+    from utils.team_loader import load_teams
+    from utils.path_utils import get_base_dir
+except ModuleNotFoundError:  # pragma: no cover - for direct script execution
+    from openai_client import client
+    from team_loader import load_teams
+    from path_utils import get_base_dir
 
 
 def _auto_logo_fallback(
@@ -100,6 +105,9 @@ def generate_team_logos(
     else:
         out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Remove any existing logos so stale files do not persist
+    for existing in out_dir.glob("*.png"):
+        existing.unlink(missing_ok=True)
 
     if client is None:
         if allow_auto_logo:

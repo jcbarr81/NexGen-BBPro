@@ -168,15 +168,12 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
 
 
 def simulate_halfseason_average(
-    use_tqdm: bool = True, ball_in_play_outs: int = 0
+    use_tqdm: bool = True
 ) -> None:
     """Run a half-season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
-        ball_in_play_outs: Value for ``PlayBalanceConfig.ballInPlayOuts``.
-            ``0`` allows normal hit/out resolution while ``1`` makes every
-            ball put in play an out.
     """
 
     teams = [t.team_id for t in load_teams()]
@@ -184,7 +181,6 @@ def simulate_halfseason_average(
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = ball_in_play_outs
 
     csv_path = (
         get_base_dir()
@@ -262,19 +258,8 @@ if __name__ == "__main__":
         action="store_true",
         help="Disable tqdm progress bar.",
     )
-    parser.add_argument(
-        "--ball-in-play-outs",
-        type=int,
-        default=0,
-        help=(
-            "Set PlayBalanceConfig.ballInPlayOuts (0 normal, 1 every ball in "
-            "play is an out)."
-        ),
-    )
     args = parser.parse_args()
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
-    simulate_halfseason_average(
-        use_tqdm=use_tqdm, ball_in_play_outs=args.ball_in_play_outs
-    )
+    simulate_halfseason_average(use_tqdm=use_tqdm)

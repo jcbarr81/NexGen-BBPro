@@ -112,13 +112,15 @@ qtwidgets = types.ModuleType("PyQt6.QtWidgets")
 widget_names = [
     'QWidget','QLabel','QVBoxLayout','QTabWidget','QListWidget','QTextEdit','QPushButton',
     'QHBoxLayout','QComboBox','QMessageBox','QGroupBox','QMenuBar','QDialog','QFormLayout',
-    'QSpinBox','QGridLayout','QScrollArea','QLineEdit'
+    'QSpinBox','QGridLayout','QScrollArea','QLineEdit','QMainWindow','QStackedWidget',
+    'QFrame','QStatusBar','QToolButton','QSizePolicy','QSpacerItem','QApplication'
 ]
 for name in widget_names:
     setattr(qtwidgets, name, Dummy)
 qtwidgets.QMenuBar = QMenuBar
 qtwidgets.QMenu = QMenu
 qtwidgets.QAction = QAction
+qtwidgets.__getattr__ = lambda name: Dummy
 # Provide a simple QTextEdit capable of storing HTML for assertions
 class QTextEdit(Dummy):
     def __init__(self, *args, **kwargs):
@@ -160,6 +162,11 @@ qtcore.QPropertyAnimation = QPropertyAnimation
 sys.modules['PyQt6'] = types.ModuleType('PyQt6')
 sys.modules['PyQt6.QtWidgets'] = qtwidgets
 sys.modules['PyQt6.QtCore'] = qtcore
+
+theme_mod = types.ModuleType('ui.theme')
+theme_mod._toggle_theme = lambda status_bar=None: None
+theme_mod.DARK_QSS = ""
+sys.modules['ui.theme'] = theme_mod
 
 qtgui = types.ModuleType("PyQt6.QtGui")
 class QFont:
@@ -233,7 +240,47 @@ def test_schedule_windows_show_data(monkeypatch, tmp_path):
 
     dashboard.team_schedule_action.trigger()
     team = opened['team']
-    assert team.viewer.item(0,0).text() == '2024-04-01'
-    assert team.viewer.item(0,1).text() == 'vs B'
-    assert team.viewer.item(0,2).text() == 'W 3-2'
-    assert team.viewer.item(1,1).text() == 'at C'
+    texts = []
+    for r in range(6):
+        for c in range(7):
+            item = team.viewer.item(r, c)
+            if item:
+                texts.append(item.text())
+    assert any('vs B' in t and '1' in t and 'W 3-2' in t for t in texts)
+    assert any('at C' in t and '2' in t and 'L 1-2' in t for t in texts)
+
+
+def test_owner_dashboard_stats_windows(monkeypatch):
+    from types import SimpleNamespace
+
+    called = []
+
+    class DummyTabs:
+        def __init__(self):
+            self.idx = None
+
+        def setCurrentIndex(self, i):
+            self.idx = i
+
+    class DummyWindow:
+        def __init__(self, *a, **k):
+            self.tabs = DummyTabs()
+
+        def exec(self):
+            called.append(self.tabs.idx)
+
+    monkeypatch.setattr(owner_dashboard, 'TeamStatsWindow', DummyWindow)
+
+    def fake_init(self, team_id):
+        self.team_id = team_id
+        self.players = {}
+        self.roster = SimpleNamespace()
+        self.team = SimpleNamespace(season_stats={})
+
+    monkeypatch.setattr(owner_dashboard.OwnerDashboard, '__init__', fake_init)
+
+    dash = owner_dashboard.OwnerDashboard('X')
+    dash.open_team_stats_window()
+    dash.open_player_stats_window()
+
+    assert called == [2, 0]

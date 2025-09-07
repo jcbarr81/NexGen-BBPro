@@ -6,8 +6,8 @@ from PyQt6.QtWidgets import QApplication, QStatusBar
 LIGHT_QSS = """
 /* App */
 QWidget {
-    background: #f7f8fb;
-    color: #1a1a1a;
+    background: #fffdf0;
+    color: #462d0d;
     font-family: 'Segoe UI', 'Noto Sans', Arial;
     font-size: 14px;
     font-weight: 500;
@@ -15,43 +15,44 @@ QWidget {
 
 /* Sidebar (dugout) */
 #Sidebar {
-    background: #0f2545; /* deep navy */
+    background: #462d0d; /* deep brown */
     border: none;
 }
 #Sidebar QLabel {
-    color: #f1f5ff;
+    color: #fffdf0;
     font-weight: 600;
     padding: 8px 10px;
     letter-spacing: .5px;
 }
 #NavButton {
-    color: #e7efff;
+    color: #fffdf0;
     background: transparent;
     padding: 10px 14px;
     margin: 4px 8px;
     border-radius: 10px;
     text-align: left;
 }
-#NavButton:hover { background: #1b3b6b; }
+#NavButton:hover { background: #604d33; }
 #NavButton:checked {
-    background: #1b4d89;
-    border: 1px solid #2b66b8;
-    color: white;
+    background: #604d33;
+    border: 1px solid #968d7d;
+    color: #fffdf0;
 }
 
 /* Header (scoreboard strip) */
 #Header {
-    background: white;
-    border-bottom: 1px solid #e6e9f2;
+    background: #fffdf0;
+    border-bottom: 1px solid #968d7d;
 }
 #Title {
     font-size: 20px;
     font-weight: 800;
     letter-spacing: .5px;
+    color: #462d0d;
 }
 #Scoreboard {
-    background: #0f2545;
-    color: #f6f8ff;
+    background: #604d33;
+    color: #fffdf0;
     border-radius: 10px;
     padding: 6px 12px;
     font-weight: 700;
@@ -59,122 +60,39 @@ QWidget {
 
 /* Cards and content */
 QFrame#Card {
-    background: white;
-    border: 1px solid #e9edf5;
+    background: #fffdf0;
+    border: 1px solid #968d7d;
     border-radius: 14px;
 }
 QLabel#SectionTitle {
     font-size: 16px;
     font-weight: 700;
-    color: #0f2545;
+    color: #462d0d;
 }
 
 /* Buttons */
 QPushButton {
-    background: #e0e6ef;
-    color: #0f2545;
-    border: 1px solid #b5bdc9;
+    background: #968d7d;
+    color: #fffdf0;
+    border: 1px solid #604d33;
     padding: 8px 14px;
     border-radius: 8px;
     font-weight: 600;
 }
-QPushButton:hover { background: #d3dae5; }
-QPushButton:pressed { background: #c2c9d4; }
+QPushButton:hover { background: #a59c8c; }
+QPushButton:pressed { background: #857d6f; }
 
 QPushButton#Primary {
-    background: #1b4d89;  /* primary blue */
-    color: white;
+    background: #604d33;
+    color: #fffdf0;
     border: none;
     padding: 10px 16px;
     border-radius: 10px;
     font-weight: 600;
 }
-QPushButton#Primary:hover { background: #205aa0; }
-QPushButton#Primary:pressed { background: #17487a; }
+QPushButton#Primary:hover { background: #6f5c42; }
+QPushButton#Primary:pressed { background: #513e24; }
 
-QPushButton#Success {
-    background: #2f9e44;  /* "Play ball" green */
-    color: white;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 700;
-}
-QPushButton#Success:hover { background: #27903c; }
-QPushButton#Success:pressed { background: #237f35; }
-
-QStatusBar { background: #ffffff; border-top: 1px solid #e6e9f2; }
-"""
-
-DARK_QSS = """
-QWidget {
-    background: #0f1623;
-    color: #e6ecfa;
-    font-family: 'Segoe UI', 'Noto Sans', Arial;
-    font-size: 14px;
-    font-weight: 500;
-}
-#Sidebar {
-    background: #0b1222;
-}
-#Sidebar QLabel { color: #dbe6ff; }
-#NavButton {
-    color: #cfe0ff;
-    background: transparent;
-    padding: 10px 14px;
-    margin: 4px 8px;
-    border-radius: 10px;
-}
-#NavButton:hover { background: #132645; }
-#NavButton:checked {
-    background: #19345f;
-    border: 1px solid #2a4c8e;
-    color: white;
-}
-#Header {
-    background: #111a2b;
-    border-bottom: 1px solid #1b2943;
-}
-#Title { color: #eaf1ff; }
-#Scoreboard {
-    background: #0b1222;
-    color: #eaf1ff;
-    border: 1px solid #1b2943;
-    border-radius: 10px;
-    padding: 6px 12px;
-    font-weight: 700;
-}
-QFrame#Card {
-    background: #121b2d;
-    border: 1px solid #1b2943;
-    border-radius: 14px;
-}
-QLabel#SectionTitle {
-    font-size: 16px;
-    font-weight: 700;
-    color: #e6ecfa;
-}
-QPushButton {
-    background: #1b2e45;
-    color: #e6ecfa;
-    border: 1px solid #2a4c8e;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-weight: 600;
-}
-QPushButton:hover { background: #243a57; }
-QPushButton:pressed { background: #1a273a; }
-QPushButton#Primary {
-    background: #1b4d89;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 600;
-}
-QPushButton#Primary:hover { background: #205aa0; }
-QPushButton#Primary:pressed { background: #17487a; }
 QPushButton#Success {
     background: #2f9e44;
     color: white;
@@ -186,7 +104,90 @@ QPushButton#Success {
 }
 QPushButton#Success:hover { background: #27903c; }
 QPushButton#Success:pressed { background: #237f35; }
-QStatusBar { background: #0f1623; border-top: 1px solid #1b2943; }
+
+QStatusBar { background: #fffdf0; border-top: 1px solid #968d7d; }
+"""
+
+DARK_QSS = """
+QWidget {
+    background: #1e1207;
+    color: #fffdf0;
+    font-family: 'Segoe UI', 'Noto Sans', Arial;
+    font-size: 14px;
+    font-weight: 500;
+}
+#Sidebar {
+    background: #160e04;
+}
+#Sidebar QLabel { color: #fffdf0; }
+#NavButton {
+    color: #fffdf0;
+    background: transparent;
+    padding: 10px 14px;
+    margin: 4px 8px;
+    border-radius: 10px;
+}
+#NavButton:hover { background: #2c1b0a; }
+#NavButton:checked {
+    background: #3b2810;
+    border: 1px solid #604d33;
+    color: #fffdf0;
+}
+#Header {
+    background: #221508;
+    border-bottom: 1px solid #3b2810;
+}
+#Title { color: #fffdf0; }
+#Scoreboard {
+    background: #160e04;
+    color: #fffdf0;
+    border: 1px solid #3b2810;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-weight: 700;
+}
+QFrame#Card {
+    background: #221508;
+    border: 1px solid #3b2810;
+    border-radius: 14px;
+}
+QLabel#SectionTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fffdf0;
+}
+QPushButton {
+    background: #3b2810;
+    color: #fffdf0;
+    border: 1px solid #604d33;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+QPushButton:hover { background: #4f3c29; }
+QPushButton:pressed { background: #2c1b0a; }
+QPushButton#Primary {
+    background: #604d33;
+    color: #fffdf0;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+QPushButton#Primary:hover { background: #6f5c42; }
+QPushButton#Primary:pressed { background: #513e24; }
+QPushButton#Success {
+    background: #2f9e44;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+}
+QPushButton#Success:hover { background: #27903c; }
+QPushButton#Success:pressed { background: #237f35; }
+QStatusBar { background: #1e1207; border-top: 1px solid #3b2810; }
 """
 
 def _toggle_theme(status_bar: Optional[QStatusBar] = None) -> None:
@@ -194,7 +195,7 @@ def _toggle_theme(status_bar: Optional[QStatusBar] = None) -> None:
     app = QApplication.instance()
     if app is None:
         return
-    is_dark = "0f1623" in app.styleSheet()
+    is_dark = "1e1207" in app.styleSheet()
     app.setStyleSheet(LIGHT_QSS if is_dark else DARK_QSS)
     if status_bar is not None:
         status_bar.showMessage("Light theme" if is_dark else "Dark theme")

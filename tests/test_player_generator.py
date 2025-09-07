@@ -246,6 +246,15 @@ def test_generate_player_includes_appearance(is_pitcher):
     assert player["facial_hair"] in pg.FACIAL_HAIR_WEIGHTS[player["ethnicity"]]
 
 
+def test_generate_player_varied_ethnicities():
+    pg.reset_name_cache()
+    random.seed(0)
+    ethnicities = {
+        generate_player(is_pitcher=False)["ethnicity"] for _ in range(50)
+    }
+    assert {"Anglo", "African", "Asian", "Hispanic"} <= ethnicities
+
+
 def test_generate_pitches_counts_and_bounds(monkeypatch):
     def fake_randint(a, b):
         if (a, b) == (2, 5):
