@@ -9,7 +9,7 @@ from .playbalance_config import PlayBalanceConfig
 from utils.path_utils import get_base_dir
 
 # Further reduction in outs on balls in play to raise simulated BABIP
-_BABIP_OUT_ADJUST = 0.8
+_BABIP_OUT_ADJUST = 0.5
 
 
 def apply_league_benchmarks(
