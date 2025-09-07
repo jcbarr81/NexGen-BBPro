@@ -21,7 +21,7 @@ def test_line_drive_distribution():
     line = 0
     for _ in range(total):
         sim._swing_result(
-            batter, pitcher, defense, b_state, p_state, pitch_speed=90, rand=rng.random()
+            batter, pitcher, defense, b_state, p_state, pitch_speed=90
         )
         if sim.last_batted_ball_type == "line":
             line += 1

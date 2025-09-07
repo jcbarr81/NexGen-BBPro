@@ -26,7 +26,7 @@ def test_ground_air_distribution():
     ground = line = fly = 0
     for _ in range(total):
         sim._swing_result(
-            batter, pitcher, defense, b_state, p_state, pitch_speed=90, rand=rng.random()
+            batter, pitcher, defense, b_state, p_state, pitch_speed=90
         )
         if sim.last_batted_ball_type == "ground":
             ground += 1
@@ -62,7 +62,7 @@ def test_vert_angle_gf_pct_shifts_distribution():
         ground = air = 0
         for _ in range(1000):
             sim._swing_result(
-                batter, pitcher, defense, b_state, p_state, pitch_speed=90, rand=rng.random()
+                batter, pitcher, defense, b_state, p_state, pitch_speed=90
             )
             if sim.last_batted_ball_type == "ground":
                 ground += 1

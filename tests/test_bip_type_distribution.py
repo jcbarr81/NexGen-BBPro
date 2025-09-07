@@ -26,7 +26,7 @@ def test_bip_type_distribution():
     counts = {"ground": 0, "line": 0, "fly": 0}
     for _ in range(total):
         sim._swing_result(
-            batter, pitcher, defense, b_state, p_state, pitch_speed=90, rand=rng.random()
+            batter, pitcher, defense, b_state, p_state, pitch_speed=90
         )
         counts[sim.last_batted_ball_type] += 1
 

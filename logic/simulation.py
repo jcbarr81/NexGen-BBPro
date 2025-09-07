@@ -1287,7 +1287,6 @@ class GameSimulation:
                     batter_state,
                     pitcher_state,
                     pitch_speed=pitch_speed,
-                    rand=dec_r,
                     contact_quality=contact_quality,
                     is_third_strike=strikes >= 2,
                 )
@@ -1757,7 +1756,6 @@ class GameSimulation:
         pitcher_state: PitcherState,
         *,
         pitch_speed: float,
-        rand: float,
         contact_quality: float = 1.0,
         swing_type: str = "normal",
         is_third_strike: bool = False,
@@ -1774,7 +1772,7 @@ class GameSimulation:
         bat_speed = self.physics.bat_speed(
             batter.ph, swing_type=swing_type, pitch_speed=pitch_speed
         )
-        bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
+        bat_speed, _ = self.physics.bat_impact(bat_speed)
         # Calculate and store angles for potential future physics steps.
         swing_angle = self.physics.swing_angle(batter.gf, swing_type=swing_type)
         vert_base = abs(
@@ -1853,8 +1851,7 @@ class GameSimulation:
             if normal_depth > 0:
                 hit_prob *= cur_depth / normal_depth
 
-        hit_rand = self.rng.random()
-        if hit_rand >= hit_prob:
+        if self.rng.random() >= hit_prob:
             if is_third_strike:
                 self._last_swing_strikeout = True
                 self.logged_strikeouts += 1

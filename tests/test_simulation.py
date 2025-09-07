@@ -880,7 +880,7 @@ def test_throw_error_results_in_roe(monkeypatch):
     monkeypatch.setattr(sim.fielding_ai, "resolve_throw", lambda *a, **k: (False, True))
     pitcher_state = PitcherState(pitcher)
     bases, error = sim._swing_result(
-        batter, pitcher, defense, batter_state, pitcher_state, pitch_speed=50, rand=0.0
+        batter, pitcher, defense, batter_state, pitcher_state, pitch_speed=50
     )
     assert error and bases == 1
     sim._advance_runners(offense, defense, batter_state, bases=bases, error=error)
