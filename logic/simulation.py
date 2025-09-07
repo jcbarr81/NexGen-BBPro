@@ -1813,28 +1813,6 @@ class GameSimulation:
         else:
             self._add_stat(batter_state, "fb")
             pitcher_state.fb += 1
-        # Simple defensive outcome to curb inflated offense
-        out_prob = {
-            "ground": self.config.get("groundOutProb", 0.0),
-            "line": self.config.get("lineOutProb", 0.0),
-            "fly": self.config.get("flyOutProb", 0.0),
-        }[self.last_batted_ball_type]
-        if self.rng.random() < out_prob:
-            return 0, False
-        roll_dist = self.physics.ball_roll_distance(
-            bat_speed,
-            self.surface,
-            altitude=self.altitude,
-            temperature=self.temperature,
-            wind_speed=self.wind_speed,
-        )
-        bounce_vert, bounce_horiz = self.physics.ball_bounce(
-            bat_speed / 2.0,
-            bat_speed / 2.0,
-            self.surface,
-            wet=self.wet,
-            temperature=self.temperature,
-        )
         movement_factor = max(
             self.config.movement_factor_min,
             ((100 - pitcher.movement) / 120)
@@ -1875,7 +1853,8 @@ class GameSimulation:
             if normal_depth > 0:
                 hit_prob *= cur_depth / normal_depth
 
-        if rand >= hit_prob:
+        hit_rand = self.rng.random()
+        if hit_rand >= hit_prob:
             if is_third_strike:
                 self._last_swing_strikeout = True
                 self.logged_strikeouts += 1
@@ -1883,6 +1862,29 @@ class GameSimulation:
                 if catcher_fs:
                     self._add_fielding_stat(catcher_fs, "po", position="C")
             return None, False
+
+        out_prob = {
+            "ground": self.config.get("groundOutProb", 0.0),
+            "line": self.config.get("lineOutProb", 0.0),
+            "fly": self.config.get("flyOutProb", 0.0),
+        }[self.last_batted_ball_type]
+        if self.rng.random() < out_prob:
+            return 0, False
+
+        roll_dist = self.physics.ball_roll_distance(
+            bat_speed,
+            self.surface,
+            altitude=self.altitude,
+            temperature=self.temperature,
+            wind_speed=self.wind_speed,
+        )
+        bounce_vert, bounce_horiz = self.physics.ball_bounce(
+            bat_speed / 2.0,
+            bat_speed / 2.0,
+            self.surface,
+            wet=self.wet,
+            temperature=self.temperature,
+        )
 
         vx, vy, vz = self.physics.launch_vector(
             getattr(batter, "ph", 50),
