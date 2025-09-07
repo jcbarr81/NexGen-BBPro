@@ -8,10 +8,11 @@ from typing import Tuple, Dict
 from .playbalance_config import PlayBalanceConfig
 from utils.path_utils import get_base_dir
 
-# Reduction in outs on balls in play to boost the rate that balls in play
-# become hits.  Values below ``1`` decrease outs and raise the simulated
-# BABIP.  A lower number increases offense; raising the value dials it back.
-_BABIP_OUT_ADJUST = 0.25
+# Scaling factor applied to outs on balls in play to tune the simulated
+# batting average on balls in play (BABIP). Values below ``1`` decrease outs
+# and raise BABIP, values above ``1`` increase outs and lower BABIP. ``1.0``
+# uses the MLB averages without additional adjustment.
+_BABIP_OUT_ADJUST = 1.0
 # Additional scaling factor applied to outs on balls in play.
 # Allow external configuration to raise or lower simulated BABIP
 # without modifying code directly.
