@@ -27,9 +27,37 @@ def apply_league_benchmarks(
     hr_rate = cfg.hitHRProb / 100
     # Base hit probability derived directly from league BABIP
     cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
-    cfg.ballInPlayPitchPct = int(round(benchmarks["pitches_put_in_play_pct"] * 100))
+    pip_pct = benchmarks["pitches_put_in_play_pct"]
+    cfg.ballInPlayPitchPct = int(round(pip_pct * 100))
     pitches_per_pa = benchmarks["pitches_per_pa"]
     cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
+
+    swing_pct = benchmarks.get("swing_pct")
+    zone_pct = benchmarks.get("zone_pct")
+    z_swing_pct = benchmarks.get("z_swing_pct")
+    o_swing_pct = benchmarks.get("o_swing_pct")
+    z_contact_pct = benchmarks.get("z_contact_pct")
+    o_contact_pct = benchmarks.get("o_contact_pct")
+    swstr_pct = benchmarks.get("swstr_pct")
+    if None not in (
+        swing_pct,
+        zone_pct,
+        z_swing_pct,
+        o_swing_pct,
+        z_contact_pct,
+        o_contact_pct,
+        swstr_pct,
+    ):
+        zone_swing = zone_pct * z_swing_pct
+        o_swing = (1 - zone_pct) * o_swing_pct
+        contact = zone_swing * z_contact_pct + o_swing * o_contact_pct
+        foul_pct = max(contact - pip_pct, 0.0)
+        called_strike_pct = zone_pct - zone_swing
+        strike_pct = pip_pct + swstr_pct + foul_pct + called_strike_pct
+        cfg.foulPitchBasePct = int(round(foul_pct * 100))
+        cfg.leagueStrikePct = round(strike_pct * 100, 1)
+        if strike_pct:
+            cfg.foulStrikeBasePct = round((foul_pct / strike_pct) * 100, 1)
 
     # Derive outs on balls in play by type.  Start from MLB-average
     # probabilities and scale them so that the weighted mean matches the
