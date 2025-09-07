@@ -189,6 +189,7 @@ def _simulate_game_star(args: tuple[str, str, int]) -> Counter[str]:
 def simulate_season_average(
     use_tqdm: bool = True,
     seed: int | None = None,
+    id_rating_base: int | None = None,
 ) -> None:
     """Run a season simulation and print average box score values.
 
@@ -212,6 +213,8 @@ def simulate_season_average(
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg, mlb_averages = load_tuned_playbalance_config()
+    if id_rating_base is not None:
+        cfg.idRatingBase = id_rating_base
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
     rng = random.Random(seed)
@@ -283,9 +286,17 @@ if __name__ == "__main__":
         default=None,
         help="Seed for deterministic runs (default: random)",
     )
+    parser.add_argument(
+        "--id-rating-base",
+        type=int,
+        default=None,
+        help="Override idRatingBase in PlayBalanceConfig",
+    )
     args = parser.parse_args()
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
     configure_perf_tuning()
-    simulate_season_average(use_tqdm=use_tqdm, seed=args.seed)
+    simulate_season_average(
+        use_tqdm=use_tqdm, seed=args.seed, id_rating_base=args.id_rating_base
+    )
