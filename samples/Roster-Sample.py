@@ -136,8 +136,8 @@ class StatusFooter(QtWidgets.QStatusBar):
         self.setStyleSheet(f"background:{RETRO_GREEN}; color:{RETRO_TEXT}; border-top: 1px solid {RETRO_BORDER};")
         self.setSizeGripEnabled(False)
 
-        left = QtWidgets.QLabel("Front Page Sports: Baseball — April 3, 1994")
-        right = QtWidgets.QLabel("MLBPA 1994")
+        left = QtWidgets.QLabel("NexGen-BBpro")
+        right = QtWidgets.QLabel("JBARR 2025")
         right.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
 
         spacer = QtWidgets.QWidget()
