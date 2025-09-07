@@ -16,7 +16,7 @@ _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 # MLB averages used to derive strike-based foul rates from all pitches.
 # These baseline percentages are tuned to yield roughly four pitches per
 # plate appearance, matching modern MLB norms.
-_FOUL_PITCH_BASE_PCT = 26  # Percent of all pitches that are fouls
+_FOUL_PITCH_BASE_PCT = 15  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.3  # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
@@ -137,10 +137,10 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFASPct": 0,
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
-    "exitVeloBase": 20,
+    "exitVeloBase": 0,
     "exitVeloPHPct": 0,
-    "exitVeloPowerPct": 110,
-    "exitVeloNormalPct": 95,
+    "exitVeloPowerPct": 85,
+    "exitVeloNormalPct": 85,
     "exitVeloContactPct": 100,
     "vertAngleGFPct": 0,
     "sprayAnglePLPct": 0,
@@ -158,7 +158,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability tuned for a lower league-wide average
     # to curb excessive offense after other modifiers.
-    "hitProbBase": 0.03,
+    "hitProbBase": 0.12,
     "contactFactorBase": 1.0,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
@@ -181,9 +181,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
-    "foulStrikeBasePct": round(
-        _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
-    ),
+    "foulStrikeBasePct": 31,
     "foulContactTrendPct": 2.0,
     # Target roughly 17% of all pitches being put into play
     "ballInPlayPitchPct": 17,
@@ -194,6 +192,8 @@ _DEFAULTS: Dict[str, Any] = {
     "baserunningAggression": 0.45,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 18,
+    "hbpBaseChance": 0.0,
+    "leagueHBPPerGame": 0.86,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
     "pitchRatVariationFaces": 3,
@@ -273,7 +273,7 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
     # Baseline contact chance when the batter misreads the pitch
-    "minMisreadContact": 0.15,
+    "minMisreadContact": 0.3,
     # Final contact multiplier applied to swing decisions
     # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
     "contactQualityScale": 1.2,

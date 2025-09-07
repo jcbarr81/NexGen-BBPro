@@ -1533,11 +1533,22 @@ class GameSimulation:
                     pitcher_state.strikes_thrown += 1
                 else:
                     hbp_dist = self.config.get("closeBallDist", 5) + self.rng.randint(1, 2)
+                    league_hbp = self.config.get("leagueHBPPerGame", 0.86)
+                    if league_hbp > 0:
+                        hbp_dist = int(round(hbp_dist * 0.86 / league_hbp))
                     if dist >= hbp_dist:
+                        base_hbp = self.config.get("hbpBaseChance", 0.0)
                         step_out_chance = (
                             self.config.get("hbpBatterStepOutChance", 0) / 100.0
                         )
-                        if self.rng.random() < step_out_chance:
+                        roll = self.rng.random()
+                        if roll < base_hbp:
+                            is_hbp = True
+                        elif self.rng.random() < step_out_chance:
+                            is_hbp = False
+                        else:
+                            is_hbp = True
+                        if not is_hbp:
                             balls += 1
                             pitcher_state.balls_thrown += 1
                         else:
