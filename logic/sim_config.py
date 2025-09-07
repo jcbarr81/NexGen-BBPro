@@ -21,14 +21,11 @@ def apply_league_benchmarks(
     cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
 
 
-def load_tuned_playbalance_config(
-    ball_in_play_outs: float = 0.0,
-) -> Tuple[PlayBalanceConfig, Dict[str, float]]:
+def load_tuned_playbalance_config() -> Tuple[PlayBalanceConfig, Dict[str, float]]:
     """Return a tuned :class:`PlayBalanceConfig` and MLB averages."""
 
     base = get_base_dir()
     cfg = PlayBalanceConfig.from_file(base / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = ball_in_play_outs
 
     csv_path = base / "data" / "MLB_avg" / "mlb_avg_boxscore_2020_2024_both_teams.csv"
     with csv_path.open(newline="") as f:

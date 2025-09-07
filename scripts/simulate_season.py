@@ -96,16 +96,12 @@ def clone_team_state(base: TeamState) -> TeamState:
 
 def simulate_season_average(
     use_tqdm: bool = True,
-    ball_in_play_outs: float = 0.0,
     seed: int | None = None,
 ) -> None:
     """Run a season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
-        ball_in_play_outs: Additional probability that any ball put in play
-            becomes an out. ``0`` allows normal hit/out resolution while ``1``
-            makes every ball in play an out.
         seed: Optional seed for deterministic simulations. If ``None`` (the
             default) a different random seed will be used on each run.
     """
@@ -114,7 +110,7 @@ def simulate_season_average(
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg, mlb_averages = load_tuned_playbalance_config(ball_in_play_outs)
+    cfg, mlb_averages = load_tuned_playbalance_config()
 
     rng = random.Random(seed)
 
@@ -206,15 +202,6 @@ if __name__ == "__main__":
         help="Disable tqdm progress bar.",
     )
     parser.add_argument(
-        "--ball-in-play-outs",
-        type=float,
-        default=0.0,
-        help=(
-            "Additional out probability for balls in play (0 normal, 1 all balls in"
-            " play are outs)."
-        ),
-    )
-    parser.add_argument(
         "--seed",
         type=int,
         default=None,
@@ -224,8 +211,4 @@ if __name__ == "__main__":
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
-    simulate_season_average(
-        use_tqdm=use_tqdm,
-        ball_in_play_outs=args.ball_in_play_outs,
-        seed=args.seed,
-    )
+    simulate_season_average(use_tqdm=use_tqdm, seed=args.seed)

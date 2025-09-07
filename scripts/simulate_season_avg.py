@@ -215,16 +215,12 @@ def apply_league_benchmarks(
 
 def simulate_season_average(
     use_tqdm: bool = True,
-    ball_in_play_outs: float = 0.0,
     seed: int | None = None,
 ) -> None:
     """Run a season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
-        ball_in_play_outs: Additional probability that any ball put in play
-            becomes an out. ``0`` allows normal hit/out resolution while ``1``
-            makes every ball in play an out.
         seed: Optional seed for deterministic simulations. If ``None`` (the
             default) a different random seed will be used on each run.
     """
@@ -243,7 +239,6 @@ def simulate_season_average(
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
     cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = ball_in_play_outs
 
     csv_path = (
         get_base_dir()
@@ -356,15 +351,6 @@ if __name__ == "__main__":
         help="Disable tqdm progress bar.",
     )
     parser.add_argument(
-        "--ball-in-play-outs",
-        type=float,
-        default=0.0,
-        help=(
-            "Additional out probability for balls in play (0 normal, 1 all balls in"
-            " play are outs)."
-        ),
-    )
-    parser.add_argument(
         "--seed",
         type=int,
         default=None,
@@ -377,6 +363,5 @@ if __name__ == "__main__":
     configure_perf_tuning()
     simulate_season_average(
         use_tqdm=use_tqdm,
-        ball_in_play_outs=args.ball_in_play_outs,
         seed=args.seed,
     )
