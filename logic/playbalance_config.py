@@ -175,6 +175,8 @@ _DEFAULTS: Dict[str, Any] = {
     "groundOutProb": 0.76,
     "lineOutProb": 0.32,
     "flyOutProb": 0.86,
+    # Scaling factor for outs on balls in play (BABIP tuning)
+    "babipScale": 1.0,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
@@ -759,6 +761,11 @@ class PlayBalanceConfig:
     def movement_impact_scale(self) -> float:
         """Scale applied to pitcher movement's effect in hit probability."""
         return float(self.movementImpactScale)
+
+    @property
+    def babip_scale(self) -> float:
+        """Additional scaling factor for outs on balls in play."""
+        return float(self.babipScale)
 
     # ------------------------------------------------------------------
     # Mapping style helpers

@@ -97,6 +97,7 @@ def clone_team_state(base: TeamState) -> TeamState:
 def simulate_season_average(
     use_tqdm: bool = True,
     seed: int | None = None,
+    babip_scale: float = 1.0,
 ) -> None:
     """Run a season simulation and print average box score values.
 
@@ -104,13 +105,14 @@ def simulate_season_average(
         use_tqdm: Whether to display a progress bar using ``tqdm``.
         seed: Optional seed for deterministic simulations. If ``None`` (the
             default) a different random seed will be used on each run.
+        babip_scale: Scaling factor applied to outs on balls in play.
     """
 
     teams = [t.team_id for t in load_teams()]
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg, mlb_averages = load_tuned_playbalance_config()
+    cfg, mlb_averages = load_tuned_playbalance_config(babip_scale_param=babip_scale)
 
     rng = random.Random(seed)
 
@@ -207,8 +209,16 @@ if __name__ == "__main__":
         default=None,
         help="Seed for deterministic runs (default: random)",
     )
+    parser.add_argument(
+        "--babip-scale",
+        type=float,
+        default=1.0,
+        help="Scaling factor for outs on balls in play (default: 1.0)",
+    )
     args = parser.parse_args()
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
-    simulate_season_average(use_tqdm=use_tqdm, seed=args.seed)
+    simulate_season_average(
+        use_tqdm=use_tqdm, seed=args.seed, babip_scale=args.babip_scale
+    )
