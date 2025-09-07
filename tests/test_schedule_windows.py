@@ -240,10 +240,14 @@ def test_schedule_windows_show_data(monkeypatch, tmp_path):
 
     dashboard.team_schedule_action.trigger()
     team = opened['team']
-    assert team.viewer.item(0,0).text() == '2024-04-01'
-    assert team.viewer.item(0,1).text() == 'vs B'
-    assert team.viewer.item(0,2).text() == 'W 3-2'
-    assert team.viewer.item(1,1).text() == 'at C'
+    texts = []
+    for r in range(6):
+        for c in range(7):
+            item = team.viewer.item(r, c)
+            if item:
+                texts.append(item.text())
+    assert any('vs B' in t and '1' in t and 'W 3-2' in t for t in texts)
+    assert any('at C' in t and '2' in t and 'L 1-2' in t for t in texts)
 
 
 def test_owner_dashboard_stats_windows(monkeypatch):

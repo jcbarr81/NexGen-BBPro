@@ -1,11 +1,22 @@
+import calendar
+import csv
+from datetime import datetime
+from pathlib import Path
+
+from PyQt6.QtCore import Qt
+try:  # pragma: no cover - allow tests without full PyQt6
+    from PyQt6.QtGui import QColor
+except Exception:  # pragma: no cover
+    QColor = None
 from PyQt6.QtWidgets import (
     QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
-import csv
-from pathlib import Path
 
 from .boxscore_window import BoxScoreWindow
 
@@ -13,7 +24,7 @@ SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "schedule.csv"
 
 
 class TeamScheduleWindow(QDialog):
-    """Dialog displaying a team's schedule and results as HTML."""
+    """Dialog displaying a team's schedule in a calendar style."""
 
     def __init__(self, team_id: str, parent=None):
         super().__init__(parent)
@@ -25,23 +36,48 @@ class TeamScheduleWindow(QDialog):
 
         layout = QVBoxLayout(self)
 
-        self.viewer = QTableWidget(0, 3)
+        nav = QHBoxLayout()
+        self.prev_button = QPushButton("<")
+        self.next_button = QPushButton(">")
+        self.month_label = QLabel()
+        nav.addWidget(self.prev_button)
+        nav.addWidget(self.month_label)
+        nav.addWidget(self.next_button)
         try:
-            self.viewer.setHorizontalHeaderLabels(["Date", "Opponent", "Result"])
+            layout.addLayout(nav)
+        except Exception:  # pragma: no cover - test stubs
+            pass
+
+        self.viewer = QTableWidget(6, 7)
+        try:
+            self.viewer.setHorizontalHeaderLabels(
+                ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            )
             self.viewer.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
             self.viewer.setMinimumHeight(560)
             self.viewer.cellDoubleClicked.connect(self._open_boxscore)
         except Exception:  # pragma: no cover
             pass
-        layout.addWidget(self.viewer)
+        try:
+            layout.addWidget(self.viewer)
+        except Exception:  # pragma: no cover
+            pass
+
+        self.prev_button.clicked.connect(lambda: self._change_month(-1))
+        self.next_button.clicked.connect(lambda: self._change_month(1))
 
         self._schedule: list[dict[str, str]] = []
+        self._schedule_map: dict[str, dict[str, str]] = {}
         if SCHEDULE_FILE.exists():
             with SCHEDULE_FILE.open(newline="") as fh:
                 reader = csv.DictReader(fh)
                 for row in reader:
                     if row.get("home") == team_id or row.get("away") == team_id:
-                        opponent = row.get("away") if row.get("home") == team_id else row.get("home")
+                        opponent = (
+                            row.get("away")
+                            if row.get("home") == team_id
+                            else row.get("home")
+                        )
                         venue = "vs" if row.get("home") == team_id else "at"
                         entry = {
                             "date": row.get("date", ""),
@@ -50,20 +86,67 @@ class TeamScheduleWindow(QDialog):
                             "boxscore": row.get("boxscore", ""),
                         }
                         self._schedule.append(entry)
+                        self._schedule_map[entry["date"]] = entry
 
+        if self._schedule:
+            first = datetime.strptime(self._schedule[0]["date"], "%Y-%m-%d")
+            self._month = first.replace(day=1)
+            self._populate_month()
+
+    def _change_month(self, delta: int) -> None:
+        month = self._month.month - 1 + delta
+        year = self._month.year + month // 12
+        month = month % 12 + 1
+        self._month = self._month.replace(year=year, month=month, day=1)
+        self._populate_month()
+
+    def _populate_month(self) -> None:
+        self.month_label.setText(self._month.strftime("%B %Y"))
         try:
-            self.viewer.setRowCount(len(self._schedule))
-            for r, game in enumerate(self._schedule):
-                for c, key in enumerate(["date", "opponent", "result"]):
-                    item = QTableWidgetItem(game.get(key, ""))
-                    self.viewer.setItem(r, c, item)
+            self.viewer.clearContents()
         except Exception:  # pragma: no cover
             pass
+        days = calendar.monthrange(self._month.year, self._month.month)[1]
+        first_weekday = (self._month.weekday() + 1) % 7
+        row = 0
+        col = first_weekday
+        for day in range(1, days + 1):
+            date_obj = self._month.replace(day=day)
+            date_str = date_obj.strftime("%Y-%m-%d")
+            game = self._schedule_map.get(date_str)
+            text = str(day)
+            if game:
+                text += f"\n{game['opponent']}"
+                if game.get("result"):
+                    text += f"\n{game['result']}"
+            item = QTableWidgetItem(text)
+            if game and QColor is not None:
+                color = (
+                    QColor("#aaffaa")
+                    if game["opponent"].startswith("vs")
+                    else QColor("#aaaaff")
+                )
+                item.setBackground(color)
+            elif not game and QColor is not None:
+                item.setBackground(QColor("#dddddd"))
+            try:
+                item.setData(Qt.ItemDataRole.UserRole, date_str)
+            except Exception:  # pragma: no cover
+                pass
+            self.viewer.setItem(row, col, item)
+            col += 1
+            if col > 6:
+                col = 0
+                row += 1
 
     def _open_boxscore(self, row: int, column: int) -> None:
-        if column != 2:
+        item = self.viewer.item(row, column)
+        if not item:
             return
-        game = self._schedule[row]
+        date_str = item.data(Qt.ItemDataRole.UserRole)
+        game = self._schedule_map.get(date_str)
+        if not game:
+            return
         path = game.get("boxscore")
         if path:
             dlg = BoxScoreWindow(path, self)
