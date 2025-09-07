@@ -57,7 +57,6 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 import argparse
-import csv
 import pickle
 import random
 import sys
@@ -90,8 +89,7 @@ from logic.simulation import (
     TeamState,
     generate_boxscore,
 )
-from logic.playbalance_config import PlayBalanceConfig
-from logic.sim_config import apply_league_benchmarks
+from logic.sim_config import load_tuned_playbalance_config
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
@@ -213,53 +211,7 @@ def simulate_season_average(
             pickle.dump(schedule, fh)
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-
-    csv_path = (
-        get_base_dir()
-        / "data"
-        / "MLB_avg"
-        / "mlb_avg_boxscore_2020_2024_both_teams.csv"
-    )
-    with csv_path.open(newline="") as f:
-        row = next(csv.DictReader(f))
-    hits = float(row["Hits"])
-    singles = (
-        hits
-        - float(row["Doubles"])
-        - float(row["Triples"])
-        - float(row["HomeRuns"])
-    )
-    cfg.hit1BProb = int(round(singles / hits * 100))
-    cfg.hit2BProb = int(round(float(row["Doubles"]) / hits * 100))
-    cfg.hit3BProb = int(round(float(row["Triples"]) / hits * 100))
-    cfg.hitHRProb = max(
-        0,
-        100 - cfg.hit1BProb - cfg.hit2BProb - cfg.hit3BProb,
-    )
-    at_bats = float(row["AtBats"])
-    walks = float(row["Walks"])
-    hbp = float(row["HitByPitch"])
-    total_pitches = float(row["TotalPitchesThrown"])
-    strikeouts = float(row["Strikeouts"])
-    homers = float(row["HomeRuns"])
-    plate_appearances = at_bats + walks + hbp
-    balls_in_play = at_bats - strikeouts - homers
-
-    bench_path = (
-        get_base_dir()
-        / "data"
-        / "MLB_avg"
-        / "mlb_league_benchmarks_2025_filled.csv"
-    )
-    with bench_path.open(newline="") as bf:
-        benchmarks = {
-            r["metric_key"]: float(r["value"])
-            for r in csv.DictReader(bf)
-        }
-
-    apply_league_benchmarks(cfg, benchmarks)
-    mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
+    cfg, mlb_averages = load_tuned_playbalance_config()
 
     # Prepare list of (home, away, seed) tuples for multiprocessing
     rng = random.Random(seed)
@@ -336,7 +288,4 @@ if __name__ == "__main__":
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
     configure_perf_tuning()
-    simulate_season_average(
-        use_tqdm=use_tqdm,
-        seed=args.seed,
-    )
+    simulate_season_average(use_tqdm=use_tqdm, seed=args.seed)
