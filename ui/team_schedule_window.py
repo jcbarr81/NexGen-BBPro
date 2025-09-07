@@ -56,6 +56,9 @@ class TeamScheduleWindow(QDialog):
             self.viewer.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
             self.viewer.setMinimumHeight(560)
             self.viewer.cellDoubleClicked.connect(self._open_boxscore)
+            # Enlarge cells for better readability
+            self.viewer.horizontalHeader().setDefaultSectionSize(110)
+            self.viewer.verticalHeader().setDefaultSectionSize(90)
         except Exception:  # pragma: no cover
             pass
         try:
@@ -120,13 +123,16 @@ class TeamScheduleWindow(QDialog):
                 if game.get("result"):
                     text += f"\n{game['result']}"
             item = QTableWidgetItem(text)
-            if game and QColor is not None:
-                color = (
-                    QColor("#aaaaff")
-                    if game["opponent"].startswith("vs")
-                    else QColor("#dddddd")
-                )
-                item.setBackground(color)
+            if QColor is not None:
+                # Ensure text remains legible against colored backgrounds
+                item.setForeground(QColor("black"))
+                if game:
+                    color = (
+                        QColor("#aaaaff")
+                        if game["opponent"].startswith("vs")
+                        else QColor("#dddddd")
+                    )
+                    item.setBackground(color)
             try:
                 item.setData(Qt.ItemDataRole.UserRole, date_str)
             except Exception:  # pragma: no cover
