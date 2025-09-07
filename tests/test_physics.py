@@ -161,24 +161,26 @@ def test_swing_result_respects_bat_speed():
     batter1 = make_player("b1")
     pitcher1 = make_pitcher("p1")
     defense1 = TeamState(lineup=[make_player("d1")], bench=[], pitchers=[pitcher1])
-    sim1 = GameSimulation(defense1, defense1, cfg_slow, MockRandom([0.9]))
+    sim1 = GameSimulation(defense1, defense1, cfg_slow, MockRandom([0.9, 0.0, 0.99]))
     b_state1 = BatterState(batter1)
     p_state1 = PitcherState(pitcher1)
     bases1, error1 = sim1._swing_result(
-        batter1, pitcher1, defense1, b_state1, p_state1, pitch_speed=50, rand=0.99
+        batter1, pitcher1, defense1, b_state1, p_state1, pitch_speed=50
     )
-    assert bases1 == 0 and not error1
+    assert bases1 is None and not error1
 
     # High bat speed -> batter reaches safely
     cfg_fast = make_cfg(swingSpeedBase=80, averagePitchSpeed=50)
     batter2 = make_player("b2")
     pitcher2 = make_pitcher("p2")
     defense2 = TeamState(lineup=[make_player("d2")], bench=[], pitchers=[pitcher2])
-    sim2 = GameSimulation(defense2, defense2, cfg_fast, MockRandom([0.9]))
+    sim2 = GameSimulation(
+        defense2, defense2, cfg_fast, MockRandom([0.9, 0.0, 0.0, 0.9, 0.99, 0.99])
+    )
     b_state2 = BatterState(batter2)
     p_state2 = PitcherState(pitcher2)
     bases2, error2 = sim2._swing_result(
-        batter2, pitcher2, defense2, b_state2, p_state2, pitch_speed=50, rand=0.0
+        batter2, pitcher2, defense2, b_state2, p_state2, pitch_speed=50
     )
     assert bases2 > 0
 
@@ -272,7 +274,7 @@ def test_power_hitter_can_hit_home_run(monkeypatch):
     b_state = BatterState(batter)
     p_state = PitcherState(pitcher)
     bases, error = sim._swing_result(
-        batter, pitcher, home, b_state, p_state, pitch_speed=50, rand=0.0
+        batter, pitcher, home, b_state, p_state, pitch_speed=50
     )
     assert bases == 4
     assert not error

@@ -26,7 +26,7 @@ def test_swing_result_tracks_ground_line_fly(monkeypatch):
     monkeypatch.setattr(sim.physics, "ball_bounce", lambda *a, **k: (0.0, 0.0))
     b_state = BatterState(batter)
     p_state = PitcherState(pitcher)
-    sim._swing_result(batter, pitcher, defense, b_state, p_state, pitch_speed=90, rand=0.0)
+    sim._swing_result(batter, pitcher, defense, b_state, p_state, pitch_speed=90)
     assert (
         b_state.gb == 1
         and p_state.gb == 1
@@ -45,7 +45,7 @@ def test_swing_result_tracks_ground_line_fly(monkeypatch):
     b_state_line = BatterState(batter)
     p_state_line = PitcherState(pitcher)
     sim_line._swing_result(
-        batter, pitcher, defense, b_state_line, p_state_line, pitch_speed=90, rand=0.0
+        batter, pitcher, defense, b_state_line, p_state_line, pitch_speed=90
     )
     assert (
         b_state_line.ld == 1
@@ -63,7 +63,7 @@ def test_swing_result_tracks_ground_line_fly(monkeypatch):
     b_state_fly = BatterState(batter)
     p_state_fly = PitcherState(pitcher)
     sim_fly._swing_result(
-        batter, pitcher, defense, b_state_fly, p_state_fly, pitch_speed=90, rand=0.0
+        batter, pitcher, defense, b_state_fly, p_state_fly, pitch_speed=90
     )
     assert (
         b_state_fly.fb == 1

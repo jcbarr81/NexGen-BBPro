@@ -77,7 +77,7 @@ def test_custom_stadium_affects_hit_value(monkeypatch):
     b_state = BatterState(batter)
     p_state = PitcherState(pitcher)
     bases, _ = sim._swing_result(
-        batter, pitcher, home, b_state, p_state, pitch_speed=50, rand=0.0
+        batter, pitcher, home, b_state, p_state, pitch_speed=50
     )
     assert bases == 2
 
@@ -95,7 +95,7 @@ def test_custom_stadium_affects_hit_value(monkeypatch):
     b_state = BatterState(batter)
     p_state = PitcherState(pitcher)
     bases_small, _ = sim_small._swing_result(
-        batter, pitcher, home, b_state, p_state, pitch_speed=50, rand=0.0
+        batter, pitcher, home, b_state, p_state, pitch_speed=50
     )
     assert bases_small == 4
 
