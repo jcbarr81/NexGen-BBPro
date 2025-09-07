@@ -1876,8 +1876,6 @@ class GameSimulation:
             "line": self.config.get("lineOutProb", 0.0),
             "fly": self.config.get("flyOutProb", 0.0),
         }[self.last_batted_ball_type]
-        if self.rng.random() < out_prob:
-            return 0, False
 
         roll_dist = self.physics.ball_roll_distance(
             bat_speed,
@@ -1940,6 +1938,7 @@ class GameSimulation:
             if action == "no_attempt":
                 continue
             prob = self.fielding_ai.catch_probability(pos, fa, hang_time, action)
+            prob *= out_prob
             if self.rng.random() < prob:
                 caught, error = self.fielding_ai.resolve_throw(pos, fa, hang_time)
                 if caught:
