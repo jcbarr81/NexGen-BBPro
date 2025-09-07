@@ -8,8 +8,10 @@ from typing import Tuple, Dict
 from .playbalance_config import PlayBalanceConfig
 from utils.path_utils import get_base_dir
 
-# Further reduction in outs on balls in play to raise simulated BABIP
-_BABIP_OUT_ADJUST = 0.5
+# Greater reduction in outs on balls in play to roughly
+# triple the rate that balls in play become hits.
+# This substantially boosts the simulated BABIP.
+_BABIP_OUT_ADJUST = 0.17
 
 
 def apply_league_benchmarks(
