@@ -15,17 +15,21 @@ from utils.path_utils import get_base_dir
 # Constants
 BASE_DIR = get_base_dir()
 NAME_PATH = BASE_DIR / "data" / "names.csv"
+PLAYER_PATH = BASE_DIR / "data" / "players.csv"
 
 
 def _load_name_pool() -> Dict[str, List[Tuple[str, str]]]:
     pool: Dict[str, List[Tuple[str, str]]] = {}
-    if NAME_PATH.exists():
-        with NAME_PATH.open(newline="") as f:
+    source = PLAYER_PATH if PLAYER_PATH.exists() else NAME_PATH
+    if source.exists():
+        with source.open(newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                pool.setdefault(row["ethnicity"], []).append(
-                    (row["first_name"], row["last_name"])
-                )
+                ethnicity = row.get("ethnicity", "").strip()
+                first = row.get("first_name")
+                last = row.get("last_name")
+                if ethnicity and first and last:
+                    pool.setdefault(ethnicity, []).append((first, last))
     return pool
 
 
