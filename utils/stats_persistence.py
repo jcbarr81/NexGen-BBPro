@@ -90,7 +90,12 @@ def save_stats(
     lock_path = file_path.with_suffix(file_path.suffix + ".lock")
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with lock_path.open("w") as lock_file:
+    # ``"w"`` would truncate the file and prevent other processes from
+    # opening it on Windows, leading to ``PermissionError`` when multiple
+    # simulations attempt to write stats concurrently.  Using ``"a+"`` keeps
+    # the file length intact and allows concurrent opens while the explicit
+    # lock below serializes writes.
+    with lock_path.open("a+") as lock_file:
         with _locked(lock_file):
             stats = load_stats(file_path)
             player_stats = stats.get("players", {})
