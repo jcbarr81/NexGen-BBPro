@@ -20,7 +20,19 @@ if os.name == "nt":  # pragma: no cover - Windows specific
 
     @contextlib.contextmanager
     def _locked(file):
-        """Lock ``file`` using :mod:`msvcrt` semantics."""
+        """Lock ``file`` using :mod:`msvcrt` semantics.
+
+        ``msvcrt.locking`` cannot lock a file of zero length.  When the lock
+        file is opened with ``"w"`` its size is truncated to ``0`` which would
+        trigger ``OSError: [Errno 36]`` on Windows.  To avoid this we write a
+        single byte before acquiring the lock.
+        """
+        # Ensure the file is at least one byte long before attempting to lock
+        file.seek(0, os.SEEK_END)
+        if file.tell() == 0:
+            file.write("0")
+            file.flush()
+            file.seek(0)
         try:
             msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)
             yield
