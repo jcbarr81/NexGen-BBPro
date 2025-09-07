@@ -193,7 +193,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Baseline aggression for runners attempting extra bases
     "baserunningAggression": 0.45,
     # Hit by pitch avoidance ----------------------------------------
-    "hbpBatterStepOutChance": 60,
+    "hbpBatterStepOutChance": 18,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
     "pitchRatVariationFaces": 3,
