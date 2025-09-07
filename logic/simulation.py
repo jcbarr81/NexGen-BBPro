@@ -1532,7 +1532,7 @@ class GameSimulation:
                     strikes += 1
                     pitcher_state.strikes_thrown += 1
                 else:
-                    hbp_dist = self.config.get("closeBallDist", 5) + 3
+                    hbp_dist = self.config.get("closeBallDist", 5) + self.rng.randint(1, 2)
                     if dist >= hbp_dist:
                         step_out_chance = (
                             self.config.get("hbpBatterStepOutChance", 0) / 100.0
