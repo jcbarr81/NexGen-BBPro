@@ -17,6 +17,10 @@ class RosterPage(QWidget):
         btn_pos.clicked.connect(dashboard.open_position_players_dialog)
         card.layout().addWidget(btn_pos)
 
+        btn_pitchers = QPushButton("Pitchers", objectName="Primary")
+        btn_pitchers.clicked.connect(dashboard.open_pitchers_dialog)
+        card.layout().addWidget(btn_pitchers)
+
         btn_pitch = QPushButton("Pitching Staff", objectName="Primary")
         btn_pitch.clicked.connect(dashboard.open_pitching_editor)
         card.layout().addWidget(btn_pitch)
