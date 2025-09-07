@@ -103,7 +103,8 @@ qtwidgets = types.ModuleType("PyQt6.QtWidgets")
 widget_names = [
     'QWidget','QLabel','QVBoxLayout','QTabWidget','QListWidget','QTextEdit','QPushButton',
     'QHBoxLayout','QComboBox','QMessageBox','QGroupBox','QMenuBar','QFormLayout',
-    'QSpinBox','QGridLayout','QScrollArea','QLineEdit','QTableWidget','QTableWidgetItem'
+    'QSpinBox','QGridLayout','QScrollArea','QLineEdit','QTableWidget','QTableWidgetItem',
+    'QMainWindow','QStackedWidget','QFrame','QStatusBar','QToolButton','QSizePolicy','QSpacerItem','QApplication'
 ]
 for name in widget_names:
     setattr(qtwidgets, name, Dummy)
@@ -111,6 +112,7 @@ qtwidgets.QMenuBar = QMenuBar
 qtwidgets.QMenu = QMenu
 qtwidgets.QAction = QAction
 qtwidgets.QDialog = Dialog
+qtwidgets.__getattr__ = lambda name: Dummy
 
 
 class QTextEdit(Dummy):
@@ -164,6 +166,11 @@ class QFont:
 qtgui.QFont = QFont
 qtgui.QPixmap = Dummy
 sys.modules['PyQt6.QtGui'] = qtgui
+
+theme_mod = types.ModuleType('ui.theme')
+theme_mod._toggle_theme = lambda status_bar=None: None
+theme_mod.DARK_QSS = ""
+sys.modules['ui.theme'] = theme_mod
 
 # ---- Imports after stubbing ----
 sys.modules.pop("ui.owner_dashboard", None)

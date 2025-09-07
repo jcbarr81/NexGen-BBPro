@@ -2,6 +2,10 @@ import hashlib
 import pytest
 
 pytest.importorskip("PIL")
+pytest.importorskip("PIL.Image")
+pytest.importorskip("PIL.ImageDraw")
+pytest.importorskip("PIL.ImageFont")
+pytest.importorskip("PIL.ImageFilter")
 
 from images.auto_logo import TeamSpec, generate_logo
 

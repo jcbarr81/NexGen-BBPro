@@ -27,6 +27,7 @@ from .theme import _toggle_theme
 from .roster_page import RosterPage
 from .transactions_page import TransactionsPage
 from .schedule_page import SchedulePage
+from .team_page import TeamPage
 from .lineup_editor import LineupEditor
 from .pitching_editor import PitchingEditor
 from .position_players_dialog import PositionPlayersDialog
@@ -36,6 +37,7 @@ from .trade_dialog import TradeDialog
 from .standings_window import StandingsWindow
 from .schedule_window import ScheduleWindow
 from .team_schedule_window import TeamScheduleWindow
+from .team_stats_window import TeamStatsWindow
 from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
 from utils.roster_loader import load_roster
@@ -56,6 +58,8 @@ class OwnerDashboard(QMainWindow):
             p.player_id: p for p in load_players_from_csv("data/players.csv")
         }
         self.roster = load_roster(team_id)
+        teams = load_teams()
+        self.team = next((t for t in teams if t.team_id == team_id), None)
 
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
         self.resize(1100, 720)
@@ -87,14 +91,16 @@ class OwnerDashboard(QMainWindow):
         side.addWidget(brand)
 
         self.btn_roster = NavButton("  Roster")
+        self.btn_team = NavButton("  Team")
         self.btn_transactions = NavButton("  Transactions")
         self.btn_league = NavButton("  League")
 
-        for b in (self.btn_roster, self.btn_transactions, self.btn_league):
+        for b in (self.btn_roster, self.btn_team, self.btn_transactions, self.btn_league):
             side.addWidget(b)
 
         self.nav_buttons = {
             "roster": self.btn_roster,
+            "team": self.btn_team,
             "transactions": self.btn_transactions,
             "league": self.btn_league,
         }
@@ -124,6 +130,7 @@ class OwnerDashboard(QMainWindow):
         self.stack = QStackedWidget()
         self.pages = {
             "roster": RosterPage(self),
+            "team": TeamPage(self),
             "transactions": TransactionsPage(self),
             "league": SchedulePage(self),
         }
@@ -149,6 +156,7 @@ class OwnerDashboard(QMainWindow):
 
         # Navigation signals
         self.btn_roster.clicked.connect(lambda: self._go("roster"))
+        self.btn_team.clicked.connect(lambda: self._go("team"))
         self.btn_transactions.clicked.connect(lambda: self._go("transactions"))
         self.btn_league.clicked.connect(lambda: self._go("league"))
         self.btn_roster.setChecked(True)
@@ -223,6 +231,22 @@ class OwnerDashboard(QMainWindow):
             QMessageBox.warning(self, "Error", "Team information not available.")
             return
         TeamScheduleWindow(self.team_id, self).exec()
+
+    def open_team_stats_window(self) -> None:
+        if not getattr(self, "team", None):
+            QMessageBox.warning(self, "Error", "Team information not available.")
+            return
+        w = TeamStatsWindow(self.team, self.players, self.roster, self)
+        w.tabs.setCurrentIndex(2)
+        w.exec()
+
+    def open_player_stats_window(self) -> None:
+        if not getattr(self, "team", None):
+            QMessageBox.warning(self, "Error", "Team information not available.")
+            return
+        w = TeamStatsWindow(self.team, self.players, self.roster, self)
+        w.tabs.setCurrentIndex(0)
+        w.exec()
 
     def open_league_stats_window(self) -> None:
         teams = load_teams()
