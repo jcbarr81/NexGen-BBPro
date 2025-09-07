@@ -122,13 +122,11 @@ class TeamScheduleWindow(QDialog):
             item = QTableWidgetItem(text)
             if game and QColor is not None:
                 color = (
-                    QColor("#aaffaa")
+                    QColor("#aaaaff")
                     if game["opponent"].startswith("vs")
-                    else QColor("#aaaaff")
+                    else QColor("#dddddd")
                 )
                 item.setBackground(color)
-            elif not game and QColor is not None:
-                item.setBackground(QColor("#dddddd"))
             try:
                 item.setData(Qt.ItemDataRole.UserRole, date_str)
             except Exception:  # pragma: no cover
