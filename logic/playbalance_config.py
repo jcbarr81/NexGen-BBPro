@@ -14,10 +14,10 @@ DATA_DIR = get_base_dir() / "data"
 _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 
 # MLB averages used to derive strike-based foul rates from all pitches.
-# Roughly 26 percent of MLB pitches are fouled off in modern play; bump to 30
-# to encourage longer at-bats in the simulation.
-_FOUL_PITCH_BASE_PCT = 30  # Percent of all pitches that are fouls
-_LEAGUE_STRIKE_PCT = 65.9    # Percent of all pitches that are strikes
+# These baseline percentages are tuned to yield roughly four pitches per
+# plate appearance, matching modern MLB norms.
+_FOUL_PITCH_BASE_PCT = 26  # Percent of all pitches that are fouls
+_LEAGUE_STRIKE_PCT = 65.3  # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
 # simplified game logic.  Missing keys will fall back to these values when
@@ -185,8 +185,8 @@ _DEFAULTS: Dict[str, Any] = {
         _FOUL_PITCH_BASE_PCT / _LEAGUE_STRIKE_PCT * 100, 1
     ),
     "foulContactTrendPct": 2.0,
-    # Target roughly 15% of all pitches being put into play
-    "ballInPlayPitchPct": 15,
+    # Target roughly 17% of all pitches being put into play
+    "ballInPlayPitchPct": 17,
     "ballInPlayOuts": 0,
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.35,
