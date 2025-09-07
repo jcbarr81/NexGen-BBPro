@@ -22,7 +22,7 @@ def apply_league_benchmarks(
 
 
 def load_tuned_playbalance_config(
-    ball_in_play_outs: int = 0,
+    ball_in_play_outs: float = 0.0,
 ) -> Tuple[PlayBalanceConfig, Dict[str, float]]:
     """Return a tuned :class:`PlayBalanceConfig` and MLB averages."""
 
