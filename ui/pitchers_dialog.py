@@ -1,8 +1,7 @@
-"""Retro-style dialog showing a team's position players roster.
+"""Retro-style dialog showing a team's pitchers roster.
 
-This refactors the previous tabbed dialog into a single table that mimics the
-retro roster mock-up found in ``samples/Roster-Sample.py``. Sample data is
-replaced with the real data for the team being viewed.
+This mirrors :mod:`ui.position_players_dialog` but displays pitching roles and
+ratings.
 """
 
 from __future__ import annotations
@@ -34,13 +33,13 @@ COLUMNS = [
     "NO.",
     "Player Name",
     "SLOT",
-    "POSN",
+    "ROLE",
     "B",
-    "CH",
-    "PH",
-    "SP",
-    "FA",
     "AS",
+    "EN",
+    "CO",
+    "MO",
+    "FA",
 ]
 
 
@@ -56,7 +55,7 @@ class NumberDelegate(QtWidgets.QStyledItemDelegate):
         header = index.model().headerData(
             index.column(), QtCore.Qt.Orientation.Horizontal
         )
-        is_numeric_col = header in {"NO.", "CH", "PH", "SP", "FA", "AS"}
+        is_numeric_col = header in {"NO.", "AS", "EN", "CO", "MO", "FA"}
         opt = QtWidgets.QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
         if is_numeric_col:
@@ -142,7 +141,7 @@ class RosterTable(QtWidgets.QTableWidget):
             *data, pid = row
             for c, val in enumerate(data):
                 item = QtWidgets.QTableWidgetItem(str(val))
-                if COLUMNS[c] in {"NO.", "CH", "PH", "SP", "FA", "AS"}:
+                if COLUMNS[c] in {"NO.", "AS", "EN", "CO", "MO", "FA"}:
                     item.setData(QtCore.Qt.ItemDataRole.DisplayRole, int(val))
                 if c == 0:  # store player id in first column
                     item.setData(QtCore.Qt.ItemDataRole.UserRole, pid)
@@ -212,8 +211,8 @@ class StatusFooter(QtWidgets.QStatusBar):
         self.addPermanentWidget(container, 1)
 
 
-class PositionPlayersDialog(QtWidgets.QDialog):
-    """Display all position players in a retro roster table."""
+class PitchersDialog(QtWidgets.QDialog):
+    """Display all pitchers in a retro roster table."""
 
     def __init__(
         self,
@@ -225,7 +224,7 @@ class PositionPlayersDialog(QtWidgets.QDialog):
         self.players = players
         self.roster = roster
 
-        self.setWindowTitle("Position Players")
+        self.setWindowTitle("Pitchers")
         self.resize(930, 560)
         self._apply_global_palette()
 
@@ -247,7 +246,7 @@ class PositionPlayersDialog(QtWidgets.QDialog):
     # ------------------------------------------------------------------
     # Data helpers
     def _build_rows(self) -> List[List]:
-        """Create table rows for all non-pitchers across roster levels."""
+        """Create table rows for all pitchers across roster levels."""
 
         rows: List[List] = []
         seq = 1
@@ -258,20 +257,21 @@ class PositionPlayersDialog(QtWidgets.QDialog):
         ):
             for pid in ids:
                 p = self.players.get(pid)
-                if not p or get_role(p):
+                role = get_role(p) if p else ""
+                if not p or not role:
                     continue
                 rows.append(
                     [
                         seq,
                         f"{p.last_name}, {p.first_name}",
                         slot,
-                        p.primary_position,
+                        role,
                         p.bats,
-                        getattr(p, "ch", 0),
-                        getattr(p, "ph", 0),
-                        getattr(p, "sp", 0),
-                        getattr(p, "fa", 0),
                         getattr(p, "arm", 0),
+                        getattr(p, "endurance", 0),
+                        getattr(p, "control", 0),
+                        getattr(p, "movement", 0),
+                        getattr(p, "fa", 0),
                         pid,
                     ]
                 )
@@ -284,20 +284,12 @@ class PositionPlayersDialog(QtWidgets.QDialog):
         """Format a player entry similar to OwnerDashboard._make_player_item."""
 
         age = self._calculate_age(p.birthdate)
-        role = get_role(p)
-        if role:
-            core = (
-                f"AS:{getattr(p, 'arm', 0)} EN:{getattr(p, 'endurance', 0)} "
-                f"CO:{getattr(p, 'control', 0)}"
-            )
-        else:
-            core = (
-                f"CH:{getattr(p, 'ch', 0)} PH:{getattr(p, 'ph', 0)} "
-                f"SP:{getattr(p, 'sp', 0)}"
-            )
-        label = (
-            f"{p.first_name} {p.last_name} ({age}) - {role or p.primary_position} | {core}"
+        role = get_role(p) or "P"
+        core = (
+            f"AS:{getattr(p, 'arm', 0)} EN:{getattr(p, 'endurance', 0)} "
+            f"CO:{getattr(p, 'control', 0)}"
         )
+        label = f"{p.first_name} {p.last_name} ({age}) - {role} | {core}"
         item = QtWidgets.QListWidgetItem(label)
         item.setData(QtCore.Qt.ItemDataRole.UserRole, p.player_id)
         return item

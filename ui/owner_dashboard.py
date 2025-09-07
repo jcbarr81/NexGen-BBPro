@@ -31,6 +31,7 @@ from .team_page import TeamPage
 from .lineup_editor import LineupEditor
 from .pitching_editor import PitchingEditor
 from .position_players_dialog import PositionPlayersDialog
+from .pitchers_dialog import PitchersDialog
 from .reassign_players_dialog import ReassignPlayersDialog
 from .transactions_window import TransactionsWindow
 from .trade_dialog import TradeDialog
@@ -198,6 +199,9 @@ class OwnerDashboard(QMainWindow):
 
     def open_position_players_dialog(self) -> None:
         PositionPlayersDialog(self.players, self.roster).exec()
+
+    def open_pitchers_dialog(self) -> None:
+        PitchersDialog(self.players, self.roster).exec()
 
     def open_reassign_players_dialog(self) -> None:
         ReassignPlayersDialog(self.players, self.roster, self).exec()
