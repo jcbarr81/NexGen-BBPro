@@ -3,7 +3,7 @@ from .components import Card, section_title
 
 
 class SchedulePage(QWidget):
-    """Page for viewing schedules and league information."""
+    """Page for viewing league schedules and information."""
 
     def __init__(self, dashboard):
         super().__init__()
@@ -11,11 +11,7 @@ class SchedulePage(QWidget):
         layout.setContentsMargins(18, 18, 18, 18)
 
         card = Card()
-        card.layout().addWidget(section_title("Schedule"))
-
-        btn_team = QPushButton("Team Schedule", objectName="Primary")
-        btn_team.clicked.connect(dashboard.open_team_schedule_window)
-        card.layout().addWidget(btn_team)
+        card.layout().addWidget(section_title("League"))
 
         btn_league = QPushButton("League Schedule", objectName="Primary")
         btn_league.clicked.connect(dashboard.open_schedule_window)

@@ -106,6 +106,11 @@ class OwnerDashboard:
 owner_mod.OwnerDashboard = OwnerDashboard
 sys.modules['ui.owner_dashboard'] = owner_mod
 
+theme_mod = types.ModuleType('ui.theme')
+theme_mod.DARK_QSS = ""
+theme_mod._toggle_theme = lambda status_bar=None: None
+sys.modules['ui.theme'] = theme_mod
+
 import bcrypt
 from ui import login_window
 
