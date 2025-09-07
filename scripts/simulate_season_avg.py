@@ -95,6 +95,9 @@ from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
 
+# Access ``save_stats`` for optional monkeypatching when running the script.
+import logic.simulation as sim
+
 
 STAT_ORDER = [
     "Runs",
@@ -371,6 +374,10 @@ if __name__ == "__main__":
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
     configure_perf_tuning()
+    # ``GameSimulation`` persists season stats at the end of each game,
+    # acquiring a file lock. The benchmarking run does not require these
+    # stats, so disable persistence to avoid the locking overhead.
+    sim.save_stats = lambda players, teams: None
     simulate_season_average(
         use_tqdm=use_tqdm,
         ball_in_play_outs=args.ball_in_play_outs,
