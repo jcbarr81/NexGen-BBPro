@@ -96,16 +96,16 @@ def clone_team_state(base: TeamState) -> TeamState:
 
 def simulate_season_average(
     use_tqdm: bool = True,
-    ball_in_play_outs: int = 0,
+    ball_in_play_outs: float = 0.0,
     seed: int | None = None,
 ) -> None:
     """Run a season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
-        ball_in_play_outs: Value for ``PlayBalanceConfig.ballInPlayOuts``.
-            ``0`` allows normal hit/out resolution while ``1`` makes every
-            ball put in play an out.
+        ball_in_play_outs: Additional probability that any ball put in play
+            becomes an out. ``0`` allows normal hit/out resolution while ``1``
+            makes every ball in play an out.
         seed: Optional seed for deterministic simulations. If ``None`` (the
             default) a different random seed will be used on each run.
     """
@@ -207,11 +207,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--ball-in-play-outs",
-        type=int,
-        default=0,
+        type=float,
+        default=0.0,
         help=(
-            "Set PlayBalanceConfig.ballInPlayOuts (0 normal, 1 every ball in "
-            "play is an out)."
+            "Additional out probability for balls in play (0 normal, 1 all balls in"
+            " play are outs)."
         ),
     )
     parser.add_argument(
