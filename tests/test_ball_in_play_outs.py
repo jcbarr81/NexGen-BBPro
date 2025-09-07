@@ -2,7 +2,12 @@ import random
 
 import pytest
 
-from logic.simulation import GameSimulation, TeamState
+from logic.simulation import (
+    BatterState,
+    GameSimulation,
+    PitcherState,
+    TeamState,
+)
 from tests.test_physics import make_player, make_pitcher
 from tests.util.pbini_factory import make_cfg
 
@@ -18,43 +23,39 @@ class ZeroRandom(random.Random):
 
 
 @pytest.mark.parametrize(
-    "out_key, rates",
+    "rates, action, needs_throw",
     [
         (
-            "groundOutProb",
             {
                 "groundBallBaseRate": 100,
                 "lineDriveBaseRate": 0,
                 "flyBallBaseRate": 0,
             },
+            "throw",
+            True,
         ),
         (
-            "lineOutProb",
             {
                 "groundBallBaseRate": 0,
                 "lineDriveBaseRate": 100,
                 "flyBallBaseRate": 0,
             },
+            "catch",
+            False,
         ),
         (
-            "flyOutProb",
             {
                 "groundBallBaseRate": 0,
                 "lineDriveBaseRate": 0,
                 "flyBallBaseRate": 100,
             },
+            "catch",
+            False,
         ),
     ],
 )
-def test_ball_in_play_outs(out_key, rates):
-    cfg = make_cfg(
-        hitProbCap=1.0,
-        groundOutProb=0.0,
-        lineOutProb=0.0,
-        flyOutProb=0.0,
-        **rates,
-    )
-    setattr(cfg, out_key, 1.0)
+def test_ball_in_play_outs(monkeypatch, rates, action, needs_throw):
+    cfg = make_cfg(hitProbCap=1.0, **rates)
     home = TeamState(
         lineup=[make_player("h1")],
         bench=[],
@@ -67,7 +68,50 @@ def test_ball_in_play_outs(out_key, rates):
     )
     rng = ZeroRandom()
     sim = GameSimulation(home, away, cfg, rng)
-    outs = sim.play_at_bat(away, home)
-    assert outs == 1
+
+    from logic.field_geometry import DEFAULT_POSITIONS
+
+    px, py = DEFAULT_POSITIONS["P"]
+    monkeypatch.setattr(
+        sim.physics, "landing_point", lambda vx, vy, vz: (px, py, 1.0)
+    )
+    monkeypatch.setattr(
+        sim.physics, "ball_roll_distance", lambda *args, **kwargs: 0.0
+    )
+    monkeypatch.setattr(sim.physics, "ball_bounce", lambda *args, **kwargs: (0.0, 0.0))
+    monkeypatch.setattr(sim.fielding_ai, "catch_action", lambda *a, **k: action)
+
+    catch_calls: list[bool] = []
+
+    def fake_catch_probability(*args, **kwargs):
+        catch_calls.append(True)
+        return 1.0
+
+    monkeypatch.setattr(sim.fielding_ai, "catch_probability", fake_catch_probability)
+
+    throw_calls: list[bool] = []
+
+    def fake_resolve_throw(*args, **kwargs):
+        throw_calls.append(True)
+        return True, False
+
+    monkeypatch.setattr(sim.fielding_ai, "resolve_throw", fake_resolve_throw)
+
+    batter = away.lineup[0]
+    pitcher = home.pitchers[0]
+    batter_state = BatterState(batter)
+    pitcher_state = PitcherState(pitcher)
+    bases, error = sim._swing_result(
+        batter,
+        pitcher,
+        home,
+        batter_state,
+        pitcher_state,
+        pitch_speed=50,
+    )
+    assert bases == 0 and not error
     assert all(base is None for base in away.bases)
+    assert catch_calls  # fielding resolved the play
+    if needs_throw:
+        assert throw_calls
 
