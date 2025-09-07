@@ -293,8 +293,16 @@ def simulate_season_average(
         )
 
     totals: Counter[str] = Counter()
+    # ``imap_unordered`` defaults to a chunksize of 1 which introduces
+    # significant IPC overhead when simulating thousands of games.  Process
+    # larger batches per worker by default to improve throughput.  The chosen
+    # heuristic balances load across CPUs while minimising the number of
+    # inter‑process communications.
+    auto_chunksize = max(1, len(games) // (mp.cpu_count() * 4))
     with mp.Pool(initializer=_init_pool, initargs=(base_states, cfg)) as pool:
-        iterator = pool.imap_unordered(_simulate_game_star, games, chunksize=10)
+        iterator = pool.imap_unordered(
+            _simulate_game_star, games, chunksize=auto_chunksize
+        )
         if use_tqdm:
             iterator = tqdm(iterator, total=len(games), desc="Simulating season")
         for game_totals in iterator:
