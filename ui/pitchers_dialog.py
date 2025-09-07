@@ -139,7 +139,8 @@ class RosterTable(QtWidgets.QTableWidget):
         self.setHorizontalHeaderLabels(COLUMNS)
         self.setRowCount(len(rows))
 
-        slot_order = {"ACT": 0, "AAA": 1, "LOW": 2}
+        # Custom slot order so sorting ascending yields LOW -> AAA -> ACT
+        slot_order = {"LOW": 0, "AAA": 1, "ACT": 2}
         for r, row in enumerate(rows):
             # The player ID is stored as a hidden element at the end of the row.
             *data, pid = row
