@@ -1819,9 +1819,6 @@ class GameSimulation:
             "line": self.config.get("lineOutProb", 0.0),
             "fly": self.config.get("flyOutProb", 0.0),
         }[self.last_batted_ball_type]
-        extra_out = float(self.config.get("ballInPlayOuts", 0.0))
-        if extra_out:
-            out_prob = 1 - (1 - out_prob) * (1 - extra_out)
         if self.rng.random() < out_prob:
             return 0, False
         roll_dist = self.physics.ball_roll_distance(

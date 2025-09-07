@@ -166,9 +166,13 @@ _DEFAULTS: Dict[str, Any] = {
     # Cap on final hit probability to prevent excessive offense
     "hitProbCap": 0.95,
     # Baseline probabilities for converting batted balls into outs
-    "groundOutProb": 0.0,
-    "lineOutProb": 0.0,
-    "flyOutProb": 0.0,
+    # MLB averages: ground balls ~24% hits (76% outs), line drives ~68% hits
+    # (32% outs), fly balls ~14% hits (86% outs).  These defaults keep the
+    # simplified simulation in a reasonable range when league benchmarks are
+    # unavailable.
+    "groundOutProb": 0.76,
+    "lineOutProb": 0.32,
+    "flyOutProb": 0.86,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
