@@ -8,6 +8,9 @@ from typing import Tuple, Dict
 from .playbalance_config import PlayBalanceConfig
 from utils.path_utils import get_base_dir
 
+# Slight reduction in outs on balls in play to raise simulated BABIP
+_BABIP_OUT_ADJUST = 0.9
+
 
 def apply_league_benchmarks(
     cfg: PlayBalanceConfig, benchmarks: Dict[str, float]
@@ -31,6 +34,7 @@ def apply_league_benchmarks(
     base_gb, base_ld, base_fb = 0.76, 0.32, 0.86
     weighted_out = base_gb * gb_pct + base_fb * fb_pct + base_ld * ld_pct
     scale = ((1 - babip) / weighted_out) if weighted_out else 1.0
+    scale *= _BABIP_OUT_ADJUST
     cfg.groundOutProb = round(min(max(base_gb * scale, 0.0), 1.0), 3)
     cfg.lineOutProb = round(min(max(base_ld * scale, 0.0), 1.0), 3)
     cfg.flyOutProb = round(min(max(base_fb * scale, 0.0), 1.0), 3)
