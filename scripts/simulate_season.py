@@ -56,6 +56,8 @@ STAT_ORDER = [
     "Strikes",
 ]
 
+TARGET_BABIP = 0.291
+
 
 def clone_team_state(base: TeamState) -> TeamState:
     """Return a deep-copied ``TeamState`` with per-game fields reset."""
@@ -98,7 +100,7 @@ def simulate_season_average(
     use_tqdm: bool = True,
     seed: int | None = None,
     babip_scale: float = 1.0,
-) -> None:
+) -> float:
     """Run a season simulation and print average box score values.
 
     Args:
@@ -192,6 +194,7 @@ def simulate_season_average(
     print(f"DoublePlayRate: {dp_rate:.3f}")
     print(f"Total two-strike counts: {totals['TwoStrikeCounts']}")
     print(f"Total three-ball counts: {totals['ThreeBallCounts']}")
+    return babip
 
 
 if __name__ == "__main__":
@@ -215,10 +218,28 @@ if __name__ == "__main__":
         default=1.0,
         help="Scaling factor for outs on balls in play (default: 1.0)",
     )
+    parser.add_argument(
+        "--calibrate-babip",
+        action="store_true",
+        help="Run a trial season to calibrate babip_scale toward MLB BABIP",
+    )
     args = parser.parse_args()
 
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
-    simulate_season_average(
-        use_tqdm=use_tqdm, seed=args.seed, babip_scale=args.babip_scale
-    )
+    if args.calibrate_babip:
+        observed = simulate_season_average(
+            use_tqdm=use_tqdm, seed=args.seed, babip_scale=args.babip_scale
+        )
+        if observed and observed < 1:
+            tuned_scale = args.babip_scale * ((1 - TARGET_BABIP) / (1 - observed))
+            print(f"Calibrated babip_scale: {tuned_scale:.3f}")
+        else:
+            tuned_scale = args.babip_scale
+        simulate_season_average(
+            use_tqdm=use_tqdm, seed=args.seed, babip_scale=tuned_scale
+        )
+    else:
+        simulate_season_average(
+            use_tqdm=use_tqdm, seed=args.seed, babip_scale=args.babip_scale
+        )

@@ -13,16 +13,21 @@ from utils.path_utils import get_base_dir
 # and raise BABIP, values above ``1`` increase outs and lower BABIP. ``1.0``
 # uses the MLB averages without additional adjustment.
 _BABIP_OUT_ADJUST = 1.0
-# Additional scaling factor applied to outs on balls in play.
-# Allow external configuration to raise or lower simulated BABIP
-# without modifying code directly.
-babip_scale: float = 1.0
-
-
 def apply_league_benchmarks(
-    cfg: PlayBalanceConfig, benchmarks: Dict[str, float]
+    cfg: PlayBalanceConfig, benchmarks: Dict[str, float], babip_scale: float | None = None
 ) -> None:
-    """Configure ``cfg`` using league-wide benchmark rates."""
+    """Configure ``cfg`` using league-wide benchmark rates.
+
+    Parameters
+    ----------
+    cfg:
+        Configuration to update.
+    benchmarks:
+        Mapping of league averages.
+    babip_scale:
+        Optional scale applied to outs on balls in play. When ``None`` (the
+        default) ``cfg.babip_scale`` is used.
+    """
 
     hr_rate = cfg.hitHRProb / 100
     # Base hit probability derived directly from league BABIP
@@ -69,7 +74,10 @@ def apply_league_benchmarks(
     base_gb, base_ld, base_fb = 0.76, 0.32, 0.86
     weighted_out = base_gb * gb_pct + base_fb * fb_pct + base_ld * ld_pct
     scale = ((1 - babip) / weighted_out) if weighted_out else 1.0
-    scale *= _BABIP_OUT_ADJUST * getattr(cfg, "babip_scale", babip_scale)
+    applied_scale = cfg.babip_scale if babip_scale is None else babip_scale
+    scale *= _BABIP_OUT_ADJUST * applied_scale
+    if babip_scale is not None:
+        cfg.babip_scale = babip_scale
     cfg.groundOutProb = round(min(max(base_gb * scale, 0.0), 1.0), 3)
     cfg.lineOutProb = round(min(max(base_ld * scale, 0.0), 1.0), 3)
     cfg.flyOutProb = round(min(max(base_fb * scale, 0.0), 1.0), 3)
@@ -90,10 +98,8 @@ def load_tuned_playbalance_config(
     base = get_base_dir()
     cfg = PlayBalanceConfig.from_file(base / "logic" / "PBINI.txt")
 
-    global babip_scale
-    babip_scale = cfg.babip_scale if babip_scale_param is None else babip_scale_param
     if babip_scale_param is not None:
-        cfg.babipScale = babip_scale
+        cfg.babip_scale = babip_scale_param
 
     csv_path = base / "data" / "MLB_avg" / "mlb_avg_boxscore_2020_2024_both_teams.csv"
     with csv_path.open(newline="") as f:
@@ -110,6 +116,6 @@ def load_tuned_playbalance_config(
     with bench_path.open(newline="") as bf:
         benchmarks = {r["metric_key"]: float(r["value"]) for r in csv.DictReader(bf)}
 
-    apply_league_benchmarks(cfg, benchmarks)
+    apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages

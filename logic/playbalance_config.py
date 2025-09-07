@@ -767,6 +767,11 @@ class PlayBalanceConfig:
         """Additional scaling factor for outs on balls in play."""
         return float(self.babipScale)
 
+    @babip_scale.setter
+    def babip_scale(self, value: float) -> None:
+        """Set scaling factor for outs on balls in play."""
+        self.babipScale = value
+
     # ------------------------------------------------------------------
     # Mapping style helpers
     # ------------------------------------------------------------------
