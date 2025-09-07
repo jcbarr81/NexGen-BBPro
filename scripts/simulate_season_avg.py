@@ -91,6 +91,7 @@ from logic.simulation import (
     generate_boxscore,
 )
 from logic.playbalance_config import PlayBalanceConfig
+from logic.sim_config import apply_league_benchmarks
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
@@ -185,41 +186,6 @@ def _simulate_game_star(args: tuple[str, str, int]) -> Counter[str]:
     """Helper to unpack arguments for ``imap_unordered``."""
 
     return _simulate_game(*args)
-
-
-def apply_league_benchmarks(
-    cfg: PlayBalanceConfig, benchmarks: dict[str, float]
-) -> None:
-    """Configure ``cfg`` using league-wide benchmark rates.
-
-    Parameters
-    ----------
-    cfg:
-        Play balance configuration instance to modify.
-    benchmarks:
-        Mapping of metric keys to numeric values loaded from
-        ``mlb_league_benchmarks_2025_filled.csv``.
-    """
-
-    hr_rate = cfg.hitHRProb / 100
-    # Base hit probability derived directly from league BABIP
-    cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
-    cfg.ballInPlayPitchPct = int(
-        round(benchmarks["pitches_put_in_play_pct"] * 100)
-    )
-    pitches_per_pa = benchmarks["pitches_per_pa"]
-    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
-
-    gb_pct = benchmarks.get("bip_gb_pct", 0.0)
-    fb_pct = benchmarks.get("bip_fb_pct", 0.0)
-    ld_pct = benchmarks.get("bip_ld_pct", 0.0)
-    babip = benchmarks.get("babip", 0.0)
-    base_gb, base_ld, base_fb = 0.76, 0.32, 0.86
-    weighted_out = base_gb * gb_pct + base_fb * fb_pct + base_ld * ld_pct
-    scale = ((1 - babip) / weighted_out) if weighted_out else 1.0
-    cfg.groundOutProb = round(min(max(base_gb * scale, 0.0), 1.0), 3)
-    cfg.lineOutProb = round(min(max(base_ld * scale, 0.0), 1.0), 3)
-    cfg.flyOutProb = round(min(max(base_fb * scale, 0.0), 1.0), 3)
 
 
 def simulate_season_average(
