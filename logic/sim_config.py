@@ -20,6 +20,20 @@ def apply_league_benchmarks(
     pitches_per_pa = benchmarks["pitches_per_pa"]
     cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
 
+    # Derive outs on balls in play by type.  Start from MLB-average
+    # probabilities and scale them so that the weighted mean matches the
+    # league BABIP from the benchmark file.
+    gb_pct = benchmarks.get("bip_gb_pct", 0.0)
+    fb_pct = benchmarks.get("bip_fb_pct", 0.0)
+    ld_pct = benchmarks.get("bip_ld_pct", 0.0)
+    babip = benchmarks.get("babip", 0.0)
+    base_gb, base_ld, base_fb = 0.76, 0.32, 0.86
+    weighted_out = base_gb * gb_pct + base_fb * fb_pct + base_ld * ld_pct
+    scale = ((1 - babip) / weighted_out) if weighted_out else 1.0
+    cfg.groundOutProb = round(min(max(base_gb * scale, 0.0), 1.0), 3)
+    cfg.lineOutProb = round(min(max(base_ld * scale, 0.0), 1.0), 3)
+    cfg.flyOutProb = round(min(max(base_fb * scale, 0.0), 1.0), 3)
+
 
 def load_tuned_playbalance_config() -> Tuple[PlayBalanceConfig, Dict[str, float]]:
     """Return a tuned :class:`PlayBalanceConfig` and MLB averages."""
