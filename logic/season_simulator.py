@@ -10,9 +10,8 @@ from logic.simulation import (
     generate_boxscore,
     render_boxscore_html,
 )
-from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
-from utils.path_utils import get_base_dir
+from .sim_config import load_tuned_playbalance_config
 
 
 def _simulate_game_worker(
@@ -153,7 +152,7 @@ class SeasonSimulator:
 
         home = build_default_game_state(home_id)
         away = build_default_game_state(away_id)
-        cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+        cfg, _ = load_tuned_playbalance_config()
         sim = GameSimulation(home, away, cfg, random.Random(seed))
         sim.simulate_game()
         box = generate_boxscore(home, away)
