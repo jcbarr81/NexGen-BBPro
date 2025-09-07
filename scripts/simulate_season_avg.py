@@ -94,6 +94,16 @@ from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
+import logic.simulation as sim
+
+
+def _no_save_stats(players, teams):
+    """No-op ``save_stats`` to avoid file I/O during benchmarking."""
+
+    return None
+
+
+sim.save_stats = _no_save_stats
 
 
 STAT_ORDER = [
