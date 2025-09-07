@@ -1109,13 +1109,14 @@ class GameSimulation:
                 return outs + outs_from_pick
 
             target_pitches = self.config.get("targetPitchesPerPA", 0)
-            strike_rate = (
-                float(self.config.get("leagueStrikePct", 65.9)) / 100.0
-            )
+            strike_rate = float(self.config.get("leagueStrikePct", 65.9)) / 100.0
             pitches_this_pa = pitcher_state.pitches_thrown - start_pitches
-            if target_pitches and pitches_this_pa < target_pitches - 1:
-                continue_prob = 1 - 1 / float(target_pitches)
-                if self.rng.random() < continue_prob:
+            if target_pitches and pitches_this_pa < target_pitches:
+                desired_total = int(target_pitches)
+                if self.rng.random() < target_pitches - desired_total:
+                    desired_total += 1
+                extra_pitches = max(0, desired_total - pitches_this_pa - 1)
+                for _ in range(extra_pitches):
                     pitcher_state.pitches_thrown += 1
                     self.pitches_since_pickoff = min(
                         self.pitches_since_pickoff + 1, 4
@@ -1189,7 +1190,6 @@ class GameSimulation:
                                 home_team=home_team,
                             )
                             return outs + outs_from_pick
-                    continue
 
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
