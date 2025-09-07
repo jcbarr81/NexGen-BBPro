@@ -13,7 +13,6 @@ from copy import deepcopy
 from datetime import date
 from pathlib import Path
 import argparse
-import csv
 import os
 import random
 import sys
@@ -36,11 +35,10 @@ from logic.simulation import (
     TeamState,
     generate_boxscore,
 )
-from logic.playbalance_config import PlayBalanceConfig
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
-from scripts.simulate_season_avg import apply_league_benchmarks
+from logic.sim_config import load_tuned_playbalance_config
 
 
 STAT_ORDER = [
@@ -116,46 +114,7 @@ def simulate_season_average(
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
-    cfg.ballInPlayOuts = ball_in_play_outs
-
-    csv_path = (
-        get_base_dir()
-        / "data"
-        / "MLB_avg"
-        / "mlb_avg_boxscore_2020_2024_both_teams.csv"
-    )
-    with csv_path.open(newline="") as f:
-        row = next(csv.DictReader(f))
-    hits = float(row["Hits"])
-    singles = (
-        hits
-        - float(row["Doubles"])
-        - float(row["Triples"])
-        - float(row["HomeRuns"])
-    )
-    cfg.hit1BProb = int(round(singles / hits * 100))
-    cfg.hit2BProb = int(round(float(row["Doubles"]) / hits * 100))
-    cfg.hit3BProb = int(round(float(row["Triples"]) / hits * 100))
-    cfg.hitHRProb = max(
-        0,
-        100 - cfg.hit1BProb - cfg.hit2BProb - cfg.hit3BProb,
-    )
-
-    bench_path = (
-        get_base_dir()
-        / "data"
-        / "MLB_avg"
-        / "mlb_league_benchmarks_2025_filled.csv"
-    )
-    with bench_path.open(newline="") as bf:
-        benchmarks = {
-            r["metric_key"]: float(r["value"])
-            for r in csv.DictReader(bf)
-        }
-
-    apply_league_benchmarks(cfg, benchmarks)
-    mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
+    cfg, mlb_averages = load_tuned_playbalance_config(ball_in_play_outs)
 
     rng = random.Random(seed)
 
