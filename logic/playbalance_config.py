@@ -245,7 +245,7 @@ _DEFAULTS: Dict[str, Any] = {
     "lookBestType31CountAdjust": 15,
     "lookBestType32CountAdjust": 0,
     # Pitch identification and discipline ---------------------------------
-    "idRatingBase": 10,
+    "idRatingBase": 25,
     "idRatingCHPct": 40,
     "idRatingExpPct": 30,
     "idRatingPitchRatPct": 0,
