@@ -85,6 +85,7 @@ def apply_league_benchmarks(
 
 def load_tuned_playbalance_config(
     babip_scale_param: float | None = None,
+    baserunning_aggression: float | None = None,
 ) -> Tuple[PlayBalanceConfig, Dict[str, float]]:
     """Return a tuned :class:`PlayBalanceConfig` and MLB averages.
 
@@ -93,6 +94,9 @@ def load_tuned_playbalance_config(
     babip_scale_param:
         Optional scale applied to outs on balls in play. When ``None``
         (the default) the value is read from ``PlayBalanceConfig``.
+    baserunning_aggression:
+        Optional aggression factor for advancing on the basepaths. When
+        ``None`` the value from ``PlayBalanceConfig`` is used.
     """
 
     base = get_base_dir()
@@ -100,6 +104,8 @@ def load_tuned_playbalance_config(
 
     if babip_scale_param is not None:
         cfg.babip_scale = babip_scale_param
+    if baserunning_aggression is not None:
+        cfg.baserunningAggression = baserunning_aggression
 
     csv_path = base / "data" / "MLB_avg" / "mlb_avg_boxscore_2020_2024_both_teams.csv"
     with csv_path.open(newline="") as f:

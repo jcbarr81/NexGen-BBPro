@@ -100,6 +100,7 @@ def simulate_season_average(
     use_tqdm: bool = True,
     seed: int | None = None,
     babip_scale: float = 1.0,
+    baserunning_aggression: float | None = None,
 ) -> float:
     """Run a season simulation and print average box score values.
 
@@ -108,13 +109,18 @@ def simulate_season_average(
         seed: Optional seed for deterministic simulations. If ``None`` (the
             default) a different random seed will be used on each run.
         babip_scale: Scaling factor applied to outs on balls in play.
+        baserunning_aggression: Optional aggression factor for baserunning
+            decisions. When ``None`` the configuration default is used.
     """
 
     teams = [t.team_id for t in load_teams()]
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1))
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg, mlb_averages = load_tuned_playbalance_config(babip_scale_param=babip_scale)
+    cfg, mlb_averages = load_tuned_playbalance_config(
+        babip_scale_param=babip_scale,
+        baserunning_aggression=baserunning_aggression,
+    )
 
     rng = random.Random(seed)
 
@@ -219,6 +225,12 @@ if __name__ == "__main__":
         help="Scaling factor for outs on balls in play (default: 1.0)",
     )
     parser.add_argument(
+        "--baserunning-aggression",
+        type=float,
+        default=None,
+        help="Aggression factor for baserunning decisions (default: config value)",
+    )
+    parser.add_argument(
         "--calibrate-babip",
         action="store_true",
         help="Run a trial season to calibrate babip_scale toward MLB BABIP",
@@ -229,7 +241,10 @@ if __name__ == "__main__":
     use_tqdm = not (args.disable_tqdm or env_disable)
     if args.calibrate_babip:
         observed = simulate_season_average(
-            use_tqdm=use_tqdm, seed=args.seed, babip_scale=args.babip_scale
+            use_tqdm=use_tqdm,
+            seed=args.seed,
+            babip_scale=args.babip_scale,
+            baserunning_aggression=args.baserunning_aggression,
         )
         if observed and observed < 1:
             tuned_scale = args.babip_scale * ((1 - TARGET_BABIP) / (1 - observed))
@@ -237,9 +252,15 @@ if __name__ == "__main__":
         else:
             tuned_scale = args.babip_scale
         simulate_season_average(
-            use_tqdm=use_tqdm, seed=args.seed, babip_scale=tuned_scale
+            use_tqdm=use_tqdm,
+            seed=args.seed,
+            babip_scale=tuned_scale,
+            baserunning_aggression=args.baserunning_aggression,
         )
     else:
         simulate_season_average(
-            use_tqdm=use_tqdm, seed=args.seed, babip_scale=args.babip_scale
+            use_tqdm=use_tqdm,
+            seed=args.seed,
+            babip_scale=args.babip_scale,
+            baserunning_aggression=args.baserunning_aggression,
         )
