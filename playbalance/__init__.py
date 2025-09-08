@@ -45,6 +45,16 @@ from .defense import (  # noqa: F401
     outfielder_position,
     fielder_template,
 )
+from .offense import (  # noqa: F401
+    steal_chance,
+    maybe_attempt_steal,
+    hit_and_run_chance,
+    maybe_hit_and_run,
+    sacrifice_bunt_chance,
+    maybe_sacrifice_bunt,
+    squeeze_chance,
+    maybe_squeeze,
+)
 
 __all__ = [
     "PlayBalanceConfig",
@@ -77,6 +87,14 @@ __all__ = [
     "pitch_around_chance",
     "outfielder_position",
     "fielder_template",
+    "steal_chance",
+    "maybe_attempt_steal",
+    "hit_and_run_chance",
+    "maybe_hit_and_run",
+    "sacrifice_bunt_chance",
+    "maybe_sacrifice_bunt",
+    "squeeze_chance",
+    "maybe_squeeze",
     "PlayerState",
     "BaseState",
     "GameState",
