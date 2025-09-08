@@ -120,6 +120,10 @@ STAT_ORDER = [
     "Strikes",
 ]
 
+TARGET_BABIP = 0.291
+BABIP_SCALE = float(os.getenv("BABIP_SCALE", "1.0"))
+CALIBRATE_BABIP = os.getenv("CALIBRATE_BABIP", "").lower() in {"1", "true", "yes"}
+
 
 def clone_team_state(base: TeamState) -> TeamState:
     """Return a new ``TeamState`` with per-game fields reset."""
@@ -190,13 +194,18 @@ def simulate_season_average(
     use_tqdm: bool = True,
     seed: int | None = None,
     id_rating_base: int | None = None,
-) -> None:
+    babip_scale: float = 1.0,
+) -> float:
     """Run a season simulation and print average box score values.
 
     Args:
         use_tqdm: Whether to display a progress bar using ``tqdm``.
         seed: Optional seed for deterministic simulations. If ``None`` (the
             default) a different random seed will be used on each run.
+        babip_scale: Scaling factor applied to outs on balls in play.
+
+    Returns:
+        The league-wide BABIP observed in the simulation.
     """
 
     teams = [t.team_id for t in load_teams()]
@@ -212,7 +221,9 @@ def simulate_season_average(
             pickle.dump(schedule, fh)
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg, mlb_averages = load_tuned_playbalance_config()
+    cfg, mlb_averages = load_tuned_playbalance_config(
+        babip_scale_param=babip_scale
+    )
     if id_rating_base is not None:
         cfg.idRatingBase = id_rating_base
 
@@ -270,6 +281,8 @@ def simulate_season_average(
     print(f"Total two-strike counts: {totals['TwoStrikeCounts']}")
     print(f"Total three-ball counts: {totals['ThreeBallCounts']}")
 
+    return babip
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -297,6 +310,20 @@ if __name__ == "__main__":
     env_disable = os.getenv("DISABLE_TQDM", "").lower() in {"1", "true", "yes"}
     use_tqdm = not (args.disable_tqdm or env_disable)
     configure_perf_tuning()
+    tuned_scale = BABIP_SCALE
+    if CALIBRATE_BABIP:
+        observed = simulate_season_average(
+            use_tqdm=use_tqdm,
+            seed=args.seed,
+            id_rating_base=args.id_rating_base,
+            babip_scale=BABIP_SCALE,
+        )
+        if observed and observed < 1:
+            tuned_scale = BABIP_SCALE * ((1 - TARGET_BABIP) / (1 - observed))
+            print(f"Calibrated babip_scale: {tuned_scale:.3f}")
     simulate_season_average(
-        use_tqdm=use_tqdm, seed=args.seed, id_rating_base=args.id_rating_base
+        use_tqdm=use_tqdm,
+        seed=args.seed,
+        id_rating_base=args.id_rating_base,
+        babip_scale=tuned_scale,
     )
