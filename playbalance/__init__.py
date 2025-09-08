@@ -36,6 +36,15 @@ from .probability import (  # noqa: F401
     final_chance,
 )
 from .state import PlayerState, BaseState, GameState  # noqa: F401
+from .defense import (  # noqa: F401
+    bunt_charge_chance,
+    hold_runner_chance,
+    pickoff_chance,
+    pitch_out_chance,
+    pitch_around_chance,
+    outfielder_position,
+    fielder_template,
+)
 
 __all__ = [
     "PlayBalanceConfig",
@@ -61,6 +70,13 @@ __all__ = [
     "adjustment",
     "dice_roll",
     "final_chance",
+    "bunt_charge_chance",
+    "hold_runner_chance",
+    "pickoff_chance",
+    "pitch_out_chance",
+    "pitch_around_chance",
+    "outfielder_position",
+    "fielder_template",
     "PlayerState",
     "BaseState",
     "GameState",
