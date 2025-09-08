@@ -124,6 +124,7 @@ def load_tuned_playbalance_config(
 
     apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
+
     # Boost batter pitch recognition to curb excessive strikeouts seen in
     # season simulations. Increasing the ease scale makes identifying pitches
     # easier which leads to more contact and fewer swinging strikes.
