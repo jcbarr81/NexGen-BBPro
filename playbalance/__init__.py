@@ -55,6 +55,16 @@ from .offense import (  # noqa: F401
     squeeze_chance,
     maybe_squeeze,
 )
+from .substitutions import (  # noqa: F401
+    Team,
+    pinch_hit,
+    pinch_run,
+    defensive_sub,
+    double_switch,
+    warm_reliever,
+    replace_pitcher,
+    cool_down,
+)
 
 __all__ = [
     "PlayBalanceConfig",
@@ -95,6 +105,14 @@ __all__ = [
     "maybe_sacrifice_bunt",
     "squeeze_chance",
     "maybe_squeeze",
+    "Team",
+    "pinch_hit",
+    "pinch_run",
+    "defensive_sub",
+    "double_switch",
+    "warm_reliever",
+    "replace_pitcher",
+    "cool_down",
     "PlayerState",
     "BaseState",
     "GameState",
