@@ -5,6 +5,8 @@ from playbalance import (
     combine_offense,
     combine_slugging,
     combine_defense,
+    rating_to_pct,
+    pct_to_rating,
     pct_modifier,
     adjustment,
     dice_roll,
@@ -28,6 +30,8 @@ def test_rating_helpers_use_config():
     assert combine_offense(80, 20, 40, cfg) == 80
     assert combine_slugging(60, 40, cfg) == 50
     assert combine_defense(70, 50, 40, cfg) == 63
+    assert rating_to_pct(50) == 0.5
+    assert pct_to_rating(0.5) == 50
 
 
 def test_probability_helpers():
@@ -42,6 +46,10 @@ def test_state_tracking():
     gs = GameState(weather={"temperature": 70.0}, park_factors={"overall": 100.0})
     gs.record_pitch()
     assert gs.pitch_count == 1
+    gs.score_run(home_team=True)
+    assert gs.home_score == 1
+    gs.advance_inning()
+    assert gs.inning == 1 and not gs.top and gs.outs == 0
     ps = PlayerState("Test")
     ps.fatigue = 5.0
     ps.stats["hr"] = 1

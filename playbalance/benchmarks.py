@@ -52,6 +52,33 @@ def park_factors(benchmarks: Dict[str, float]) -> Dict[str, float]:
     }
 
 
+def get_park_factor(
+    benchmarks: Dict[str, float], metric: str, park: str | None = None, default: float = 100.0
+) -> float:
+    """Return the park factor for ``metric``.
+
+    Parameters
+    ----------
+    benchmarks:
+        Mapping of metric keys to values as returned by :func:`load_benchmarks`.
+    metric:
+        Statistic name such as ``"hr"`` or ``"overall"``.
+    park:
+        Optional park identifier. When provided the function looks for keys of
+        the form ``"{park}_park_factor_{metric}"`` before falling back to the
+        league-wide ``"park_factor_{metric}"`` entry.  Missing data returns
+        ``default``.
+    default:
+        Value returned when no matching key exists.
+    """
+
+    if park:
+        key = f"{park.lower()}_park_factor_{metric}"
+        if key in benchmarks:
+            return benchmarks[key]
+    return benchmarks.get(f"park_factor_{metric}", default)
+
+
 def weather_profile(benchmarks: Dict[str, float]) -> Dict[str, float]:
     """Return typical weather conditions from the benchmark data."""
 
@@ -67,9 +94,17 @@ def league_averages(benchmarks: Dict[str, float]) -> Dict[str, float]:
     return {k[4:]: v for k, v in benchmarks.items() if k.startswith("avg_")}
 
 
+def league_average(benchmarks: Dict[str, float], metric: str, default: float = 0.0) -> float:
+    """Return league average for ``metric`` or ``default`` when missing."""
+
+    return benchmarks.get(f"avg_{metric}", default)
+
+
 __all__ = [
     "load_benchmarks",
     "park_factors",
+    "get_park_factor",
     "weather_profile",
     "league_averages",
+    "league_average",
 ]
