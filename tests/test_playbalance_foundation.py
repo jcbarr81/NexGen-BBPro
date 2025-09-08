@@ -15,6 +15,8 @@ def test_load_config_sections():
     assert cfg.get("PlayBalance", "speedBase") is not None
     # Attribute access exposes the same value.
     assert cfg.speedBase == cfg.sections["PlayBalance"].speedBase
+    # JSON overrides should merge onto the PlayBalance section.
+    assert cfg.hbpBatterStepOutChance == 40
 
 
 def test_load_benchmarks_has_values():

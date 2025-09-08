@@ -74,13 +74,20 @@ def load_config(
             overrides = {}
 
         if isinstance(overrides, dict):
+            # Determine which section should receive flat overrides.  By
+            # convention the PBINI file uses a single "PlayBalance" section,
+            # but fall back to the first loaded section for flexibility.
+            default_section = "PlayBalance"
+            if default_section not in sections and sections:
+                default_section = next(iter(sections))
+
             for sect, values in overrides.items():
                 if isinstance(values, dict):
                     section_dict = sections.setdefault(sect, {})
                     section_dict.update(values)
                 else:
-                    # Allow flat overrides applied to a default section.
-                    section_dict = sections.setdefault("", {})
+                    # Allow flat overrides applied to the default section.
+                    section_dict = sections.setdefault(default_section, {})
                     section_dict[sect] = values
 
     return PlayBalanceConfig(sections)
