@@ -124,12 +124,10 @@ def load_tuned_playbalance_config(
 
     apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
-    # Empirically increase balls in play and lower overall strike rate to
-    # better align simulated strikeouts with MLB results. Values are adjusted
-    # after benchmarks are applied so the tuned percentages reflect gameplay
-    # needs rather than raw MLB data alone.
-    cfg.ballInPlayPitchPct = min(cfg.ballInPlayPitchPct + 5, 100)
-    cfg.leagueStrikePct = max(cfg.leagueStrikePct - 3, 0)
+    # Boost batter pitch recognition to curb excessive strikeouts seen in
+    # season simulations. Increasing the ease scale makes identifying pitches
+    # easier which leads to more contact and fewer swinging strikes.
+    cfg.idRatingEaseScale = 2.0
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
