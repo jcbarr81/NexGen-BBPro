@@ -249,6 +249,7 @@ _DEFAULTS: Dict[str, Any] = {
     "idRatingCHPct": 40,
     "idRatingExpPct": 30,
     "idRatingPitchRatPct": 0,
+    "idRatingEaseScale": 1.0,
     "disciplineRatingBase": 0,
     "disciplineRatingCHPct": 150,
     "disciplineRatingExpPct": 100,

@@ -1368,6 +1368,7 @@ idRatingBase=10             ; Base identification chance
 idRatingCHPct=40            ; Percent multiplier on CH component of formula
 idRatingExpPct=30           ; Percent multiplier on EXP component of formula
 idRatingPitchRatPct=0       ; Percent multiplier on Pitch component of formula
+idRatingEaseScale=1.0       ; Multiplier on base identification chance
 idRatingTypeWeight=100      ; Percent multiplier on chance to ID pitch type
 idRatingLocWeight=100       ; Percent multiplier on chance to ID pitch location
 idRatingTimingWeight=100    ; Percent multiplier on chance to ID pitch timing
