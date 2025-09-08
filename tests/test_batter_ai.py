@@ -235,6 +235,40 @@ def test_pitch_rating_makes_identification_harder():
     assert swing_h is True and contact_h > 0
 
 
+def test_recognition_ease_scale_improves_contact():
+    cfg = make_cfg(
+        idRatingBase=20,
+        idRatingCHPct=0,
+        idRatingExpPct=0,
+        idRatingPitchRatPct=0,
+    )
+    ai = BatterAI(cfg)
+    batter = make_player("b1", ch=0)
+    batter.exp = 0
+    pitcher = make_pitcher("p1")
+    swing_low, contact_low = ai.decide_swing(
+        batter,
+        pitcher,
+        pitch_type="fb",
+        balls=0,
+        strikes=0,
+        dist=0,
+        random_value=0.3,
+    )
+    cfg.idRatingEaseScale = 2.0
+    swing_high, contact_high = ai.decide_swing(
+        batter,
+        pitcher,
+        pitch_type="fb",
+        balls=0,
+        strikes=0,
+        dist=0,
+        random_value=0.3,
+    )
+    assert swing_low is True and swing_high is True
+    assert contact_high > contact_low
+
+
 def test_pitch_classification():
     cfg = load_config()
     ai = BatterAI(cfg)

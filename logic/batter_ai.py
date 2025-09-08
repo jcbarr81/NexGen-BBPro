@@ -32,6 +32,11 @@ Only a handful of options are supported:
     Base chance in percent to correctly identify the pitch type.  Higher values
     improve both swing decisions and contact quality.
 
+``idRatingEaseScale``
+    Multiplier applied to the base identification chance.  Values greater than
+    ``1.0`` make pitch recognition easier, reducing misreads and swinging
+    strikes.
+
 The :class:`BatterAI` exposes :func:`decide_swing` which returns a tuple of
 ``(swing, contact_quality)``.  ``swing`` determines whether the batter offers at
         the pitch.  ``contact_quality`` is a multiplier in the range ``0.0`` to
@@ -262,6 +267,7 @@ class BatterAI:
             + batter_exp * exp_pct
             + (100 - pitch_rating) / 2.0 * pitch_pct
         )
+        base_percent *= self.config.get("idRatingEaseScale", 1.0)
 
         # Choose timing curve based on base identification chance
         curves = [
