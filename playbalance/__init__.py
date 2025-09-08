@@ -39,6 +39,12 @@ from .physics import (  # noqa: F401
     exit_velocity,
     pitch_movement,
     pitcher_fatigue,
+    swing_angle,
+    bat_speed,
+    vertical_hit_angle,
+    ball_roll_distance,
+    control_miss_effect,
+    warm_up_progress,
 )
 from .state import PlayerState, BaseState, GameState  # noqa: F401
 from .defense import (  # noqa: F401
@@ -98,6 +104,12 @@ __all__ = [
     "exit_velocity",
     "pitch_movement",
     "pitcher_fatigue",
+    "swing_angle",
+    "bat_speed",
+    "vertical_hit_angle",
+    "ball_roll_distance",
+    "control_miss_effect",
+    "warm_up_progress",
     "bunt_charge_chance",
     "hold_runner_chance",
     "pickoff_chance",
