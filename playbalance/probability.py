@@ -7,23 +7,21 @@ from typing import Dict, Sequence, TypeVar
 T = TypeVar("T")
 
 
-def roll(chance: float) -> bool:
-    """Return ``True`` with the given probability.
+def clamp01(value: float) -> float:
+    """Clamp ``value`` to the inclusive ``0.0``–``1.0`` range."""
 
-    Parameters
-    ----------
-    chance:
-        Probability in the range ``0.0``-``1.0``.
-    """
-    return random() < chance
+    return max(0.0, min(1.0, value))
+
+
+def roll(chance: float) -> bool:
+    """Return ``True`` with the given probability."""
+
+    return random() < clamp01(chance)
 
 
 def weighted_choice(weights: Dict[T, float] | Sequence[float], items: Sequence[T] | None = None) -> T:
-    """Select an item based on provided ``weights``.
+    """Select an item based on provided ``weights``."""
 
-    ``weights`` can be a mapping of item→weight or a sequence of weights with a
-    parallel ``items`` sequence.
-    """
     if isinstance(weights, dict):
         items, weights = zip(*weights.items())
     assert items is not None
@@ -34,8 +32,25 @@ def weighted_choice(weights: Dict[T, float] | Sequence[float], items: Sequence[T
         upto += weight
         if upto >= r:
             return item
-    # Fallback to last item (avoid mypy complaints)
     return items[-1]
 
 
-__all__ = ["roll", "weighted_choice"]
+def prob_or(probabilities: Sequence[float]) -> float:
+    """Return probability that at least one of ``probabilities`` occurs."""
+
+    p = 0.0
+    for chance in probabilities:
+        p = p + chance - (p * chance)
+    return clamp01(p)
+
+
+def prob_and(probabilities: Sequence[float]) -> float:
+    """Return probability that all of ``probabilities`` occur."""
+
+    p = 1.0
+    for chance in probabilities:
+        p *= chance
+    return clamp01(p)
+
+
+__all__ = ["clamp01", "roll", "weighted_choice", "prob_or", "prob_and"]
