@@ -26,6 +26,10 @@ from .probability import (  # noqa: F401
     weighted_choice,
     prob_or,
     prob_and,
+    pct_modifier,
+    adjustment,
+    dice_roll,
+    final_chance,
 )
 from .state import PlayerState, BaseState, GameState  # noqa: F401
 
@@ -45,6 +49,10 @@ __all__ = [
     "weighted_choice",
     "prob_or",
     "prob_and",
+    "pct_modifier",
+    "adjustment",
+    "dice_roll",
+    "final_chance",
     "PlayerState",
     "BaseState",
     "GameState",

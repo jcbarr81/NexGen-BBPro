@@ -8,7 +8,7 @@ override values without touching the original configuration.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, make_dataclass
 from pathlib import Path
 from typing import Any, Dict
 import json
@@ -20,13 +20,25 @@ from logic.pbini_loader import load_pbini
 class PlayBalanceConfig:
     """Container for configuration sections loaded from ``PBINI.txt``.
 
-    The underlying data structure mirrors the INI format: a mapping of section
-    names to dictionaries of key/value pairs.  Convenience attribute access is
-    provided for the ``PlayBalance`` section which contains the majority of
-    simulation tuning values.
+    Each section from the INI file is converted into its own dataclass where
+    every key becomes a typed attribute.  This provides attribute completion
+    while still allowing dynamic loading of the configuration file.  The raw
+    sections are preserved in :attr:`sections` for introspection.
     """
 
-    sections: Dict[str, Dict[str, Any]]
+    sections: Dict[str, Any]
+
+    def __post_init__(self) -> None:
+        """Turn plain section dictionaries into dataclass instances."""
+
+        typed_sections: Dict[str, Any] = {}
+        for name, values in self.sections.items():
+            fields = [(k, type(v), field(default=v)) for k, v in values.items()]
+            SectionCls = make_dataclass(name, fields)
+            section_obj = SectionCls(**values)
+            setattr(self, name, section_obj)
+            typed_sections[name] = section_obj
+        self.sections = typed_sections
 
     # ------------------------------------------------------------------
     # Access helpers
@@ -34,14 +46,15 @@ class PlayBalanceConfig:
     def get(self, section: str, key: str, default: Any | None = None) -> Any:
         """Return a configuration value from ``section`` or ``default``."""
 
-        return self.sections.get(section, {}).get(key, default)
+        sect = self.sections.get(section)
+        return getattr(sect, key, default) if sect else default
 
     def __getattr__(self, item: str) -> Any:  # pragma: no cover - delegation
         """Expose ``PlayBalance`` entries as attributes returning ``0`` when
-        missing.
-        """
+        missing."""
 
-        return self.get("PlayBalance", item, 0)
+        sect = self.sections.get("PlayBalance")
+        return getattr(sect, item, 0) if sect else 0
 
 
 def load_config(
