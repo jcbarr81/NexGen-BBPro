@@ -123,5 +123,13 @@ def load_tuned_playbalance_config(
         benchmarks = {r["metric_key"]: float(r["value"]) for r in csv.DictReader(bf)}
 
     apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
+
+    # Empirically increase balls in play and lower overall strike rate to
+    # better align simulated strikeouts with MLB results. Values are adjusted
+    # after benchmarks are applied so the tuned percentages reflect gameplay
+    # needs rather than raw MLB data alone.
+    cfg.ballInPlayPitchPct = min(cfg.ballInPlayPitchPct + 5, 100)
+    cfg.leagueStrikePct = max(cfg.leagueStrikePct - 3, 0)
+
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
