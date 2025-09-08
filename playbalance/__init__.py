@@ -13,12 +13,16 @@ from .benchmarks import (  # noqa: F401
     park_factors,
     weather_profile,
     league_averages,
+    get_park_factor,
+    league_average,
 )
 from .ratings import (  # noqa: F401
     clamp_rating,
     combine_offense,
     combine_slugging,
     combine_defense,
+    rating_to_pct,
+    pct_to_rating,
 )
 from .probability import (  # noqa: F401
     clamp01,
@@ -40,10 +44,14 @@ __all__ = [
     "park_factors",
     "weather_profile",
     "league_averages",
+    "get_park_factor",
+    "league_average",
     "clamp_rating",
     "combine_offense",
     "combine_slugging",
     "combine_defense",
+    "rating_to_pct",
+    "pct_to_rating",
     "clamp01",
     "roll",
     "weighted_choice",

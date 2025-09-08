@@ -82,9 +82,23 @@ def combine_defense(
     return clamp_rating(rating)
 
 
+def rating_to_pct(value: float) -> float:
+    """Convert a ``0``-``100`` rating to a ``0.0``–``1.0`` percentage."""
+
+    return clamp_rating(value) / 100.0
+
+
+def pct_to_rating(value: float) -> float:
+    """Convert a ``0.0``–``1.0`` percentage back to a ``0``-``100`` rating."""
+
+    return clamp_rating(value * 100.0)
+
+
 __all__ = [
     "clamp_rating",
     "combine_offense",
     "combine_slugging",
     "combine_defense",
+    "rating_to_pct",
+    "pct_to_rating",
 ]

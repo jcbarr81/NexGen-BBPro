@@ -64,6 +64,8 @@ def load_config(
     """Load configuration from ``pbini_path`` and optional JSON overrides."""
 
     sections = load_pbini(pbini_path)
+    # Preserve the original keys to ensure coverage after overrides are merged.
+    pbini_keys = {sect: set(vals.keys()) for sect, vals in sections.items()}
 
     overrides_path = Path(overrides_path)
     if overrides_path.exists():
@@ -83,12 +85,27 @@ def load_config(
 
             for sect, values in overrides.items():
                 if isinstance(values, dict):
+                    if sect not in sections:
+                        raise KeyError(f"Unknown config section '{sect}'")
+                    unknown = set(values) - pbini_keys.get(sect, set())
+                    if unknown:
+                        unknown_list = ", ".join(sorted(unknown))
+                        raise KeyError(f"Unknown keys for section '{sect}': {unknown_list}")
                     section_dict = sections.setdefault(sect, {})
                     section_dict.update(values)
                 else:
                     # Allow flat overrides applied to the default section.
+                    if sect not in pbini_keys.get(default_section, set()):
+                        raise KeyError(f"Unknown key '{sect}' for section '{default_section}'")
                     section_dict = sections.setdefault(default_section, {})
                     section_dict[sect] = values
+
+    # Ensure that all PBINI keys remain represented after merging overrides.
+    for sect, keys in pbini_keys.items():
+        missing = keys - set(sections.get(sect, {}).keys())
+        if missing:
+            missing_list = ", ".join(sorted(missing))
+            raise KeyError(f"Missing keys from section '{sect}': {missing_list}")
 
     return PlayBalanceConfig(sections)
 

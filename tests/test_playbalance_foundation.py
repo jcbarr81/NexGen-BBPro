@@ -5,6 +5,8 @@ from playbalance import (
     park_factors,
     weather_profile,
     league_averages,
+    get_park_factor,
+    league_average,
 )
 
 
@@ -25,7 +27,32 @@ def test_load_benchmarks_has_values():
     # Helper slices of the benchmark data
     pf = park_factors(benchmarks)
     assert pf["overall"] == 100.0
+    # Unknown park falls back to league value
+    assert get_park_factor(benchmarks, "hr", park="Nowhere") == 102.0
     weather = weather_profile(benchmarks)
     assert weather["temperature"] == 75.0
     avgs = league_averages(benchmarks)
     assert avgs["exit_velocity"] == 88.5
+    assert league_average(benchmarks, "exit_velocity") == 88.5
+
+
+def test_override_validation(tmp_path):
+    override = tmp_path / "override.json"
+    override.write_text("{\"unknownKey\": 1}")
+    try:
+        load_config(overrides_path=override)
+    except KeyError:
+        pass
+    else:  # pragma: no cover - explicit failure path
+        assert False, "Unknown override key did not raise"
+
+
+def test_all_pbini_keys_present():
+    cfg = load_config()
+    # Compare keys in PBINI file to those exposed on the config dataclass.
+    from logic.pbini_loader import load_pbini
+
+    pbini_sections = load_pbini("logic/PBINI.txt")
+    pb_keys = set(pbini_sections["PlayBalance"].keys())
+    cfg_keys = set(cfg.sections["PlayBalance"].__dict__.keys())
+    assert pb_keys <= cfg_keys
