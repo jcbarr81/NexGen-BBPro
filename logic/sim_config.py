@@ -128,8 +128,12 @@ def load_tuned_playbalance_config(
     # better align simulated strikeouts with MLB results. Values are adjusted
     # after benchmarks are applied so the tuned percentages reflect gameplay
     # needs rather than raw MLB data alone.
-    cfg.ballInPlayPitchPct = min(cfg.ballInPlayPitchPct + 5, 100)
-    cfg.leagueStrikePct = max(cfg.leagueStrikePct - 3, 0)
+    # Initial tuning reduced strikeouts somewhat but season simulations still
+    # produced nearly double the MLB average.  Increase balls put in play and
+    # further drop the expected strike rate to bring strikeouts closer to
+    # real-world levels.
+    cfg.ballInPlayPitchPct = min(cfg.ballInPlayPitchPct + 12, 100)
+    cfg.leagueStrikePct = max(cfg.leagueStrikePct - 8, 0)
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
