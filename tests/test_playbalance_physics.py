@@ -6,10 +6,14 @@ from playbalance import (
     pitcher_fatigue,
     swing_angle,
     bat_speed,
+    power_zone_factor,
     vertical_hit_angle,
     ball_roll_distance,
+    air_resistance,
     control_miss_effect,
     warm_up_progress,
+    pitch_velocity,
+    ai_timing_adjust,
 )
 
 
@@ -119,3 +123,39 @@ def test_warm_up_progress_caps_at_one():
     cfg = SimpleNamespace(warmUpPitches=20)
     assert warm_up_progress(cfg, 10) == 0.5
     assert warm_up_progress(cfg, 25) == 1.0
+
+
+def test_power_zone_sweet_spot_gives_more_transfer():
+    cfg = SimpleNamespace(
+        batPowerHandleBase=25,
+        batPowerHandleRange=10,
+        batPowerSweetBase=90,
+        batPowerSweetRange=5,
+    )
+    handle = power_zone_factor(cfg, "handle", rand=0.5)
+    sweet = power_zone_factor(cfg, "sweet", rand=0.5)
+    assert sweet > handle
+
+
+def test_air_resistance_reduces_with_environmental_factors():
+    cfg = SimpleNamespace(
+        ballAirResistancePct=100.0,
+        ballAltitudePct=50.0,
+        ballBaseAltitude=0.0,
+        ballTempPct=10.0,
+        ballWindSpeedPct=10.0,
+    )
+    base = air_resistance(cfg, altitude=0.0, temperature=60.0, wind_speed=0.0)
+    env = air_resistance(cfg, altitude=1000.0, temperature=80.0, wind_speed=10.0)
+    assert env < base
+
+
+def test_pitch_velocity_uses_range_and_rating():
+    cfg = SimpleNamespace(fbSpeedBase=70, fbSpeedRange=2, fbSpeedASPct=30)
+    speed = pitch_velocity(cfg, "fb", 50, rand=0.5)
+    assert speed == 86.0
+
+
+def test_ai_timing_adjust_combines_slop_values():
+    cfg = SimpleNamespace(generalSlop=9, relaySlop=12)
+    assert ai_timing_adjust(cfg, "relay", 100) == 121

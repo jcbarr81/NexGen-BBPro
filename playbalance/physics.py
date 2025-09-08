@@ -162,6 +162,31 @@ def bat_speed(
     return speed * scale / 100.0
 
 
+def power_zone_factor(
+    cfg: PlayBalanceConfig,
+    zone: str,
+    *,
+    rand: float | None = None,
+    rng: Random | None = None,
+) -> float:
+    """Return percent of bat speed transferred for a bat ``zone``.
+
+    ``zone`` may be ``handle``, ``dull``, ``sweet`` or ``end``.  The
+    configuration provides a base percentage and a random range for each
+    region.  The result is expressed as a fraction in the range ``0-1``.
+    """
+
+    key = zone.capitalize()
+    base = getattr(cfg, f"batPower{key}Base", 0.0)
+    range_val = getattr(cfg, f"batPower{key}Range", 0.0)
+
+    rng = rng or Random()
+    if rand is None:
+        rand = rng.random()
+
+    return (base + rand * range_val) / 100.0
+
+
 def vertical_hit_angle(
     cfg: PlayBalanceConfig,
     *,
@@ -210,6 +235,33 @@ def ball_roll_distance(
     return distance
 
 
+def air_resistance(
+    cfg: PlayBalanceConfig,
+    *,
+    altitude: float = 0.0,
+    temperature: float = 70.0,
+    wind_speed: float = 0.0,
+) -> float:
+    """Return an air-resistance multiplier for a batted ball.
+
+    The multiplier is based on configuration percentages for altitude,
+    temperature and wind speed.  Higher values for any parameter reduce the
+    returned multiplier which in turn would lessen carry on the ball.
+    """
+
+    base = getattr(cfg, "ballAirResistancePct", 100.0) / 100.0
+    alt_pct = getattr(cfg, "ballAltitudePct", 0.0) / 100.0
+    base_alt = getattr(cfg, "ballBaseAltitude", 0.0)
+    temp_pct = getattr(cfg, "ballTempPct", 0.0) / 100.0
+    wind_pct = getattr(cfg, "ballWindSpeedPct", 0.0) / 100.0
+
+    alt_effect = ((altitude + base_alt) / 1000.0) * alt_pct
+    temp_effect = (temperature / 100.0) * temp_pct
+    wind_effect = (wind_speed / 100.0) * wind_pct
+
+    return max(0.0, base - alt_effect - temp_effect - wind_effect)
+
+
 def control_miss_effect(
     cfg: PlayBalanceConfig,
     miss_amount: float,
@@ -238,14 +290,68 @@ def warm_up_progress(cfg: PlayBalanceConfig, pitches: int) -> float:
     return min(1.0, pitches / needed)
 
 
+def pitch_velocity(
+    cfg: PlayBalanceConfig,
+    pitch_type: str,
+    as_rating: int,
+    *,
+    rand: float | None = None,
+    rng: Random | None = None,
+) -> float:
+    """Return the velocity (mph) for a given ``pitch_type``.
+
+    The speed is derived from configuration entries
+    ``{pitch}SpeedBase``/``Range`` and the pitcher's arm strength rating.
+    A single random number selects the value within the configured range.
+    """
+
+    rng = rng or Random()
+    if rand is None:
+        rand = rng.random()
+
+    key = pitch_type.lower()
+    base = getattr(cfg, f"{key}SpeedBase", 0.0)
+    range_val = getattr(cfg, f"{key}SpeedRange", 0.0)
+    as_pct = getattr(cfg, f"{key}SpeedASPct", 0.0)
+
+    return base + rand * range_val + as_pct * as_rating / 100.0
+
+
+def ai_timing_adjust(
+    cfg: PlayBalanceConfig,
+    action: str,
+    base_time: float,
+) -> float:
+    """Apply AI timing slop constants to ``base_time`` (in frames).
+
+    ``action`` chooses a specific slop constant which is added together with
+    the general slop value. Supported actions are ``cover`` (for
+    ``coverForPitcherSlop``), ``could_catch``, ``should_catch`` and ``relay``.
+    Unknown actions simply use the general slop.
+    """
+
+    time = base_time + getattr(cfg, "generalSlop", 0.0)
+    time += {
+        "cover": getattr(cfg, "coverForPitcherSlop", 0.0),
+        "could_catch": getattr(cfg, "couldBeCaughtSlop", 0.0),
+        "should_catch": getattr(cfg, "shouldBeCaughtSlop", 0.0),
+        "relay": getattr(cfg, "relaySlop", 0.0),
+    }.get(action, 0.0)
+    return time
+
+
 __all__ = [
     "exit_velocity",
     "pitch_movement",
     "pitcher_fatigue",
     "swing_angle",
     "bat_speed",
+    "power_zone_factor",
     "vertical_hit_angle",
     "ball_roll_distance",
+    "air_resistance",
     "control_miss_effect",
     "warm_up_progress",
+    "pitch_velocity",
+    "ai_timing_adjust",
 ]
