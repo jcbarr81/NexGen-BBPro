@@ -1,6 +1,16 @@
 from types import SimpleNamespace
 
-from playbalance import exit_velocity, pitch_movement, pitcher_fatigue
+from playbalance import (
+    exit_velocity,
+    pitch_movement,
+    pitcher_fatigue,
+    swing_angle,
+    bat_speed,
+    vertical_hit_angle,
+    ball_roll_distance,
+    control_miss_effect,
+    warm_up_progress,
+)
 
 
 def test_exit_velocity_scales_with_swing_type():
@@ -35,3 +45,77 @@ def test_pitcher_fatigue_thresholds():
     assert remaining == 18 and state == "tired"
     remaining, state = pitcher_fatigue(cfg, 100, 97)
     assert remaining == 3 and state == "exhausted"
+
+
+def test_swing_angle_applies_modifiers_and_randomness():
+    cfg = SimpleNamespace(
+        swingAngleBase=5.0,
+        swingAngleGFPct=1.0,
+        swingAnglePowerAdj=5.0,
+        swingAngleInsideAdj=2.0,
+        swingAngleRange=0.0,
+    )
+    angle = swing_angle(
+        cfg,
+        60,
+        swing_type="power",
+        pitch_loc="inside",
+        rand=0.5,
+    )
+    assert angle == 12.6
+
+
+def test_bat_speed_scales_with_type_and_pitch_speed():
+    cfg = SimpleNamespace(
+        batSpeedBase=60.0,
+        batSpeedPHPct=0.5,
+        batSpeedPitchSpdPct=0.2,
+        batSpeedPowerPct=110.0,
+        batSpeedContactPct=90.0,
+        batSpeedNormalPct=100.0,
+        batSpeedRefPitch=90.0,
+    )
+    power = bat_speed(cfg, 60, 95, swing_type="power")
+    contact = bat_speed(cfg, 60, 95, swing_type="contact")
+    assert power > contact
+
+
+def test_vertical_hit_angle_uses_range_and_type():
+    cfg = SimpleNamespace(
+        hitAngleBase=10.0,
+        hitAngleRange=10.0,
+        hitAnglePowerAdj=5.0,
+    )
+    low = vertical_hit_angle(cfg, swing_type="power", rand=0.0)
+    high = vertical_hit_angle(cfg, swing_type="power", rand=1.0)
+    assert low == 10.0
+    assert high == 20.0
+
+
+def test_ball_roll_distance_accounts_for_environment():
+    cfg = SimpleNamespace(
+        rollSpeedMult=1.0,
+        rollFrictionGrass=10.0,
+        rollAltitudePct=1.0,
+        rollWindPct=2.0,
+    )
+    base = ball_roll_distance(cfg, 100.0)
+    env = ball_roll_distance(cfg, 100.0, altitude=1.0, wind_speed=5.0)
+    assert env > base
+
+
+def test_control_miss_effect_expands_box_and_reduces_speed():
+    cfg = SimpleNamespace(
+        controlBoxIncreaseEffCOPct=50.0,
+        speedReductionBase=5.0,
+        speedReductionEffMOPct=10.0,
+    )
+    box, speed = control_miss_effect(cfg, 20.0, (2.0, 3.0), 90.0)
+    assert box == (12.0, 13.0)
+    assert speed == 83.0
+
+
+def test_warm_up_progress_caps_at_one():
+    cfg = SimpleNamespace(warmUpPitches=20)
+    assert warm_up_progress(cfg, 10) == 0.5
+    assert warm_up_progress(cfg, 25) == 1.0
