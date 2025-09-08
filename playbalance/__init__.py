@@ -35,6 +35,11 @@ from .probability import (  # noqa: F401
     dice_roll,
     final_chance,
 )
+from .physics import (  # noqa: F401
+    exit_velocity,
+    pitch_movement,
+    pitcher_fatigue,
+)
 from .state import PlayerState, BaseState, GameState  # noqa: F401
 from .defense import (  # noqa: F401
     bunt_charge_chance,
@@ -90,6 +95,9 @@ __all__ = [
     "adjustment",
     "dice_roll",
     "final_chance",
+    "exit_velocity",
+    "pitch_movement",
+    "pitcher_fatigue",
     "bunt_charge_chance",
     "hold_runner_chance",
     "pickoff_chance",
