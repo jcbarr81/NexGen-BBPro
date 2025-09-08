@@ -70,6 +70,12 @@ from .offense import (  # noqa: F401
     squeeze_chance,
     maybe_squeeze,
 )
+from .pitcher_ai import (  # noqa: F401
+    pitch_rating_variation,
+    apply_selection_adjustments,
+    objective_weights_by_count,
+    select_pitch,
+)
 from .substitutions import (  # noqa: F401
     Team,
     pinch_hit,
@@ -133,6 +139,10 @@ __all__ = [
     "maybe_sacrifice_bunt",
     "squeeze_chance",
     "maybe_squeeze",
+    "pitch_rating_variation",
+    "apply_selection_adjustments",
+    "objective_weights_by_count",
+    "select_pitch",
     "Team",
     "pinch_hit",
     "pinch_run",
