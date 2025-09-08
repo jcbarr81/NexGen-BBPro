@@ -91,6 +91,12 @@ class ReassignPlayersDialog(QDialog):
         save_btn.clicked.connect(self._save_roster)
 
         layout = QVBoxLayout(self)
+        info = QLabel(
+            "Drag and drop players between lists or select a player and "
+            "click Reassign."
+        )
+        info.setWordWrap(True)
+        layout.addWidget(info)
         layout.addLayout(columns)
         layout.addWidget(move_btn)
         layout.addWidget(save_btn)

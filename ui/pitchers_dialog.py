@@ -40,7 +40,13 @@ COLUMNS = [
     "AS",
     "EN",
     "CO",
-    "PITCH",
+    "FB",
+    "SL",
+    "CU",
+    "CB",
+    "SI",
+    "SCB",
+    "KN",
     "MO",
     "FA",
 ]
@@ -58,7 +64,21 @@ class NumberDelegate(QtWidgets.QStyledItemDelegate):
         header = index.model().headerData(
             index.column(), QtCore.Qt.Orientation.Horizontal
         )
-        is_numeric_col = header in {"NO.", "AS", "EN", "CO", "MO", "FA"}
+        is_numeric_col = header in {
+            "NO.",
+            "AS",
+            "EN",
+            "CO",
+            "FB",
+            "SL",
+            "CU",
+            "CB",
+            "SI",
+            "SCB",
+            "KN",
+            "MO",
+            "FA",
+        }
         opt = QtWidgets.QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
         if is_numeric_col:
@@ -81,6 +101,17 @@ class NumberDelegate(QtWidgets.QStyledItemDelegate):
         style.drawControl(
             QtWidgets.QStyle.ControlElement.CE_ItemViewItem, opt, painter, opt.widget
         )
+
+
+class SlotItem(QtWidgets.QTableWidgetItem):
+    """Table item that sorts roster slots in a custom order."""
+
+    slot_order = {"LOW": 0, "AAA": 1, "ACT": 2}
+
+    def __lt__(self, other: QtWidgets.QTableWidgetItem) -> bool:  # type: ignore[override]
+        left = self.slot_order.get(self.text(), 99)
+        right = self.slot_order.get(other.text(), 99)
+        return left < right
 
 
 class RetroHeader(QtWidgets.QWidget):
@@ -139,25 +170,54 @@ class RosterTable(QtWidgets.QTableWidget):
         self.setHorizontalHeaderLabels(COLUMNS)
         self.setRowCount(len(rows))
 
-        # Custom slot order so sorting ascending yields LOW -> AAA -> ACT
-        slot_order = {"LOW": 0, "AAA": 1, "ACT": 2}
         for r, row in enumerate(rows):
             # The player ID is stored as a hidden element at the end of the row.
             *data, pid = row
             for c, val in enumerate(data):
-                item = QtWidgets.QTableWidgetItem(str(val))
-                if COLUMNS[c] in {"NO.", "AS", "EN", "CO", "MO", "FA"}:
-                    item.setData(QtCore.Qt.ItemDataRole.DisplayRole, int(val))
                 if COLUMNS[c] == "SLOT":
-                    item.setData(
-                        QtCore.Qt.ItemDataRole.UserRole, slot_order.get(str(val), 99)
-                    )
+                    item = SlotItem(str(val))
+                else:
+                    item = QtWidgets.QTableWidgetItem(str(val))
+                if COLUMNS[c] in {
+                    "NO.",
+                    "AS",
+                    "EN",
+                    "CO",
+                    "FB",
+                    "SL",
+                    "CU",
+                    "CB",
+                    "SI",
+                    "SCB",
+                    "KN",
+                    "MO",
+                    "FA",
+                } and str(val).isdigit():
+                    item.setData(QtCore.Qt.ItemDataRole.DisplayRole, int(val))
                 if c == 0:  # store player id in first column
                     item.setData(QtCore.Qt.ItemDataRole.UserRole, pid)
                 item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
                 self.setItem(r, c, item)
 
-        widths = [50, 220, 60, 60, 40, 60, 60, 60, 140, 60, 60]
+        widths = [
+            50,
+            220,
+            60,
+            60,
+            40,
+            60,
+            60,
+            60,
+            50,
+            50,
+            50,
+            50,
+            50,
+            50,
+            50,
+            60,
+            60,
+        ]
         for i, w in enumerate(widths):
             self.setColumnWidth(i, w)
 
@@ -269,7 +329,10 @@ class PitchersDialog(QtWidgets.QDialog):
                 role = get_role(p) if p else ""
                 if not p or not role:
                     continue
-                pitches = self._format_pitch_ratings(p)
+                pitch_vals = [
+                    getattr(p, code, "") if getattr(p, code, 0) else ""
+                    for code in PITCH_RATINGS
+                ]
                 rows.append(
                     [
                         seq,
@@ -280,7 +343,7 @@ class PitchersDialog(QtWidgets.QDialog):
                         getattr(p, "arm", 0),
                         getattr(p, "endurance", 0),
                         getattr(p, "control", 0),
-                        pitches,
+                        *pitch_vals,
                         getattr(p, "movement", 0),
                         getattr(p, "fa", 0),
                         pid,
@@ -304,14 +367,6 @@ class PitchersDialog(QtWidgets.QDialog):
         item = QtWidgets.QListWidgetItem(label)
         item.setData(QtCore.Qt.ItemDataRole.UserRole, p.player_id)
         return item
-
-    def _format_pitch_ratings(self, p: BasePlayer) -> str:
-        parts: List[str] = []
-        for code in PITCH_RATINGS:
-            val = getattr(p, code, 0)
-            if val:
-                parts.append(f"{code.upper()}:{val}")
-        return " ".join(parts)
 
     def _calculate_age(self, birthdate_str: str):
         try:
