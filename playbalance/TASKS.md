@@ -5,9 +5,23 @@ that mirrors all formulas and decisions in `logic/PBINI.txt` and validates
 outputs against `data/MLB_avg/mlb_league_benchmarks_2025_filled.csv`.
 
 ## 1. Foundation & Utilities
-- Implement full `PlayBalanceConfig` covering every PBINI entry and merge JSON overrides.
-- Provide benchmark loader with helpers for park/weather and league averages.
-- Flesh out `ratings`, `probability`, and `state` utilities to support later modules.
+### PlayBalanceConfig
+- Map every entry in `logic/PBINI.txt` to structured configuration fields.
+- Allow loading user JSON and merge overrides atop PBINI defaults.
+- Validate that all PBINI keys are represented and raise on unknown keys.
+- Tests verifying override precedence and full coverage of PBINI entries.
+
+### Benchmark Loader
+- Load league benchmark CSVs and expose park and weather factor helpers.
+- Provide utilities returning league-average rates for common stats.
+- Ensure helpers gracefully handle missing data or unknown parks.
+- Tests confirming helpers return expected values for sample inputs.
+
+### Utility Expansion
+- Extend `ratings` module with conversions needed by later managers.
+- Add core probability calculations for reuse across modules.
+- Introduce a `state` container tracking inning, outs, runners, and score.
+- Tests demonstrating utilities work together to update and query state.
 
 ## 2. Defensive Manager
 - Port bunt charging, runner holding, pickoff, pitch-out, pitch-around/IBB,
