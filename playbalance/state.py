@@ -7,11 +7,13 @@ from typing import Dict
 
 @dataclass
 class PlayerState:
-    """Minimal representation of an active player."""
+    """Representation of an active player with transient state."""
 
     name: str
     ratings: Dict[str, float] = field(default_factory=dict)
     position: str | None = None
+    fatigue: float = 0.0
+    stats: Dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -46,6 +48,9 @@ class GameState:
     home_score: int = 0
     away_score: int = 0
     bases: BaseState = field(default_factory=BaseState)
+    pitch_count: int = 0
+    weather: Dict[str, float] = field(default_factory=dict)
+    park_factors: Dict[str, float] = field(default_factory=dict)
 
     def advance_inning(self) -> None:
         """Advance to the next half-inning and reset counters."""
@@ -63,6 +68,11 @@ class GameState:
             self.home_score += 1
         else:
             self.away_score += 1
+
+    def record_pitch(self) -> None:
+        """Increment the pitch counter."""
+
+        self.pitch_count += 1
 
 
 __all__ = ["PlayerState", "BaseState", "GameState"]

@@ -1,7 +1,7 @@
 """Generic probability utilities for the play-balance engine."""
 from __future__ import annotations
 
-from random import random
+from random import random, randint
 from typing import Dict, Sequence, TypeVar
 
 T = TypeVar("T")
@@ -53,4 +53,43 @@ def prob_and(probabilities: Sequence[float]) -> float:
     return clamp01(p)
 
 
-__all__ = ["clamp01", "roll", "weighted_choice", "prob_or", "prob_and"]
+def pct_modifier(chance: float, pct: float) -> float:
+    """Apply a percent modifier to ``chance`` as described in ``PBINI``."""
+
+    return (pct * chance) / 100.0
+
+
+def adjustment(chance: float, adjust: float) -> float:
+    """Add ``adjust`` to ``chance`` returning the new value."""
+
+    return chance + adjust
+
+
+def dice_roll(count: int, faces: int, base: int = 0) -> int:
+    """Return a roll of ``count`` dice with ``faces`` sides plus ``base``."""
+
+    return sum(randint(1, faces) for _ in range(count)) + base
+
+
+def final_chance(base: float, pct_mods: Sequence[float] = (), adjusts: Sequence[float] = ()) -> float:
+    """Combine ``base`` chance with percent modifiers and adjustments."""
+
+    chance = base
+    for pct in pct_mods:
+        chance = pct_modifier(chance, pct)
+    for adj in adjusts:
+        chance = adjustment(chance, adj)
+    return clamp01(chance)
+
+
+__all__ = [
+    "clamp01",
+    "roll",
+    "weighted_choice",
+    "prob_or",
+    "prob_and",
+    "pct_modifier",
+    "adjustment",
+    "dice_roll",
+    "final_chance",
+]
