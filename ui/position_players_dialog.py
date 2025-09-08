@@ -82,6 +82,17 @@ class NumberDelegate(QtWidgets.QStyledItemDelegate):
         )
 
 
+class SlotItem(QtWidgets.QTableWidgetItem):
+    """Table item that sorts roster slots in a custom order."""
+
+    slot_order = {"LOW": 0, "AAA": 1, "ACT": 2}
+
+    def __lt__(self, other: QtWidgets.QTableWidgetItem) -> bool:  # type: ignore[override]
+        left = self.slot_order.get(self.text(), 99)
+        right = self.slot_order.get(other.text(), 99)
+        return left < right
+
+
 class RetroHeader(QtWidgets.QWidget):
     """Header area displaying team name and subheader strip."""
 
@@ -137,23 +148,19 @@ class RosterTable(QtWidgets.QTableWidget):
         self.setColumnCount(len(COLUMNS))
         self.setHorizontalHeaderLabels(COLUMNS)
         self.setRowCount(len(rows))
-
-        # Custom slot order so sorting ascending yields LOW -> AAA -> ACT
-        slot_order = {"LOW": 0, "AAA": 1, "ACT": 2}
         for r, row in enumerate(rows):
             # The player ID is stored as a hidden element at the end of the row.
             *data, pid = row
             for c, val in enumerate(data):
-                item = QtWidgets.QTableWidgetItem(str(val))
+                if COLUMNS[c] == "SLOT":
+                    item = SlotItem(str(val))
+                else:
+                    item = QtWidgets.QTableWidgetItem(str(val))
                 if (
                     COLUMNS[c] in {"NO.", "AGE", "CH", "PH", "SP", "FA", "AS"}
                     and str(val).isdigit()
                 ):
                     item.setData(QtCore.Qt.ItemDataRole.DisplayRole, int(val))
-                if COLUMNS[c] == "SLOT":
-                    item.setData(
-                        QtCore.Qt.ItemDataRole.UserRole, slot_order.get(str(val), 99)
-                    )
                 if c == 0:  # store player id in first column
                     item.setData(QtCore.Qt.ItemDataRole.UserRole, pid)
                 item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
