@@ -23,10 +23,26 @@ def test_reaction_delay(cfg):
     assert reaction_delay(cfg, "C", 50) == 10.0
 
 
+def test_reaction_delay_scales_with_skill(cfg):
+    """Higher fielding ability should reduce reaction time."""
+
+    mid = reaction_delay(cfg, "C", 50)
+    high = reaction_delay(cfg, "C", 80)
+    low = reaction_delay(cfg, "C", 0)
+    assert high < mid < low
+    assert high == pytest.approx(8.8)
+
+
 def test_catch_chance_adjustments(cfg):
     # Diving 3B with 0.5s hang time and 20ft distance
     prob = catch_chance(cfg, "3B", fa=50, air_time=0.5, distance=20, diving=True)
     assert prob == pytest.approx(0.4214286, rel=1e-6)
+
+
+def test_automatic_catch_distance(cfg):
+    """Balls within the automatic catch radius are always caught."""
+
+    assert catch_chance(cfg, "2B", fa=10, air_time=2.0, distance=10) == 1.0
 
 
 def test_throwing_metrics(cfg):
@@ -43,8 +59,28 @@ def test_throw_accuracy_and_wild_pitch(cfg):
     assert wild_pitch_catch_chance(cfg, 20, cross_body=True) == pytest.approx(0.85)
 
 
+def test_good_throw_chance_clamped(cfg):
+    """Throw accuracy chance should not exceed 100%."""
+
+    assert good_throw_chance(cfg, "P", 500) == 1.0
+
+
+def test_wild_pitch_high_modifier(cfg):
+    """High wild pitches apply their modifier to the catch chance."""
+
+    assert wild_pitch_catch_chance(cfg, 20, high=True) == pytest.approx(0.9)
+
+
 def test_chase_decisions(cfg):
     assert should_chase_ball(cfg, "SS", 40) is True
     assert should_chase_ball(cfg, "P", 100) is False
     assert should_chase_ball(cfg, "CF", 120) is False
     assert should_chase_ball(cfg, "LF", 200) is True
+
+
+def test_outfield_chase_threshold(cfg):
+    """Outfielders only chase once distance meets configured threshold."""
+
+    dist = cfg.outfieldMinChaseDist
+    assert should_chase_ball(cfg, "LF", dist - 1) is False
+    assert should_chase_ball(cfg, "LF", dist) is True
