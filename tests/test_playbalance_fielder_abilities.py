@@ -84,3 +84,52 @@ def test_outfield_chase_threshold(cfg):
     dist = cfg.outfieldMinChaseDist
     assert should_chase_ball(cfg, "LF", dist - 1) is False
     assert should_chase_ball(cfg, "LF", dist) is True
+
+
+def test_catch_chance_pbini_range(cfg):
+    """Catch probabilities respect PBINI base and maximum values."""
+
+    low = catch_chance(cfg, "SS", fa=0, air_time=1.2, distance=20)
+    assert low == pytest.approx(cfg.catchBaseChance / 100)
+    high = catch_chance(cfg, "SS", fa=100, air_time=1.2, distance=20)
+    expected_high = min(
+        100, cfg.catchBaseChance + 100 / cfg.catchFADiv
+    )
+    assert high == pytest.approx(expected_high / 100)
+
+
+def test_throw_distance_speed_pbini_range(cfg):
+    """Throw distance and speed scale according to PBINI settings."""
+
+    assert max_throw_distance(cfg, 0) == cfg.maxThrowDistBase
+    assert max_throw_distance(cfg, 100) == (
+        cfg.maxThrowDistBase + cfg.maxThrowDistASPct
+    )
+    assert throw_speed(cfg, 0, 0) == cfg.throwSpeedIFBase
+    expected = (
+        cfg.throwSpeedIFBase
+        + cfg.throwSpeedIFDistPct * 100 / 100
+        + cfg.throwSpeedIFASPct * 50 / 100
+    )
+    assert throw_speed(cfg, 100, 50) == pytest.approx(expected)
+
+
+def test_good_throw_chance_pbini_range(cfg):
+    """Good throw chance adheres to PBINI-configured limits."""
+
+    low = good_throw_chance(cfg, "SS", 0)
+    expected_low = (cfg.goodThrowBase + cfg.goodThrowChanceShortStop) / 100
+    assert low == pytest.approx(expected_low)
+    assert good_throw_chance(cfg, "SS", 100) == 1.0
+
+
+def test_wild_pitch_catch_chance_pbini_range(cfg):
+    """Wild pitch catch chance scales with rating per PBINI values."""
+
+    base = wild_pitch_catch_chance(cfg, 0)
+    assert base == pytest.approx(cfg.wildCatchChanceBase / 100)
+    high = wild_pitch_catch_chance(cfg, 100)
+    expected_high = min(
+        100, cfg.wildCatchChanceBase + cfg.wildCatchChanceFAPct
+    )
+    assert high == pytest.approx(expected_high / 100)
