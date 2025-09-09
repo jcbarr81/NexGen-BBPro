@@ -60,6 +60,15 @@ from .defense import (  # noqa: F401
     outfielder_position,
     fielder_template,
 )
+from .fielder import (
+    reaction_delay,
+    catch_chance,
+    max_throw_distance,
+    throw_speed,
+    good_throw_chance,
+    wild_pitch_catch_chance,
+    should_chase_ball,
+)
 from .offense import (  # noqa: F401
     steal_chance,
     maybe_attempt_steal,
@@ -176,4 +185,12 @@ __all__ = [
     "PlayerState",
     "BaseState",
     "GameState",
+
+"reaction_delay",
+"catch_chance",
+"max_throw_distance",
+"throw_speed",
+"good_throw_chance",
+"wild_pitch_catch_chance",
+"should_chase_ball",
 ]
