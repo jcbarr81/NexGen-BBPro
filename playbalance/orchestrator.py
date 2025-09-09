@@ -23,6 +23,7 @@ from .state import GameState
 from .pitcher_ai import select_pitch
 from .batter_ai import StrikeZoneGrid, look_for_zone
 from .benchmarks import load_benchmarks, league_average
+from .player_loader import Player, load_lineup, load_pitching_staff, load_players
 
 
 @dataclass
@@ -52,6 +53,19 @@ class SimulationResult:
 
 
 # ---------------------------------------------------------------------------
+# Team representation
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Team:
+    """Simple container for a team's roster information."""
+
+    lineup: list[Player]
+    pitchers: list[Player]
+
+
+# ---------------------------------------------------------------------------
 # Core simulation helpers
 # ---------------------------------------------------------------------------
 
@@ -61,6 +75,8 @@ def _simulate_plate_appearance(
     benchmarks: Mapping[str, float],
     rng: random.Random,
     game_state: GameState,
+    pitcher: Player,
+    batter: Player,
 ) -> str:
     """Simulate a single plate appearance and return its outcome.
 
@@ -73,15 +89,27 @@ def _simulate_plate_appearance(
     if not isinstance(getattr(cfg, "pitchObjectiveWeights", {}), dict):
         cfg.pitchObjectiveWeights = {}
     grid = StrikeZoneGrid()
+    pitch_ratings = {
+        "fastball": pitcher.ratings.get("fastball", 50.0),
+        "slider": pitcher.ratings.get("slider", 50.0),
+    }
+    batter_dis = batter.ratings.get("discipline", 50.0)
     for _ in range(pitches_per_pa):
-        # Use placeholder ratings to drive the helpers.
-        select_pitch(cfg, {"fastball": 50.0, "slider": 50.0}, rng=rng)
-        look_for_zone(cfg, balls=0, strikes=0, batter_dis=50.0, grid=grid)
+        select_pitch(cfg, pitch_ratings, rng=rng)
+        look_for_zone(cfg, balls=0, strikes=0, batter_dis=batter_dis, grid=grid)
         game_state.record_pitch()
 
     roll = rng.random()
     bb_threshold = league_average(benchmarks, "bb_pct")
     k_threshold = bb_threshold + league_average(benchmarks, "k_pct")
+    b_contact = batter.ratings.get("contact", 50.0)
+    p_control = pitcher.ratings.get("control", 50.0)
+    p_movement = pitcher.ratings.get("movement", 50.0)
+    stuff = (pitch_ratings["fastball"] + pitch_ratings["slider"]) / 2.0
+    bb_threshold += (batter_dis - p_control) / 1000.0
+    k_threshold += (stuff - b_contact) / 1000.0
+    bb_threshold = max(0.0, min(1.0, bb_threshold))
+    k_threshold = max(bb_threshold, min(1.0, k_threshold))
     if roll < bb_threshold:
         return "walk"
     if roll < k_threshold:
@@ -89,7 +117,10 @@ def _simulate_plate_appearance(
     # Ball put in play.
     game_state.pitch_count += 1  # account for contact pitch
     game_state.bases  # access to satisfy state usage even though simplified
-    if rng.random() < league_average(benchmarks, "babip"):
+    babip = league_average(benchmarks, "babip")
+    babip += (b_contact - p_movement) / 1000.0
+    babip = max(0.0, min(1.0, babip))
+    if rng.random() < babip:
         return "hit"
     return "out"
 
@@ -97,6 +128,8 @@ def _simulate_plate_appearance(
 def simulate_game(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
+    home_team: Team,
+    away_team: Team,
     rng: random.Random | None = None,
 ) -> SimulationResult:
     """Simulate a single game returning aggregate statistics."""
@@ -104,9 +137,23 @@ def simulate_game(
     rng = rng or random.Random()
     state = GameState()
     stats = SimulationResult()
+    away_idx = 0
+    home_idx = 0
+    away_pitcher = away_team.pitchers[0]
+    home_pitcher = home_team.pitchers[0]
+    away_outs = 0
+    home_outs = 0
 
-    while state.outs < 27:
-        outcome = _simulate_plate_appearance(cfg, benchmarks, rng, state)
+    while away_outs < 27 or home_outs < 27:
+        if state.top:
+            batter = away_team.lineup[away_idx]
+            pitcher = home_pitcher
+            away_idx = (away_idx + 1) % len(away_team.lineup)
+        else:
+            batter = home_team.lineup[home_idx]
+            pitcher = away_pitcher
+            home_idx = (home_idx + 1) % len(home_team.lineup)
+        outcome = _simulate_plate_appearance(cfg, benchmarks, rng, state, pitcher, batter)
         stats.pa += 1
         if outcome == "walk":
             stats.bb += 1
@@ -119,6 +166,10 @@ def simulate_game(
         elif outcome == "strikeout":
             stats.k += 1
             state.outs += 1
+            if state.top:
+                away_outs += 1
+            else:
+                home_outs += 1
         elif outcome == "hit":
             stats.hits += 1
             stats.bip += 1
@@ -128,9 +179,20 @@ def simulate_game(
                     stats.sb_success += 1
                 else:
                     state.outs += 1
+                    if state.top:
+                        away_outs += 1
+                    else:
+                        home_outs += 1
         else:  # out on ball in play
             stats.bip += 1
             state.outs += 1
+            if state.top:
+                away_outs += 1
+            else:
+                home_outs += 1
+
+        if state.outs >= 3:
+            state.advance_inning()
 
     stats.pitches = state.pitch_count
     return stats
@@ -154,31 +216,68 @@ def simulate_games(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
     games: int,
+    home_team: Team,
+    away_team: Team,
     rng_seed: int | None = None,
 ) -> SimulationResult:
     """Simulate ``games`` games and return aggregated statistics."""
 
     rng = random.Random(rng_seed)
-    results = [simulate_game(cfg, benchmarks, rng) for _ in range(games)]
+    results = []
+    for i in range(games):
+        home_pitcher = home_team.pitchers[i % len(home_team.pitchers)]
+        away_pitcher = away_team.pitchers[i % len(away_team.pitchers)]
+        game_home = Team(home_team.lineup, [home_pitcher])
+        game_away = Team(away_team.lineup, [away_pitcher])
+        results.append(simulate_game(cfg, benchmarks, game_home, game_away, rng))
     return _combine_results(results)
 
 
 # Public helpers mapping to typical season progress increments -----------------
 
-def simulate_day(cfg: PlayBalanceConfig, benchmarks: Mapping[str, float], *, rng_seed: int | None = None) -> SimulationResult:
-    return simulate_games(cfg, benchmarks, 1, rng_seed=rng_seed)
+def simulate_day(
+    cfg: PlayBalanceConfig,
+    benchmarks: Mapping[str, float],
+    home_team: Team,
+    away_team: Team,
+    *,
+    rng_seed: int | None = None,
+) -> SimulationResult:
+    return simulate_games(cfg, benchmarks, 1, home_team, away_team, rng_seed=rng_seed)
 
 
-def simulate_week(cfg: PlayBalanceConfig, benchmarks: Mapping[str, float], *, rng_seed: int | None = None) -> SimulationResult:
-    return simulate_games(cfg, benchmarks, 7, rng_seed=rng_seed)
+def simulate_week(
+    cfg: PlayBalanceConfig,
+    benchmarks: Mapping[str, float],
+    home_team: Team,
+    away_team: Team,
+    *,
+    rng_seed: int | None = None,
+) -> SimulationResult:
+    return simulate_games(cfg, benchmarks, 7, home_team, away_team, rng_seed=rng_seed)
 
 
-def simulate_month(cfg: PlayBalanceConfig, benchmarks: Mapping[str, float], *, rng_seed: int | None = None) -> SimulationResult:
-    return simulate_games(cfg, benchmarks, 30, rng_seed=rng_seed)
+def simulate_month(
+    cfg: PlayBalanceConfig,
+    benchmarks: Mapping[str, float],
+    home_team: Team,
+    away_team: Team,
+    *,
+    rng_seed: int | None = None,
+) -> SimulationResult:
+    return simulate_games(cfg, benchmarks, 30, home_team, away_team, rng_seed=rng_seed)
 
 
-def simulate_season(cfg: PlayBalanceConfig, benchmarks: Mapping[str, float], *, games: int = 162, rng_seed: int | None = None) -> SimulationResult:
-    return simulate_games(cfg, benchmarks, games, rng_seed=rng_seed)
+def simulate_season(
+    cfg: PlayBalanceConfig,
+    benchmarks: Mapping[str, float],
+    home_team: Team,
+    away_team: Team,
+    *,
+    games: int = 162,
+    rng_seed: int | None = None,
+) -> SimulationResult:
+    return simulate_games(cfg, benchmarks, games, home_team, away_team, rng_seed=rng_seed)
 
 
 # ---------------------------------------------------------------------------
@@ -194,7 +293,27 @@ def main(argv: list[str] | None = None) -> int:
 
     cfg = load_config()
     benchmarks = load_benchmarks()
-    stats = simulate_games(cfg, benchmarks, args.games, rng_seed=args.seed)
+    players = load_players("data/players.csv")
+
+    home_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
+    away_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
+    if not home_lineup:
+        home_lineup = [p for p in players.values() if not p.is_pitcher][:9]
+    if not away_lineup:
+        away_lineup = [p for p in players.values() if not p.is_pitcher][9:18]
+    home_pitchers = load_pitching_staff("data/rosters/ABU.csv", players)
+    away_pitchers = load_pitching_staff("data/rosters/BCH.csv", players)
+    if not home_pitchers:
+        home_pitchers = [p for p in players.values() if p.is_pitcher][:5]
+    if not away_pitchers:
+        away_pitchers = [p for p in players.values() if p.is_pitcher][5:10]
+
+    home_team = Team(home_lineup, home_pitchers)
+    away_team = Team(away_lineup, away_pitchers)
+
+    stats = simulate_games(
+        cfg, benchmarks, args.games, home_team, away_team, rng_seed=args.seed
+    )
 
     pa = stats.pa or 1
     k_pct = stats.k / pa
@@ -224,5 +343,6 @@ __all__ = [
     "simulate_week",
     "simulate_month",
     "simulate_season",
+    "Team",
     "main",
 ]
