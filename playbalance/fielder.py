@@ -46,6 +46,7 @@ def reaction_delay(cfg: PlayBalanceConfig, position: str, fa: float) -> float:
     ability generally reduces the delay (negative percentage).
     """
 
+    fa = max(0.0, fa)
     key = _pos_key(position)
     base = getattr(cfg, f"delayBase{key}", 0.0)
     pct = getattr(cfg, f"delayFAPct{key}", 0.0)
@@ -72,6 +73,9 @@ def catch_chance(
     throws within :attr:`automaticCatchDist` are always caught.
     """
 
+    fa = max(0.0, fa)
+    air_time = max(0.0, air_time)
+    distance = max(0.0, distance)
     if distance <= getattr(cfg, "automaticCatchDist", 0.0):
         return 1.0
 
@@ -96,6 +100,7 @@ def catch_chance(
 def max_throw_distance(cfg: PlayBalanceConfig, arm_strength: float) -> float:
     """Return the maximum throwing distance in feet."""
 
+    arm_strength = max(0.0, arm_strength)
     return cfg.maxThrowDistBase + (cfg.maxThrowDistASPct * arm_strength) / 100.0
 
 
@@ -107,6 +112,8 @@ def throw_speed(
 ) -> float:
     """Return the velocity in mph for a throw to ``distance`` feet."""
 
+    distance = max(0.0, distance)
+    arm_strength = max(0.0, arm_strength)
     key = "OF" if outfielder else "IF"
     base = getattr(cfg, f"throwSpeed{key}Base", 0.0)
     dist_pct = getattr(cfg, f"throwSpeed{key}DistPct", 0.0)
@@ -121,6 +128,7 @@ def good_throw_chance(
 ) -> float:
     """Return probability of making an accurate throw."""
 
+    fa = max(0.0, fa)
     chance = cfg.goodThrowBase + (cfg.goodThrowFAPct * fa) / 100.0
     adj_key = f"goodThrowChance{_pos_key(position)}"
     chance += getattr(cfg, adj_key, 0.0)
@@ -139,6 +147,7 @@ def wild_pitch_catch_chance(
 ) -> float:
     """Return probability the catcher snags a wild pitch."""
 
+    fa = max(0.0, fa)
     chance = cfg.wildCatchChanceBase + (cfg.wildCatchChanceFAPct * fa) / 100.0
     if cross_body:
         chance += cfg.wildCatchChanceOppMod
@@ -155,6 +164,7 @@ def should_chase_ball(cfg: PlayBalanceConfig, position: str, projected_dist: flo
     plate at the interception point (for outfielders).
     """
 
+    projected_dist = max(0.0, projected_dist)
     if position in {"LF", "CF", "RF"}:
         return projected_dist >= cfg.outfieldMinChaseDist
     if position == "P":
