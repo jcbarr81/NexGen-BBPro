@@ -115,9 +115,17 @@ def select_pitch(
     # Choose pitch with maximum adjusted rating.
     pitch = max(adjusted, key=adjusted.get)
 
-    # Determine objective weights and choose the strongest objective.
+    # Determine objective via weighted randomness using count specific weights.
     weights = objective_weights_by_count(cfg, balls, strikes)
-    objective = max(weights, key=weights.get)
+    total = sum(weights.values())
+    roll = rng.random() * total if total > 0 else 0.0
+    objective = "attack"
+    cumulative = 0.0
+    for obj, weight in weights.items():
+        cumulative += weight
+        if roll <= cumulative:
+            objective = obj
+            break
 
     location_map = {"attack": "zone", "chase": "edge", "waste": "ball"}
     location = location_map.get(objective, "zone")

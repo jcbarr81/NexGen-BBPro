@@ -30,6 +30,14 @@ def test_pitch_rating_variation():
     assert low == pytest.approx(45.0)
 
 
+def test_pitch_rating_variation_clamped():
+    cfg = SimpleNamespace(pitchRatingVariationPct=10)
+    high = pitch_rating_variation(cfg, 100, ConstRandom(1.0))
+    low = pitch_rating_variation(cfg, 0, ConstRandom(0.0))
+    assert high == 100.0
+    assert low == 0.0
+
+
 def test_selection_adjustment_changes_choice():
     cfg = SimpleNamespace(pitchRatingVariationPct=0, pitchSelectionAdjust={"fb": 15})
     pitch_ratings = {"fb": 50, "sl": 60}
@@ -47,6 +55,18 @@ def test_objective_weights_determine_location():
     assert weights["chase"] == 2.0
     pitch, loc = select_pitch(cfg, {"fb": 50}, balls=0, strikes=0, rng=ConstRandom(0.5))
     assert pitch == "fb"
+    assert loc == "edge"
+
+
+def test_objective_weights_random_choice():
+    cfg = SimpleNamespace(
+        pitchRatingVariationPct=0,
+        pitchObjectiveWeights={"0-0": {"attack": 1.0, "chase": 1.0}},
+    )
+    pitch_ratings = {"fb": 50}
+    pitch, loc = select_pitch(cfg, pitch_ratings, balls=0, strikes=0, rng=ConstRandom(0.0))
+    assert loc == "zone"
+    pitch, loc = select_pitch(cfg, pitch_ratings, balls=0, strikes=0, rng=ConstRandom(0.9))
     assert loc == "edge"
 
 
