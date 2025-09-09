@@ -2530,12 +2530,45 @@ def save_boxscore_html(game_type: str, html: str, game_id: str | None = None) ->
     return str(path)
 
 
+def simulate_game(
+    home: TeamState,
+    away: TeamState,
+    config: PlayBalanceConfig,
+    rng: random.Random | None = None,
+    *,
+    innings: int = 9,
+) -> GameSimulation:
+    """Run a full game simulation and return the engine.
+
+    This convenience wrapper composes the various subsystems into a
+    pitch-by-pitch loop.  The provided ``home`` and ``away`` team states
+    are mutated with the results and the resulting :class:`GameSimulation`
+    instance is returned for further inspection.
+
+    Parameters
+    ----------
+    home, away:
+        Team states representing each club.
+    config:
+        Play balance configuration controlling behaviour of the simulation.
+    rng:
+        Optional random number generator to use for deterministic tests.
+    innings:
+        Number of innings to play.  Games may extend if tied.
+    """
+
+    sim = GameSimulation(home, away, config, rng)
+    sim.simulate_game(innings=innings)
+    return sim
+
+
 __all__ = [
     "BatterState",
     "PitcherState",
     "FieldingState",
     "TeamState",
     "GameSimulation",
+    "simulate_game",
     "generate_boxscore",
     "render_boxscore_html",
     "save_boxscore_html",

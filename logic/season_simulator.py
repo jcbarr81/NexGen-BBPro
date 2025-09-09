@@ -160,4 +160,45 @@ class SeasonSimulator:
         return home.runs, away.runs, html
 
 
-__all__ = ["SeasonSimulator"]
+def simulate_day(sim: "SeasonSimulator") -> None:
+    """Simulate games for a single scheduled day.
+
+    The provided :class:`SeasonSimulator` instance maintains its internal
+    state, allowing repeated calls to advance the schedule incrementally.
+    """
+
+    sim.simulate_next_day()
+
+
+def simulate_week(sim: "SeasonSimulator") -> None:
+    """Simulate up to seven days of games."""
+
+    for _ in range(7):
+        if sim._index >= len(sim.dates):
+            break
+        sim.simulate_next_day()
+
+
+def simulate_month(sim: "SeasonSimulator") -> None:
+    """Simulate up to thirty days of games."""
+
+    for _ in range(30):
+        if sim._index >= len(sim.dates):
+            break
+        sim.simulate_next_day()
+
+
+def simulate_season(sim: "SeasonSimulator") -> None:
+    """Simulate the remaining days on the schedule."""
+
+    while sim._index < len(sim.dates):
+        sim.simulate_next_day()
+
+
+__all__ = [
+    "SeasonSimulator",
+    "simulate_day",
+    "simulate_week",
+    "simulate_month",
+    "simulate_season",
+]
