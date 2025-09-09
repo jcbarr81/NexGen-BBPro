@@ -69,6 +69,7 @@ from .fielder import (
     wild_pitch_catch_chance,
     should_chase_ball,
 )
+from .baserunning import lead_level, pickoff_scare  # noqa: F401
 from .offense import (  # noqa: F401
     steal_chance,
     maybe_attempt_steal,
@@ -152,6 +153,8 @@ __all__ = [
     "pitch_around_chance",
     "outfielder_position",
     "fielder_template",
+    "lead_level",
+    "pickoff_scare",
     "steal_chance",
     "maybe_attempt_steal",
     "hit_and_run_chance",
