@@ -106,6 +106,9 @@ def test_pitch_objective_weights():
         pitchObj00CountEstablishWeight=1,
         pitchObj00CountOutsideWeight=2,
         pitchObj00CountBestWeight=3,
+        pitchObj00CountPlusWeight=0,
+        pitchObj00CountBestCenterWeight=0,
+        pitchObj00CountFastCenterWeight=0,
     )
     # Three calls using deterministic floats to select each objective based on
     # their relative weight: 1/6 establish, 2/6 outside, 3/6 best.
@@ -127,6 +130,7 @@ def test_pitch_variation_cached_per_game():
         pitchRatVariationFaces=6,
         pitchRatVariationBase=0,
         nonEstablishedPitchTypeAdjust=0,
+        primaryPitchTypeAdjust=0,
     )
     # Provide enough integers for two games. If variation was re-rolled every
     # pitch the RNG would be exhausted before the second game begins.
