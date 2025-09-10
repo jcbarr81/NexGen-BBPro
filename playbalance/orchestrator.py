@@ -65,6 +65,33 @@ class Team:
     pitchers: list[Player]
 
 
+def _load_default_teams() -> tuple[Team, Team]:
+    """Load example teams from the application's CSV data.
+
+    The function pulls player ratings, lineups and pitching staffs from the
+    ``data`` directory so that simulations use the real application rosters by
+    default.  Minimal fallbacks are applied when files are missing to keep the
+    helpers usable in tests.
+    """
+
+    players = load_players("data/players.csv")
+    home_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
+    away_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
+    if not home_lineup:
+        home_lineup = [p for p in players.values() if not p.is_pitcher][:9]
+    if not away_lineup:
+        away_lineup = [p for p in players.values() if not p.is_pitcher][9:18]
+
+    home_pitchers = load_pitching_staff("data/rosters/ABU.csv", players)
+    away_pitchers = load_pitching_staff("data/rosters/BCH.csv", players)
+    if not home_pitchers:
+        home_pitchers = [p for p in players.values() if p.is_pitcher][:5]
+    if not away_pitchers:
+        away_pitchers = [p for p in players.values() if p.is_pitcher][5:10]
+
+    return Team(home_lineup, home_pitchers), Team(away_lineup, away_pitchers)
+
+
 # ---------------------------------------------------------------------------
 # Core simulation helpers
 # ---------------------------------------------------------------------------
@@ -216,11 +243,14 @@ def simulate_games(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
     games: int,
-    home_team: Team,
-    away_team: Team,
+    home_team: Team | None = None,
+    away_team: Team | None = None,
     rng_seed: int | None = None,
 ) -> SimulationResult:
     """Simulate ``games`` games and return aggregated statistics."""
+
+    if home_team is None or away_team is None:
+        home_team, away_team = _load_default_teams()
 
     rng = random.Random(rng_seed)
     results = []
@@ -238,8 +268,8 @@ def simulate_games(
 def simulate_day(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
-    home_team: Team,
-    away_team: Team,
+    home_team: Team | None = None,
+    away_team: Team | None = None,
     *,
     rng_seed: int | None = None,
 ) -> SimulationResult:
@@ -249,8 +279,8 @@ def simulate_day(
 def simulate_week(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
-    home_team: Team,
-    away_team: Team,
+    home_team: Team | None = None,
+    away_team: Team | None = None,
     *,
     rng_seed: int | None = None,
 ) -> SimulationResult:
@@ -260,8 +290,8 @@ def simulate_week(
 def simulate_month(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
-    home_team: Team,
-    away_team: Team,
+    home_team: Team | None = None,
+    away_team: Team | None = None,
     *,
     rng_seed: int | None = None,
 ) -> SimulationResult:
@@ -271,8 +301,8 @@ def simulate_month(
 def simulate_season(
     cfg: PlayBalanceConfig,
     benchmarks: Mapping[str, float],
-    home_team: Team,
-    away_team: Team,
+    home_team: Team | None = None,
+    away_team: Team | None = None,
     *,
     games: int = 162,
     rng_seed: int | None = None,
@@ -293,23 +323,7 @@ def main(argv: list[str] | None = None) -> int:
 
     cfg = load_config()
     benchmarks = load_benchmarks()
-    players = load_players("data/players.csv")
-
-    home_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
-    away_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
-    if not home_lineup:
-        home_lineup = [p for p in players.values() if not p.is_pitcher][:9]
-    if not away_lineup:
-        away_lineup = [p for p in players.values() if not p.is_pitcher][9:18]
-    home_pitchers = load_pitching_staff("data/rosters/ABU.csv", players)
-    away_pitchers = load_pitching_staff("data/rosters/BCH.csv", players)
-    if not home_pitchers:
-        home_pitchers = [p for p in players.values() if p.is_pitcher][:5]
-    if not away_pitchers:
-        away_pitchers = [p for p in players.values() if p.is_pitcher][5:10]
-
-    home_team = Team(home_lineup, home_pitchers)
-    away_team = Team(away_lineup, away_pitchers)
+    home_team, away_team = _load_default_teams()
 
     stats = simulate_games(
         cfg, benchmarks, args.games, home_team, away_team, rng_seed=args.seed
