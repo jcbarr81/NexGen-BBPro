@@ -40,6 +40,8 @@ class SimulationResult:
     pitches: int = 0
 
     def as_dict(self) -> Dict[str, int]:  # pragma: no cover - convenience
+        # Convert dataclass fields into a plain dictionary.  The method is
+        # excluded from coverage as it is a simple convenience wrapper.
         return {
             "pa": self.pa,
             "k": self.k,
@@ -112,7 +114,11 @@ def _simulate_plate_appearance(
     while the ultimate result is determined by league-average probabilities.
     """
 
+    # Derive a typical pitch count for the appearance to exercise pitcher/batter
+    # helpers even though the ultimate outcome is probability driven.
     pitches_per_pa = max(1, int(round(league_average(benchmarks, "pitches_per_pa", 4))))
+    # Ensure configuration holds a dictionary for objective weights so lookups
+    # within the AI helpers do not fail.
     if not isinstance(getattr(cfg, "pitchObjectiveWeights", {}), dict):
         cfg.pitchObjectiveWeights = {}
     grid = StrikeZoneGrid()

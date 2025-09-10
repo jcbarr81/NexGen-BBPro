@@ -1,8 +1,8 @@
 """League benchmark ingestion utilities.
 
-The project contains a CSV of aggregated MLB statistics that serve as target
-values for tuning the simulation. This module loads the file into a
-``dict`` for convenient lookups.
+The project contains a CSV of aggregated MLB statistics that serve as
+target values for tuning the simulation.  This module loads that file into a
+plain ``dict`` for convenient lookups used throughout the engine.
 """
 from __future__ import annotations
 
@@ -28,6 +28,8 @@ def load_benchmarks(path: str | Path = BENCHMARK_CSV) -> Dict[str, float]:
         reader = csv.DictReader(fh)
         for row in reader:
             try:
+                # Store each metric under its key.  Invalid rows are ignored to
+                # keep the loader resilient to partial data sets.
                 benchmarks[row["metric_key"]] = float(row["value"])
             except (KeyError, ValueError):
                 continue
@@ -76,12 +78,13 @@ def get_park_factor(
         key = f"{park.lower()}_park_factor_{metric}"
         if key in benchmarks:
             return benchmarks[key]
+    # Fall back to league-wide factor or provided default.
     return benchmarks.get(f"park_factor_{metric}", default)
 
 
 def weather_profile(benchmarks: Dict[str, float]) -> Dict[str, float]:
     """Return typical weather conditions from the benchmark data."""
-
+    # Only the mean values are exposed as they are sufficient for most tests.
     return {
         "temperature": benchmarks.get("weather_temp_mean", 72.0),
         "wind_speed": benchmarks.get("wind_speed_mean", 0.0),
@@ -90,13 +93,13 @@ def weather_profile(benchmarks: Dict[str, float]) -> Dict[str, float]:
 
 def league_averages(benchmarks: Dict[str, float]) -> Dict[str, float]:
     """Return only metrics prefixed with ``avg_`` from ``benchmarks``."""
-
+    # Strip the common ``avg_`` prefix so callers can reference metrics by name.
     return {k[4:]: v for k, v in benchmarks.items() if k.startswith("avg_")}
 
 
 def league_average(benchmarks: Dict[str, float], metric: str, default: float = 0.0) -> float:
     """Return league average for ``metric`` or ``default`` when missing."""
-
+    # Thin wrapper around ``benchmarks.get`` that adds the ``avg_`` prefix.
     return benchmarks.get(f"avg_{metric}", default)
 
 

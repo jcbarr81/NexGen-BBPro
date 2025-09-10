@@ -21,7 +21,9 @@ class Player:
 
 def _to_rating(value: str | float) -> float:
     """Convert ``value`` to a 0-100 rating."""
-
+    # The CSV may contain empty strings or malformed data.  Converting via
+    # ``float`` inside a ``try`` block normalises numeric input while falling
+    # back to a neutral rating when conversion fails.
     try:
         return clamp_rating(float(value))
     except (TypeError, ValueError):
@@ -44,11 +46,14 @@ def load_players(path: str | Path) -> Dict[str, Player]:
         for row in reader:
             pid = row.get("player_id")
             if not pid:
+                # Skip rows without a primary identifier.
                 continue
             is_pitcher = row.get("is_pitcher", "0") == "1"
+            # Combine first and last name fields; ``strip`` handles missing parts.
             name = f"{row.get('first_name','')} {row.get('last_name','')}".strip()
             ratings: Dict[str, float] = {}
             if is_pitcher:
+                # Map short rating keys to internal names used by the engine.
                 ratings["fastball"] = _to_rating(row.get("fb", 50))
                 ratings["slider"] = _to_rating(row.get("sl", 50))
                 ratings["control"] = _to_rating(row.get("control", 50))
@@ -70,6 +75,7 @@ def load_lineup(path: str | Path, players: Mapping[str, Player]) -> list[Player]
         for row in reader:
             pid = row.get("player_id")
             if pid and pid in players:
+                # Preserve the order from the CSV which defines the batting order.
                 lineup.append(players[pid])
     return lineup
 
@@ -86,6 +92,7 @@ def load_pitching_staff(path: str | Path, players: Mapping[str, Player]) -> list
                 continue
             pid = row[0]
             if pid in players and players[pid].is_pitcher:
+                # Only include entries that correspond to loaded pitchers.
                 staff.append(players[pid])
     return staff
 

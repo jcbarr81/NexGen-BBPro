@@ -13,6 +13,8 @@ def lead_level(cfg: PlayBalanceConfig, runner_sp: float) -> int:
     ``cfg.longLeadSpeed``.
     """
 
+    # Only particularly fast runners take an aggressive lead which is modelled
+    # as ``2``. Everyone else stays with the conservative ``0`` lead.
     return 2 if runner_sp >= getattr(cfg, "longLeadSpeed", 0) else 0
 
 
@@ -32,6 +34,7 @@ def pickoff_scare(
     if rng is None:
         rng = Random()
     if lead > 0 and runner_sp <= getattr(cfg, "pickoffScareSpeed", 0):
+        # A near-miss pickoff may scare slower runners back to a short lead.
         if rng.random() < 0.1:
             return 0
     return lead

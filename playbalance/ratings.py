@@ -12,13 +12,17 @@ from typing import Any
 
 def clamp_rating(value: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
     """Clamp ``value`` between ``minimum`` and ``maximum``."""
-
+    # Ratings throughout the engine are expressed on a ``0-100`` scale.  This
+    # helper centralises clamping so callers do not need to repeat boundary
+    # checks.  ``max`` applies the lower bound while ``min`` enforces the upper.
     return max(minimum, min(maximum, value))
 
 
 def _weights(cfg: Any | None, defaults: tuple[float, ...], names: tuple[str, ...]) -> tuple[float, ...]:
     """Return tuple of weights pulling values from ``cfg`` when available."""
-
+    # When configuration is ``None`` we simply fall back to ``defaults``.  The
+    # ``zip`` allows us to iterate over pairs of attribute names and default
+    # values, producing a tuple of weights in the original order.
     if not cfg:
         return defaults
     return tuple(getattr(cfg, name, default) for name, default in zip(names, defaults))
@@ -41,6 +45,8 @@ def combine_offense(
         (0.5, 0.4, 0.1),
         ("offenseContactWt", "offensePowerWt", "offenseDisciplineWt"),
     )
+    # Weighted sum of the component ratings followed by clamping to the
+    # standard ``0-100`` range.
     rating = (contact * w_contact) + (power * w_power) + (discipline * w_disc)
     return clamp_rating(rating)
 
@@ -57,6 +63,7 @@ def combine_slugging(power: float, discipline: float, cfg: Any | None = None) ->
         (0.8, 0.2),
         ("slugPowerWt", "slugDisciplineWt"),
     )
+    # Emphasise power by default, mirroring slugging's focus on extra bases.
     rating = (power * w_power) + (discipline * w_disc)
     return clamp_rating(rating)
 
@@ -78,19 +85,23 @@ def combine_defense(
         (0.6, 0.3, 0.1),
         ("defenseFieldingWt", "defenseArmWt", "defenseRangeWt"),
     )
+    # Fielding ability has the largest impact with arm strength and range
+    # contributing smaller portions.
     rating = (fielding * w_field) + (arm * w_arm) + (range_ * w_range)
     return clamp_rating(rating)
 
 
 def rating_to_pct(value: float) -> float:
     """Convert a ``0``-``100`` rating to a ``0.0``–``1.0`` percentage."""
-
+    # Clamping guards against values outside the rating scale before converting
+    # to a ``0-1`` fraction.
     return clamp_rating(value) / 100.0
 
 
 def pct_to_rating(value: float) -> float:
     """Convert a ``0.0``–``1.0`` percentage back to a ``0``-``100`` rating."""
-
+    # The inverse of :func:`rating_to_pct`, expanding the fraction and clamping
+    # to the rating range.
     return clamp_rating(value * 100.0)
 
 

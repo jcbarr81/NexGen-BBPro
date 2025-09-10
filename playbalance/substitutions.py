@@ -56,6 +56,7 @@ def pinch_hit(team: Team, index: int, cfg=None) -> PlayerState | None:
         return None
     current = team.lineup[index]
     best = max(team.bench, key=lambda p: _off_rating(p, cfg))
+    # Only swap when the bench hitter is strictly better.
     if _off_rating(best, cfg) <= _off_rating(current, cfg):
         return None
     team.bench.remove(best)
@@ -70,6 +71,7 @@ def pinch_run(team: Team, runner: PlayerState) -> PlayerState | None:
     if not team.bench:
         return None
     best = max(team.bench, key=lambda p: p.ratings.get("speed", 0))
+    # Insert the faster runner only when they improve the lineup.
     if best.ratings.get("speed", 0) <= runner.ratings.get("speed", 0):
         return None
     team.bench.remove(best)
