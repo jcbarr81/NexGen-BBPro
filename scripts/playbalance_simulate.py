@@ -19,7 +19,7 @@ import argparse
 import json
 from pathlib import Path
 
-from playbalance.benchmarks import load_benchmarks
+from playbalance.benchmarks import load_benchmarks, league_average
 from playbalance.config import load_config
 from playbalance.orchestrator import (
     simulate_day,
@@ -73,6 +73,36 @@ def main(argv: list[str] | None = None) -> int:
     output_path = args.output or Path(f"playbalance_{args.period}_results.json")
     output_path.write_text(json.dumps(data, indent=2))
     print(f"Saved results to {output_path}")
+
+    if args.period == "season":
+        pa = result.pa or 1
+        k_pct = result.k / pa
+        bb_pct = result.bb / pa
+        babip = result.hits / result.bip if result.bip else 0.0
+        sba_rate = result.sb_attempts / pa
+        sb_pct = result.sb_success / result.sb_attempts if result.sb_attempts else 0.0
+
+        print("Simulated Games:", args.games)
+        print(
+            f"K%:  {k_pct:.3f} "
+            f"(MLB {league_average(benchmarks, 'k_pct'):.3f})"
+        )
+        print(
+            f"BB%: {bb_pct:.3f} "
+            f"(MLB {league_average(benchmarks, 'bb_pct'):.3f})"
+        )
+        print(
+            f"BABIP: {babip:.3f} "
+            f"(MLB {league_average(benchmarks, 'babip'):.3f})"
+        )
+        print(
+            "SB Attempt/PA: "
+            f"{sba_rate:.3f} (MLB {league_average(benchmarks, 'sba_per_pa'):.3f})"
+        )
+        print(
+            f"SB%: {sb_pct:.3f} "
+            f"(MLB {league_average(benchmarks, 'sb_pct'):.3f})"
+        )
     return 0
 
 
