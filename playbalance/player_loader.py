@@ -66,34 +66,56 @@ def load_players(path: str | Path) -> Dict[str, Player]:
 
 
 def load_lineup(path: str | Path, players: Mapping[str, Player]) -> list[Player]:
-    """Return batting order from ``path`` using ``players`` mapping."""
+    """Return batting order from ``path`` using ``players`` mapping.
+
+    The function attempts to read a CSV file describing the batting order.  A
+    missing file should not be treated as a fatal error for simulations, so a
+    ``FileNotFoundError`` is caught and results in an empty lineup.  Callers can
+    then fall back to a default ordering.
+    """
 
     path = Path(path)
     lineup: list[Player] = []
-    with path.open(newline="") as fh:
-        reader = csv.DictReader(fh)
-        for row in reader:
-            pid = row.get("player_id")
-            if pid and pid in players:
-                # Preserve the order from the CSV which defines the batting order.
-                lineup.append(players[pid])
+    try:
+        with path.open(newline="") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                pid = row.get("player_id")
+                if pid and pid in players:
+                    # Preserve the order from the CSV which defines the batting
+                    # order.
+                    lineup.append(players[pid])
+    except FileNotFoundError:
+        # Allow the caller to handle a missing file gracefully by returning an
+        # empty lineup.
+        return []
     return lineup
 
 
 def load_pitching_staff(path: str | Path, players: Mapping[str, Player]) -> list[Player]:
-    """Return pitching staff from roster ``path`` using ``players`` mapping."""
+    """Return pitching staff from roster ``path`` using ``players`` mapping.
+
+    Similar to :func:`load_lineup`, this helper swallows ``FileNotFoundError``
+    and returns an empty list so that higher level utilities can fall back to a
+    default staff when roster data is unavailable.
+    """
 
     path = Path(path)
     staff: list[Player] = []
-    with path.open(newline="") as fh:
-        reader = csv.reader(fh)
-        for row in reader:
-            if not row:
-                continue
-            pid = row[0]
-            if pid in players and players[pid].is_pitcher:
-                # Only include entries that correspond to loaded pitchers.
-                staff.append(players[pid])
+    try:
+        with path.open(newline="") as fh:
+            reader = csv.reader(fh)
+            for row in reader:
+                if not row:
+                    continue
+                pid = row[0]
+                if pid in players and players[pid].is_pitcher:
+                    # Only include entries that correspond to loaded pitchers.
+                    staff.append(players[pid])
+    except FileNotFoundError:
+        # Missing roster data results in an empty staff which callers may handle
+        # with a fallback.
+        return []
     return staff
 
 
