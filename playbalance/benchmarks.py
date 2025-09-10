@@ -11,7 +11,8 @@ from typing import Dict
 import csv
 
 
-BENCHMARK_CSV = Path("data/MLB_avg/mlb_league_benchmarks_2025_filled.csv")
+BASE_DIR = Path(__file__).resolve().parents[1]
+BENCHMARK_CSV = BASE_DIR / "data" / "MLB_avg" / "mlb_league_benchmarks_2025_filled.csv"
 
 
 def load_benchmarks(path: str | Path = BENCHMARK_CSV) -> Dict[str, float]:
@@ -23,6 +24,8 @@ def load_benchmarks(path: str | Path = BENCHMARK_CSV) -> Dict[str, float]:
         CSV file with two columns: ``metric_key`` and ``value``.
     """
     path = Path(path)
+    if not path.is_absolute():
+        path = BASE_DIR / path
     benchmarks: Dict[str, float] = {}
     with path.open(newline="") as fh:
         reader = csv.DictReader(fh)
