@@ -29,6 +29,13 @@ from logic.season_simulator import SeasonSimulator
 from logic.schedule_generator import generate_mlb_schedule, save_schedule
 from logic.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
+from playbalance.config import load_config as load_pb_config
+from playbalance.benchmarks import load_benchmarks as load_pb_benchmarks
+from playbalance.orchestrator import (
+    simulate_day as pb_simulate_day,
+    simulate_week as pb_simulate_week,
+    simulate_month as pb_simulate_month,
+)
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -85,6 +92,13 @@ class SeasonProgressWindow(QDialog):
             "schedule": False,
         }
         self._load_progress()
+
+        try:
+            self._pb_cfg = load_pb_config()
+            self._pb_benchmarks = load_pb_benchmarks()
+        except Exception:  # pragma: no cover - configuration optional
+            self._pb_cfg = None
+            self._pb_benchmarks = {}
 
         layout = QVBoxLayout(self)
 
@@ -298,6 +312,15 @@ class SeasonProgressWindow(QDialog):
             f"Simulated a regular season day; {remaining} "
             "days until Midseason"
         )
+        if self._pb_cfg is not None:
+            try:
+                stats = pb_simulate_day(self._pb_cfg, self._pb_benchmarks)
+                pa = stats.pa or 1
+                k_pct = stats.k / pa
+                bb_pct = stats.bb / pa
+                message += f" (K% {k_pct:.3f}, BB% {bb_pct:.3f})"
+            except Exception:  # pragma: no cover - best effort
+                pass
         self.notes_label.setText(message)
         log_news_event(message)
         self._save_progress()
@@ -379,6 +402,20 @@ class SeasonProgressWindow(QDialog):
             f"Simulated {label.lower()}; {remaining} "
             "days until Midseason"
         )
+        if self._pb_cfg is not None:
+            try:
+                if days >= 30:
+                    stats = pb_simulate_month(self._pb_cfg, self._pb_benchmarks)
+                elif days >= 7:
+                    stats = pb_simulate_week(self._pb_cfg, self._pb_benchmarks)
+                else:
+                    stats = pb_simulate_day(self._pb_cfg, self._pb_benchmarks)
+                pa = stats.pa or 1
+                k_pct = stats.k / pa
+                bb_pct = stats.bb / pa
+                message += f" (K% {k_pct:.3f}, BB% {bb_pct:.3f})"
+            except Exception:  # pragma: no cover - best effort
+                pass
         self.notes_label.setText(message)
         log_news_event(message)
         self._save_progress()
