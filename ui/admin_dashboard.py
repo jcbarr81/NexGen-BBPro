@@ -640,7 +640,7 @@ class MainWindow(QMainWindow):
                 pid = row.get("player_id", "").strip()
                 players[pid] = {
                     "primary": row.get("primary_position", "").strip(),
-                    "others": row.get("other_positions", "").split("/")
+                    "others": row.get("other_positions", "").split("|")
                     if row.get("other_positions")
                     else [],
                     "is_pitcher": row.get("is_pitcher") == "1",

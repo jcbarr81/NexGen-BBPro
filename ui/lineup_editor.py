@@ -210,7 +210,11 @@ class LineupEditor(QDialog):
                     player_id = str(row.get("player_id", "")).strip()
                     name = f"{row.get('first_name', '').strip()} {row.get('last_name', '').strip()}"
                     primary = row.get("primary_position", "").strip()
-                    others = row.get("other_positions", "").strip().split("/") if row.get("other_positions") else []
+                    others = (
+                        row.get("other_positions", "").strip().split("|")
+                        if row.get("other_positions")
+                        else []
+                    )
                     is_pitcher = row.get("is_pitcher") == "1"
                     players[player_id] = {
                         "name": f"{name} ({primary})",
