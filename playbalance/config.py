@@ -58,16 +58,35 @@ class PlayBalanceConfig:
 
 
 def load_config(
-    pbini_path: str | Path = Path("logic/PBINI.txt"),
-    overrides_path: str | Path = Path("data/playbalance_overrides.json"),
+    pbini_path: str | Path | None = None,
+    overrides_path: str | Path | None = None,
 ) -> PlayBalanceConfig:
-    """Load configuration from ``pbini_path`` and optional JSON overrides."""
+    """Load configuration from ``pbini_path`` and optional JSON overrides.
+
+    Paths default to locations relative to the project root allowing the
+    configuration to be loaded even when the current working directory is
+    different from the repository location.
+    """
+
+    base_dir = Path(__file__).resolve().parents[1]
+    if pbini_path is None:
+        pbini_path = base_dir / "logic" / "PBINI.txt"
+    else:
+        pbini_path = Path(pbini_path)
+        if not pbini_path.is_absolute():
+            pbini_path = base_dir / pbini_path
 
     sections = load_pbini(pbini_path)
     # Preserve the original keys to ensure coverage after overrides are merged.
     pbini_keys = {sect: set(vals.keys()) for sect, vals in sections.items()}
 
-    overrides_path = Path(overrides_path)
+    if overrides_path is None:
+        overrides_path = base_dir / "data" / "playbalance_overrides.json"
+    else:
+        overrides_path = Path(overrides_path)
+        if not overrides_path.is_absolute():
+            overrides_path = base_dir / overrides_path
+
     if overrides_path.exists():
         try:
             with overrides_path.open("r", encoding="utf-8") as fh:
