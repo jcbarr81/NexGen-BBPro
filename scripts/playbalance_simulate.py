@@ -18,6 +18,10 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
+
+# Allow running the script without installing the package
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from playbalance.benchmarks import load_benchmarks, league_average
 from playbalance.config import load_config
