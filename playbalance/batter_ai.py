@@ -35,6 +35,9 @@ class StrikeZoneGrid:
     def zone_at(self, x: float, y: float) -> tuple[int, int]:
         """Return ``(row, col)`` for a pitch located at ``(x, y)``."""
 
+        # Convert the normalised ``x``/``y`` coordinates into grid indices.
+        # ``int`` floors the value which mimics dividing the zone into equal
+        # sized rectangles.  ``max``/``min`` clamp out-of-range coordinates.
         col = min(self.width - 1, max(0, int(x * self.width)))
         row = min(self.height - 1, max(0, int(y * self.height)))
         return row, col
@@ -61,9 +64,12 @@ def look_for_zone(
 
     grid = grid or StrikeZoneGrid()
     if batter_dis >= getattr(cfg, "lookForHighDisThresh", 60):
+        # Highly disciplined batters look middle regardless of count.
         return grid.zone_at(0.5, 0.5)
     if balls - strikes < 0:
+        # Behind in the count the batter protects by looking lower.
         return grid.zone_at(0.5, 0.8)
+    # Default is to sit middle-middle.
     return grid.zone_at(0.5, 0.5)
 
 
@@ -85,7 +91,9 @@ def pitch_identification_chance(
     rating_factor = getattr(cfg, "pitchIdRatingFactor", 0) / 100.0
     count_factor = getattr(cfg, "pitchIdCountFactor", 0) / 100.0
     chance = base
+    # Better pitch identification ratings increase success linearly.
     chance += (batter_pi / 100.0) * rating_factor
+    # Being ahead in the count affords the batter more selectivity.
     chance += (balls - strikes) * count_factor / 10.0
     return clamp01(chance)
 
@@ -113,6 +121,7 @@ def swing_timing(
     base = getattr(cfg, "swingTimeBase", 0.0)
     count_adj = getattr(cfg, f"swingTime{balls}{strikes}Count", 0.0)
     speed_factor = getattr(cfg, "swingTimeSpeedFactor", 0.0)
+    # Faster batters require less time to swing.
     timing = base + count_adj - speed_factor * (batter_sp / 100.0)
     return timing
 
@@ -126,6 +135,7 @@ def adjust_swing_timing(
     """Return swing ``timing`` adjusted by discipline."""
 
     factor = getattr(cfg, "swingAdjustDisciplineFactor", 0.0)
+    # Less disciplined batters are late more often; shift timing accordingly.
     return timing + factor * (50.0 - batter_dis) / 100.0
 
 
@@ -148,6 +158,8 @@ def discipline_chance(
     ball_factor = getattr(cfg, "disciplineBallFactor", 0) / 100.0
     strike_factor = getattr(cfg, "disciplineStrikeFactor", 0) / 100.0
     chance = base
+    # Increase chance to take borderline pitches with higher discipline ratings
+    # or when ahead in the count.
     chance += (batter_dis / 100.0) * rating_factor
     chance += balls * ball_factor
     chance -= strikes * strike_factor

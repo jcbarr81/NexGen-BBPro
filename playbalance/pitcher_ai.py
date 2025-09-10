@@ -39,7 +39,9 @@ def pitch_rating_variation(
     pct = getattr(cfg, "pitchRatingVariationPct", 0) / 100.0
     if pct <= 0:
         return rating
-    # Random number in ``[-pct, pct]``.
+    # Random number in ``[-pct, pct]`` produces a symmetric spread around the
+    # original rating.  The variation is applied multiplicatively and the result
+    # is clamped to maintain the ``0-100`` rating scale.
     delta = (rng.random() * 2.0 - 1.0) * pct
     return max(0.0, min(100.0, rating * (1.0 + delta)))
 
@@ -57,9 +59,12 @@ def apply_selection_adjustments(
     ``adjustments`` may provide per-pitch additive modifiers.  Missing entries
     default to ``0``.
     """
-
     adjustments = adjustments or {}
-    return {p: max(0.0, min(100.0, r + adjustments.get(p, 0.0))) for p, r in ratings.items()}
+    # Merge the two mappings while clamping the result for each pitch type.
+    return {
+        p: max(0.0, min(100.0, r + adjustments.get(p, 0.0)))
+        for p, r in ratings.items()
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -84,6 +89,7 @@ def objective_weights_by_count(
     weights = table.get(key)
     if weights:
         return weights
+    # Default leaning towards attacking the zone when no entry is configured.
     return {"attack": 1.0, "chase": 0.5, "waste": 0.0}
 
 
@@ -123,6 +129,7 @@ def select_pitch(
     cumulative = 0.0
     for obj, weight in weights.items():
         cumulative += weight
+        # The first weight bucket exceeding the roll yields the objective.
         if roll <= cumulative:
             objective = obj
             break

@@ -29,12 +29,14 @@ def steal_chance(
     chance = getattr(cfg, count_key, 0) / 100.0
 
     if runner_sp >= getattr(cfg, "stealChanceFastThresh", 0):
+        # Speedy runners are more likely to attempt a steal.
         chance += getattr(cfg, "stealChanceFastAdjust", 0) / 100.0
 
     if pitcher_hold <= getattr(cfg, "stealChanceMedHoldThresh", 0):
         chance += getattr(cfg, "stealChanceMedHoldAdjust", 0) / 100.0
 
     if not pitcher_is_left:
+        # Right-handed pitchers give runners a better jump.
         chance += getattr(cfg, "stealChancePitcherBackAdjust", 0) / 100.0
 
     if (

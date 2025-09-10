@@ -22,10 +22,14 @@ def bunt_charge_chance(
     base_key = "chargeChanceBaseFirst" if position == "1B" else "chargeChanceBaseThird"
     base = getattr(cfg, base_key, 0) / 100.0
     chance = base
+    # Factor in the fielding ability of both the pitcher covering and the
+    # charging fielder. Values are expressed in percent-of-percent form.
     chance += (cfg.chargeChancePitcherFAPct * pitcher_fa) / 10000.0
     chance += (cfg.chargeChanceFAPct * fielder_fa) / 10000.0
+    # Sacrifice likelihood nudges the decision to charge.
     chance += (cfg.chargeChanceSacChanceAdjust + sac_chance) / 100.0
     if position == "3B":
+        # Third basemen adjust based on base-state since they have further to go.
         if runner_on_first and runner_on_second:
             chance += cfg.chargeChanceThirdOnFirstSecond / 100.0
         if runner_on_third:
@@ -39,6 +43,7 @@ def hold_runner_chance(cfg: PlayBalanceConfig, runner_speed: float) -> float:
 
     chance = cfg.holdChanceBase / 100.0
     if runner_speed >= cfg.holdChanceMinRunnerSpeed:
+        # Fast runners entice the defense to hold them on.
         chance += cfg.holdChanceAdjust / 100.0
     return clamp01(chance)
 
@@ -55,6 +60,7 @@ def pickoff_chance(
     chance += (steal_chance + cfg.pickoffChanceStealChanceAdjust) / 100.0
     chance += (lead_level * cfg.pickoffChanceLeadMult) / 100.0
     pitches = max(0, min(pitches_since, 4))
+    # The more recent the last pickoff throw, the less likely another occurs.
     chance += (4 - pitches) * cfg.pickoffChancePitchesMult / 100.0
     return clamp01(chance)
 

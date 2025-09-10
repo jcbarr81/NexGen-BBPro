@@ -64,7 +64,9 @@ def pitch_movement(
     base_h = getattr(cfg, f"{key}BreakBaseHeight", 0.0)
     range_w = getattr(cfg, f"{key}BreakRangeWidth", 0.0)
     range_h = getattr(cfg, f"{key}BreakRangeHeight", 0.0)
-
+    # Use the same random value for width and height so that a single RNG call
+    # determines the overall break.  This keeps execution deterministic for
+    # tests that provide a seeded :class:`Random` instance.
     dx = base_w + rand * range_w
     dy = base_h + rand * range_h
     return dx, dy
@@ -151,6 +153,8 @@ def bat_speed(
 
     ref_pitch = getattr(cfg, "batSpeedRefPitch", 90.0)
     pitch_pct = getattr(cfg, "batSpeedPitchSpdPct", 0.0)
+    # Adjust swing speed based on how fast the pitch is compared to the
+    # reference velocity.
     speed += (pitch_speed - ref_pitch) * pitch_pct
 
     scale = {
