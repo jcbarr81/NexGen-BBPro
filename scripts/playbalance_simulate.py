@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from playbalance.benchmarks import load_benchmarks, league_average
 from logic.schedule_generator import generate_mlb_schedule
-from logic.season_simulator import SeasonSimulator
 from logic.sim_config import load_tuned_playbalance_config
 from logic.simulation import (
     FieldingState,
@@ -114,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     rng = random.Random(args.seed)
     totals: Counter[str] = Counter()
 
-    def simulate_game(home_id: str, away_id: str) -> tuple[int, int]:
+    def simulate_game(home_id: str, away_id: str) -> None:
         home = clone_team_state(base_states[home_id])
         away = clone_team_state(base_states[away_id])
         sim = GameSimulation(home, away, cfg, rng)
@@ -131,11 +130,9 @@ def main(argv: list[str] | None = None) -> int:
             totals["sf"] += sum(p.get("sf", 0) for p in batting)
             totals["sb"] += sum(p["sb"] for p in batting)
             totals["cs"] += sum(p["cs"] for p in batting)
-        return home.runs, away.runs
 
-    simulator = SeasonSimulator(schedule, simulate_game=simulate_game)
-    for _ in simulator.dates:
-        simulator.simulate_next_day()
+    for game in schedule:
+        simulate_game(game["home"], game["away"])
 
     pa = totals["pa"] or 1
     k_pct = totals["k"] / pa
