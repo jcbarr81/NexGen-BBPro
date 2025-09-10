@@ -102,8 +102,10 @@ def league_averages(benchmarks: Dict[str, float]) -> Dict[str, float]:
 
 def league_average(benchmarks: Dict[str, float], metric: str, default: float = 0.0) -> float:
     """Return league average for ``metric`` or ``default`` when missing."""
-    # Thin wrapper around ``benchmarks.get`` that adds the ``avg_`` prefix.
-    return benchmarks.get(f"avg_{metric}", default)
+    # Some benchmark CSVs include metrics without the ``avg_`` prefix.  The
+    # lookup first attempts to find the prefixed version and then falls back to
+    # the unprefixed key to support both formats.
+    return benchmarks.get(f"avg_{metric}", benchmarks.get(metric, default))
 
 
 __all__ = [
