@@ -14,6 +14,7 @@ benchmarks.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, Iterable, Mapping
 import argparse
 import random
@@ -24,6 +25,9 @@ from .pitcher_ai import select_pitch
 from .batter_ai import StrikeZoneGrid, look_for_zone
 from .benchmarks import load_benchmarks, league_average
 from .player_loader import Player, load_lineup, load_pitching_staff, load_players
+
+
+BASE_DIR = Path(__file__).resolve().parents[1]
 
 
 @dataclass
@@ -76,16 +80,17 @@ def _load_default_teams() -> tuple[Team, Team]:
     helpers usable in tests.
     """
 
-    players = load_players("data/players.csv")
-    home_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
-    away_lineup = load_lineup("data/lineups/ARG_vs_rhp.csv", players)
+    data_dir = BASE_DIR / "data"
+    players = load_players(data_dir / "players.csv")
+    home_lineup = load_lineup(data_dir / "lineups/ARG_vs_rhp.csv", players)
+    away_lineup = load_lineup(data_dir / "lineups/ARG_vs_rhp.csv", players)
     if not home_lineup:
         home_lineup = [p for p in players.values() if not p.is_pitcher][:9]
     if not away_lineup:
         away_lineup = [p for p in players.values() if not p.is_pitcher][9:18]
 
-    home_pitchers = load_pitching_staff("data/rosters/ABU.csv", players)
-    away_pitchers = load_pitching_staff("data/rosters/BCH.csv", players)
+    home_pitchers = load_pitching_staff(data_dir / "rosters/ABU.csv", players)
+    away_pitchers = load_pitching_staff(data_dir / "rosters/BCH.csv", players)
     if not home_pitchers:
         home_pitchers = [p for p in players.values() if p.is_pitcher][:5]
     if not away_pitchers:
