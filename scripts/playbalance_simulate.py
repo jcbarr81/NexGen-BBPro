@@ -22,6 +22,8 @@ from pathlib import Path
 import random
 import sys
 
+from tqdm import tqdm
+
 # Allow running the script without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -101,6 +103,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="optional file to write JSON aggregated results to",
     )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="disable progress bar",
+    )
     args = parser.parse_args(argv)
 
     benchmarks = load_benchmarks()
@@ -131,7 +138,9 @@ def main(argv: list[str] | None = None) -> int:
             totals["sb"] += sum(p["sb"] for p in batting)
             totals["cs"] += sum(p["cs"] for p in batting)
 
-    for game in schedule:
+    for game in tqdm(
+        schedule, desc="Simulating games", disable=args.no_progress
+    ):
         simulate_game(game["home"], game["away"])
 
     pa = totals["pa"] or 1
