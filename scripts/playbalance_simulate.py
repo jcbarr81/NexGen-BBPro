@@ -66,13 +66,17 @@ def clone_team_state(base: TeamState) -> TeamState:
         team.current_pitcher_state = ps
         ps.g += 1
         ps.gs += 1
-        fs = team.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
+        fs = team.fielding_stats.setdefault(
+            starter.player_id, FieldingState(starter)
+        )
         fs.g += 1
         fs.gs += 1
     else:
         team.current_pitcher_state = None
     for p in team.lineup:
-        fs = team.fielding_stats.setdefault(p.player_id, FieldingState(p))
+        fs = team.fielding_stats.setdefault(
+            p.player_id, FieldingState(p)
+        )
         fs.g += 1
         fs.gs += 1
     return team
@@ -95,7 +99,10 @@ def main(argv: list[str] | None = None) -> int:
         help="start date for the generated schedule (YYYY-MM-DD)",
     )
     parser.add_argument(
-        "--seed", type=int, default=None, help="random seed for reproducibility"
+        "--seed",
+        type=int,
+        default=None,
+        help="random seed for reproducibility",
     )
     parser.add_argument(
         "--output",
@@ -138,17 +145,83 @@ def main(argv: list[str] | None = None) -> int:
             totals["sb"] += sum(p["sb"] for p in batting)
             totals["cs"] += sum(p["cs"] for p in batting)
 
+        for team in (home, away):
+            for bs in team.lineup_stats.values():
+                totals["hbp"] += bs.hbp
+                totals["b1"] += bs.b1
+                totals["b2"] += bs.b2
+                totals["b3"] += bs.b3
+                totals["gb"] += bs.gb
+                totals["ld"] += bs.ld
+                totals["fb"] += bs.fb
+                totals["gidp"] += bs.gidp
+            for ps in team.pitcher_stats.values():
+                totals["pitches_thrown"] += ps.pitches_thrown
+                totals["zone_pitches"] += ps.zone_pitches
+                totals["zone_swings"] += ps.zone_swings
+                totals["zone_contacts"] += ps.zone_contacts
+                totals["o_zone_swings"] += ps.o_zone_swings
+                totals["o_zone_contacts"] += ps.o_zone_contacts
+                totals["so_looking"] += ps.so_looking
+
     for game in tqdm(
         schedule, desc="Simulating games", disable=args.no_progress
     ):
         simulate_game(game["home"], game["away"])
 
     pa = totals["pa"] or 1
+    pitches = totals["pitches_thrown"] or 1
+    bip = totals["gb"] + totals["ld"] + totals["fb"]
+
     k_pct = totals["k"] / pa
     bb_pct = totals["bb"] / pa
-    bip = totals["ab"] - totals["k"] - totals["hr"] + totals["sf"]
+    pitches_per_pa = pitches / pa
+    pitches_put_in_play_pct = bip / pitches if pitches else 0.0
+    bip_gb_pct = totals["gb"] / bip if bip else 0.0
+    bip_fb_pct = totals["fb"] / bip if bip else 0.0
+    bip_ld_pct = totals["ld"] / bip if bip else 0.0
+    bip_double_play_pct = totals["gidp"] / bip if bip else 0.0
     hits_on_bip = totals["h"] - totals["hr"]
     babip = hits_on_bip / bip if bip else 0.0
+    tb = (
+        totals["b1"] + 2 * totals["b2"] + 3 * totals["b3"] + 4 * totals["hr"]
+    )
+    avg = totals["h"] / totals["ab"] if totals["ab"] else 0.0
+    obp_den = totals["ab"] + totals["bb"] + totals["hbp"] + totals["sf"]
+    obp = (
+        (totals["h"] + totals["bb"] + totals["hbp"])
+        / obp_den
+        if obp_den
+        else 0.0
+    )
+    slg = tb / totals["ab"] if totals["ab"] else 0.0
+    swings = totals["zone_swings"] + totals["o_zone_swings"]
+    contacts = totals["zone_contacts"] + totals["o_zone_contacts"]
+    swstr_pct = (swings - contacts) / pitches if pitches else 0.0
+    called_third_strike_share_of_so = (
+        totals["so_looking"] / totals["k"] if totals["k"] else 0.0
+    )
+    o_zone_pitches = pitches - totals["zone_pitches"]
+    o_swing_pct = (
+        totals["o_zone_swings"] / o_zone_pitches if o_zone_pitches else 0.0
+    )
+    z_swing_pct = (
+        totals["zone_swings"] / totals["zone_pitches"]
+        if totals["zone_pitches"]
+        else 0.0
+    )
+    swing_pct = swings / pitches if pitches else 0.0
+    z_contact_pct = (
+        totals["zone_contacts"] / totals["zone_swings"]
+        if totals["zone_swings"]
+        else 0.0
+    )
+    o_contact_pct = (
+        totals["o_zone_contacts"] / totals["o_zone_swings"]
+        if totals["o_zone_swings"]
+        else 0.0
+    )
+    contact_pct = contacts / swings if swings else 0.0
     sb_attempts = totals["sb"] + totals["cs"]
     sba_rate = sb_attempts / pa
     sb_pct = totals["sb"] / sb_attempts if sb_attempts else 0.0
@@ -167,9 +240,78 @@ def main(argv: list[str] | None = None) -> int:
         args.output.write_text(json.dumps(results, indent=2))
         print(f"Saved results to {args.output}")
 
-    print(f"K%:  {k_pct:.3f} (MLB {league_average(benchmarks, 'k_pct'):.3f})")
-    print(f"BB%: {bb_pct:.3f} (MLB {league_average(benchmarks, 'bb_pct'):.3f})")
-    print(f"BABIP: {babip:.3f} (MLB {league_average(benchmarks, 'babip'):.3f})")
+    print(
+        f"Pitches/PA: {pitches_per_pa:.2f} "
+        f"(MLB {league_average(benchmarks, 'pitches_per_pa'):.2f})"
+    )
+    print(
+        "Pitches Put In Play%: "
+        f"{pitches_put_in_play_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'pitches_put_in_play_pct'):.3f})"
+    )
+    print(
+        f"BIP GB%: {bip_gb_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'bip_gb_pct'):.3f})"
+    )
+    print(
+        f"BIP FB%: {bip_fb_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'bip_fb_pct'):.3f})"
+    )
+    print(
+        f"BIP LD%: {bip_ld_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'bip_ld_pct'):.3f})"
+    )
+    print(
+        f"Double Play%: {bip_double_play_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'bip_double_play_pct'):.3f})"
+    )
+    print(f"AVG:  {avg:.3f} (MLB {league_average(benchmarks, 'avg'):.3f})")
+    print(f"OBP:  {obp:.3f} (MLB {league_average(benchmarks, 'obp'):.3f})")
+    print(f"SLG:  {slg:.3f} (MLB {league_average(benchmarks, 'slg'):.3f})")
+    print(
+        f"SwStr%: {swstr_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'swstr_pct'):.3f})"
+    )
+    called_share_avg = league_average(
+        benchmarks, "called_third_strike_share_of_so"
+    )
+    print(
+        "Called Strike 3 Share: "
+        f"{called_third_strike_share_of_so:.3f} (MLB {called_share_avg:.3f})"
+    )
+    print(
+        f"O-Swing%: {o_swing_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'o_swing_pct'):.3f})"
+    )
+    print(
+        f"Z-Swing%: {z_swing_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'z_swing_pct'):.3f})"
+    )
+    print(
+        f"Swing%: {swing_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'swing_pct'):.3f})"
+    )
+    print(
+        f"Z-Contact%: {z_contact_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'z_contact_pct'):.3f})"
+    )
+    print(
+        f"O-Contact%: {o_contact_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'o_contact_pct'):.3f})"
+    )
+    print(
+        f"Contact%: {contact_pct:.3f} "
+        f"(MLB {league_average(benchmarks, 'contact_pct'):.3f})"
+    )
+    print(
+        f"K%:  {k_pct:.3f} (MLB {league_average(benchmarks, 'k_pct'):.3f})"
+    )
+    print(
+        f"BB%: {bb_pct:.3f} (MLB {league_average(benchmarks, 'bb_pct'):.3f})"
+    )
+    print(
+        f"BABIP: {babip:.3f} (MLB {league_average(benchmarks, 'babip'):.3f})"
+    )
     print(
         f"SB Attempt/PA: {sba_rate:.3f} "
         f"(MLB {league_average(benchmarks, 'sba_per_pa'):.3f})"
