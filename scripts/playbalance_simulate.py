@@ -181,10 +181,11 @@ def main(argv: list[str] | None = None) -> int:
         for g, s in zip(schedule, seeds)
     ]
 
+    chunksize = max(1, len(jobs) // (mp.cpu_count() * 4))
     totals: Counter[str] = Counter()
     with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
         for stats in tqdm(
-            pool.imap_unordered(_simulate_game, jobs),
+            pool.imap_unordered(_simulate_game, jobs, chunksize=chunksize),
             total=len(jobs),
             desc="Simulating games",
             disable=args.no_progress,
