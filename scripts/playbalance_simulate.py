@@ -19,7 +19,6 @@ import multiprocessing as mp
 import pickle
 import random
 import sys
-from collections import Counter
 from datetime import date
 from pathlib import Path
 
@@ -39,6 +38,40 @@ try:  # pragma: no cover - optional dependency
     import numpy as np
 except ImportError:  # pragma: no cover - fallback when numpy unavailable
     np = None
+
+
+if np is None:  # pragma: no cover - numpy is required for this script
+    raise RuntimeError("NumPy is required to run this script")
+
+
+STAT_KEYS = [
+    "pa",
+    "bb",
+    "k",
+    "h",
+    "hr",
+    "ab",
+    "sf",
+    "sb",
+    "cs",
+    "hbp",
+    "b1",
+    "b2",
+    "b3",
+    "gb",
+    "ld",
+    "fb",
+    "gidp",
+    "pitches_thrown",
+    "zone_pitches",
+    "zone_swings",
+    "zone_contacts",
+    "o_zone_swings",
+    "o_zone_contacts",
+    "so_looking",
+]
+
+STAT_INDEX = {k: i for i, k in enumerate(STAT_KEYS)}
 
 
 BASE_STATES: dict[str, bytes] = {}
@@ -85,51 +118,42 @@ def clone_team_state(team_id: str) -> TeamState:
     return pickle.loads(BASE_STATES[team_id])
 
 
-def _simulate_game(args: tuple[str, str, int]) -> Counter[str]:
+def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
     home_id, away_id, seed = args
     home = clone_team_state(home_id)
     away = clone_team_state(away_id)
     sim = GameSimulation(home, away, CFG, FastRNG(seed))
     sim.simulate_game()
-    game_totals: Counter[str] = Counter()
+    totals = np.zeros(len(STAT_KEYS), dtype=np.int64)
 
-    upd = game_totals.update
     for team in (home, away):
         for bs in team.lineup_stats.values():
-            upd(
-                {
-                    "pa": bs.pa,
-                    "bb": bs.bb,
-                    "k": bs.so,
-                    "h": bs.h,
-                    "hr": bs.hr,
-                    "ab": bs.ab,
-                    "sf": bs.sf,
-                    "sb": bs.sb,
-                    "cs": bs.cs,
-                    "hbp": bs.hbp,
-                    "b1": bs.b1,
-                    "b2": bs.b2,
-                    "b3": bs.b3,
-                    "gb": bs.gb,
-                    "ld": bs.ld,
-                    "fb": bs.fb,
-                    "gidp": bs.gidp,
-                }
-            )
+            totals[STAT_INDEX["pa"]] += bs.pa
+            totals[STAT_INDEX["bb"]] += bs.bb
+            totals[STAT_INDEX["k"]] += bs.so
+            totals[STAT_INDEX["h"]] += bs.h
+            totals[STAT_INDEX["hr"]] += bs.hr
+            totals[STAT_INDEX["ab"]] += bs.ab
+            totals[STAT_INDEX["sf"]] += bs.sf
+            totals[STAT_INDEX["sb"]] += bs.sb
+            totals[STAT_INDEX["cs"]] += bs.cs
+            totals[STAT_INDEX["hbp"]] += bs.hbp
+            totals[STAT_INDEX["b1"]] += bs.b1
+            totals[STAT_INDEX["b2"]] += bs.b2
+            totals[STAT_INDEX["b3"]] += bs.b3
+            totals[STAT_INDEX["gb"]] += bs.gb
+            totals[STAT_INDEX["ld"]] += bs.ld
+            totals[STAT_INDEX["fb"]] += bs.fb
+            totals[STAT_INDEX["gidp"]] += bs.gidp
         for ps in team.pitcher_stats.values():
-            upd(
-                {
-                    "pitches_thrown": ps.pitches_thrown,
-                    "zone_pitches": ps.zone_pitches,
-                    "zone_swings": ps.zone_swings,
-                    "zone_contacts": ps.zone_contacts,
-                    "o_zone_swings": ps.o_zone_swings,
-                    "o_zone_contacts": ps.o_zone_contacts,
-                    "so_looking": ps.so_looking,
-                }
-            )
-    return game_totals
+            totals[STAT_INDEX["pitches_thrown"]] += ps.pitches_thrown
+            totals[STAT_INDEX["zone_pitches"]] += ps.zone_pitches
+            totals[STAT_INDEX["zone_swings"]] += ps.zone_swings
+            totals[STAT_INDEX["zone_contacts"]] += ps.zone_contacts
+            totals[STAT_INDEX["o_zone_swings"]] += ps.o_zone_swings
+            totals[STAT_INDEX["o_zone_contacts"]] += ps.o_zone_contacts
+            totals[STAT_INDEX["so_looking"]] += ps.so_looking
+    return totals
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -181,7 +205,7 @@ def main(argv: list[str] | None = None) -> int:
     jobs = [(g["home"], g["away"], s) for g, s in zip(schedule, seeds)]
 
     chunksize = max(1, len(jobs) // (mp.cpu_count() * 4))
-    totals: Counter[str] = Counter()
+    totals_array = np.zeros(len(STAT_KEYS), dtype=np.int64)
     with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
         for stats in tqdm(
             pool.imap_unordered(_simulate_game, jobs, chunksize=chunksize),
@@ -189,7 +213,9 @@ def main(argv: list[str] | None = None) -> int:
             desc="Simulating games",
             disable=args.no_progress,
         ):
-            totals.update(stats)
+            totals_array += stats
+
+    totals = {k: int(totals_array[i]) for i, k in enumerate(STAT_KEYS)}
 
     pa = totals["pa"] or 1
     pitches = totals["pitches_thrown"] or 1
