@@ -48,7 +48,7 @@ CFG = None
 class FastRNG:
     """Adapter providing a ``random.Random``-like API."""
 
-    def __init__(self, seed: int | np.random.SeedSequence | None = None) -> None:
+    def __init__(self, seed: int | None = None) -> None:
         if np is not None:
             self._rng = np.random.default_rng(seed)
             self._numpy = True
@@ -174,12 +174,11 @@ def main(argv: list[str] | None = None) -> int:
     base_states = {tid: pickle.dumps(build_default_game_state(tid)) for tid in team_ids}
     schedule = generate_mlb_schedule(team_ids, args.start_date, args.games)
 
-    seed_seq = np.random.SeedSequence(args.seed)
-    seeds = seed_seq.spawn(len(schedule))
-    jobs = [
-        (g["home"], g["away"], s.generate_state(1)[0])
-        for g, s in zip(schedule, seeds)
-    ]
+    rng = np.random.default_rng(args.seed)
+    seeds = rng.integers(
+        0, np.iinfo(np.int32).max, size=len(schedule), dtype=np.int32
+    )
+    jobs = [(g["home"], g["away"], s) for g, s in zip(schedule, seeds)]
 
     chunksize = max(1, len(jobs) // (mp.cpu_count() * 4))
     totals: Counter[str] = Counter()
