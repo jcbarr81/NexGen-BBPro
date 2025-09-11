@@ -17,6 +17,41 @@ class PlayerState:
 
 
 @dataclass
+class PitcherState:
+    """Tracks pitch-level statistics for a pitcher."""
+
+    zone_pitches: int = 0
+    zone_swings: int = 0
+    zone_contacts: int = 0
+    o_zone_swings: int = 0
+    o_zone_contacts: int = 0
+
+    def record_pitch(self, *, in_zone: bool, swung: bool, contact: bool) -> None:
+        """Record a pitch outcome.
+
+        Parameters
+        ----------
+        in_zone:
+            Whether the pitch was in the strike zone.
+        swung:
+            Whether the batter offered at the pitch.
+        contact:
+            True if the swing resulted in contact.
+        """
+
+        if in_zone:
+            self.zone_pitches += 1
+            if swung:
+                self.zone_swings += 1
+                if contact:
+                    self.zone_contacts += 1
+        elif swung:
+            self.o_zone_swings += 1
+            if contact:
+                self.o_zone_contacts += 1
+
+
+@dataclass
 class BaseState:
     """Tracks which bases currently have runners."""
 
@@ -75,4 +110,4 @@ class GameState:
         self.pitch_count += 1
 
 
-__all__ = ["PlayerState", "BaseState", "GameState"]
+__all__ = ["PlayerState", "PitcherState", "BaseState", "GameState"]
