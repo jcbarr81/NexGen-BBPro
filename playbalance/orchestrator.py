@@ -1,13 +1,13 @@
 """Season simulation orchestrator built on the full game engine.
 
-This module delegates game resolution to :class:`logic.season_simulator.SeasonSimulator`
-so that pitching staffs and lineups naturally rotate following season rules.
-Aggregated league statistics are collected from generated box scores which
-mirror real MLB rates when using the tuned play‑balance configuration.
+Independent game simulations are run for a simple two-team schedule and
+aggregated into league-wide statistics. Games are executed in parallel using a
+``ProcessPoolExecutor`` to speed up large simulations while maintaining
+reproducibility.
 
 The public helpers simulate a specified number of games by generating a simple
-schedule for two example teams.  Convenience wrappers are provided for common
-progression increments like a day, week, month or full 162 game season.  When
+schedule for two example teams. Convenience wrappers are provided for common
+progression increments like a day, week, month or full 162 game season. When
 executed as a script the module prints key stat averages compared to MLB
 benchmarks.
 """
@@ -15,15 +15,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from collections import Counter
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
 from datetime import date
 from pathlib import Path
 from typing import Mapping, Any
 import argparse
+import os
 import random
 
 from logic.schedule_generator import generate_mlb_schedule
-from logic.season_simulator import SeasonSimulator
 from logic.simulation import (
     FieldingState,
     GameSimulation,
@@ -34,6 +35,12 @@ from logic.simulation import (
 from logic.sim_config import load_tuned_playbalance_config
 from playbalance.benchmarks import load_benchmarks, league_average
 from utils.lineup_loader import build_default_game_state
+
+try:  # pragma: no cover - imported for progress bar support
+    from tqdm import tqdm
+except ModuleNotFoundError:  # pragma: no cover - dependency optional
+    def tqdm(iterable, **kwargs):  # type: ignore
+        return iterable
 
 
 @dataclass
@@ -87,6 +94,55 @@ def _clone_team_state(base: TeamState) -> TeamState:
     return team
 
 
+# Globals for worker processes
+_BASE_STATES: dict[str, TeamState] | None = None
+_CFG: Any | None = None
+
+
+def _init_worker(base_states: dict[str, TeamState], cfg: Any) -> None:
+    """Initializer to set shared state in worker processes."""
+
+    global _BASE_STATES, _CFG
+    _BASE_STATES = base_states
+    _CFG = cfg
+
+
+def _simulate_game(
+    home_id: str,
+    away_id: str,
+    seed: int,
+    home_pitch_idx: int,
+    away_pitch_idx: int,
+) -> Counter:
+    """Simulate a single game and return stat totals."""
+
+    assert _BASE_STATES is not None and _CFG is not None
+    home = _clone_team_state(_BASE_STATES[home_id])
+    away = _clone_team_state(_BASE_STATES[away_id])
+    if home.pitchers:
+        home.pitchers = home.pitchers[home_pitch_idx:] + home.pitchers[:home_pitch_idx]
+    if away.pitchers:
+        away.pitchers = away.pitchers[away_pitch_idx:] + away.pitchers[:away_pitch_idx]
+    sim = GameSimulation(home, away, _CFG, random.Random(seed))
+    sim.simulate_game()
+    box = generate_boxscore(home, away)
+    totals: Counter[str] = Counter()
+    for side in ("home", "away"):
+        batting = box[side]["batting"]
+        pitching = box[side]["pitching"]
+        totals["pa"] += sum(p["pa"] for p in batting)
+        totals["bb"] += sum(p["bb"] for p in batting)
+        totals["k"] += sum(p["so"] for p in batting)
+        totals["h"] += sum(p["h"] for p in batting)
+        totals["hr"] += sum(p["hr"] for p in batting)
+        totals["ab"] += sum(p["ab"] for p in batting)
+        totals["sf"] += sum(p.get("sf", 0) for p in batting)
+        totals["sb"] += sum(p["sb"] for p in batting)
+        totals["cs"] += sum(p["cs"] for p in batting)
+        totals["pitches"] += sum(p["pitches"] for p in pitching)
+    return totals
+
+
 # ---------------------------------------------------------------------------
 # Core simulation helpers
 # ---------------------------------------------------------------------------
@@ -101,17 +157,12 @@ def simulate_games(
     *,
     rng_seed: int | None = None,
 ) -> SimulationResult:
-    """Simulate ``games`` games and return aggregated statistics.
-
-    The provided configuration and benchmark mappings are accepted for
-    backwards compatibility but are not directly used.  A minimal league
-    schedule is generated for two example teams (``ARG`` and ``BCH``) and the
-    full :class:`SeasonSimulator` drives day-by-day simulation.  Box score
-    totals are accumulated across all games to produce league-wide statistics.
-    """
+    """Simulate ``games`` games and return aggregated statistics."""
 
     team_ids = ["ABU", "BCH"]
-    schedule = generate_mlb_schedule(team_ids, date(2025, 4, 1), games_per_team=games)
+    schedule = generate_mlb_schedule(
+        team_ids, date(2025, 4, 1), games_per_team=games
+    )
     base_dir = Path(__file__).resolve().parents[1]
     players_file = base_dir / "data" / "players.csv"
     roster_dir = base_dir / "data" / "rosters"
@@ -121,36 +172,35 @@ def simulate_games(
     }
     if cfg is None:
         cfg, _ = load_tuned_playbalance_config()
-    rng = random.Random(rng_seed)
+
+    base_seed = rng_seed if rng_seed is not None else random.randrange(2**32)
+    rotation: dict[str, int] = {tid: 0 for tid in team_ids}
+    tasks: list[tuple[str, str, int, int, int]] = []
+    for idx, g in enumerate(schedule):
+        seed = base_seed + idx
+        home_id = g["home"]
+        away_id = g["away"]
+        home_rot = rotation[home_id]
+        away_rot = rotation[away_id]
+        rotation[home_id] = (home_rot + 1) % max(
+            1, len(base_states[home_id].pitchers)
+        )
+        rotation[away_id] = (away_rot + 1) % max(
+            1, len(base_states[away_id].pitchers)
+        )
+        tasks.append((home_id, away_id, seed, home_rot, away_rot))
+
     totals: Counter[str] = Counter()
-
-    def _simulate_game(home_id: str, away_id: str) -> tuple[int, int]:
-        home = _clone_team_state(base_states[home_id])
-        away = _clone_team_state(base_states[away_id])
-        sim = GameSimulation(home, away, cfg, rng)
-        sim.simulate_game()
-        box = generate_boxscore(home, away)
-        for side in ("home", "away"):
-            batting = box[side]["batting"]
-            pitching = box[side]["pitching"]
-            totals["pa"] += sum(p["pa"] for p in batting)
-            totals["bb"] += sum(p["bb"] for p in batting)
-            totals["k"] += sum(p["so"] for p in batting)
-            totals["h"] += sum(p["h"] for p in batting)
-            totals["hr"] += sum(p["hr"] for p in batting)
-            totals["ab"] += sum(p["ab"] for p in batting)
-            totals["sf"] += sum(p.get("sf", 0) for p in batting)
-            totals["sb"] += sum(p["sb"] for p in batting)
-            totals["cs"] += sum(p["cs"] for p in batting)
-            totals["pitches"] += sum(p["pitches"] for p in pitching)
-        # Rotate starting pitchers for next appearances
-        base_states[home_id].pitchers = base_states[home_id].pitchers[1:] + base_states[home_id].pitchers[:1]
-        base_states[away_id].pitchers = base_states[away_id].pitchers[1:] + base_states[away_id].pitchers[:1]
-        return box["home"]["score"], box["away"]["score"]
-
-    simulator = SeasonSimulator(schedule, simulate_game=_simulate_game)
-    for _ in simulator.dates:
-        simulator.simulate_next_day()
+    with ProcessPoolExecutor(
+        max_workers=os.cpu_count(),
+        initializer=_init_worker,
+        initargs=(base_states, cfg),
+    ) as executor:
+        futures = [executor.submit(_simulate_game, *t) for t in tasks]
+        with tqdm(total=len(futures), desc="Simulating games") as pbar:
+            for future in as_completed(futures):
+                totals.update(future.result())
+                pbar.update(1)
 
     bip = totals["ab"] - totals["k"] - totals["hr"] + totals["sf"]
     sb_attempts = totals["sb"] + totals["cs"]
