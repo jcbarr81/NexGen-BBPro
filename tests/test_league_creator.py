@@ -6,6 +6,7 @@ from models.pitcher import Pitcher
 from logic.player_generator import reset_name_cache
 from utils.team_loader import load_teams
 import random
+import pytest
 
 
 def test_create_league_generates_files(tmp_path):
@@ -180,3 +181,17 @@ def test_create_league_purges_old_files_but_keeps_avatars(tmp_path):
     assert not old_file.exists()
     assert not old_dir.exists()
     assert avatar.exists()
+
+
+def test_create_league_requires_all_positions(tmp_path, monkeypatch):
+    def fake_generate_player(is_pitcher=False, age_range=None, primary_position=None, **kwargs):
+        return {
+            "player_id": "p1",
+            "primary_position": "P" if is_pitcher else "1B",
+        }
+
+    monkeypatch.setattr("logic.league_creator.generate_player", fake_generate_player)
+    divisions = {"East": [("CityA", "Cats")]}
+
+    with pytest.raises(ValueError):
+        create_league(str(tmp_path), divisions, "Test League")

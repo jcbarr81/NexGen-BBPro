@@ -124,6 +124,28 @@ def _purge_old_league(base_dir: Path) -> None:
             item.unlink()
 
 
+def _ensure_act_positions(players: List[dict]) -> None:
+    """Ensure the active roster has coverage for all positions.
+
+    Parameters
+    ----------
+    players:
+        List of player dictionaries representing the ACT roster.
+
+    Raises
+    ------
+    ValueError
+        If any required position is missing from the roster.
+    """
+    required = {"P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"}
+    positions = {p.get("primary_position") for p in players}
+    missing = required - positions
+    if missing:
+        raise ValueError(
+            "ACT roster missing positions: " + ", ".join(sorted(missing))
+        )
+
+
 def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
@@ -183,6 +205,7 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
             )
 
             act_players = generate_roster(11, 14, (21, 38), ensure_positions=True)
+            _ensure_act_positions(act_players)
             aaa_players = generate_roster(7, 8, (21, 38))
             low_players = generate_roster(5, 5, (18, 21))
 
