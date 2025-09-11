@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import Counter
-from copy import deepcopy
-from datetime import date
-from pathlib import Path
+import multiprocessing as mp
+import pickle
 import random
 import sys
+from collections import Counter
+from datetime import date
+from pathlib import Path
 
 from tqdm import tqdm
 
@@ -30,56 +31,105 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from playbalance.benchmarks import load_benchmarks, league_average
 from logic.schedule_generator import generate_mlb_schedule
 from logic.sim_config import load_tuned_playbalance_config
-from logic.simulation import (
-    FieldingState,
-    GameSimulation,
-    PitcherState,
-    TeamState,
-    generate_boxscore,
-)
+from logic.simulation import FieldingState, GameSimulation, PitcherState, TeamState
 from utils.lineup_loader import build_default_game_state
 from utils.team_loader import load_teams
 
+try:  # pragma: no cover - optional dependency
+    import numpy as np
+except ImportError:  # pragma: no cover - fallback when numpy unavailable
+    np = None
 
-def clone_team_state(base: TeamState) -> TeamState:
-    """Return a deep-copied ``TeamState`` with per-game fields reset."""
 
-    team = deepcopy(base)
-    team.lineup_stats = {}
-    team.pitcher_stats = {}
-    team.fielding_stats = {}
-    team.batting_index = 0
-    team.bases = [None, None, None]
-    team.base_pitchers = [None, None, None]
-    team.runs = 0
-    team.inning_runs = []
-    team.lob = 0
-    team.inning_lob = []
-    team.inning_events = []
-    team.team_stats = {}
-    team.warming_reliever = False
-    team.bullpen_warmups = {}
-    if team.pitchers:
-        starter = team.pitchers[0]
-        ps = PitcherState(starter)
-        team.pitcher_stats[starter.player_id] = ps
-        team.current_pitcher_state = ps
-        ps.g += 1
-        ps.gs += 1
-        fs = team.fielding_stats.setdefault(
-            starter.player_id, FieldingState(starter)
-        )
-        fs.g += 1
-        fs.gs += 1
-    else:
-        team.current_pitcher_state = None
-    for p in team.lineup:
-        fs = team.fielding_stats.setdefault(
-            p.player_id, FieldingState(p)
-        )
-        fs.g += 1
-        fs.gs += 1
-    return team
+BASE_STATES: dict[str, bytes] = {}
+CFG = None
+
+
+class FastRNG:
+    """Adapter providing a ``random.Random``-like API."""
+
+    def __init__(self, seed: int | np.random.SeedSequence | None = None) -> None:
+        if np is not None:
+            self._rng = np.random.default_rng(seed)
+            self._numpy = True
+        else:  # pragma: no cover - fallback to stdlib RNG
+            self._rng = random.Random(seed)
+            self._numpy = False
+
+    def random(self) -> float:
+        return float(self._rng.random())
+
+    def uniform(self, a: float, b: float) -> float:
+        if self._numpy:
+            return float(self._rng.uniform(a, b))
+        return self._rng.uniform(a, b)
+
+    def randint(self, a: int, b: int) -> int:
+        if self._numpy:
+            return int(self._rng.integers(a, b + 1))
+        return self._rng.randint(a, b)
+
+    def shuffle(self, x) -> None:  # pragma: no cover - simple passthrough
+        self._rng.shuffle(x)
+
+
+def _init_worker(states: dict[str, bytes], cfg) -> None:
+    global BASE_STATES, CFG
+    BASE_STATES = states
+    CFG = cfg
+
+
+def clone_team_state(team_id: str) -> TeamState:
+    """Return a fresh ``TeamState`` cloned from pickled baseline."""
+
+    return pickle.loads(BASE_STATES[team_id])
+
+
+def _simulate_game(args: tuple[str, str, int]) -> Counter[str]:
+    home_id, away_id, seed = args
+    home = clone_team_state(home_id)
+    away = clone_team_state(away_id)
+    sim = GameSimulation(home, away, CFG, FastRNG(seed))
+    sim.simulate_game()
+    game_totals: Counter[str] = Counter()
+
+    upd = game_totals.update
+    for team in (home, away):
+        for bs in team.lineup_stats.values():
+            upd(
+                {
+                    "pa": bs.pa,
+                    "bb": bs.bb,
+                    "k": bs.so,
+                    "h": bs.h,
+                    "hr": bs.hr,
+                    "ab": bs.ab,
+                    "sf": bs.sf,
+                    "sb": bs.sb,
+                    "cs": bs.cs,
+                    "hbp": bs.hbp,
+                    "b1": bs.b1,
+                    "b2": bs.b2,
+                    "b3": bs.b3,
+                    "gb": bs.gb,
+                    "ld": bs.ld,
+                    "fb": bs.fb,
+                    "gidp": bs.gidp,
+                }
+            )
+        for ps in team.pitcher_stats.values():
+            upd(
+                {
+                    "pitches_thrown": ps.pitches_thrown,
+                    "zone_pitches": ps.zone_pitches,
+                    "zone_swings": ps.zone_swings,
+                    "zone_contacts": ps.zone_contacts,
+                    "o_zone_swings": ps.o_zone_swings,
+                    "o_zone_contacts": ps.o_zone_contacts,
+                    "so_looking": ps.so_looking,
+                }
+            )
+    return game_totals
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -121,53 +171,25 @@ def main(argv: list[str] | None = None) -> int:
     cfg, _ = load_tuned_playbalance_config()
 
     team_ids = [t.team_id for t in load_teams("data/teams.csv")]
-    base_states = {tid: build_default_game_state(tid) for tid in team_ids}
+    base_states = {tid: pickle.dumps(build_default_game_state(tid)) for tid in team_ids}
     schedule = generate_mlb_schedule(team_ids, args.start_date, args.games)
 
-    rng = random.Random(args.seed)
+    seed_seq = np.random.SeedSequence(args.seed)
+    seeds = seed_seq.spawn(len(schedule))
+    jobs = [
+        (g["home"], g["away"], s.generate_state(1)[0])
+        for g, s in zip(schedule, seeds)
+    ]
+
     totals: Counter[str] = Counter()
-
-    def simulate_game(home_id: str, away_id: str) -> None:
-        home = clone_team_state(base_states[home_id])
-        away = clone_team_state(base_states[away_id])
-        sim = GameSimulation(home, away, cfg, rng)
-        sim.simulate_game()
-        box = generate_boxscore(home, away)
-        for side in ("home", "away"):
-            batting = box[side]["batting"]
-            totals["pa"] += sum(p["pa"] for p in batting)
-            totals["bb"] += sum(p["bb"] for p in batting)
-            totals["k"] += sum(p["so"] for p in batting)
-            totals["h"] += sum(p["h"] for p in batting)
-            totals["hr"] += sum(p["hr"] for p in batting)
-            totals["ab"] += sum(p["ab"] for p in batting)
-            totals["sf"] += sum(p.get("sf", 0) for p in batting)
-            totals["sb"] += sum(p["sb"] for p in batting)
-            totals["cs"] += sum(p["cs"] for p in batting)
-
-        for team in (home, away):
-            for bs in team.lineup_stats.values():
-                totals["hbp"] += bs.hbp
-                totals["b1"] += bs.b1
-                totals["b2"] += bs.b2
-                totals["b3"] += bs.b3
-                totals["gb"] += bs.gb
-                totals["ld"] += bs.ld
-                totals["fb"] += bs.fb
-                totals["gidp"] += bs.gidp
-            for ps in team.pitcher_stats.values():
-                totals["pitches_thrown"] += ps.pitches_thrown
-                totals["zone_pitches"] += ps.zone_pitches
-                totals["zone_swings"] += ps.zone_swings
-                totals["zone_contacts"] += ps.zone_contacts
-                totals["o_zone_swings"] += ps.o_zone_swings
-                totals["o_zone_contacts"] += ps.o_zone_contacts
-                totals["so_looking"] += ps.so_looking
-
-    for game in tqdm(
-        schedule, desc="Simulating games", disable=args.no_progress
-    ):
-        simulate_game(game["home"], game["away"])
+    with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
+        for stats in tqdm(
+            pool.imap_unordered(_simulate_game, jobs),
+            total=len(jobs),
+            desc="Simulating games",
+            disable=args.no_progress,
+        ):
+            totals.update(stats)
 
     pa = totals["pa"] or 1
     pitches = totals["pitches_thrown"] or 1
