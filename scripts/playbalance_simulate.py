@@ -8,6 +8,10 @@ Usage examples::
 
     python scripts/playbalance_simulate.py --seed 1
     python scripts/playbalance_simulate.py --games 20 --output results.json
+    python scripts/playbalance_simulate.py --perftune
+
+Enable PerfTune profiling with ``--perftune`` and analyze the results with
+``perftune view`` after the simulation completes.
 
 """
 
@@ -19,6 +23,7 @@ import multiprocessing as mp
 import pickle
 import random
 import sys
+from contextlib import nullcontext
 from datetime import date
 from pathlib import Path
 
@@ -189,6 +194,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="disable progress bar",
     )
+    parser.add_argument(
+        "--perftune",
+        action="store_true",
+        help="enable PerfTune profiling",
+    )
     args = parser.parse_args(argv)
 
     benchmarks = load_benchmarks()
@@ -206,14 +216,25 @@ def main(argv: list[str] | None = None) -> int:
 
     chunksize = max(1, len(jobs) // (mp.cpu_count() * 4))
     totals_array = np.zeros(len(STAT_KEYS), dtype=np.int64)
-    with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
-        for stats in tqdm(
-            pool.imap_unordered(_simulate_game, jobs, chunksize=chunksize),
-            total=len(jobs),
-            desc="Simulating games",
-            disable=args.no_progress,
-        ):
-            totals_array += stats
+
+    if args.perftune:
+        try:  # pragma: no cover - optional dependency
+            import perftune
+        except ImportError as exc:  # pragma: no cover - missing perftune
+            raise RuntimeError("--perftune requires the perftune package") from exc
+        profile_ctx = perftune.tune()
+    else:
+        profile_ctx = nullcontext()
+
+    with profile_ctx:
+        with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
+            for stats in tqdm(
+                pool.imap_unordered(_simulate_game, jobs, chunksize=chunksize),
+                total=len(jobs),
+                desc="Simulating games",
+                disable=args.no_progress,
+            ):
+                totals_array += stats
 
     totals = {k: int(totals_array[i]) for i, k in enumerate(STAT_KEYS)}
 
