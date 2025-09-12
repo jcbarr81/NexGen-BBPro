@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from datetime import datetime
 from typing import Dict
 
@@ -37,7 +38,7 @@ from .transactions_window import TransactionsWindow
 from .trade_dialog import TradeDialog
 from .standings_window import StandingsWindow
 from .schedule_window import ScheduleWindow
-from .team_schedule_window import TeamScheduleWindow
+from .team_schedule_window import TeamScheduleWindow, SCHEDULE_FILE
 from .team_stats_window import TeamStatsWindow
 from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
@@ -234,6 +235,17 @@ class OwnerDashboard(QMainWindow):
     def open_team_schedule_window(self) -> None:
         if not getattr(self, "team_id", None):
             QMessageBox.warning(self, "Error", "Team information not available.")
+            return
+        has_games = False
+        if SCHEDULE_FILE.exists():
+            with SCHEDULE_FILE.open(newline="") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    if row.get("home") == self.team_id or row.get("away") == self.team_id:
+                        has_games = True
+                        break
+        if not has_games:
+            QMessageBox.information(self, "Schedule", "No schedule available for this team.")
             return
         show_on_top(TeamScheduleWindow(self.team_id, self))
 

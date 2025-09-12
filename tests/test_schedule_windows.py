@@ -284,3 +284,61 @@ def test_owner_dashboard_stats_windows(monkeypatch):
     dash.open_player_stats_window()
 
     assert called == [2, 0]
+
+
+def test_team_schedule_window_no_entries(monkeypatch, tmp_path):
+    from ui import team_schedule_window
+
+    schedule_path = tmp_path / "schedule.csv"
+    with schedule_path.open("w", newline="") as fh:
+        writer = csv.DictWriter(
+            fh, fieldnames=["date", "home", "away", "result", "boxscore"]
+        )
+        writer.writeheader()
+        writer.writerow(
+            {"date": "2024-04-01", "home": "A", "away": "B", "result": "", "boxscore": ""}
+        )
+
+    monkeypatch.setattr(team_schedule_window, "SCHEDULE_FILE", schedule_path)
+    win = team_schedule_window.TeamScheduleWindow("Z")
+    item = win.viewer.item(0, 0)
+    assert item.text() == "No schedule available"
+    assert not hasattr(win, "_month")
+
+
+def test_owner_dashboard_no_team_schedule(monkeypatch, tmp_path):
+    from ui import owner_dashboard, team_schedule_window
+
+    schedule_path = tmp_path / "schedule.csv"
+    with schedule_path.open("w", newline="") as fh:
+        writer = csv.DictWriter(
+            fh, fieldnames=["date", "home", "away", "result", "boxscore"]
+        )
+        writer.writeheader()
+        writer.writerow(
+            {"date": "2024-04-01", "home": "A", "away": "B", "result": "", "boxscore": ""}
+        )
+
+    monkeypatch.setattr(team_schedule_window, "SCHEDULE_FILE", schedule_path)
+    monkeypatch.setattr(owner_dashboard, "SCHEDULE_FILE", schedule_path)
+
+    opened = []
+    monkeypatch.setattr(owner_dashboard, "show_on_top", lambda w: opened.append(w))
+
+    msgs = []
+    monkeypatch.setattr(
+        owner_dashboard.QMessageBox,
+        "information",
+        staticmethod(lambda *a: msgs.append(a[2])),
+    )
+
+    def fake_init(self, team_id):
+        self.team_id = team_id
+
+    monkeypatch.setattr(owner_dashboard.OwnerDashboard, "__init__", fake_init)
+
+    dash = owner_dashboard.OwnerDashboard("Z")
+    dash.open_team_schedule_window()
+
+    assert opened == []
+    assert msgs == ["No schedule available for this team."]
