@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Any
 
 
 @dataclass
@@ -20,6 +20,39 @@ class PlayerState:
 class PitcherState:
     """Tracks pitch-level statistics for a pitcher."""
 
+    player: Any | None = None
+    g: int = 0
+    gs: int = 0
+    gf: int = 0
+    outs: int = 0
+    r: int = 0
+    er: int = 0
+    h: int = 0
+    hr: int = 0
+    b1: int = 0
+    b2: int = 0
+    b3: int = 0
+    bb: int = 0
+    ibb: int = 0
+    so: int = 0
+    so_looking: int = 0
+    so_swinging: int = 0
+    hbp: int = 0
+    bf: int = 0
+    pitches_thrown: int = 0
+    balls_thrown: int = 0
+    strikes_thrown: int = 0
+    first_pitch_strikes: int = 0
+    pk: int = 0
+    pocs: int = 0
+    bk: int = 0
+    gb: int = 0
+    ld: int = 0
+    fb: int = 0
+    toast: float = 0.0
+    consecutive_hits: int = 0
+    consecutive_baserunners: int = 0
+    allowed_hr: bool = False
     zone_pitches: int = 0
     zone_swings: int = 0
     zone_contacts: int = 0
