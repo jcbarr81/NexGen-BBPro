@@ -13,6 +13,8 @@ def steal_chance(
     runner_sp: float,
     pitcher_hold: float,
     pitcher_is_left: bool,
+    pitcher_in_windup: bool = False,
+    pitcher_is_wild: bool = False,
     outs: int = 0,
     runner_on: int = 1,
     batter_ch: float = 0.0,
@@ -28,23 +30,70 @@ def steal_chance(
     count_key = f"stealChance{balls}{strikes}Count"
     chance = getattr(cfg, count_key, 0) / 100.0
 
-    if runner_sp >= getattr(cfg, "stealChanceFastThresh", 0):
-        # Speedy runners are more likely to attempt a steal.
+    # ------------------------------------------------------------------
+    # Runner speed
+    # ------------------------------------------------------------------
+    if runner_sp <= getattr(cfg, "stealChanceVerySlowThresh", 0):
+        chance += getattr(cfg, "stealChanceVerySlowAdjust", 0) / 100.0
+    elif runner_sp <= getattr(cfg, "stealChanceSlowThresh", 0):
+        chance += getattr(cfg, "stealChanceSlowAdjust", 0) / 100.0
+    elif runner_sp <= getattr(cfg, "stealChanceMedThresh", 0):
+        chance += getattr(cfg, "stealChanceMedAdjust", 0) / 100.0
+    elif runner_sp <= getattr(cfg, "stealChanceFastThresh", 0):
         chance += getattr(cfg, "stealChanceFastAdjust", 0) / 100.0
+    else:
+        chance += getattr(cfg, "stealChanceVeryFastAdjust", 0) / 100.0
 
-    if pitcher_hold <= getattr(cfg, "stealChanceMedHoldThresh", 0):
+    # ------------------------------------------------------------------
+    # Pitcher hold ability
+    # ------------------------------------------------------------------
+    if pitcher_hold <= getattr(cfg, "stealChanceVeryLowHoldThresh", 0):
+        chance += getattr(cfg, "stealChanceVeryLowHoldAdjust", 0) / 100.0
+    elif pitcher_hold <= getattr(cfg, "stealChanceLowHoldThresh", 0):
+        chance += getattr(cfg, "stealChanceLowHoldAdjust", 0) / 100.0
+    elif pitcher_hold <= getattr(cfg, "stealChanceMedHoldThresh", 0):
         chance += getattr(cfg, "stealChanceMedHoldAdjust", 0) / 100.0
+    elif pitcher_hold <= getattr(cfg, "stealChanceHighHoldThresh", 0):
+        chance += getattr(cfg, "stealChanceHighHoldAdjust", 0) / 100.0
+    else:
+        chance += getattr(cfg, "stealChanceVeryHighHoldAdjust", 0) / 100.0
 
-    if not pitcher_is_left:
+    # ------------------------------------------------------------------
+    # Pitcher traits
+    # ------------------------------------------------------------------
+    if pitcher_is_left:
+        chance += getattr(cfg, "stealChancePitcherFaceAdjust", 0) / 100.0
+    else:
         # Right-handed pitchers give runners a better jump.
         chance += getattr(cfg, "stealChancePitcherBackAdjust", 0) / 100.0
+    if pitcher_in_windup:
+        chance += getattr(cfg, "stealChancePitcherWindupAdjust", 0) / 100.0
+    if pitcher_is_wild:
+        chance += getattr(cfg, "stealChancePitcherWildAdjust", 0) / 100.0
 
-    if (
-        outs == 1
-        and runner_on == 1
-        and batter_ch >= getattr(cfg, "stealChanceOnFirst01OutHighCHThresh", 101)
-    ):
-        chance += getattr(cfg, "stealChanceOnFirst01OutHighCHAdjust", 0) / 100.0
+    # ------------------------------------------------------------------
+    # Batter situational modifiers
+    # ------------------------------------------------------------------
+    if runner_on == 1:
+        if outs == 2:
+            if batter_ch >= getattr(cfg, "stealChanceOnFirst2OutHighCHThresh", 101):
+                chance += getattr(cfg, "stealChanceOnFirst2OutHighCHAdjust", 0) / 100.0
+            if batter_ch <= getattr(cfg, "stealChanceOnFirst2OutLowCHThresh", -1):
+                chance += getattr(cfg, "stealChanceOnFirst2OutLowCHAdjust", 0) / 100.0
+        else:
+            if batter_ch >= getattr(cfg, "stealChanceOnFirst01OutHighCHThresh", 101):
+                chance += getattr(cfg, "stealChanceOnFirst01OutHighCHAdjust", 0) / 100.0
+            if batter_ch <= getattr(cfg, "stealChanceOnFirst01OutLowCHThresh", -1):
+                chance += getattr(cfg, "stealChanceOnFirst01OutLowCHAdjust", 0) / 100.0
+    elif runner_on == 2:
+        if outs == 0:
+            chance += getattr(cfg, "stealChanceOnSecond0OutAdjust", 0) / 100.0
+        elif outs == 1:
+            chance += getattr(cfg, "stealChanceOnSecond1OutAdjust", 0) / 100.0
+        else:
+            chance += getattr(cfg, "stealChanceOnSecond2OutAdjust", 0) / 100.0
+        if batter_ch >= getattr(cfg, "stealChanceOnSecondHighCHThresh", 101):
+            chance += getattr(cfg, "stealChanceOnSecondHighCHAdjust", 0) / 100.0
 
     if run_diff <= getattr(cfg, "stealChanceWayBehindThresh", -999):
         chance += getattr(cfg, "stealChanceWayBehindAdjust", 0) / 100.0
