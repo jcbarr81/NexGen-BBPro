@@ -34,6 +34,67 @@ def test_steal_chance_increases_with_speed():
     assert 0.0 <= slow <= fast <= 1.0
 
 
+def test_steal_chance_pitcher_hold_thresholds():
+    """Pitcher hold ability heavily influences steal attempts."""
+
+    weak_hold = steal_chance(
+        cfg,
+        balls=0,
+        strikes=0,
+        runner_sp=80,
+        pitcher_hold=10,
+        pitcher_is_left=False,
+    )
+    strong_hold = steal_chance(
+        cfg,
+        balls=0,
+        strikes=0,
+        runner_sp=80,
+        pitcher_hold=80,
+        pitcher_is_left=False,
+    )
+    assert weak_hold > strong_hold
+
+
+def test_steal_chance_on_second_and_outs():
+    """Second base steal chance depends on outs and contact."""
+
+    one_out = steal_chance(
+        cfg,
+        balls=1,
+        strikes=0,
+        runner_sp=80,
+        pitcher_hold=20,
+        pitcher_is_left=False,
+        outs=1,
+        runner_on=2,
+        batter_ch=80,
+    )
+    zero_outs = steal_chance(
+        cfg,
+        balls=1,
+        strikes=0,
+        runner_sp=80,
+        pitcher_hold=20,
+        pitcher_is_left=False,
+        outs=0,
+        runner_on=2,
+        batter_ch=80,
+    )
+    two_outs = steal_chance(
+        cfg,
+        balls=1,
+        strikes=0,
+        runner_sp=80,
+        pitcher_hold=20,
+        pitcher_is_left=False,
+        outs=2,
+        runner_on=2,
+        batter_ch=50,
+    )
+    assert one_out > zero_outs > two_outs
+
+
 def test_hit_and_run_requires_runner_on_first():
     chance = hit_and_run_chance(
         cfg,
