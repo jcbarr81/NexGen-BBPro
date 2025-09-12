@@ -154,7 +154,7 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
     home = clone_team_state(home_id)
     away = clone_team_state(away_id)
     sim = GameSimulation(home, away, CFG, FastRNG(seed))
-    sim.simulate_game()
+    sim.simulate_game(persist_stats=False)
     totals = np.zeros(len(STAT_KEYS), dtype=np.int64)
 
     for team in (home, away):
