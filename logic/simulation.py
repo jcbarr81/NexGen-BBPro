@@ -1129,8 +1129,15 @@ class GameSimulation:
                 pitcher_state,
                 start_pitches,
             ):
+                pitcher_state.record_pitch(
+                    in_zone=dist <= 3, swung=True, contact=False
+                )
                 pitcher_state.outs += outs
                 return outs + outs_from_pick
+
+            pitcher_state.record_pitch(
+                in_zone=dist <= 3, swung=swing, contact=contact > 0
+            )
 
             if swing:
                 self.infield_fly = False
