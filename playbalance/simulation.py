@@ -12,7 +12,7 @@ from playbalance.defensive_manager import DefensiveManager
 from playbalance.offensive_manager import OffensiveManager
 from playbalance.substitution_manager import SubstitutionManager
 from playbalance.playbalance_config import PlayBalanceConfig
-from playbalance.physics import Physics
+from playbalance.physics import Physics, bat_impact as bat_impact_func
 from playbalance.pitcher_ai import PitcherAI
 from playbalance.batter_ai import BatterAI
 from playbalance.bullpen import WarmupTracker
@@ -225,6 +225,26 @@ class GameSimulation:
         self.logged_strikeouts = 0
         self.logged_catcher_putouts = 0
         self._last_swing_strikeout = False
+
+    # ------------------------------------------------------------------
+    # Physics helper shims
+    # ------------------------------------------------------------------
+    def bat_impact(
+        self, bat_speed: float, *, part: str = "sweet", rand: float | None = None
+    ) -> tuple[float, float]:
+        """Return exit velocity and power factor for a bat ``part``.
+
+        Older versions of :class:`playbalance.physics.Physics` did not expose
+        ``bat_impact``.  To remain compatible, this shim tries to use the
+        method when available and otherwise falls back to the module level
+        function.
+        """
+
+        if hasattr(self.physics, "bat_impact"):
+            return self.physics.bat_impact(bat_speed, part=part, rand=rand)
+        return bat_impact_func(
+            self.config, bat_speed, part=part, rand=rand, rng=self.rng
+        )
 
     # ------------------------------------------------------------------
     # Fatigue helpers
@@ -1600,7 +1620,7 @@ class GameSimulation:
         bat_speed = self.physics.bat_speed(
             batter.ph, swing_type=swing_type, pitch_speed=pitch_speed
         )
-        bat_speed, _ = self.physics.bat_impact(bat_speed, rand=rand)
+        bat_speed, _ = self.bat_impact(bat_speed, rand=rand)
         swing_angle = self.physics.swing_angle(batter.gf, swing_type=swing_type)
         vert_angle = self.physics.vertical_hit_angle(
             swing_type=swing_type, gf=batter.gf
@@ -1675,7 +1695,7 @@ class GameSimulation:
         bat_speed = self.physics.bat_speed(
             batter.ph, swing_type=swing_type, pitch_speed=pitch_speed
         )
-        bat_speed, _ = self.physics.bat_impact(bat_speed)
+        bat_speed, _ = self.bat_impact(bat_speed)
         # Calculate and store angles for potential future physics steps.
         swing_angle = self.physics.swing_angle(batter.gf, swing_type=swing_type)
         vert_base = abs(
