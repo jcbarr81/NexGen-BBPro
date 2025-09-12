@@ -243,7 +243,7 @@ class PositionPlayersDialog(QtWidgets.QDialog):
         self.roster = roster
 
         self.setWindowTitle("Position Players")
-        self.resize(930, 560)
+        self.resize(1100, 650)
         self._apply_global_palette()
 
         layout = QtWidgets.QVBoxLayout(self)
@@ -256,10 +256,34 @@ class PositionPlayersDialog(QtWidgets.QDialog):
         rows = self._build_rows()
         self.table = RosterTable(rows)
         self.table.itemDoubleClicked.connect(self._open_player_profile)
+
+        header = self.table.horizontalHeader()
+        header.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        header.customContextMenuRequested.connect(self._show_columns_menu)
+
+        self.columns_menu = QtWidgets.QMenu("Columns", self)
+        for index, label in enumerate(COLUMNS):
+            action = self.columns_menu.addAction(label)
+            action.setCheckable(True)
+            action.setChecked(True)
+            action.toggled.connect(
+                lambda checked, i=index: self.table.setColumnHidden(i, not checked)
+            )
+
         layout.addWidget(self.table, 1)
 
         self.statusbar = StatusFooter()
         layout.addWidget(self.statusbar)
+
+    # ------------------------------------------------------------------
+    # Column visibility menu
+    def _show_columns_menu(self, pos: QtCore.QPoint) -> None:
+        """Display the column toggle menu."""
+
+        header = self.table.horizontalHeader()
+        self.columns_menu.exec(header.mapToGlobal(pos))
 
     # ------------------------------------------------------------------
     # Data helpers
