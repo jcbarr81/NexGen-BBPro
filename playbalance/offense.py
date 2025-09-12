@@ -116,9 +116,10 @@ def hit_and_run_chance(
     runner_sp: float,
     batter_ch: float,
     batter_ph: float,
-    pitcher_wild: float = 50.0,
+    pitcher_is_wild: bool = False,
     run_diff: int = 0,
     runner_on_first: bool = True,
+    runner_on_second: bool = False,
 ) -> float:
     """Return probability of calling a hit and run."""
 
@@ -126,8 +127,40 @@ def hit_and_run_chance(
         return 0.0
 
     count_key = f"hnrChance{balls}{strikes}Count"
-    chance = getattr(cfg, count_key, 0) / 100.0
+    chance = (
+        getattr(cfg, "hnrChanceBase", 0) + getattr(cfg, count_key, 0)
+    ) / 100.0
 
+    # ------------------------------------------------------------------
+    # Game situation modifiers
+    # ------------------------------------------------------------------
+    if run_diff <= -3:
+        chance += getattr(cfg, "hnrChance3MoreBehindAdjust", 0) / 100.0
+    elif run_diff == -2:
+        chance += getattr(cfg, "hnrChance2BehindAdjust", 0) / 100.0
+    elif run_diff == 1:
+        chance += getattr(cfg, "hnrChance1AheadAdjust", 0) / 100.0
+    elif run_diff >= 2:
+        chance += getattr(cfg, "hnrChance2MoreAheadAdjust", 0) / 100.0
+
+    if runner_on_second:
+        chance += getattr(cfg, "hnrChanceOn12Adjust", 0) / 100.0
+
+    if pitcher_is_wild:
+        chance += getattr(cfg, "hnrChancePitcherWildAdjust", 0) / 100.0
+
+    if balls == 3:
+        chance += getattr(cfg, "hnrChance3BallsAdjust", 0) / 100.0
+    if strikes == 2:
+        chance += getattr(cfg, "hnrChance2StrikesAdjust", 0) / 100.0
+    if balls == strikes:
+        chance += getattr(cfg, "hnrChanceEvenCountAdjust", 0) / 100.0
+    if balls == 0 and strikes == 1:
+        chance += getattr(cfg, "hnrChance01CountAdjust", 0) / 100.0
+
+    # ------------------------------------------------------------------
+    # Player ability modifiers
+    # ------------------------------------------------------------------
     if runner_sp >= getattr(cfg, "hnrChanceFastSPThresh", 0):
         chance += getattr(cfg, "hnrChanceFastSPAdjust", 0) / 100.0
 
@@ -136,12 +169,6 @@ def hit_and_run_chance(
 
     if batter_ph <= getattr(cfg, "hnrChanceLowPHThresh", 100):
         chance += getattr(cfg, "hnrChanceLowPHAdjust", 0) / 100.0
-
-    if pitcher_wild >= getattr(cfg, "hnrChancePitcherWildThresh", 101):
-        chance += getattr(cfg, "hnrChancePitcherWildAdjust", 0) / 100.0
-
-    if run_diff >= getattr(cfg, "hnrChanceAheadThresh", 999):
-        chance += getattr(cfg, "hnrChanceAheadAdjust", 0) / 100.0
 
     chance *= getattr(cfg, "offManHNRChancePct", 100) / 100.0
     return clamp01(chance)
