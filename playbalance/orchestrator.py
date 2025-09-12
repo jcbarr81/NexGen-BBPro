@@ -25,7 +25,7 @@ import os
 import random
 
 from logic.schedule_generator import generate_mlb_schedule
-from logic.simulation import (
+from .simulation import (
     FieldingState,
     GameSimulation,
     PitcherState,

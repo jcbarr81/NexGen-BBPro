@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from playbalance.benchmarks import load_benchmarks, league_average
 from logic.schedule_generator import generate_mlb_schedule
 from logic.sim_config import load_tuned_playbalance_config
-from logic.simulation import FieldingState, GameSimulation, PitcherState, TeamState
+from playbalance.simulation import FieldingState, GameSimulation, PitcherState, TeamState
 from utils.lineup_loader import build_default_game_state
 from utils.team_loader import load_teams
 
