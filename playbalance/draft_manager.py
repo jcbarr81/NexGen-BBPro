@@ -22,7 +22,7 @@ def _resolve_path(path: str | Path) -> Path:
     return path
 
 
-def load_draft_pool(pool_path: str | Path = "logic/draft_pool.csv") -> List[dict]:
+def load_draft_pool(pool_path: str | Path = "playbalance/draft_pool.csv") -> List[dict]:
     """Load draft candidates from a CSV file."""
     pool_path = _resolve_path(pool_path)
     with pool_path.open(newline="") as csvfile:
@@ -39,7 +39,7 @@ def load_teams(team_path: str | Path = "data/teams.csv") -> List[str]:
 
 def run_draft(
     rounds: int = 3,
-    pool_path: str | Path = "logic/draft_pool.csv",
+    pool_path: str | Path = "playbalance/draft_pool.csv",
     team_path: str | Path = "data/teams.csv",
     log_path: str | Path = "data/draft_log.txt",
 ) -> Dict[str, List[str]]:

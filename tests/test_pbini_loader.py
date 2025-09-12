@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from logic.pbini_loader import load_pbini
+from playbalance.pbini_loader import load_pbini
 
 
 def test_load_pbini_parses_playbalance_section():
-    config = load_pbini(Path('logic/PBINI.txt'))
+    config = load_pbini(Path('playbalance/PBINI.txt'))
     assert 'PlayBalance' in config
     play = config['PlayBalance']
     assert play['chargeChanceBaseFirst'] == 0

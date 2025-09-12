@@ -1,6 +1,6 @@
 import random
 
-from logic.simulation import GameSimulation, TeamState
+from playbalance.simulation import GameSimulation, TeamState
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import make_cfg

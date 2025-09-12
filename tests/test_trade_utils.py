@@ -6,7 +6,7 @@ import pytest
 
 from models.trade import Trade
 from utils.trade_utils import get_pending_trades, load_trades, save_trade
-from logic.season_manager import TRADE_DEADLINE
+from playbalance.season_manager import TRADE_DEADLINE
 
 # Reseed RNG so earlier tests that modify random state don't influence later ones
 random.seed()

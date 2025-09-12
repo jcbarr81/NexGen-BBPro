@@ -8,10 +8,12 @@ configuration entries are missing.
 """
 from __future__ import annotations
 
+import math
+import random
 from random import Random
 from typing import Tuple
 
-from .config import PlayBalanceConfig
+from .playbalance_config import PlayBalanceConfig
 
 
 def exit_velocity(
@@ -344,6 +346,202 @@ def ai_timing_adjust(
     return time
 
 
+class Physics:
+    """Helper performing simple physics related calculations.
+
+    This class mirrors a subset of the legacy engine so existing code relying
+    on the object-oriented API can continue to function.  The standalone
+    functions above represent the new functional style used by the
+    ``playbalance`` package.  Both interfaces coexist to ease the transition
+    away from the old ``logic`` module.
+    """
+
+    def __init__(self, config: PlayBalanceConfig, rng: random.Random | None = None) -> None:
+        self.config = config
+        self.rng = rng or random.Random()
+
+    # ------------------------------------------------------------------
+    # Player movement speed
+    # ------------------------------------------------------------------
+    def player_speed(self, sp: int) -> float:
+        """Return the movement speed for a player with ``sp`` rating."""
+
+        base = getattr(self.config, "speedBase")
+        pct = getattr(self.config, "speedPct")
+        return base + pct * sp / 100.0
+
+    # ------------------------------------------------------------------
+    # Fielder reaction delay
+    # ------------------------------------------------------------------
+    def reaction_delay(self, position: str, fa: int) -> float:
+        """Return the reaction delay for a fielder."""
+
+        suffix_map = {
+            "P": "Pitcher",
+            "C": "Catcher",
+            "1B": "FirstBase",
+            "2B": "SecondBase",
+            "3B": "ThirdBase",
+            "SS": "ShortStop",
+            "LF": "LeftField",
+            "CF": "CenterField",
+            "RF": "RightField",
+        }
+        suffix = suffix_map.get(position.upper())
+        if suffix is None:
+            return 0.0
+        base = getattr(self.config, f"delayBase{suffix}")
+        pct = getattr(self.config, f"delayFAPct{suffix}")
+        return base + pct * fa / 100.0
+
+    # ------------------------------------------------------------------
+    # Fielder throw calculations
+    # ------------------------------------------------------------------
+    def max_throw_distance(self, as_rating: int) -> float:
+        """Return maximum throw distance for ``as_rating`` arm strength."""
+
+        base = getattr(self.config, "maxThrowDistBase")
+        pct = getattr(self.config, "maxThrowDistASPct")
+        return base + pct * as_rating / 100.0
+
+    def throw_velocity(self, distance: float, as_rating: int, *, outfield: bool) -> float:
+        """Return throw velocity for ``distance``, ``as_rating`` and fielder type."""
+
+        prefix = "OF" if outfield else "IF"
+        base = getattr(self.config, f"throwSpeed{prefix}Base")
+        dist_pct = getattr(self.config, f"throwSpeed{prefix}DistPct")
+        as_pct = getattr(self.config, f"throwSpeed{prefix}ASPct")
+        max_speed = getattr(self.config, f"throwSpeed{prefix}Max")
+        speed = base
+        speed += dist_pct * distance / 100.0
+        speed += as_pct * as_rating / 100.0
+        return min(speed, max_speed)
+
+    def throw_time(self, as_rating: int, distance: float, position: str) -> float:
+        """Return travel time for a throw to cover ``distance`` feet."""
+
+        max_dist = self.max_throw_distance(as_rating)
+        if distance > max_dist:
+            return float("inf")
+        outfield = position.upper() in {"LF", "CF", "RF"}
+        speed = self.throw_velocity(distance, as_rating, outfield=outfield)
+        fps = speed * 5280 / 3600
+        if fps <= 0:
+            return float("inf")
+        return distance / fps
+
+    # ------------------------------------------------------------------
+    # Pitch velocity
+    # ------------------------------------------------------------------
+    def pitch_velocity(
+        self, pitch_type: str, as_rating: int, *, rand: float | None = None
+    ) -> float:
+        """Return the pitch speed for ``pitch_type`` and ``as_rating``."""
+
+        key_map = {"kn": "kb", "scb": "sb"}
+        key = key_map.get(pitch_type.lower(), pitch_type.lower())
+        base = getattr(self.config, f"{key}SpeedBase")
+        rng_range = getattr(self.config, f"{key}SpeedRange")
+        pct = getattr(self.config, f"{key}SpeedASPct")
+        if rand is None:
+            rand = self.rng.random()
+        return base + rand * rng_range + as_rating * pct / 100.0
+
+    # ------------------------------------------------------------------
+    # Pitch control box
+    # ------------------------------------------------------------------
+    def control_box(self, pitch_type: str) -> tuple[int, int]:
+        """Return ``(width, height)`` of the control box for ``pitch_type``."""
+
+        key_map = {"kn": "kb", "scb": "sb"}
+        key = key_map.get(pitch_type.lower(), pitch_type.lower())
+        width = getattr(self.config, f"{key}ControlBoxWidth")
+        height = getattr(self.config, f"{key}ControlBoxHeight")
+        return width, height
+
+    # ------------------------------------------------------------------
+    # Missed control adjustments
+    # ------------------------------------------------------------------
+    def expand_control_box(
+        self, width: float, height: float, miss_amt: float
+    ) -> tuple[float, float]:
+        """Return increased control box dimensions for a missed control check."""
+
+        inc_pct = getattr(self.config, "controlBoxIncreaseEffCOPct")
+        increase = miss_amt * inc_pct / 100.0
+        return width + increase, height + increase
+
+    def reduce_pitch_velocity_for_miss(
+        self, pitch_speed: float, miss_amt: float, *, rand: float | None = None
+    ) -> float:
+        """Return ``pitch_speed`` adjusted for a missed control check."""
+
+        base = getattr(self.config, "speedReductionBase")
+        rng_range = getattr(self.config, "speedReductionRange")
+        eff_pct = getattr(self.config, "speedReductionEffMOPct")
+        if rand is None:
+            rand = self.rng.random()
+        rand_int = int(rand * (rng_range + 1))
+        reduction = base + rand_int + miss_amt * eff_pct / 100.0
+        return max(0.0, pitch_speed - reduction)
+
+    # ------------------------------------------------------------------
+    # Pitch break
+    # ------------------------------------------------------------------
+    def pitch_break(self, pitch_type: str, *, rand: float | None = None) -> tuple[float, float]:
+        """Return ``(dx, dy)`` break offsets for ``pitch_type``."""
+
+        key_map = {"kn": "kb", "scb": "sb"}
+        key = key_map.get(pitch_type.lower(), pitch_type.lower())
+        base_w = getattr(self.config, f"{key}BreakBaseWidth")
+        base_h = getattr(self.config, f"{key}BreakBaseHeight")
+        range_w = getattr(self.config, f"{key}BreakRangeWidth")
+        range_h = getattr(self.config, f"{key}BreakRangeHeight")
+        if rand is None:
+            rand = self.rng.random()
+        dx = base_w + rand * range_w
+        dy = base_h + rand * range_h
+        return dx, dy
+
+    # ------------------------------------------------------------------
+    # Bat speed
+    # ------------------------------------------------------------------
+    def bat_speed(
+        self,
+        ph: int,
+        swing_type: str = "normal",
+        *,
+        pitch_speed: float | None = None,
+    ) -> float:
+        """Return bat speed for ``ph`` and ``swing_type``."""
+
+        base = getattr(self.config, "swingSpeedBase")
+        pct = getattr(self.config, "swingSpeedPHPct")
+        adjust_key = {
+            "power": "swingSpeedPowerAdjust",
+            "normal": "swingSpeedNormalAdjust",
+            "contact": "swingSpeedContactAdjust",
+            "bunt": "swingSpeedBuntAdjust",
+        }.get(swing_type, "swingSpeedNormalAdjust")
+        ph_adj = ph + getattr(self.config, adjust_key)
+        speed = base + pct * ph_adj / 100.0
+
+        if pitch_speed is None:
+            return speed
+
+        avg = getattr(self.config, "averagePitchSpeed")
+        diff = pitch_speed - avg
+        if diff > 0:
+            slowdown = getattr(self.config, "fastPitchBatSlowdownPct")
+            speed -= diff * slowdown / 100.0
+        elif diff < 0:
+            speedup = getattr(self.config, "slowPitchBatSpeedupPct")
+            speed += (-diff) * speedup / 100.0
+
+        return speed
+
+
+
 __all__ = [
     "exit_velocity",
     "pitch_movement",
@@ -358,4 +556,5 @@ __all__ = [
     "warm_up_progress",
     "pitch_velocity",
     "ai_timing_adjust",
+    "Physics",
 ]

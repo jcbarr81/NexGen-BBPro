@@ -1,9 +1,9 @@
 import random
 
-from logic.simulation import GameSimulation, TeamState
+from playbalance.simulation import GameSimulation, TeamState
 from models.player import Player
 from models.pitcher import Pitcher
-from logic.playbalance_config import PlayBalanceConfig
+from playbalance.playbalance_config import PlayBalanceConfig
 
 
 def make_player(pid: str) -> Player:

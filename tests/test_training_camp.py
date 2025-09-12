@@ -1,4 +1,4 @@
-from logic.training_camp import run_training_camp
+from playbalance.training_camp import run_training_camp
 from models.player import Player
 
 

@@ -4,9 +4,9 @@ from datetime import timedelta
 from pathlib import Path
 
 import scripts.simulate_season_avg as ssa
-import logic.simulation as sim
+import playbalance.simulation as sim
 from tests.test_physics import make_player, make_pitcher
-from logic.simulation import TeamState
+from playbalance.simulation import TeamState
 from collections import Counter
 
 

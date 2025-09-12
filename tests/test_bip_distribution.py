@@ -3,12 +3,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from logic.simulation import GameSimulation
-from logic.playbalance_config import PlayBalanceConfig
+from playbalance.simulation import GameSimulation
+from playbalance.playbalance_config import PlayBalanceConfig
 from utils.path_utils import get_base_dir
 from tests.test_physics import make_player, make_pitcher
 
-PB_CFG = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+PB_CFG = PlayBalanceConfig.from_file(get_base_dir() / "playbalance" / "PBINI.txt")
 
 
 def test_bip_distribution():

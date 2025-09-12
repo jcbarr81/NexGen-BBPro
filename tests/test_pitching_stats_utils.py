@@ -1,6 +1,6 @@
 from tests.test_simulation import make_pitcher
 from playbalance.state import PitcherState
-from logic.stats import compute_pitching_derived, compute_pitching_rates
+from playbalance.stats import compute_pitching_derived, compute_pitching_rates
 from pytest import approx
 
 

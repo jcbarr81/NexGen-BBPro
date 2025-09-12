@@ -2,7 +2,7 @@ import csv
 from pathlib import Path
 from typing import List, Tuple, Iterable
 
-from logic.simulation import TeamState
+from playbalance.simulation import TeamState
 from models.player import Player
 from models.pitcher import Pitcher
 from utils.path_utils import get_base_dir
@@ -96,7 +96,7 @@ def build_default_game_state(
     players_file: str = "data/players.csv",
     roster_dir: str = "data/rosters",
 ) -> TeamState:
-    """Return a :class:`~logic.simulation.TeamState` for ``team_id``.
+    """Return a :class:`~playbalance.simulation.TeamState` for ``team_id``.
 
     The state uses nine best hitters for the lineup, remaining hitters as the
     bench and pitchers ordered with a starter first followed by the bullpen.

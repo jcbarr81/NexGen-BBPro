@@ -1,7 +1,7 @@
 from tests.test_simulation import make_player
 from tests.test_simulation import make_player
-from logic.simulation import BatterState, FieldingState
-from logic.stats import (
+from playbalance.simulation import BatterState, FieldingState
+from playbalance.stats import (
     compute_batting_derived,
     compute_batting_rates,
     compute_fielding_derived,

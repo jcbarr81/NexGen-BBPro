@@ -53,7 +53,7 @@ from utils.user_manager import add_user, load_users, update_user
 from utils.path_utils import get_base_dir
 from utils.pitcher_role import get_role
 from utils.pitching_autofill import autofill_pitching_staff
-from logic.league_creator import create_league
+from playbalance.league_creator import create_league
 
 
 # ---------------------------------------------------------------------------

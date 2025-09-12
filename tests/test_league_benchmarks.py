@@ -1,7 +1,7 @@
 import pytest
 
-from logic.playbalance_config import PlayBalanceConfig
-from logic.sim_config import apply_league_benchmarks
+from playbalance.playbalance_config import PlayBalanceConfig
+from playbalance.sim_config import apply_league_benchmarks
 
 
 def test_apply_league_benchmarks():

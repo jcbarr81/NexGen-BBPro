@@ -1,6 +1,6 @@
 from models.player import Player
 from models.pitcher import Pitcher
-from logic.aging import spring_training_pitch
+from playbalance.aging import spring_training_pitch
 
 
 def make_player(**kwargs):

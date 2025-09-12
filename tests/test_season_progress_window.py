@@ -108,7 +108,7 @@ sys.modules["PyQt6"] = types.ModuleType("PyQt6")
 sys.modules["PyQt6.QtWidgets"] = qtwidgets
 
 # ---- Import window after stubs ----
-from logic.season_manager import SeasonPhase
+from playbalance.season_manager import SeasonPhase
 import ui.season_progress_window as spw
 
 
@@ -264,7 +264,7 @@ def test_offseason_resets_to_preseason():
     win._next_phase()
     assert win.manager.phase == SeasonPhase.PRESEASON
     assert "old" not in win.manager.players
-    import logic.season_manager as sm
+    import playbalance.season_manager as sm
     assert sm.TRADE_DEADLINE.year == date.today().year + 1
 
 

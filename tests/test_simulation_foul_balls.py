@@ -3,9 +3,9 @@ from types import SimpleNamespace
 
 import pytest
 
-import logic.simulation as sim
-from logic.simulation import GameSimulation, generate_boxscore
-from logic.playbalance_config import PlayBalanceConfig
+import playbalance.simulation as sim
+from playbalance.simulation import GameSimulation, generate_boxscore
+from playbalance.playbalance_config import PlayBalanceConfig
 from scripts.simulate_season_avg import clone_team_state
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
@@ -17,7 +17,7 @@ def _simulate(monkeypatch, foul_lambda=None, games: int = 20):
     teams = [t.team_id for t in load_teams()][:2]
     base_states = {tid: build_default_game_state(tid) for tid in teams}
 
-    cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+    cfg = PlayBalanceConfig.from_file(get_base_dir() / "playbalance" / "PBINI.txt")
 
     rng = random.Random(42)
     total_pitches = 0
@@ -53,7 +53,7 @@ def test_fouls_increase_pitches_reduce_strikeouts(monkeypatch):
     assert foul_k < no_foul_k
 
 
-PB_CFG = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+PB_CFG = PlayBalanceConfig.from_file(get_base_dir() / "playbalance" / "PBINI.txt")
 
 
 def test_foul_pitch_distribution():

@@ -1,6 +1,6 @@
 """Generate data/names.csv from legacy name lists.
 
-The script reads ``logic/FirstNames.txt`` and ``logic/Surnames.txt``
+The script reads ``playbalance/FirstNames.txt`` and ``playbalance/Surnames.txt``
 (containing census-style frequency tables) and emits ``data/names.csv``
 with columns ``ethnicity,first_name,last_name``.  Names are normalized to
 Title Case and paired with an ethnicity label (``Anglo``, ``African``,
@@ -22,8 +22,8 @@ from typing import Dict, Iterable, List
 
 # Base paths
 ROOT = Path(__file__).resolve().parents[1]
-FIRST_NAMES = ROOT / "logic" / "FirstNames.txt"
-SURNAMES = ROOT / "logic" / "Surnames.txt"
+FIRST_NAMES = ROOT / "playbalance" / "FirstNames.txt"
+SURNAMES = ROOT / "playbalance" / "Surnames.txt"
 OUT_FILE = ROOT / "data" / "names.csv"
 
 # Internal ethnicity mappings.  These sets intentionally contain only a

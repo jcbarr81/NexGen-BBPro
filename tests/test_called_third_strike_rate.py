@@ -1,8 +1,8 @@
 import pytest
 
-from logic.simulation import BatterState
+from playbalance.simulation import BatterState
 from playbalance.state import PitcherState
-from logic.stats import compute_batting_rates, compute_pitching_rates
+from playbalance.stats import compute_batting_rates, compute_pitching_rates
 
 
 class DummyPlayer:

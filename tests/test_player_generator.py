@@ -4,12 +4,12 @@ import random
 
 import pytest
 
-from logic.player_generator import (
+from playbalance.player_generator import (
     generate_player,
     assign_primary_position,
     generate_birthdate,
 )
-import logic.player_generator as pg
+import playbalance.player_generator as pg
 
 
 def test_generate_player_respects_age_range():

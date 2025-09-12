@@ -24,7 +24,7 @@ import argparse
 import os
 import random
 
-from logic.schedule_generator import generate_mlb_schedule
+from playbalance.schedule_generator import generate_mlb_schedule
 from .simulation import (
     FieldingState,
     GameSimulation,
@@ -32,7 +32,7 @@ from .simulation import (
     generate_boxscore,
 )
 from playbalance.state import PitcherState
-from logic.sim_config import load_tuned_playbalance_config
+from playbalance.sim_config import load_tuned_playbalance_config
 from playbalance.benchmarks import load_benchmarks, league_average
 from utils.lineup_loader import build_default_game_state
 

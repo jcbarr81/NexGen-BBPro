@@ -1,9 +1,9 @@
 import csv
 from collections import Counter
 from datetime import date
-from logic.league_creator import create_league, _dict_to_model, _abbr
+from playbalance.league_creator import create_league, _dict_to_model, _abbr
 from models.pitcher import Pitcher
-from logic.player_generator import reset_name_cache
+from playbalance.player_generator import reset_name_cache
 from utils.team_loader import load_teams
 import random
 import pytest
@@ -190,7 +190,7 @@ def test_create_league_requires_all_positions(tmp_path, monkeypatch):
             "primary_position": "P" if is_pitcher else "1B",
         }
 
-    monkeypatch.setattr("logic.league_creator.generate_player", fake_generate_player)
+    monkeypatch.setattr("playbalance.league_creator.generate_player", fake_generate_player)
     divisions = {"East": [("CityA", "Cats")]}
 
     with pytest.raises(ValueError):

@@ -1,7 +1,7 @@
 from random import Random
 
-from logic.fielding_ai import FieldingAI
-from logic.playbalance_config import PlayBalanceConfig
+from playbalance.fielding_ai import FieldingAI
+from playbalance.playbalance_config import PlayBalanceConfig
 
 
 def test_catch_slop_changes_decision():

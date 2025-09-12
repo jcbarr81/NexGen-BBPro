@@ -9,8 +9,8 @@ from types import SimpleNamespace
 import pytest
 
 import scripts.simulate_season_avg as ssa
-import logic.simulation as sim
-from logic.simulation import TeamState
+import playbalance.simulation as sim
+from playbalance.simulation import TeamState
 
 
 class DummyPool:

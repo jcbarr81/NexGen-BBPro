@@ -1,5 +1,5 @@
 import json
-from logic.season_manager import SeasonManager, SeasonPhase
+from playbalance.season_manager import SeasonManager, SeasonPhase
 
 
 def test_cycle_phases(tmp_path):

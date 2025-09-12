@@ -4,7 +4,7 @@
 This module implements core formulas controlling how individual fielders
 react to batted balls, make catches and throws, and decide whether to chase
 balls.  The functions mirror the tuning parameters exposed in ``PBINI.txt``
-so unit tests can validate behaviour against the original game's logic.
+so unit tests can validate behaviour against the original game's playbalance.
 """
 from __future__ import annotations
 

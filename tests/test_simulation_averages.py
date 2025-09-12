@@ -6,7 +6,7 @@ import io
 import contextlib
 
 import scripts.simulate_season_avg as ssa
-import logic.simulation as sim
+import playbalance.simulation as sim
 
 
 def test_simulated_averages_close_to_mlb(monkeypatch):

@@ -1,9 +1,9 @@
 import random
 import pytest
 
-import logic.simulation as sim
-from logic.playbalance_config import PlayBalanceConfig
-from logic.simulation import GameSimulation, generate_boxscore
+import playbalance.simulation as sim
+from playbalance.playbalance_config import PlayBalanceConfig
+from playbalance.simulation import GameSimulation, generate_boxscore
 from scripts.simulate_season_avg import clone_team_state
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
@@ -24,7 +24,7 @@ def _simulate(monkeypatch, games: int = 20) -> float:
         pytest.skip("Insufficient roster data for simulation")
     ids = list(base_states.keys())
 
-    cfg = PlayBalanceConfig.from_file(get_base_dir() / "logic" / "PBINI.txt")
+    cfg = PlayBalanceConfig.from_file(get_base_dir() / "playbalance" / "PBINI.txt")
     rng = random.Random(0)
     total_strikeouts = 0
 

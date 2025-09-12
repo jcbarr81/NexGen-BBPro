@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIntValidator
 from typing import Dict, List
 
-from logic.playbalance_config import PlayBalanceConfig, _DEFAULTS
+from playbalance.playbalance_config import PlayBalanceConfig, _DEFAULTS
 
 
 class PlayBalanceEditor(QDialog):

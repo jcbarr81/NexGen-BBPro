@@ -1,13 +1,13 @@
 import random
 import pytest
 
-from logic.simulation import (
+from playbalance.simulation import (
     BatterState,
     GameSimulation,
     TeamState,
 )
 from playbalance.state import PitcherState
-from logic.playbalance_config import PlayBalanceConfig
+from playbalance.playbalance_config import PlayBalanceConfig
 from tests.test_physics import make_player, make_pitcher
 
 

@@ -5,7 +5,7 @@ UBL (Ultimate Baseball League) Simulation is a Python project that models a smal
 ## Features
 - **PyQt6 interface:** run `main.py` to launch the login window and access administrative tools.
 - **League management:** classes for players, teams, trades and rosters in `models/` with supporting services and UI dialogs.
-- **Game simulation:** `logic/simulation.py` provides a minimal engine for at-bats, pitching changes and base running.
+- **Game simulation:** `playbalance/simulation.py` provides a minimal engine for at-bats, pitching changes and base running.
 - **Data files:** example data lives in the `data/` directory including rosters, lineups and configuration values.
 - **AI-generated logos:** `utils.logo_generator` can create team logos using OpenAI's image API.
 
@@ -35,7 +35,7 @@ The key enables calls to OpenAI's `images.generate` endpoint.
 Strategy behaviour in the simulation is driven by values from the
 `PlayBalance` section of the historical *PB.INI* file.  The configuration is
 loaded into a dedicated :class:`PlayBalanceConfig` dataclass
-(`logic/playbalance_config.py`) which exposes the entries as attributes with
+(`playbalance/playbalance_config.py`) which exposes the entries as attributes with
 safe defaults.  The managers and `GameSimulation` consume this object instead
 of raw dictionaries.
 

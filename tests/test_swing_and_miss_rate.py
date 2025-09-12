@@ -1,7 +1,7 @@
 import pytest
 
 from playbalance.state import PitcherState
-from logic.stats import compute_pitching_rates
+from playbalance.stats import compute_pitching_rates
 
 
 class DummyPitcher:

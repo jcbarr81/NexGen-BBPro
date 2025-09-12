@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 from models.base_player import BasePlayer
-from logic.aging import age_player, calculate_age
+from playbalance.aging import age_player, calculate_age
 
 RETIREMENT_AGE = 40
 

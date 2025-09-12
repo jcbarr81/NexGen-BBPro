@@ -100,7 +100,7 @@ def load_tuned_playbalance_config(
     """
 
     base = get_base_dir()
-    cfg = PlayBalanceConfig.from_file(base / "logic" / "PBINI.txt")
+    cfg = PlayBalanceConfig.from_file(base / "playbalance" / "PBINI.txt")
 
     if babip_scale_param is not None:
         cfg.babip_scale = babip_scale_param
