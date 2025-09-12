@@ -260,14 +260,16 @@ class BatterAI:
         """Return ``(swing, contact_quality)`` for the pitch.
 
         Parameters beyond ``balls``, ``strikes`` and ``look_for`` are accepted
-        for API compatibility with the legacy implementation.  The simplified
-        logic only uses ``random_value`` (falling back to :func:`random.random`)
-        to determine whether the batter swings; the remaining values are
-        currently ignored but kept to avoid :class:`TypeError` in callers.
+        for API compatibility with the legacy implementation.  ``random_value``
+        (falling back to :func:`random.random`) determines whether the batter
+        swings while ``check_random`` drives the contact check.  Remaining
+        values are currently ignored but retained to avoid :class:`TypeError`
+        in callers.
         """
 
         swing = False
         contact_quality = 1.0
+        self.last_contact = False
 
         rv = random.random() if random_value is None else random_value
 
@@ -292,6 +294,20 @@ class BatterAI:
         id_chance = id_base * id_scale
         if rv * 100 <= id_chance:
             swing = True
+
+        if swing:
+            batter_contact = getattr(batter, "ch", 50)
+            pitch_quality = getattr(pitcher, pitch_type, getattr(pitcher, "movement", 50))
+            miss_chance = (pitch_quality - batter_contact + 50) / 200.0
+            miss_chance = max(0.05, min(0.95, miss_chance))
+            rv_contact = rv if check_random is None else check_random
+            if rv_contact < miss_chance:
+                self.last_contact = False
+                contact_quality = 0.0
+            else:
+                self.last_contact = True
+        else:
+            self.last_contact = False
 
         self.last_decision = (swing, max(0.0, min(1.0, contact_quality)))
         return self.last_decision
