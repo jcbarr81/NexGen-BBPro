@@ -799,6 +799,8 @@ posPlayerPitchingRuns = 12  ; The number of runs the team must be behind the
 ; a particular inning, they are considered "toast" and a reliever will start
 ; warming up.  Once the reliever is warm, if the starter is still "toast",
 ; the reliever is brought in, otherwise, the reliever sits down.
+; A separate boolean flag ``is_toast`` is maintained to note when the pitcher
+; has been deemed toast distinct from the numeric toast points above.
 ;
 ; Starters get "toast" points in the following manner:
 ;

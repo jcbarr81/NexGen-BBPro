@@ -781,6 +781,9 @@ class SubstitutionManager:
 
     # ------------------------------------------------------------------
     # Pitcher toast helpers
+    # ``state.toast`` tracks numeric toast points. ``state.is_toast`` is a
+    # boolean flag set when a pitcher has been deemed toast and should be
+    # considered for replacement.
     # ------------------------------------------------------------------
     def _starter_toast_threshold(
         self, team: "TeamState", inning: int, home_team: bool

@@ -76,6 +76,24 @@ def make_pitcher(pid: str, endurance: int = 100, role: str = "SP") -> Pitcher:
         fa=50,
         role=role,
     )
+
+
+def test_default_pitcher_state_not_toast():
+    """Ensure pitchers start with a boolean toast flag."""
+
+    cfg = make_cfg(starterToastThreshInn1=0, pitcherTiredThresh=0)
+    team = TeamState(
+        lineup=[make_player("d")],
+        bench=[],
+        pitchers=[make_pitcher("sp1"), make_pitcher("rp1", role="RP")],
+    )
+    mgr = SubstitutionManager(cfg, MockRandom([]))
+    state = team.current_pitcher_state
+    assert state and not state.is_toast
+    assert not mgr.maybe_warm_reliever(team, inning=1, run_diff=0, home_team=True)
+    assert state.is_toast is False
+
+
 def test_pinch_hit():
     cfg = load_config()
     cfg.values.update({"doubleSwitchPHAdjust": 100})
