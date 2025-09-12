@@ -33,7 +33,7 @@ from .stats import (
     compute_team_rates,
 )
 
-_PITCH_RATINGS = ["fb", "sl", "cu", "cb", "si", "scb", "kn"]
+from .constants import PITCH_RATINGS
 
 
 @dataclass(slots=True)
@@ -254,7 +254,7 @@ class GameSimulation:
             co_mult = self.config.get("effCOPct", 100) / 100.0
             mo_mult = self.config.get("effMOPct", 100) / 100.0
         scaled = replace(pitcher)
-        for attr in _PITCH_RATINGS:
+        for attr in PITCH_RATINGS:
             setattr(scaled, attr, int(getattr(pitcher, attr) * pitch_mult))
         scaled.arm = int(pitcher.arm * as_mult)
         scaled.control = int(pitcher.control * co_mult)

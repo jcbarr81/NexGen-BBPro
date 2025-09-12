@@ -17,6 +17,7 @@ import random
 
 from models.pitcher import Pitcher
 from .playbalance_config import PlayBalanceConfig
+from .constants import PITCH_RATINGS
 
 
 # ---------------------------------------------------------------------------
@@ -161,13 +162,13 @@ class PitcherAI:
     def _primary_pitch(self, pitcher: Pitcher) -> str:
         pid = pitcher.player_id
         if pid not in self._primary_cache:
-            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            ratings = {p: getattr(pitcher, p) for p in PITCH_RATINGS}
             primary = max(ratings.items(), key=lambda kv: kv[1])[0]
             self._primary_cache[pid] = primary
         return self._primary_cache[pid]
 
     def select_pitch(self, pitcher: Pitcher, *, balls: int = 0, strikes: int = 0) -> Tuple[str, str]:
-        available = {p: getattr(pitcher, p) for p in _PITCH_RATINGS if getattr(pitcher, p) > 0}
+        available = {p: getattr(pitcher, p) for p in PITCH_RATINGS if getattr(pitcher, p) > 0}
         if not available:
             raise ValueError("Pitcher has no available pitch types")
 
@@ -199,7 +200,7 @@ class PitcherAI:
                 score += primary_adjust
             scored[name] = score
 
-        pitch_type = max(scored.items(), key=lambda kv: (kv[1], -_PITCH_RATINGS.index(kv[0])))[0]
+        pitch_type = max(scored.items(), key=lambda kv: (kv[1], -PITCH_RATINGS.index(kv[0])))[0]
         established.add(pitch_type)
 
         prefix = f"pitchObj{balls}{strikes}Count"

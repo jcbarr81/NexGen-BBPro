@@ -16,6 +16,7 @@ from models.player import Player
 from models.pitcher import Pitcher
 from .playbalance_config import PlayBalanceConfig
 from .probability import clamp01, roll
+from .constants import PITCH_RATINGS
 
 
 # ---------------------------------------------------------------------------
@@ -224,7 +225,7 @@ class BatterAI:
             self._primary_cache = {}
         pid = pitcher.player_id
         if pid not in self._primary_cache:
-            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            ratings = {p: getattr(pitcher, p) for p in PITCH_RATINGS}
             primary = max(ratings.items(), key=lambda kv: kv[1])[0]
             self._primary_cache[pid] = primary
         return self._primary_cache[pid]
@@ -234,7 +235,7 @@ class BatterAI:
             self._best_cache = {}
         pid = pitcher.player_id
         if pid not in self._best_cache:
-            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            ratings = {p: getattr(pitcher, p) for p in PITCH_RATINGS}
             best = max(ratings.items(), key=lambda kv: kv[1])[0]
             self._best_cache[pid] = best
         return self._best_cache[pid]
