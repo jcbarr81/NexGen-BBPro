@@ -46,14 +46,14 @@ def test_ground_air_distribution():
     assert air / total == pytest.approx(expected_air, abs=0.02)
 
 
-def test_vert_angle_gf_pct_shifts_distribution():
-    cfg0 = PlayBalanceConfig.from_dict({"vertAngleGFPct": 0})
-    cfg10 = PlayBalanceConfig.from_dict({"vertAngleGFPct": 10})
+def test_launch_weight_shifts_distribution():
+    cfg0 = PlayBalanceConfig.from_dict({"bipLaunchWeight": 0})
+    cfg40 = PlayBalanceConfig.from_dict({"bipLaunchWeight": 0.4})
 
     def run(cfg):
         rng = random.Random(0)
         batter = make_player("b")
-        batter.gf = 0
+        batter.gf = 80
         pitcher = make_pitcher("p")
         defense = TeamState(lineup=[make_player("d")], bench=[], pitchers=[pitcher])
         offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
@@ -73,6 +73,6 @@ def test_vert_angle_gf_pct_shifts_distribution():
         return ground, air
 
     ground0, air0 = run(cfg0)
-    ground10, air10 = run(cfg10)
-    assert ground10 < ground0
-    assert air10 > air0
+    ground40, air40 = run(cfg40)
+    assert ground40 < ground0
+    assert air40 > air0

@@ -148,6 +148,10 @@ _DEFAULTS: Dict[str, Any] = {
     "groundBallBaseRate": 44,
     "flyBallBaseRate": 35,
     "lineDriveBaseRate": 21,
+    # Weighting factors for batter/pitcher influence on batted ball types
+    "bipPowerWeight": 0.2,
+    "bipLaunchWeight": 0.2,
+    "bipMovementWeight": 0.2,
     # League average strike percentage
     "leagueStrikePct": _LEAGUE_STRIKE_PCT,
     # Hit type distribution reflecting recent MLB averages
@@ -740,6 +744,21 @@ class PlayBalanceConfig:
     def line_drive_base_rate(self) -> int:
         """Baseline percentage of batted balls that are line drives."""
         return int(self.lineDriveBaseRate)
+
+    @property
+    def bip_power_weight(self) -> float:
+        """Weight for batter power influence on batted ball distribution."""
+        return float(self.bipPowerWeight)
+
+    @property
+    def bip_launch_weight(self) -> float:
+        """Weight for batter launch tendency influence."""
+        return float(self.bipLaunchWeight)
+
+    @property
+    def bip_movement_weight(self) -> float:
+        """Weight for pitcher movement influence on batted ball distribution."""
+        return float(self.bipMovementWeight)
 
     @property
     def hit_prob_base(self) -> float:
