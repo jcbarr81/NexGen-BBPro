@@ -605,7 +605,9 @@ class GameSimulation:
     # ------------------------------------------------------------------
     # Core loop helpers
     # ------------------------------------------------------------------
-    def simulate_game(self, innings: int = 9) -> None:
+    def simulate_game(
+        self, innings: int = 9, persist_stats: bool = True
+    ) -> None:
         """Simulate a complete game.
 
         The game will extend into extra innings if tied after the requested
@@ -613,6 +615,9 @@ class GameSimulation:
         when the home team is already ahead. Only very small parts of a real
         baseball game are modelled – enough to exercise decision making
         paths for the tests.
+
+        Set ``persist_stats`` to ``False`` to skip merging results into season
+        totals or saving them to disk.
         """
 
         inning = 1
@@ -628,90 +633,101 @@ class GameSimulation:
                     break
                 inning += 1
 
-        # Finalize pitching stats for pitchers who finished the game
-        self._on_pitcher_exit(self.home.current_pitcher_state, self.away, self.home, game_finished=True)
-        self._on_pitcher_exit(self.away.current_pitcher_state, self.home, self.away, game_finished=True)
+        if persist_stats:
+            # Finalize pitching stats for pitchers who finished the game
+            self._on_pitcher_exit(
+                self.home.current_pitcher_state,
+                self.away,
+                self.home,
+                game_finished=True,
+            )
+            self._on_pitcher_exit(
+                self.away.current_pitcher_state,
+                self.home,
+                self.away,
+                game_finished=True,
+            )
 
-        for team in (self.home, self.away):
-            for bs in team.lineup_stats.values():
-                season = getattr(bs.player, "season_stats", {})
-                for f in fields(BatterState):
-                    if f.name == "player":
-                        continue
-                    season[f.name] = season.get(f.name, 0) + getattr(bs, f.name)
-                season_state = BatterState(bs.player)
-                for f in fields(BatterState):
-                    if f.name == "player":
-                        continue
-                    setattr(season_state, f.name, season.get(f.name, 0))
-                season.update(compute_batting_derived(season_state))
-                season.update(compute_batting_rates(season_state))
-                season["2b"] = season.get("b2", 0)
-                season["3b"] = season.get("b3", 0)
-                bs.player.season_stats = season
+            for team in (self.home, self.away):
+                for bs in team.lineup_stats.values():
+                    season = getattr(bs.player, "season_stats", {})
+                    for f in fields(BatterState):
+                        if f.name == "player":
+                            continue
+                        season[f.name] = season.get(f.name, 0) + getattr(bs, f.name)
+                    season_state = BatterState(bs.player)
+                    for f in fields(BatterState):
+                        if f.name == "player":
+                            continue
+                        setattr(season_state, f.name, season.get(f.name, 0))
+                    season.update(compute_batting_derived(season_state))
+                    season.update(compute_batting_rates(season_state))
+                    season["2b"] = season.get("b2", 0)
+                    season["3b"] = season.get("b3", 0)
+                    bs.player.season_stats = season
 
-            for ps in team.pitcher_stats.values():
-                season = getattr(ps.player, "season_stats", {})
-                for f in fields(PitcherState):
-                    if f.name in {"player", "in_save_situation"}:
-                        continue
-                    season[f.name] = season.get(f.name, 0) + getattr(ps, f.name)
-                season_state = PitcherState(ps.player)
-                for f in fields(PitcherState):
-                    if f.name in {"player", "in_save_situation"}:
-                        continue
-                    setattr(season_state, f.name, season.get(f.name, 0))
-                season.update(compute_pitching_derived(season_state))
-                season.update(compute_pitching_rates(season_state))
-                ps.player.season_stats = season
+                for ps in team.pitcher_stats.values():
+                    season = getattr(ps.player, "season_stats", {})
+                    for f in fields(PitcherState):
+                        if f.name in {"player", "in_save_situation"}:
+                            continue
+                        season[f.name] = season.get(f.name, 0) + getattr(ps, f.name)
+                    season_state = PitcherState(ps.player)
+                    for f in fields(PitcherState):
+                        if f.name in {"player", "in_save_situation"}:
+                            continue
+                        setattr(season_state, f.name, season.get(f.name, 0))
+                    season.update(compute_pitching_derived(season_state))
+                    season.update(compute_pitching_rates(season_state))
+                    ps.player.season_stats = season
 
-            for fs in team.fielding_stats.values():
-                season = getattr(fs.player, "season_stats", {})
-                for f in fields(FieldingState):
-                    if f.name == "player":
-                        continue
-                    season[f.name] = season.get(f.name, 0) + getattr(fs, f.name)
-                season_state = FieldingState(fs.player)
-                for f in fields(FieldingState):
-                    if f.name == "player":
-                        continue
-                    setattr(season_state, f.name, season.get(f.name, 0))
-                season.update(compute_fielding_derived(season_state))
-                season.update(compute_fielding_rates(season_state))
-                fs.player.season_stats = season
+                for fs in team.fielding_stats.values():
+                    season = getattr(fs.player, "season_stats", {})
+                    for f in fields(FieldingState):
+                        if f.name == "player":
+                            continue
+                        season[f.name] = season.get(f.name, 0) + getattr(fs, f.name)
+                    season_state = FieldingState(fs.player)
+                    for f in fields(FieldingState):
+                        if f.name == "player":
+                            continue
+                        setattr(season_state, f.name, season.get(f.name, 0))
+                    season.update(compute_fielding_derived(season_state))
+                    season.update(compute_fielding_rates(season_state))
+                    fs.player.season_stats = season
 
-        for team, opp in ((self.home, self.away), (self.away, self.home)):
-            derived = compute_team_derived(team, opp)
-            season = team.team_stats
-            season["g"] = season.get("g", 0) + 1
-            season["r"] = season.get("r", 0) + team.runs
-            season["ra"] = season.get("ra", 0) + opp.runs
-            season["lob"] = season.get("lob", 0) + team.lob
-            for key in (
-                "opp_pa",
-                "opp_h",
-                "opp_bb",
-                "opp_so",
-                "opp_hbp",
-                "opp_hr",
-                "opp_roe",
-            ):
-                season[key] = season.get(key, 0) + derived[key]
-            season.update(compute_team_rates(season))
-            team.team_stats = season
-            if team.team is not None:
-                team.team.season_stats = season
+            for team, opp in ((self.home, self.away), (self.away, self.home)):
+                derived = compute_team_derived(team, opp)
+                season = team.team_stats
+                season["g"] = season.get("g", 0) + 1
+                season["r"] = season.get("r", 0) + team.runs
+                season["ra"] = season.get("ra", 0) + opp.runs
+                season["lob"] = season.get("lob", 0) + team.lob
+                for key in (
+                    "opp_pa",
+                    "opp_h",
+                    "opp_bb",
+                    "opp_so",
+                    "opp_hbp",
+                    "opp_hr",
+                    "opp_roe",
+                ):
+                    season[key] = season.get(key, 0) + derived[key]
+                season.update(compute_team_rates(season))
+                team.team_stats = season
+                if team.team is not None:
+                    team.team.season_stats = season
 
-        players: Dict[str, Player] = {}
-        for state in (self.home, self.away):
-            for bs in state.lineup_stats.values():
-                players[bs.player.player_id] = bs.player
-            for ps in state.pitcher_stats.values():
-                players[ps.player.player_id] = ps.player
-            for fs in state.fielding_stats.values():
-                players[fs.player.player_id] = fs.player
-        teams = [t.team for t in (self.home, self.away) if t.team is not None]
-        save_stats(players.values(), teams)
+            players: Dict[str, Player] = {}
+            for state in (self.home, self.away):
+                for bs in state.lineup_stats.values():
+                    players[bs.player.player_id] = bs.player
+                for ps in state.pitcher_stats.values():
+                    players[ps.player.player_id] = ps.player
+                for fs in state.fielding_stats.values():
+                    players[fs.player.player_id] = fs.player
+            teams = [t.team for t in (self.home, self.away) if t.team is not None]
+            save_stats(players.values(), teams)
 
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
