@@ -237,6 +237,80 @@ def test_hit_and_run_chance_increases_with_modifiers():
     assert 0.0 <= low <= high <= 1.0
 
 
+def test_hit_and_run_chance_game_situations():
+    """Run deficit and base state alter H&R probability."""
+
+    base = hit_and_run_chance(
+        cfg,
+        balls=0,
+        strikes=0,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+    )
+    behind = hit_and_run_chance(
+        cfg,
+        balls=0,
+        strikes=0,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+        run_diff=-3,
+    )
+    on_first_second = hit_and_run_chance(
+        cfg,
+        balls=0,
+        strikes=0,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+        runner_on_second=True,
+    )
+
+    assert behind < base
+    assert on_first_second < base
+
+
+def test_hit_and_run_chance_count_modifiers():
+    """Three balls raise and two strikes lower the chance."""
+
+    two_ball = hit_and_run_chance(
+        cfg,
+        balls=2,
+        strikes=0,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+    )
+    three_ball = hit_and_run_chance(
+        cfg,
+        balls=3,
+        strikes=0,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+    )
+    even_count = hit_and_run_chance(
+        cfg,
+        balls=1,
+        strikes=1,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+    )
+    two_strike = hit_and_run_chance(
+        cfg,
+        balls=0,
+        strikes=2,
+        runner_sp=60,
+        batter_ch=60,
+        batter_ph=40,
+    )
+
+    assert two_ball < three_ball
+    assert two_strike < even_count
+
+
 def test_sacrifice_bunt_situational_modifiers():
     """Sacrifice chance depends on base state and game context."""
 
