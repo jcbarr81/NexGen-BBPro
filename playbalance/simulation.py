@@ -1141,6 +1141,8 @@ class GameSimulation:
                 balls=balls,
                 strikes=strikes,
                 dist=dist,
+                dx=x_off,
+                dy=y_off,
                 random_value=dec_r,
             )
             contact = getattr(self.batter_ai, "last_contact", contact_quality > 0)

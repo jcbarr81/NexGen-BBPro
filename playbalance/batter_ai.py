@@ -308,12 +308,32 @@ class BatterAI:
 
         discipline = getattr(batter, "ch", 50) / 100.0
         pitch_kind = self.pitch_class(dist)
+        prob_key = {
+            "sure strike": "swingProbSureStrike",
+            "close strike": "swingProbCloseStrike",
+            "close ball": "swingProbCloseBall",
+            "sure ball": "swingProbSureBall",
+        }[pitch_kind]
+        base = getattr(self.config, prob_key, 0.0)
+        base *= getattr(self.config, "swingProbScale", 1.0)
+        swing_chance = base
+
+        # Count-based adjustment allows tuning per ball-strike count.
+        count_key = f"swingProb{balls}{strikes}CountAdjust"
+        swing_chance += getattr(self.config, count_key, 0) / 100.0
+
+        # Discipline pushes aggressiveness in the expected direction.
         if pitch_kind in {"sure strike", "close strike"}:
-            base = 0.66
-            swing_chance = base + (discipline - 0.5) * 0.2
+            swing_chance += (discipline - 0.5) * 0.2
         else:
-            base = 0.3 if pitch_kind == "close ball" else 0.1
-            swing_chance = base - (discipline - 0.5) * 0.2
+            swing_chance -= (discipline - 0.5) * 0.2
+
+        # Location-based adjustment penalises pitches further from the target.
+        dx_abs = abs(dx) if dx is not None else 0.0
+        dy_abs = abs(dy) if dy is not None else 0.0
+        loc_factor = getattr(self.config, "swingLocationFactor", 0.0) / 100.0
+        swing_chance -= (dx_abs + dy_abs) * loc_factor
+
         swing_chance = clamp01(swing_chance)
         if rv < swing_chance:
             swing = True
