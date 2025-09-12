@@ -76,6 +76,11 @@ def configure_perf_tuning() -> None:
         print(f"[PerfTune] Could not set CPU affinity: {e}")
 
 
+# STAT_KEYS defines the column order for all stat arrays produced by
+# ``_simulate_game``.  The first 17 entries correspond to batting statistics.
+# The remaining seven indices capture pitching metrics.  Contributors adding
+# new stats should append to this list and update the extraction logic
+# accordingly.
 STAT_KEYS = [
     "pa",
     "bb",
@@ -153,40 +158,83 @@ def clone_team_state(team_id: str) -> TeamState:
 
 
 def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
+    """Simulate a single game and return leaguewide stat totals.
+
+    The returned array has one entry per ``STAT_KEYS`` element.  Rows for
+    individual players follow the same layout so they can be summed
+    consistently.  Batting stats occupy indices 0-16, while pitching metrics
+    use 17-23.
+    """
+
     home_id, away_id, seed = args
     home = clone_team_state(home_id)
     away = clone_team_state(away_id)
     sim = GameSimulation(home, away, CFG, FastRNG(seed))
     sim.simulate_game(persist_stats=False)
+
     totals = np.zeros(len(STAT_KEYS), dtype=np.int64)
 
     for team in (home, away):
-        for bs in team.lineup_stats.values():
-            totals[STAT_INDEX["pa"]] += bs.pa
-            totals[STAT_INDEX["bb"]] += bs.bb
-            totals[STAT_INDEX["k"]] += bs.so
-            totals[STAT_INDEX["h"]] += bs.h
-            totals[STAT_INDEX["hr"]] += bs.hr
-            totals[STAT_INDEX["ab"]] += bs.ab
-            totals[STAT_INDEX["sf"]] += bs.sf
-            totals[STAT_INDEX["sb"]] += bs.sb
-            totals[STAT_INDEX["cs"]] += bs.cs
-            totals[STAT_INDEX["hbp"]] += bs.hbp
-            totals[STAT_INDEX["b1"]] += bs.b1
-            totals[STAT_INDEX["b2"]] += bs.b2
-            totals[STAT_INDEX["b3"]] += bs.b3
-            totals[STAT_INDEX["gb"]] += bs.gb
-            totals[STAT_INDEX["ld"]] += bs.ld
-            totals[STAT_INDEX["fb"]] += bs.fb
-            totals[STAT_INDEX["gidp"]] += bs.gidp
-        for ps in team.pitcher_stats.values():
-            totals[STAT_INDEX["pitches_thrown"]] += ps.pitches_thrown
-            totals[STAT_INDEX["zone_pitches"]] += ps.zone_pitches
-            totals[STAT_INDEX["zone_swings"]] += ps.zone_swings
-            totals[STAT_INDEX["zone_contacts"]] += ps.zone_contacts
-            totals[STAT_INDEX["o_zone_swings"]] += ps.o_zone_swings
-            totals[STAT_INDEX["o_zone_contacts"]] += ps.o_zone_contacts
-            totals[STAT_INDEX["so_looking"]] += ps.so_looking
+        # Gather per-batter stats into a 2D array and accumulate.
+        batter_count = len(team.lineup_stats)
+        if batter_count:
+            batter_iter = (
+                stat
+                for bs in team.lineup_stats.values()
+                for stat in (
+                    bs.pa,
+                    bs.bb,
+                    bs.so,
+                    bs.h,
+                    bs.hr,
+                    bs.ab,
+                    bs.sf,
+                    bs.sb,
+                    bs.cs,
+                    bs.hbp,
+                    bs.b1,
+                    bs.b2,
+                    bs.b3,
+                    bs.gb,
+                    bs.ld,
+                    bs.fb,
+                    bs.gidp,
+                )
+            )
+            batter_stats = np.fromiter(
+                batter_iter, dtype=np.int64, count=batter_count * 17
+            ).reshape(batter_count, 17)
+            np.add(
+                totals[:17],
+                batter_stats.sum(axis=0, dtype=np.int64),
+                out=totals[:17],
+            )
+
+        # Gather per-pitcher stats into a 2D array and accumulate.
+        pitcher_count = len(team.pitcher_stats)
+        if pitcher_count:
+            pitcher_iter = (
+                stat
+                for ps in team.pitcher_stats.values()
+                for stat in (
+                    ps.pitches_thrown,
+                    ps.zone_pitches,
+                    ps.zone_swings,
+                    ps.zone_contacts,
+                    ps.o_zone_swings,
+                    ps.o_zone_contacts,
+                    ps.so_looking,
+                )
+            )
+            pitcher_stats = np.fromiter(
+                pitcher_iter, dtype=np.int64, count=pitcher_count * 7
+            ).reshape(pitcher_count, 7)
+            np.add(
+                totals[17:],
+                pitcher_stats.sum(axis=0, dtype=np.int64),
+                out=totals[17:],
+            )
+
     return totals
 
 
