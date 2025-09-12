@@ -29,6 +29,12 @@ class PitcherState:
     g: int = 0
     gs: int = 0
     gf: int = 0
+    sv: int = 0
+    svo: int = 0
+    hld: int = 0
+    bs: int = 0
+    ir: int = 0
+    irs: int = 0
     outs: int = 0
     r: int = 0
     er: int = 0
@@ -59,6 +65,7 @@ class PitcherState:
     consecutive_hits: int = 0
     consecutive_baserunners: int = 0
     allowed_hr: bool = False
+    in_save_situation: bool = False
     zone_pitches: int = 0
     zone_swings: int = 0
     zone_contacts: int = 0
