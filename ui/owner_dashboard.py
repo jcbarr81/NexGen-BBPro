@@ -47,6 +47,7 @@ from utils.free_agent_finder import find_free_agents
 from utils.pitcher_role import get_role
 from utils.team_loader import load_teams
 from utils.path_utils import get_base_dir
+from ui.window_utils import show_on_top
 
 
 class OwnerDashboard(QMainWindow):
@@ -192,25 +193,25 @@ class OwnerDashboard(QMainWindow):
 
     # ---------- Actions used by pages ----------
     def open_lineup_editor(self) -> None:
-        LineupEditor(self.team_id).exec()
+        show_on_top(LineupEditor(self.team_id))
 
     def open_pitching_editor(self) -> None:
-        PitchingEditor(self.team_id).exec()
+        show_on_top(PitchingEditor(self.team_id))
 
     def open_position_players_dialog(self) -> None:
-        PositionPlayersDialog(self.players, self.roster).exec()
+        show_on_top(PositionPlayersDialog(self.players, self.roster))
 
     def open_pitchers_dialog(self) -> None:
-        PitchersDialog(self.players, self.roster).exec()
+        show_on_top(PitchersDialog(self.players, self.roster))
 
     def open_reassign_players_dialog(self) -> None:
-        ReassignPlayersDialog(self.players, self.roster, self).exec()
+        show_on_top(ReassignPlayersDialog(self.players, self.roster, self))
 
     def open_transactions_page(self) -> None:
-        TransactionsWindow().exec()
+        show_on_top(TransactionsWindow())
 
     def open_trade_dialog(self) -> None:
-        TradeDialog(self.team_id, self).exec()
+        show_on_top(TradeDialog(self.team_id, self))
 
     def sign_free_agent(self) -> None:
         try:
@@ -225,16 +226,16 @@ class OwnerDashboard(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to sign free agent: {e}")
 
     def open_standings_window(self) -> None:
-        StandingsWindow(self).exec()
+        show_on_top(StandingsWindow(self))
 
     def open_schedule_window(self) -> None:
-        ScheduleWindow(self).exec()
+        show_on_top(ScheduleWindow(self))
 
     def open_team_schedule_window(self) -> None:
         if not getattr(self, "team_id", None):
             QMessageBox.warning(self, "Error", "Team information not available.")
             return
-        TeamScheduleWindow(self.team_id, self).exec()
+        show_on_top(TeamScheduleWindow(self.team_id, self))
 
     def open_team_stats_window(self) -> None:
         if not getattr(self, "team", None):
@@ -242,7 +243,7 @@ class OwnerDashboard(QMainWindow):
             return
         w = TeamStatsWindow(self.team, self.players, self.roster, self)
         w.tabs.setCurrentIndex(2)
-        w.exec()
+        show_on_top(w)
 
     def open_player_stats_window(self) -> None:
         if not getattr(self, "team", None):
@@ -250,14 +251,14 @@ class OwnerDashboard(QMainWindow):
             return
         w = TeamStatsWindow(self.team, self.players, self.roster, self)
         w.tabs.setCurrentIndex(0)
-        w.exec()
+        show_on_top(w)
 
     def open_league_stats_window(self) -> None:
         teams = load_teams()
-        LeagueStatsWindow(teams, self.players.values(), self).exec()
+        show_on_top(LeagueStatsWindow(teams, self.players.values(), self))
 
     def open_league_leaders_window(self) -> None:
-        LeagueLeadersWindow(self.players.values(), self).exec()
+        show_on_top(LeagueLeadersWindow(self.players.values(), self))
 
     # ---------- Utilities ----------
     def calculate_age(self, birthdate_str: str):
