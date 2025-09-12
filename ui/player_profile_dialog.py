@@ -65,6 +65,14 @@ class PlayerProfileDialog(QDialog):
         layout.addLayout(self._build_header())
 
         ratings = self._collect_ratings()
+        if getattr(self.player, "is_pitcher", False):
+            mapping = {
+                "endurance": "EN",
+                "control": "CO",
+                "movement": "MO",
+                "hold_runner": "HR",
+            }
+            ratings = {mapping.get(k, k): v for k, v in ratings.items()}
         if ratings:
             layout.addWidget(self._build_horizontal_grid("Ratings", ratings))
 
@@ -100,9 +108,8 @@ class PlayerProfileDialog(QDialog):
         )
         age = self._calculate_age(self.player.birthdate)
         info_layout.addWidget(QLabel(f"Age: {age}"))
-        info_layout.addWidget(
-            QLabel(f"Height: {getattr(self.player, 'height', '?')}")
-        )
+        height = getattr(self.player, "height", None)
+        info_layout.addWidget(QLabel(f"Height: {self._format_height(height)}"))
         info_layout.addWidget(
             QLabel(f"Weight: {getattr(self.player, 'weight', '?')}")
         )
@@ -138,6 +145,7 @@ class PlayerProfileDialog(QDialog):
             "injured",
             "injury_description",
             "return_date",
+            "ready",
         }
         ratings = {}
         for key, val in vars(self.player).items():
@@ -272,6 +280,16 @@ class PlayerProfileDialog(QDialog):
 
         group.setLayout(grid)
         return group
+
+
+    def _format_height(self, height: Any) -> str:
+        """Convert a height in inches to a string like 6'5"."""
+        try:
+            total_inches = int(height)
+        except (TypeError, ValueError):
+            return "?"
+        feet, inches = divmod(total_inches, 12)
+        return f"{feet}'{inches}\""
 
 
     def _calculate_age(self, birthdate_str: str):
