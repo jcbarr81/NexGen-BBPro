@@ -1,12 +1,12 @@
 # Play-Balance Simulation Engine Tasks
 
 This document tracks outstanding work required to build a new simulation engine
-that mirrors all formulas and decisions in `logic/PBINI.txt` and validates
+that mirrors all formulas and decisions in `playbalance/PBINI.txt` and validates
 outputs against `data/MLB_avg/mlb_league_benchmarks_2025_filled.csv`.
 
 ## 1. Foundation & Utilities
 ### PlayBalanceConfig
-- Map every entry in `logic/PBINI.txt` to structured configuration fields.
+- Map every entry in `playbalance/PBINI.txt` to structured configuration fields.
 - Allow loading user JSON and merge overrides atop PBINI defaults.
 - Validate that all PBINI keys are represented and raise on unknown keys.
 - Tests verifying override precedence and full coverage of PBINI entries.

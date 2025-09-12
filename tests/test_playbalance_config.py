@@ -1,6 +1,6 @@
-import logic.playbalance_config as playbalance_config
-from logic.playbalance_config import PlayBalanceConfig
-from logic.simulation import GameSimulation, TeamState, BatterState
+import playbalance.playbalance_config as playbalance_config
+from playbalance.playbalance_config import PlayBalanceConfig
+from playbalance.simulation import GameSimulation, TeamState, BatterState
 from tests.test_physics import make_player, make_pitcher, MockRandom
 import pytest
 

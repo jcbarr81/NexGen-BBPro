@@ -26,9 +26,9 @@ except ModuleNotFoundError:  # pragma: no cover
 # Ensure project root is on the path when running this script directly
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from logic.schedule_generator import generate_mlb_schedule
-from logic.season_simulator import SeasonSimulator
-from logic.simulation import (
+from playbalance.schedule_generator import generate_mlb_schedule
+from playbalance.season_simulator import SeasonSimulator
+from playbalance.simulation import (
     FieldingState,
     GameSimulation,
     TeamState,
@@ -38,7 +38,7 @@ from playbalance.state import PitcherState
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
-from logic.sim_config import load_tuned_playbalance_config
+from playbalance.sim_config import load_tuned_playbalance_config
 
 
 STAT_ORDER = [

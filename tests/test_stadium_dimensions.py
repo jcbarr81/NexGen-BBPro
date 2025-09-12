@@ -1,7 +1,7 @@
 import random
 
-from logic.field_geometry import Stadium
-from logic.simulation import (
+from playbalance.field_geometry import Stadium
+from playbalance.simulation import (
     BatterState,
     GameSimulation,
     TeamState,

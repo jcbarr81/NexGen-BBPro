@@ -20,14 +20,14 @@ import csv
 import json
 from pathlib import Path
 
-import logic.season_manager as season_manager
-from logic.aging_model import age_and_retire
-from logic.season_manager import SeasonManager, SeasonPhase
-from logic.training_camp import run_training_camp
+import playbalance.season_manager as season_manager
+from playbalance.aging_model import age_and_retire
+from playbalance.season_manager import SeasonManager, SeasonPhase
+from playbalance.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
-from logic.season_simulator import SeasonSimulator
-from logic.schedule_generator import generate_mlb_schedule, save_schedule
-from logic.simulation import save_boxscore_html
+from playbalance.season_simulator import SeasonSimulator
+from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
+from playbalance.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
 from playbalance.config import load_config as load_pb_config
 from playbalance.benchmarks import load_benchmarks as load_pb_benchmarks

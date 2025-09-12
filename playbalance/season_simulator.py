@@ -4,7 +4,7 @@ from typing import Callable, Dict, Iterable, List
 import multiprocessing as mp
 import random
 
-from logic.simulation import (
+from playbalance.simulation import (
     GameSimulation,
     TeamState,
     generate_boxscore,
@@ -38,7 +38,7 @@ class SeasonSimulator:
     simulate_game:
         Optional callback accepting ``home`` and ``away`` team identifiers.  If
         not provided a minimal game simulation using :class:`GameSimulation`
-        from :mod:`logic.simulation` is performed.
+        from :mod:`playbalance.simulation` is performed.
     on_all_star_break:
         Optional callable executed when the season reaches its midpoint.  This
         can be used to run the All-Star exhibition.
@@ -145,7 +145,7 @@ class SeasonSimulator:
         """Run a full pitch-by-pitch simulation between two teams.
 
         This constructs team states from the default player and roster data and
-        then runs :class:`~logic.simulation.GameSimulation`.  The resulting runs
+        then runs :class:`~playbalance.simulation.GameSimulation`.  The resulting runs
         scored by each club are returned along with rendered box score HTML so
         callers can persist results or update standings.
         """

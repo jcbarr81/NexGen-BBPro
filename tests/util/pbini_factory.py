@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from logic.playbalance_config import PlayBalanceConfig
-from logic.pbini_loader import load_pbini
+from playbalance.playbalance_config import PlayBalanceConfig
+from playbalance.pbini_loader import load_pbini
 
 
 def make_cfg(**entries: int) -> PlayBalanceConfig:
@@ -31,12 +31,12 @@ def make_cfg(**entries: int) -> PlayBalanceConfig:
 def load_config(path: Path | None = None) -> PlayBalanceConfig:
     """Load the full test configuration from ``path``.
 
-    If ``path`` is ``None`` the default ``logic/PBINI.txt`` is used.  This
+    If ``path`` is ``None`` the default ``playbalance/PBINI.txt`` is used.  This
     helper allows tests to provide their own PlayBalance files when specific
     values need to be exercised.
     """
 
-    path = Path("logic/PBINI.txt") if path is None else Path(path)
+    path = Path("playbalance/PBINI.txt") if path is None else Path(path)
     pbini = load_pbini(path)
     cfg = PlayBalanceConfig.from_dict(pbini)
     # Default to singles only and deterministic swing probabilities for tests

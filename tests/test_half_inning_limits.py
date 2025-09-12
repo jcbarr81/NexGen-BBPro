@@ -1,7 +1,7 @@
 import pytest
 from models.player import Player
 from models.pitcher import Pitcher
-from logic.simulation import GameSimulation, TeamState
+from playbalance.simulation import GameSimulation, TeamState
 from tests.util.pbini_factory import make_cfg
 
 

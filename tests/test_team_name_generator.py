@@ -1,6 +1,6 @@
 import random
 import pytest
-from logic.team_name_generator import (
+from playbalance.team_name_generator import (
     CITIES,
     MASCOTS,
     random_team,

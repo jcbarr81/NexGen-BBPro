@@ -1,5 +1,5 @@
-from logic.fielding_ai import FieldingAI
-from logic.playbalance_config import PlayBalanceConfig
+from playbalance.fielding_ai import FieldingAI
+from playbalance.playbalance_config import PlayBalanceConfig
 
 
 def _make_ai():

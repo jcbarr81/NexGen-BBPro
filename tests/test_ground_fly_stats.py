@@ -2,14 +2,14 @@ import random
 
 import pytest
 
-from logic.simulation import (
+from playbalance.simulation import (
     BatterState,
     GameSimulation,
     TeamState,
 )
 from playbalance.state import PitcherState
-from logic.playbalance_config import PlayBalanceConfig
-from logic.stats import compute_batting_rates, compute_pitching_rates
+from playbalance.playbalance_config import PlayBalanceConfig
+from playbalance.stats import compute_batting_rates, compute_pitching_rates
 from tests.test_physics import make_player, make_pitcher
 
 

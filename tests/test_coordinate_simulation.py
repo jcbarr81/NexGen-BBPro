@@ -3,9 +3,9 @@ import random
 
 import pytest
 
-from logic.physics import Physics
-from logic.fielding_ai import FieldingAI
-from logic.playbalance_config import PlayBalanceConfig
+from playbalance.physics import Physics
+from playbalance.fielding_ai import FieldingAI
+from playbalance.playbalance_config import PlayBalanceConfig
 
 
 def make_config() -> PlayBalanceConfig:

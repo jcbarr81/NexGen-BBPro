@@ -1,6 +1,6 @@
 import random
 
-from logic.season_simulator import SeasonSimulator
+from playbalance.season_simulator import SeasonSimulator
 
 
 def test_simulate_regular_season_to_completion():
@@ -22,7 +22,7 @@ def test_simulate_regular_season_to_completion():
 
 
 def test_default_simulation_runs_without_callback():
-    """Ensure the built-in season simulation runs using full game logic."""
+    """Ensure the built-in season simulation runs using full game playbalance."""
     schedule = [{"date": "2024-04-01", "home": "DRO", "away": "CEA"}]
 
     sim = SeasonSimulator(schedule)

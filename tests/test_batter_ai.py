@@ -1,6 +1,6 @@
 import pytest
 
-from logic.batter_ai import BatterAI
+from playbalance.batter_ai import BatterAI
 from tests.util.pbini_factory import load_config, make_cfg
 from tests.test_simulation import make_player, make_pitcher
 

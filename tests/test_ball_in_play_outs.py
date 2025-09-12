@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from logic.simulation import (
+from playbalance.simulation import (
     BatterState,
     GameSimulation,
     TeamState,
@@ -69,7 +69,7 @@ def test_ball_in_play_outs(monkeypatch, rates, action, needs_throw):
     rng = ZeroRandom()
     sim = GameSimulation(home, away, cfg, rng)
 
-    from logic.field_geometry import DEFAULT_POSITIONS
+    from playbalance.field_geometry import DEFAULT_POSITIONS
 
     px, py = DEFAULT_POSITIONS["P"]
     monkeypatch.setattr(

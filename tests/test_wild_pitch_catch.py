@@ -1,4 +1,4 @@
-from logic.fielding_ai import FieldingAI
+from playbalance.fielding_ai import FieldingAI
 from tests.util.pbini_factory import make_cfg
 
 

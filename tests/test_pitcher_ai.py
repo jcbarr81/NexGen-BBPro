@@ -1,6 +1,6 @@
 import random
 
-from logic.pitcher_ai import PitcherAI
+from playbalance.pitcher_ai import PitcherAI
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import make_cfg

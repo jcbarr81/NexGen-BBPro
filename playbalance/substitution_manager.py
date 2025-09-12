@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Utility class handling mid game substitution logic.
+"""Utility class handling mid game substitution playbalance.
 
 The real game features a large amount of logic that decides when teams will
 replace players during the game.  For the purposes of the unit tests in this

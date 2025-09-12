@@ -8,10 +8,10 @@ modules involved in decision making and physics.
 Several dataclasses track in-game state and statistics:
 
 - **`BatterState`** and **`FieldingState`** capture performance for individual
-  players during the game【F:logic/simulation.py†L33-L118】, while **`PitcherState`**
+  players during the game【F:playbalance/simulation.py†L33-L118】, while **`PitcherState`**
   records pitch-level totals in the play-balance engine【F:playbalance/state.py†L20-L27】
 - **`TeamState`** maintains the current lineup, bench, pitchers, base runners and
-  cumulative team stats for each side【F:logic/simulation.py†L121-L178】
+  cumulative team stats for each side【F:playbalance/simulation.py†L121-L178】
 
 These structures are created before the game starts and are updated throughout
 play as events occur.
@@ -20,7 +20,7 @@ play as events occur.
 
 The `GameSimulation` class orchestrates the game loop.  It owns references to
 state for both teams and composes the managers and AI helpers that drive
-strategy and outcomes【F:logic/simulation.py†L193-L200】【F:logic/simulation.py†L10-L18】.
+strategy and outcomes【F:playbalance/simulation.py†L193-L200】【F:playbalance/simulation.py†L10-L18】.
 It also tracks situational details such as defensive alignment, pitcher fatigue
 and environmental conditions.
 
@@ -40,12 +40,12 @@ During play the simulation:
 A collection of focused modules encapsulate specific decision making:
 
 - `PitcherAI` selects pitches and objectives using configurable weights and
-  tracks which pitches have been established【F:logic/pitcher_ai.py†L1-L33】【F:logic/pitcher_ai.py†L48-L60】.
+  tracks which pitches have been established【F:playbalance/pitcher_ai.py†L1-L33】【F:playbalance/pitcher_ai.py†L48-L60】.
 - `BatterAI` applies count-based adjustments to swing decisions and computes the
-  contact quality of a swing【F:logic/batter_ai.py†L1-L39】【F:logic/batter_ai.py†L58-L70】.
+  contact quality of a swing【F:playbalance/batter_ai.py†L1-L39】【F:playbalance/batter_ai.py†L58-L70】.
 - `SubstitutionManager` evaluates pinch hitting, defensive replacements and
   bullpen usage using ratings derived from player attributes and configuration
-  chances【F:logic/substitution_manager.py†L1-L108】.
+  chances【F:playbalance/substitution_manager.py†L1-L108】.
 - Offensive and defensive strategy is delegated to `OffensiveManager` and
   `DefensiveManager` (not shown here), while `FieldingAI` positions fielders
   according to batter tendencies.
@@ -55,7 +55,7 @@ A collection of focused modules encapsulate specific decision making:
 The `Physics` class provides deterministic calculations for movement speed,
 reaction delays, throwing mechanics and pitch characteristics.  All formulas are
 parameterised by the `PlayBalanceConfig` so tests can verify configuration
-impact【F:logic/physics.py†L8-L75】【F:logic/physics.py†L92-L130】.
+impact【F:playbalance/physics.py†L8-L75】【F:playbalance/physics.py†L92-L130】.
 
 ## Foul Balls
 
@@ -66,9 +66,9 @@ similar **18%** are put into play. When batters put the ball in play, about
 seed the simulation's batted-ball model. `PlayBalanceConfig` exposes knobs to
 tune them: `foulPitchBasePct` sets the foul-per-pitch rate and
 `ballInPlayPitchPct` the share of pitches turned into balls in play
-【F:logic/playbalance_config.py†L142-L148】【F:logic/playbalance_config.py†L154】,
+【F:playbalance/playbalance_config.py†L142-L148】【F:playbalance/playbalance_config.py†L154】,
 while `groundBallBaseRate` and `flyBallBaseRate` establish grounder and fly-ball
-shares that influence vertical launch angles【F:logic/playbalance_config.py†L134-L135】.
+shares that influence vertical launch angles【F:playbalance/playbalance_config.py†L134-L135】.
 A slight negative `vertAngleGFPct` flattens trajectories, nudging extreme
 ground- or fly-ball hitters toward the middle. The defaults now bias outcomes
 toward an even **50/50** split rather than the previous MLB-average of roughly
@@ -77,9 +77,9 @@ toward an even **50/50** split rather than the previous MLB-average of roughly
 ## Statistics
 
 At the end of each play, raw totals are converted into derived and rate stats
-using helpers in `logic.stats`.  For example, batting rates include batting
+using helpers in `playbalance.stats`.  For example, batting rates include batting
 average, on-base percentage and slugging percentage computed from counting
-stats【F:logic/stats.py†L9-L60】.
+stats【F:playbalance/stats.py†L9-L60】.
 
 ## Configuration
 
@@ -92,9 +92,9 @@ Key entries now available include:
 - **`exitVeloBase`** – baseline exit velocity applied to all batted balls.
 - **`exitVeloPHPct`** – percentage boost to exit velocity for pinch hitters.
 - **`hit1BProb`**, **`hit2BProb`**, **`hit3BProb`**, **`hitHRProb`** – distribution of hit outcomes
-  tuned to MLB rates (63% singles, 21% doubles, 2% triples, 14% homers)【F:logic/playbalance_config.py†L144-L147】.
-- **`groundBallBaseRate`** – baseline percentage of balls in play that become grounders【F:logic/playbalance_config.py†L140】.
-- **`flyBallBaseRate`** – baseline percentage of balls in play that become fly balls【F:logic/playbalance_config.py†L141】.
+  tuned to MLB rates (63% singles, 21% doubles, 2% triples, 14% homers)【F:playbalance/playbalance_config.py†L144-L147】.
+- **`groundBallBaseRate`** – baseline percentage of balls in play that become grounders【F:playbalance/playbalance_config.py†L140】.
+- **`flyBallBaseRate`** – baseline percentage of balls in play that become fly balls【F:playbalance/playbalance_config.py†L141】.
 - **`vertAngleGFPct`** – percentage adjustment to vertical launch angle based on a
   batter's ground/fly rating; the default ``-5`` gently flattens launch angles
   toward an even ground/fly distribution.

@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from logic.physics import Physics
+from playbalance.physics import Physics
 from tests.util.pbini_factory import make_cfg
 
 

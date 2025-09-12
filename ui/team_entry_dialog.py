@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
-from logic.team_name_generator import random_team
+from playbalance.team_name_generator import random_team
 
 
 class TeamEntryDialog(QDialog):

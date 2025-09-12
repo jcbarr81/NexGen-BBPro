@@ -1,6 +1,6 @@
 import random
 
-from logic.simulation import (
+from playbalance.simulation import (
     BatterState,
     GameSimulation,
     TeamState,
@@ -867,7 +867,7 @@ def test_throw_error_results_in_roe(monkeypatch):
     batter_state = BatterState(batter)
     offense.lineup_stats[batter.player_id] = batter_state
 
-    from logic.field_geometry import DEFAULT_POSITIONS
+    from playbalance.field_geometry import DEFAULT_POSITIONS
 
     px, py = DEFAULT_POSITIONS["P"]
     monkeypatch.setattr(

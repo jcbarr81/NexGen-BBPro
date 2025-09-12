@@ -1,7 +1,7 @@
 """Pitcher AI utilities for the play-balance engine.
 
 This module implements a light-weight decision system that mirrors the
-structure of the classic ``PBINI`` logic.  It provides helpers to vary pitch
+structure of the classic ``PBINI`` playbalance.  It provides helpers to vary pitch
 ratings, apply situational adjustments, look up pitch objectives for the
 current count and ultimately select a pitch type and intended location.
 
@@ -12,10 +12,11 @@ functions below.
 """
 from __future__ import annotations
 
-from typing import Dict, Mapping, Tuple
+from typing import Dict, Mapping, Tuple, List, Set
 import random
 
-from .config import PlayBalanceConfig
+from models.pitcher import Pitcher
+from .playbalance_config import PlayBalanceConfig
 
 
 # ---------------------------------------------------------------------------
@@ -139,9 +140,100 @@ def select_pitch(
     return pitch, location
 
 
+class PitcherAI:
+    """Very small pitch selection helper used by the legacy simulation."""
+
+    def __init__(self, config: PlayBalanceConfig, rng: random.Random | None = None) -> None:
+        self.config = config
+        self.rng = rng or random.Random()
+        self._established: Dict[str, Set[str]] = {}
+        self._primary_cache: Dict[str, str] = {}
+        self._variation_cache: Dict[str, Dict[str, int]] = {}
+        self.last_selection: Tuple[str, str] | None = None
+
+    def new_game(self) -> None:
+        """Reset caches specific to a single game."""
+
+        self._established.clear()
+        self._variation_cache.clear()
+        self.last_selection = None
+
+    def _primary_pitch(self, pitcher: Pitcher) -> str:
+        pid = pitcher.player_id
+        if pid not in self._primary_cache:
+            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            primary = max(ratings.items(), key=lambda kv: kv[1])[0]
+            self._primary_cache[pid] = primary
+        return self._primary_cache[pid]
+
+    def select_pitch(self, pitcher: Pitcher, *, balls: int = 0, strikes: int = 0) -> Tuple[str, str]:
+        available = {p: getattr(pitcher, p) for p in _PITCH_RATINGS if getattr(pitcher, p) > 0}
+        if not available:
+            raise ValueError("Pitcher has no available pitch types")
+
+        var_count = self.config.get("pitchRatVariationCount", 0)
+        var_faces = self.config.get("pitchRatVariationFaces", 0)
+        var_base = self.config.get("pitchRatVariationBase", 0)
+        non_establish = self.config.get("nonEstablishedPitchTypeAdjust", 0)
+        primary_adjust = self.config.get("primaryPitchTypeAdjust", 0)
+
+        established = self._established.setdefault(pitcher.player_id, set())
+        primary = self._primary_pitch(pitcher)
+
+        variations = self._variation_cache.setdefault(pitcher.player_id, {})
+        if not variations:
+            for name in available:
+                offset = 0
+                if var_count > 0 and var_faces > 0:
+                    offset = var_base
+                    for _ in range(var_count):
+                        offset += self.rng.randint(1, var_faces)
+                variations[name] = offset
+
+        scored: Dict[str, int] = {}
+        for name, base_rating in available.items():
+            score = base_rating + variations.get(name, 0)
+            if name not in established:
+                score += non_establish
+            if name == primary:
+                score += primary_adjust
+            scored[name] = score
+
+        pitch_type = max(scored.items(), key=lambda kv: (kv[1], -_PITCH_RATINGS.index(kv[0])))[0]
+        established.add(pitch_type)
+
+        prefix = f"pitchObj{balls}{strikes}Count"
+        outside_weight = self.config.get(prefix + "OutsideWeight", 0)
+        if strikes > balls:
+            outside_weight *= 2
+        weights = [
+            ("establish", self.config.get(prefix + "EstablishWeight", 0)),
+            ("outside", outside_weight),
+            ("best", self.config.get(prefix + "BestWeight", 0)),
+            ("best_center", self.config.get(prefix + "BestCenterWeight", 0)),
+            ("fast_center", self.config.get(prefix + "FastCenterWeight", 0)),
+            ("plus", self.config.get(prefix + "PlusWeight", 0)),
+        ]
+
+        total = sum(weight for _, weight in weights)
+        objective = "establish"
+        if total > 0:
+            roll = self.rng.random() * total
+            cumulative = 0
+            for obj, weight in weights:
+                cumulative += weight
+                if roll < cumulative:
+                    objective = obj
+                    break
+
+        self.last_selection = (pitch_type, objective)
+        return self.last_selection
+
+
 __all__ = [
     "pitch_rating_variation",
     "apply_selection_adjustments",
     "objective_weights_by_count",
     "select_pitch",
+    "PitcherAI",
 ]

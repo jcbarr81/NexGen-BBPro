@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 from models.player import Player
 from models.pitcher import Pitcher
 from utils.player_writer import save_players_to_csv
-from logic.player_generator import generate_player, reset_name_cache
+from playbalance.player_generator import generate_player, reset_name_cache
 from utils.user_manager import clear_users
 
 

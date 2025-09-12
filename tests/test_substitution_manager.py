@@ -1,7 +1,7 @@
 import random
 
-from logic.simulation import BatterState, TeamState
-from logic.substitution_manager import SubstitutionManager
+from playbalance.simulation import BatterState, TeamState
+from playbalance.substitution_manager import SubstitutionManager
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import load_config, make_cfg

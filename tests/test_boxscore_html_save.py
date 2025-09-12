@@ -2,10 +2,10 @@ import shutil
 from pathlib import Path
 
 from tests.test_simulation import make_player, make_pitcher, MockRandom
-from logic.simulation import BatterState
+from playbalance.simulation import BatterState
 from tests.util.pbini_factory import load_config
 
-from logic.simulation import (
+from playbalance.simulation import (
     GameSimulation,
     TeamState,
     generate_boxscore,

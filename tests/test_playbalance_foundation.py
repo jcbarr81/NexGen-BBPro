@@ -50,9 +50,9 @@ def test_override_validation(tmp_path):
 def test_all_pbini_keys_present():
     cfg = load_config()
     # Compare keys in PBINI file to those exposed on the config dataclass.
-    from logic.pbini_loader import load_pbini
+    from playbalance.pbini_loader import load_pbini
 
-    pbini_sections = load_pbini("logic/PBINI.txt")
+    pbini_sections = load_pbini("playbalance/PBINI.txt")
     pb_keys = set(pbini_sections["PlayBalance"].keys())
     cfg_keys = set(cfg.sections["PlayBalance"].__dict__.keys())
     assert pb_keys <= cfg_keys

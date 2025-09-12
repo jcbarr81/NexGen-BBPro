@@ -1,4 +1,4 @@
-from logic.bullpen import WarmupTracker
+from playbalance.bullpen import WarmupTracker
 from tests.util.pbini_factory import make_cfg
 
 def test_warmup_becomes_ready():

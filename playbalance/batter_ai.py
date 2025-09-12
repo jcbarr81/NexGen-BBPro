@@ -2,15 +2,19 @@
 
 This module implements simplified batter decision helpers covering strike-zone
 handling, pitch identification, swing timing and discipline mechanics.  The
-formulas intentionally mirror only a subset of the legacy ``PBINI`` logic.  The
+formulas intentionally mirror only a subset of the legacy ``PBINI`` playbalance.  The
 configuration object needs to expose the attributes accessed within the
 functions below.  Defaults of ``0`` are assumed when attributes are missing.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Dict, Tuple
+import random
 
-from .config import PlayBalanceConfig
+from models.player import Player
+from models.pitcher import Pitcher
+from .playbalance_config import PlayBalanceConfig
 from .probability import clamp01, roll
 
 
@@ -206,6 +210,73 @@ def hbp_avoid_chance(cfg: PlayBalanceConfig, *, batter_brav: float) -> float:
     return clamp01(chance)
 
 
+@dataclass
+class BatterAI:
+    """Very small helper encapsulating batter decision making."""
+
+    config: PlayBalanceConfig
+    _primary_cache: Dict[str, str] = None  # type: ignore[assignment]
+    _best_cache: Dict[str, str] = None  # type: ignore[assignment]
+    last_decision: Tuple[bool, float] | None = None
+
+    def _primary_pitch(self, pitcher: Pitcher) -> str:
+        if self._primary_cache is None:
+            self._primary_cache = {}
+        pid = pitcher.player_id
+        if pid not in self._primary_cache:
+            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            primary = max(ratings.items(), key=lambda kv: kv[1])[0]
+            self._primary_cache[pid] = primary
+        return self._primary_cache[pid]
+
+    def _best_pitch(self, pitcher: Pitcher) -> str:
+        if self._best_cache is None:
+            self._best_cache = {}
+        pid = pitcher.player_id
+        if pid not in self._best_cache:
+            ratings = {p: getattr(pitcher, p) for p in _PITCH_RATINGS}
+            best = max(ratings.items(), key=lambda kv: kv[1])[0]
+            self._best_cache[pid] = best
+        return self._best_cache[pid]
+
+    def decide_swing(
+        self,
+        batter: Player,
+        pitcher: Pitcher,
+        pitch_type: str,
+        *,
+        balls: int = 0,
+        strikes: int = 0,
+        look_for: str | None = None,
+    ) -> Tuple[bool, float]:
+        """Return ``(swing, contact_quality)`` for the pitch."""
+
+        swing = False
+        contact_quality = 1.0
+
+        pitch_match = False
+        if look_for == "primary" and pitch_type == self._primary_pitch(pitcher):
+            adj_key = f"lookPrimaryType{balls}{strikes}CountAdjust"
+            contact_quality += getattr(self.config, adj_key, 0) / 100.0
+            pitch_match = True
+        elif look_for == "best" and pitch_type == self._best_pitch(pitcher):
+            adj_key = f"lookBestType{balls}{strikes}CountAdjust"
+            contact_quality += getattr(self.config, adj_key, 0) / 100.0
+            pitch_match = True
+
+        if look_for and not pitch_match:
+            contact_quality -= getattr(self.config, "lookMismatchPenalty", 0) / 100.0
+
+        id_base = getattr(self.config, "idRatingBase", 0)
+        id_scale = getattr(self.config, "idRatingEaseScale", 1.0)
+        id_chance = id_base * id_scale
+        if random.random() * 100 <= id_chance:
+            swing = True
+
+        self.last_decision = (swing, max(0.0, min(1.0, contact_quality)))
+        return self.last_decision
+
+
 __all__ = [
     "StrikeZoneGrid",
     "look_for_zone",
@@ -217,4 +288,5 @@ __all__ = [
     "check_swing_chance",
     "foul_ball_avoid_chance",
     "hbp_avoid_chance",
+    "BatterAI",
 ]

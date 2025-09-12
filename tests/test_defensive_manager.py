@@ -1,7 +1,7 @@
 import random
 import pytest
 
-from logic.defensive_manager import DefensiveManager
+from playbalance.defensive_manager import DefensiveManager
 from tests.util.pbini_factory import make_cfg
 
 

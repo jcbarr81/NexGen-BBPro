@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict
 import json
 
-from logic.pbini_loader import load_pbini
+from .pbini_loader import load_pbini
 
 
 @dataclass
@@ -56,6 +56,22 @@ class PlayBalanceConfig:
         sect = self.sections.get("PlayBalance")
         return getattr(sect, item, 0) if sect else 0
 
+    # ------------------------------------------------------------------
+    # Construction helpers
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_dict(cls, data: Dict[str, Dict[str, Any]]) -> "PlayBalanceConfig":
+        """Create an instance from a nested ``data`` mapping."""
+
+        return cls(dict(data))
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> "PlayBalanceConfig":
+        """Return configuration loaded from ``path``."""
+
+        sections = load_pbini(path)
+        return cls(sections)
+
 
 def load_config(
     pbini_path: str | Path | None = None,
@@ -70,7 +86,7 @@ def load_config(
 
     base_dir = Path(__file__).resolve().parents[1]
     if pbini_path is None:
-        pbini_path = base_dir / "logic" / "PBINI.txt"
+        pbini_path = base_dir / "playbalance" / "PBINI.txt"
     else:
         pbini_path = Path(pbini_path)
         if not pbini_path.is_absolute():

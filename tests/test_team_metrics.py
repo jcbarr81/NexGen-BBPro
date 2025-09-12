@@ -1,7 +1,7 @@
 import math
 import random
 
-from logic.simulation import (
+from playbalance.simulation import (
     BatterState,
     GameSimulation,
     TeamState,

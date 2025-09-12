@@ -20,7 +20,7 @@ _FOUL_PITCH_BASE_PCT = 15  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.3  # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
-# simplified game logic.  Missing keys will fall back to these values when
+# simplified game playbalance.  Missing keys will fall back to these values when
 # accessed as attributes.  The majority of values default to ``0`` which keeps
 # related behaviour disabled unless explicitly enabled by a test case.  A small
 # number have different sensible defaults, e.g. ``speedBase`` and

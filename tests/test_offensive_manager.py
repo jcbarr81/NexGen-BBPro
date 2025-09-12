@@ -1,7 +1,7 @@
 import random
 
-from logic.offensive_manager import OffensiveManager
-from logic.simulation import GameSimulation, TeamState, BatterState
+from playbalance.offensive_manager import OffensiveManager
+from playbalance.simulation import GameSimulation, TeamState, BatterState
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import make_cfg, load_config

@@ -1,4 +1,4 @@
-from logic.simulation import GameSimulation, TeamState
+from playbalance.simulation import GameSimulation, TeamState
 from tests.test_simulation import MockRandom, make_player, make_pitcher
 from tests.util.pbini_factory import make_cfg
 

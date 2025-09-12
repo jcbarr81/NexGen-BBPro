@@ -3,10 +3,10 @@ import math
 
 import pytest
 
-from logic.batter_ai import BatterAI
-from logic.simulation import BatterState, GameSimulation, TeamState
+from playbalance.batter_ai import BatterAI
+from playbalance.simulation import BatterState, GameSimulation, TeamState
 from playbalance.state import PitcherState
-from logic.physics import Physics
+from playbalance.physics import Physics
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import make_cfg, load_config

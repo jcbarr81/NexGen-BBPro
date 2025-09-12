@@ -4,7 +4,7 @@ from pathlib import Path
 
 from models.trade import Trade
 from utils.path_utils import get_base_dir
-from logic.season_manager import TRADE_DEADLINE
+from playbalance.season_manager import TRADE_DEADLINE
 
 
 def _today() -> date:

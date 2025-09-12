@@ -1,6 +1,6 @@
 from datetime import date
 
-from logic.aging import age_player
+from playbalance.aging import age_player
 from models.player import Player
 
 
