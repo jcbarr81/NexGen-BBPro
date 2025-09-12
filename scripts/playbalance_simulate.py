@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import multiprocessing as mp
+import os
 import pickle
 import random
 import sys
@@ -47,6 +48,31 @@ except ImportError:  # pragma: no cover - fallback when numpy unavailable
 
 if np is None:  # pragma: no cover - numpy is required for this script
     raise RuntimeError("NumPy is required to run this script")
+
+
+def configure_perf_tuning() -> None:
+    """Configure process priority and CPU affinity using ``psutil``."""
+
+    try:
+        import psutil
+    except ImportError:
+        print("[PerfTune] psutil not installed; skipping priority/affinity tuning")
+        return
+
+    p = psutil.Process()
+
+    try:
+        p.nice(psutil.HIGH_PRIORITY_CLASS)
+        print("[PerfTune] Process priority set to High")
+    except Exception as e:  # pragma: no cover - platform dependent
+        print(f"[PerfTune] Could not set priority: {e}")
+
+    try:
+        cpu_count = os.cpu_count() or 1
+        p.cpu_affinity(list(range(cpu_count)))
+        print(f"[PerfTune] CPU affinity set to all {cpu_count} cores")
+    except Exception as e:  # pragma: no cover - platform dependent
+        print(f"[PerfTune] Could not set CPU affinity: {e}")
 
 
 STAT_KEYS = [
@@ -200,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
         help="enable PerfTune profiling",
     )
     args = parser.parse_args(argv)
+
+    configure_perf_tuning()
 
     benchmarks = load_benchmarks()
     cfg, _ = load_tuned_playbalance_config()
