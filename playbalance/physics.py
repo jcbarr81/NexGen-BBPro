@@ -346,6 +346,117 @@ def ai_timing_adjust(
     return time
 
 
+def bat_impact(
+    cfg: PlayBalanceConfig,
+    bat_speed: float,
+    *,
+    part: str = "sweet",
+    rand: float | None = None,
+    rng: Random | None = None,
+) -> Tuple[float, float]:
+    """Return exit velocity and power factor for a bat ``part``.
+
+    ``part`` selects one of the configured bat regions (``handle``, ``dull``,
+    ``sweet`` or ``end``).  The returned tuple contains the new exit velocity
+    and the applied power factor.
+    """
+
+    factor = power_zone_factor(cfg, part, rand=rand, rng=rng)
+    return bat_speed * factor, factor
+
+
+def launch_vector(
+    cfg: PlayBalanceConfig,
+    ph: int,
+    pl: int,
+    swing_angle: float,
+    vert_angle: float,
+    *,
+    swing_type: str = "normal",
+) -> Tuple[float, float, float]:
+    """Return batted ball velocity components.
+
+    The calculation is a lightweight approximation of the original engine.
+    Exit speed is based on the batter's power and pull/line ratings while the
+    provided ``swing_angle`` and ``vert_angle`` combine to form the final launch
+    direction.
+    """
+
+    scale = {
+        "power": getattr(cfg, "exitVeloPowerPct", 100.0),
+        "contact": getattr(cfg, "exitVeloContactPct", 100.0),
+        "normal": getattr(cfg, "exitVeloNormalPct", 100.0),
+    }.get(swing_type, getattr(cfg, "exitVeloNormalPct", 100.0))
+
+    raw_speed = 86.268 + 0.3883 * (ph + pl)
+    speed = raw_speed * scale / 100.0
+
+    launch_vert = swing_angle + vert_angle + (ph - 50) * 0.08
+    spray = (pl - 50) * 0.9
+
+    rad_vert = math.radians(launch_vert)
+    rad_spray = math.radians(spray)
+    vx = speed * math.cos(rad_vert) * math.cos(rad_spray)
+    vy = speed * math.cos(rad_vert) * math.sin(rad_spray)
+    vz = speed * math.sin(rad_vert)
+    return vx, vy, vz
+
+
+def landing_point(vx: float, vy: float, vz: float) -> Tuple[float, float, float]:
+    """Return landing coordinates and hang time for a batted ball.
+
+    Velocities are specified in miles per hour to mirror the legacy engine's
+    simplified physics.  The returned coordinates are in feet and the hang time
+    in seconds.
+    """
+
+    g = 32.176370514590964
+    start_height = 3.006101454579742
+    vz_r = round(vz, 2)
+    hang = (vz_r + math.sqrt(vz_r * vz_r + 2 * g * start_height)) / g
+    x = round(round(vx, 2) * hang, 2)
+    y = round(round(vy, 2) * hang, 2)
+    return x, y, hang
+
+
+def ball_bounce(
+    cfg: PlayBalanceConfig,
+    vert_velocity: float,
+    horiz_velocity: float,
+    *,
+    surface: str = "grass",
+    wet: bool = False,
+    temperature: float | None = None,
+) -> Tuple[float, float]:
+    """Return post-bounce vertical and horizontal velocities."""
+
+    v_key = {
+        "turf": "bounceVertTurfPct",
+        "dirt": "bounceVertDirtPct",
+        "grass": "bounceVertGrassPct",
+    }.get(surface, "bounceVertGrassPct")
+    h_key = {
+        "turf": "bounceHorizTurfPct",
+        "dirt": "bounceHorizDirtPct",
+        "grass": "bounceHorizGrassPct",
+    }.get(surface, "bounceHorizGrassPct")
+    v_pct = getattr(cfg, v_key, 0.0)
+    h_pct = getattr(cfg, h_key, 0.0)
+
+    adjust = 0.0
+    if wet:
+        adjust += getattr(cfg, "bounceWetAdjust", 0.0)
+    if temperature is not None:
+        if temperature >= 85:
+            adjust += getattr(cfg, "bounceHotAdjust", 0.0)
+        elif temperature <= 40:
+            adjust += getattr(cfg, "bounceColdAdjust", 0.0)
+
+    v_pct += adjust
+    h_pct += adjust
+    return vert_velocity * v_pct / 100.0, horiz_velocity * h_pct / 100.0
+
+
 class Physics:
     """Helper performing simple physics related calculations.
 
@@ -429,6 +540,19 @@ class Physics:
         if fps <= 0:
             return float("inf")
         return distance / fps
+
+    # ------------------------------------------------------------------
+    # Pitch movement and fatigue
+    # ------------------------------------------------------------------
+    def pitch_movement(self, pitch_type: str, *, rand: float | None = None) -> tuple[float, float]:
+        """Return horizontal and vertical break for ``pitch_type``."""
+
+        return pitch_movement(self.config, pitch_type, rand=rand, rng=self.rng)
+
+    def pitcher_fatigue(self, endurance: int, pitches_thrown: int) -> tuple[int, str]:
+        """Return remaining pitches and fatigue state for a pitcher."""
+
+        return pitcher_fatigue(self.config, endurance, pitches_thrown)
 
     # ------------------------------------------------------------------
     # Pitch velocity
@@ -540,6 +664,122 @@ class Physics:
 
         return speed
 
+    # ------------------------------------------------------------------
+    # Batted ball helpers
+    # ------------------------------------------------------------------
+    def bat_impact(
+        self, bat_speed: float, *, part: str = "sweet", rand: float | None = None
+    ) -> tuple[float, float]:
+        """Return exit velocity and power factor for a bat ``part``."""
+        return globals()["bat_impact"](
+            self.config, bat_speed, part=part, rand=rand, rng=self.rng
+        )
+
+    def swing_angle(
+        self,
+        gf: int,
+        *,
+        swing_type: str = "normal",
+        pitch_loc: str = "middle",
+        rand: float | None = None,
+    ) -> float:
+        """Return the swing plane angle in degrees."""
+        return globals()["swing_angle"](
+            self.config,
+            gf,
+            swing_type=swing_type,
+            pitch_loc=pitch_loc,
+            rand=rand,
+            rng=self.rng,
+        )
+
+    def vertical_hit_angle(
+        self,
+        swing_type: str = "normal",
+        *,
+        gf: int = 0,
+        rand: float | None = None,
+    ) -> float:
+        """Return the vertical launch angle for a batted ball."""
+        return globals()["vertical_hit_angle"](
+            self.config, swing_type=swing_type, rand=rand, rng=self.rng
+        )
+
+    def launch_vector(
+        self,
+        ph: int,
+        pl: int,
+        swing_angle: float,
+        vert_angle: float,
+        *,
+        swing_type: str = "normal",
+    ) -> tuple[float, float, float]:
+        """Return batted ball velocity components."""
+        return globals()["launch_vector"](
+            self.config,
+            ph,
+            pl,
+            swing_angle,
+            vert_angle,
+            swing_type=swing_type,
+        )
+
+    def landing_point(self, vx: float, vy: float, vz: float) -> tuple[float, float, float]:
+        """Return landing coordinates and hang time for a batted ball."""
+        return globals()["landing_point"](vx, vy, vz)
+
+    def ball_roll_distance(
+        self,
+        velocity: float,
+        surface: str = "grass",
+        *,
+        altitude: float = 0.0,
+        wind_speed: float = 0.0,
+        temperature: float | None = None,
+    ) -> float:
+        """Return roll distance for a grounded ball."""
+        return globals()["ball_roll_distance"](
+            self.config,
+            velocity,
+            surface=surface,
+            altitude=altitude,
+            wind_speed=wind_speed,
+        )
+
+    def air_resistance(
+        self,
+        *,
+        altitude: float = 0.0,
+        temperature: float = 70.0,
+        wind_speed: float = 0.0,
+    ) -> float:
+        """Return an air resistance multiplier."""
+        return globals()["air_resistance"](
+            self.config,
+            altitude=altitude,
+            temperature=temperature,
+            wind_speed=wind_speed,
+        )
+
+    def ball_bounce(
+        self,
+        vert_velocity: float,
+        horiz_velocity: float,
+        *,
+        surface: str = "grass",
+        wet: bool = False,
+        temperature: float | None = None,
+    ) -> tuple[float, float]:
+        """Return post-bounce velocities for a grounded ball."""
+        return globals()["ball_bounce"](
+            self.config,
+            vert_velocity,
+            horiz_velocity,
+            surface=surface,
+            wet=wet,
+            temperature=temperature,
+        )
+
 
 
 __all__ = [
@@ -547,10 +787,14 @@ __all__ = [
     "pitch_movement",
     "pitcher_fatigue",
     "swing_angle",
+    "bat_impact",
     "bat_speed",
     "power_zone_factor",
     "vertical_hit_angle",
     "ball_roll_distance",
+    "landing_point",
+    "launch_vector",
+    "ball_bounce",
     "air_resistance",
     "control_miss_effect",
     "warm_up_progress",
