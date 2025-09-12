@@ -1,9 +1,10 @@
 from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout
 from PyQt6.QtGui import QPixmap, QFont
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QEvent
 
 from ui.login_window import LoginWindow
 from utils.path_utils import get_base_dir
+from ui.window_utils import show_on_top, set_all_on_top
 
 class SplashScreen(QWidget):
     """Initial splash screen displaying the NexGen logo and start button."""
@@ -44,9 +45,9 @@ class SplashScreen(QWidget):
         self.login_button.setEnabled(False)
 
         self.login_window = LoginWindow(self)
-        # Ensure the login window (certificate selector) isn't hidden behind
-        # other applications by forcing it to the foreground.
-        self.login_window.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
-        self.login_window.show()
-        self.login_window.raise_()
-        self.login_window.activateWindow()
+        show_on_top(self.login_window)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.WindowStateChange:
+            set_all_on_top(not self.isMinimized())
+        super().changeEvent(event)

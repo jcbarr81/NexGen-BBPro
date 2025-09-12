@@ -38,6 +38,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .components import Card, NavButton, section_title
+from ui.window_utils import ensure_on_top, show_on_top
 from .theme import _toggle_theme
 from .team_entry_dialog import TeamEntryDialog
 from .exhibition_game_dialog import ExhibitionGameDialog
@@ -419,7 +420,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(trade_list)
         layout.addLayout(btn_layout)
         dialog.setLayout(layout)
-        dialog.exec()
+        show_on_top(dialog)
 
     def generate_team_logos(self) -> None:
         teams = load_teams("data/teams.csv")
@@ -537,7 +538,7 @@ class MainWindow(QMainWindow):
         cancel_btn.clicked.connect(dialog.reject)
 
         dialog.setLayout(layout)
-        dialog.exec()
+        show_on_top(dialog)
 
     def open_edit_user(self) -> None:
         dialog = QDialog(self)
@@ -611,7 +612,7 @@ class MainWindow(QMainWindow):
         cancel_btn.clicked.connect(dialog.reject)
 
         dialog.setLayout(layout)
-        dialog.exec()
+        show_on_top(dialog)
 
     def open_team_dashboard(self) -> None:
         teams = load_teams(get_base_dir() / "data" / "teams.csv")
@@ -624,7 +625,7 @@ class MainWindow(QMainWindow):
         )
         if ok and team_id:
             dashboard = OwnerDashboard(team_id)
-            dashboard.show()
+            show_on_top(dashboard)
             self.team_dashboards.append(dashboard)
 
     def set_all_lineups(self) -> None:
@@ -755,6 +756,7 @@ class MainWindow(QMainWindow):
             return
 
         dialog = TeamEntryDialog(divisions, teams_per_div, self)
+        ensure_on_top(dialog)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 

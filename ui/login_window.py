@@ -15,6 +15,7 @@ import bcrypt
 
 from utils.path_utils import get_base_dir
 from ui.theme import DARK_QSS
+from ui.window_utils import show_on_top
 
 # Determine the path to the users file in a cross-platform way
 USER_FILE = get_base_dir() / "data" / "users.txt"
@@ -115,7 +116,7 @@ class LoginWindow(QWidget):
         if app:
             app.setStyleSheet(DARK_QSS)
 
-        self.dashboard.show()
+        show_on_top(self.dashboard)
 
         # Keep the splash screen visible while the dashboard is open so it
         # behaves the same way it does when the login window is shown.  This
