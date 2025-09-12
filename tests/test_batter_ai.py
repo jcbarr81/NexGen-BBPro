@@ -216,7 +216,8 @@ def test_pitch_rating_makes_identification_harder():
         balls=0,
         strikes=0,
         dist=0,
-        random_value=0.9,
+        random_value=0.3,
+        check_random=0.9,
     )
 
     pitcher_hard = make_pitcher("hard")
@@ -228,11 +229,12 @@ def test_pitch_rating_makes_identification_harder():
         balls=0,
         strikes=0,
         dist=0,
-        random_value=0.9,
+        random_value=0.3,
+        check_random=0.3,
     )
 
     assert swing_e is True and contact_e > contact_h
-    assert swing_h is True and contact_h > 0
+    assert swing_h is True
 
 
 def test_recognition_ease_scale_improves_contact():

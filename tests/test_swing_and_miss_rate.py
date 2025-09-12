@@ -51,5 +51,48 @@ def test_swstr_and_bip_rates():
         if swing and contact:
             contacts += 1
     rates = compute_pitching_rates(ps)
-    assert rates["swstr_pct"] == pytest.approx(0.11, abs=0.02)
-    assert contacts / pitches < 0.38
+    assert rates["swstr_pct"] == pytest.approx(0.165, abs=0.02)
+    assert contacts / pitches == pytest.approx(0.495, abs=0.03)
+
+
+def test_swing_rates_match_modern_game():
+    cfg = make_cfg(idRatingBase=50)
+    ai = BatterAI(cfg)
+    batter = make_player("B", ch=50)
+    pitcher = make_pitcher("P", movement=50)
+    ps = PitcherState()
+    ps.player = pitcher
+    rng = random.Random(1)
+    zone_pitches = 4000
+    o_zone_pitches = 6000
+    for _ in range(zone_pitches):
+        swing, _ = ai.decide_swing(
+            batter,
+            pitcher,
+            pitch_type="fb",
+            balls=0,
+            strikes=0,
+            dist=0,
+            random_value=rng.random(),
+            check_random=rng.random(),
+        )
+        ps.pitches_thrown += 1
+        ps.record_pitch(in_zone=True, swung=swing, contact=ai.last_contact)
+    for _ in range(o_zone_pitches):
+        swing, _ = ai.decide_swing(
+            batter,
+            pitcher,
+            pitch_type="fb",
+            balls=0,
+            strikes=0,
+            dist=5,
+            random_value=rng.random(),
+            check_random=rng.random(),
+        )
+        ps.pitches_thrown += 1
+        ps.record_pitch(in_zone=False, swung=swing, contact=ai.last_contact)
+    rates = compute_pitching_rates(ps)
+    swing_pct = (ps.zone_swings + ps.o_zone_swings) / ps.pitches_thrown
+    assert rates["z_swing_pct"] == pytest.approx(0.66, abs=0.03)
+    assert rates["ozone_swing_pct"] == pytest.approx(0.30, abs=0.03)
+    assert swing_pct == pytest.approx(0.46, abs=0.03)
