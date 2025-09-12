@@ -95,6 +95,20 @@ class TeamScheduleWindow(QDialog):
             first = datetime.strptime(self._schedule[0]["date"], "%Y-%m-%d")
             self._month = first.replace(day=1)
             self._populate_month()
+        else:
+            self.month_label.setText("")
+            self.viewer.setRowCount(1)
+            self.viewer.setColumnCount(1)
+            item = QTableWidgetItem("No schedule available")
+            try:
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.viewer.horizontalHeader().hide()
+                self.viewer.verticalHeader().hide()
+                self.prev_button.setEnabled(False)
+                self.next_button.setEnabled(False)
+            except Exception:  # pragma: no cover
+                pass
+            self.viewer.setItem(0, 0, item)
 
     def _change_month(self, delta: int) -> None:
         month = self._month.month - 1 + delta
