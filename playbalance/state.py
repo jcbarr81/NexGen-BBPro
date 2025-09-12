@@ -67,6 +67,7 @@ class PitcherState:
     allowed_hr: bool = False
     in_save_situation: bool = False
     zone_pitches: int = 0
+    o_zone_pitches: int = 0
     zone_swings: int = 0
     zone_contacts: int = 0
     o_zone_swings: int = 0
@@ -91,10 +92,12 @@ class PitcherState:
                 self.zone_swings += 1
                 if contact:
                     self.zone_contacts += 1
-        elif swung:
-            self.o_zone_swings += 1
-            if contact:
-                self.o_zone_contacts += 1
+        else:
+            self.o_zone_pitches += 1
+            if swung:
+                self.o_zone_swings += 1
+                if contact:
+                    self.o_zone_contacts += 1
 
 
 @dataclass
