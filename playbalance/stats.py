@@ -112,19 +112,22 @@ def compute_pitching_rates(stats: 'PitcherState') -> Dict[str, float]:
         (stats.h + stats.bb + stats.hbp - stats.r) / lob_den if lob_den else 0.0
     )
     fps_pct = stats.first_pitch_strikes / stats.bf if stats.bf else 0.0
-    zone_pct = stats.zone_pitches / stats.pitches_thrown if stats.pitches_thrown else 0.0
+    o_zone_pitches = getattr(
+        stats, "o_zone_pitches", getattr(stats, "pitches_thrown", 0) - stats.zone_pitches
+    )
+    total_pitches = getattr(stats, "pitches_thrown", stats.zone_pitches + o_zone_pitches)
+    zone_pct = stats.zone_pitches / total_pitches if total_pitches else 0.0
     z_swing_pct = stats.zone_swings / stats.zone_pitches if stats.zone_pitches else 0.0
     z_contact_pct = (
         stats.zone_contacts / stats.zone_swings if stats.zone_swings else 0.0
     )
-    o_zone_pitches = stats.pitches_thrown - stats.zone_pitches
     ozone_swing_pct = (
         stats.o_zone_swings / o_zone_pitches if o_zone_pitches else 0.0
     )
     ozone_contact_pct = (
         stats.o_zone_contacts / stats.o_zone_swings if stats.o_zone_swings else 0.0
     )
-    ozone_pct = o_zone_pitches / stats.pitches_thrown if stats.pitches_thrown else 0.0
+    ozone_pct = o_zone_pitches / total_pitches if total_pitches else 0.0
     bip_den = stats.gb + stats.ld + stats.fb
     gb_pct = stats.gb / bip_den if bip_den else 0.0
     ld_pct = stats.ld / bip_den if bip_den else 0.0

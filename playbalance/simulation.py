@@ -1125,6 +1125,9 @@ class GameSimulation:
             x_off += dx
             y_off += dy
             dist = int(round(max(abs(x_off), abs(y_off))))
+            plate_w = getattr(self.config, "plateWidth", 3)
+            plate_h = getattr(self.config, "plateHeight", 3)
+            in_zone = dist <= max(plate_w, plate_h)
             dec_r = self.rng.random()
             if miss_amt:
                 pitch_speed = self.physics.reduce_pitch_velocity_for_miss(
@@ -1150,19 +1153,15 @@ class GameSimulation:
                 pitcher_state,
                 start_pitches,
             ):
-                pitcher_state.record_pitch(
-                    in_zone=dist <= 3, swung=True, contact=False
-                )
+                pitcher_state.record_pitch(in_zone=in_zone, swung=True, contact=False)
                 pitcher_state.outs += outs
                 return outs + outs_from_pick
 
-            pitcher_state.record_pitch(
-                in_zone=dist <= 3, swung=swing, contact=contact
-            )
+            pitcher_state.record_pitch(in_zone=in_zone, swung=swing, contact=contact)
 
             if swing:
                 self.infield_fly = False
-                out_of_zone = dist > 3
+                out_of_zone = not in_zone
                 if (
                     contact
                     and out_of_zone
@@ -1204,7 +1203,7 @@ class GameSimulation:
                     is_third_strike=strikes >= 2,
                 )
                 if self._last_swing_strikeout:
-                    if dist <= 3:
+                    if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
                         pitcher_state.balls_thrown += 1
@@ -1235,7 +1234,7 @@ class GameSimulation:
                     )
                     return outs + outs_from_pick
                 if self.infield_fly:
-                    if dist <= 3:
+                    if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
                         pitcher_state.balls_thrown += 1
@@ -1256,7 +1255,7 @@ class GameSimulation:
                     )
                     return outs + outs_from_pick
                 if bases == 0:
-                    if dist <= 3:
+                    if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
                         pitcher_state.balls_thrown += 1
@@ -1291,7 +1290,7 @@ class GameSimulation:
                     )
                     return outs + outs_from_pick
                 if bases:
-                    if dist <= 3:
+                    if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
                         pitcher_state.balls_thrown += 1
@@ -1403,7 +1402,7 @@ class GameSimulation:
                     batter, pitcher, dist=dist, misread=self.batter_ai.last_misread
                 )
                 if contact and self.rng.random() < foul_chance:
-                    if dist > 3:
+                    if not in_zone:
                         pitcher_state.balls_thrown += 1
                     pitcher_state.strikes_thrown += 1
                     if self._attempt_foul_catch(
@@ -1436,12 +1435,12 @@ class GameSimulation:
                         strikes += 1
                     continue
                 strikes += 1
-                if dist > 3:
+                if not in_zone:
                     pitcher_state.balls_thrown += 1
                 else:
                     pitcher_state.strikes_thrown += 1
             else:
-                if dist <= 3:
+                if in_zone:
                     strikes += 1
                     pitcher_state.strikes_thrown += 1
                 else:

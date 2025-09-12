@@ -22,6 +22,7 @@ def test_pitching_stat_helpers():
     stats.first_pitch_strikes = 20
     stats.pitches_thrown = 90
     stats.zone_pitches = 50
+    stats.o_zone_pitches = 40
     stats.zone_swings = 30
     stats.zone_contacts = 25
     stats.o_zone_swings = 10
@@ -48,7 +49,7 @@ def test_pitching_stat_helpers():
     assert rates["zone_pct"] == approx(50 / 90)
     assert rates["z_swing_pct"] == approx(30 / 50)
     assert rates["z_contact_pct"] == approx(25 / 30)
-    assert rates["ozone_pct"] == approx((90 - 50) / 90)
-    assert rates["ozone_swing_pct"] == approx(10 / (90 - 50))
+    assert rates["ozone_pct"] == approx(40 / 90)
+    assert rates["ozone_swing_pct"] == approx(10 / 40)
     assert rates["ozone_contact_pct"] == approx(5 / 10)
 

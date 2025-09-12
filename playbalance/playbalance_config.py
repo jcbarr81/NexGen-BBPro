@@ -590,6 +590,9 @@ _DEFAULTS: Dict[str, Any] = {
     # Multipliers improving defensive efficiency
     "fielderReactionScale": 1.0,
     "throwSuccessScale": 1.1,
+    # Strike zone dimensions (half-width/height in control-box units)
+    "plateWidth": 3,
+    "plateHeight": 3,
 }
 _BASE_DEFAULTS = dict(_DEFAULTS)
 
