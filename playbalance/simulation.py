@@ -1702,10 +1702,32 @@ class GameSimulation:
             self.physics.vertical_hit_angle(swing_type=swing_type, gf=batter.gf)
         )
         power_adjust = (getattr(batter, "ph", 50) - 50) * 0.1
-        gb = self.config.ground_ball_base_rate
-        ld = self.config.line_drive_base_rate
-        fb = self.config.fly_ball_base_rate
-        total = max(1, gb + ld + fb)
+        # ------------------------------------------------------------------
+        # Determine batted ball distribution.  Baseline rates are pulled from
+        # configuration but are modified by player and pitcher attributes.
+        # Sluggers with loft in their swings should generate more fly balls,
+        # while pitchers with strong movement tend to induce more grounders.
+        # Each component is weighted so the impact can be tuned through
+        # ``PlayBalance`` configuration.
+        # ------------------------------------------------------------------
+        base_gb = self.config.ground_ball_base_rate
+        base_ld = self.config.line_drive_base_rate
+        base_fb = self.config.fly_ball_base_rate
+        power_factor = (
+            getattr(batter, "ph", 50) - 50
+        ) * self.config.bip_power_weight
+        launch_factor = (
+            getattr(batter, "gf", 50) - 50
+        ) * self.config.bip_launch_weight
+        movement_factor = (
+            getattr(pitcher, "movement", 50) - 50
+        ) * self.config.bip_movement_weight
+        gb = base_gb - power_factor - launch_factor + movement_factor
+        fb = base_fb + power_factor + launch_factor - movement_factor
+        gb = max(0.0, gb)
+        fb = max(0.0, fb)
+        ld = max(0.0, base_gb + base_ld + base_fb - gb - fb)
+        total = max(1.0, gb + ld + fb)
         roll = self.rng.random() * total
         if roll < gb:
             vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
