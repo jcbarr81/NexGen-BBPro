@@ -163,6 +163,7 @@ class RetroHeader(QtWidgets.QWidget):
 
 class RosterTable(QtWidgets.QTableWidget):
     """Table displaying the team's position players."""
+    hidden_columns: set[int] = set()
 
     def __init__(self, rows: List[List], parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
@@ -244,6 +245,36 @@ class RosterTable(QtWidgets.QTableWidget):
         )
         self.horizontalHeader().setSectionsClickable(True)
         self.setSortingEnabled(True)
+        self._init_column_menu()
+
+    def _init_column_menu(self) -> None:
+        header = self.horizontalHeader()
+        header.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        header.customContextMenuRequested.connect(self._show_column_menu)
+        for col in type(self).hidden_columns:
+            if 0 <= col < self.columnCount():
+                self.setColumnHidden(col, True)
+
+    def _show_column_menu(self, pos: QtCore.QPoint) -> None:
+        menu = QtWidgets.QMenu(self)
+        header = self.horizontalHeader()
+        for i, label in enumerate(COLUMNS):
+            action = QtGui.QAction(label, self, checkable=True)
+            action.setChecked(not self.isColumnHidden(i))
+            action.toggled.connect(
+                lambda checked, col=i: self._toggle_column(col, checked)
+            )
+            menu.addAction(action)
+        menu.exec(header.mapToGlobal(pos))
+
+    def _toggle_column(self, col: int, visible: bool) -> None:
+        self.setColumnHidden(col, not visible)
+        if visible:
+            type(self).hidden_columns.discard(col)
+        else:
+            type(self).hidden_columns.add(col)
 
 
 class StatusFooter(QtWidgets.QStatusBar):
@@ -294,7 +325,7 @@ class PitchersDialog(QtWidgets.QDialog):
         self.roster = roster
 
         self.setWindowTitle("Pitchers")
-        self.resize(930, 560)
+        self.resize(1100, 650)
         self._apply_global_palette()
 
         layout = QtWidgets.QVBoxLayout(self)
