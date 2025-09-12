@@ -471,6 +471,50 @@ def test_large_adjustment_fails_small_succeeds():
     assert ai.can_adjust_swing(batter, 1, 0, swing_type="contact") is True
 
 
+def test_timing_adjustment_respects_speedup_multipliers():
+    cfg = make_cfg(
+        adjustUnitsCHPct=100,
+        adjustUnitsSpeedUpHighGeared=10,
+        adjustUnitsSpeedUpLowGeared=1,
+    )
+    ai = BatterAI(cfg)
+    batter = make_player("b1", ch=10)
+    assert (
+        ai.can_adjust_swing(
+            batter, 0, 0, timing_units=2, timing_adjust="speed_up_high"
+        )
+        is False
+    )
+    assert (
+        ai.can_adjust_swing(
+            batter, 0, 0, timing_units=2, timing_adjust="speed_up_low"
+        )
+        is True
+    )
+
+
+def test_timing_adjustment_respects_slowdown_multipliers():
+    cfg = make_cfg(
+        adjustUnitsCHPct=100,
+        adjustUnitsSlowDownHighGeared=10,
+        adjustUnitsSlowDownLowGeared=1,
+    )
+    ai = BatterAI(cfg)
+    batter = make_player("b1", ch=10)
+    assert (
+        ai.can_adjust_swing(
+            batter, 0, 0, timing_units=2, timing_adjust="slow_down_high"
+        )
+        is False
+    )
+    assert (
+        ai.can_adjust_swing(
+            batter, 0, 0, timing_units=2, timing_adjust="slow_down_low"
+        )
+        is True
+    )
+
+
 def test_check_swing_probability_varies_with_swing_type():
     cfg = make_cfg(
         adjustUnitsCHPct=0,

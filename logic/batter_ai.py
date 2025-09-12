@@ -37,6 +37,12 @@ Only a handful of options are supported:
     ``1.0`` make pitch recognition easier, reducing misreads and swinging
     strikes.
 
+``adjustUnitsSpeed*``
+    Multipliers applied to timing adjustment units when the batter needs to
+    speed up or slow down the swing relative to their geared speed.  The
+    suffix indicates whether the adjustment is a speed up or slow down and if
+    the pitch is above or below the geared speed.
+
 The :class:`BatterAI` exposes :func:`decide_swing` which returns a tuple of
 ``(swing, contact_quality)``.  ``swing`` determines whether the batter offers at
         the pitch.  ``contact_quality`` is a multiplier in the range ``0.0`` to
@@ -178,17 +184,21 @@ class BatterAI:
         dx: int,
         dy: int,
         swing_type: str = "normal",
+        *,
+        timing_units: int = 0,
+        timing_adjust: str | None = None,
     ) -> bool:
-        """Return ``True`` if the batter can adjust the swing location.
+        """Return ``True`` if the batter can adjust the swing.
 
-        ``dx`` and ``dy`` are the difference in squares between the batter's
-        initial swing location and the actual pitch location.  The cost of the
-        adjustment is calculated using ``adjustUnitsDiag``,
-        ``adjustUnitsHoriz`` and ``adjustUnitsVert`` from the
+        ``dx`` and ``dy`` are the differences in squares between the batter's
+        initial swing location and the actual pitch location.  ``timing_units``
+        represents the required swing timing adjustment.  The cost of both
+        components is calculated using ``adjustUnitsDiag``,
+        ``adjustUnitsHoriz`` and ``adjustUnitsVert`` for location changes and
+        the ``adjustUnitsSpeed*`` multipliers for timing adjustments from the
         :class:`~logic.playbalance_config.PlayBalanceConfig`.  Available units
-        are based on the batter's ``CH`` rating scaled by
-        ``adjustUnitsCHPct`` and modified by the swing type specific
-        multipliers.
+        are based on the batter's ``CH`` rating scaled by ``adjustUnitsCHPct``
+        and modified by the swing type specific multipliers.
         """
 
         cfg = self.config
@@ -207,6 +217,16 @@ class BatterAI:
             + horiz * cfg.get("adjustUnitsHoriz", 0)
             + vert * cfg.get("adjustUnitsVert", 0)
         )
+
+        if timing_units:
+            multiplier_key = {
+                "speed_up_low": "adjustUnitsSpeedUpLowGeared",
+                "speed_up_high": "adjustUnitsSpeedUpHighGeared",
+                "slow_down_low": "adjustUnitsSlowDownLowGeared",
+                "slow_down_high": "adjustUnitsSlowDownHighGeared",
+            }.get(timing_adjust, "")
+            mult = cfg.get(multiplier_key, 1) if multiplier_key else 1
+            required += timing_units * mult
 
         return units >= required
 
@@ -227,6 +247,8 @@ class BatterAI:
         swing_type: str = "normal",
         random_value: float = 0.0,
         check_random: float | None = None,
+        timing_units: int = 0,
+        timing_adjust: str | None = None,
     ) -> Tuple[bool, float]:
         """Return ``(swing, contact_quality)`` for the next pitch.
 
@@ -235,11 +257,13 @@ class BatterAI:
         of RNG rolls deterministic for the tests.
 
         ``dx`` and ``dy`` represent the distance between the batter's intended
-        swing location and the actual pitch location.  When the required
-        adjustment exceeds the batter's ability a check-swing roll is performed
-        using the ``checkChanceBase*`` and ``checkChanceCHPct*`` configuration
-        entries.  ``check_random`` can be supplied to deterministically control
-        the outcome of the check-swing roll.
+        swing location and the actual pitch location.  ``timing_units`` and
+        ``timing_adjust`` describe the required timing change relative to the
+        batter's geared speed.  When the total adjustment exceeds the batter's
+        ability a check-swing roll is performed using the ``checkChanceBase*``
+        and ``checkChanceCHPct*`` configuration entries.  ``check_random`` can be
+        supplied to deterministically control the outcome of the check-swing
+        roll.
         """
 
         self.last_misread = False
@@ -372,7 +396,12 @@ class BatterAI:
                 contact = timing_quality * sum(weights) / 3.0
 
         if swing and not self.can_adjust_swing(
-            batter, dx, dy, swing_type=swing_type
+            batter,
+            dx,
+            dy,
+            swing_type=swing_type,
+            timing_units=timing_units,
+            timing_adjust=timing_adjust,
         ):
             check_rv = (
                 (random_value + 0.77) % 1 if check_random is None else check_random
