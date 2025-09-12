@@ -241,6 +241,23 @@ class BatterAI:
             self._best_cache[pid] = best
         return self._best_cache[pid]
 
+    def pitch_class(self, dist: int) -> str:
+        """Return a simple classification for ``dist`` from the zone.
+
+        Distances up to the plate size minus one are treated as "sure" strikes,
+        values on the edge are "close" strikes, a small buffer outside the zone
+        counts as "close" balls and anything further away is a "sure" ball.
+        """
+
+        zone = max(getattr(self.config, "plateWidth", 3), getattr(self.config, "plateHeight", 3))
+        if dist <= zone - 1:
+            return "sure strike"
+        if dist == zone:
+            return "close strike"
+        if dist <= zone + 2:
+            return "close ball"
+        return "sure ball"
+
     def decide_swing(
         self,
         batter: Player,
@@ -289,10 +306,16 @@ class BatterAI:
         else:
             self.last_misread = False
 
-        id_base = getattr(self.config, "idRatingBase", 0)
-        id_scale = getattr(self.config, "idRatingEaseScale", 1.0)
-        id_chance = id_base * id_scale
-        if rv * 100 <= id_chance:
+        discipline = getattr(batter, "ch", 50) / 100.0
+        pitch_kind = self.pitch_class(dist)
+        if pitch_kind in {"sure strike", "close strike"}:
+            base = 0.66
+            swing_chance = base + (discipline - 0.5) * 0.2
+        else:
+            base = 0.3 if pitch_kind == "close ball" else 0.1
+            swing_chance = base - (discipline - 0.5) * 0.2
+        swing_chance = clamp01(swing_chance)
+        if rv < swing_chance:
             swing = True
 
         if swing:
