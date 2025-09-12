@@ -7,10 +7,11 @@ modules involved in decision making and physics.
 
 Several dataclasses track in-game state and statistics:
 
-- **`BatterState`**, **`PitcherState`**, and **`FieldingState`** capture
-  performance for individual players during the game【F:logic/simulation.py†L33-L146】
+- **`BatterState`** and **`FieldingState`** capture performance for individual
+  players during the game【F:logic/simulation.py†L33-L118】, while **`PitcherState`**
+  records pitch-level totals in the play-balance engine【F:playbalance/state.py†L20-L27】
 - **`TeamState`** maintains the current lineup, bench, pitchers, base runners and
-  cumulative team stats for each side【F:logic/simulation.py†L149-L192】
+  cumulative team stats for each side【F:logic/simulation.py†L121-L178】
 
 These structures are created before the game starts and are updated throughout
 play as events occur.

@@ -4,9 +4,9 @@ import pytest
 from logic.simulation import (
     BatterState,
     GameSimulation,
-    PitcherState,
     TeamState,
 )
+from playbalance.state import PitcherState
 from logic.playbalance_config import PlayBalanceConfig
 from tests.test_physics import make_player, make_pitcher
 
@@ -20,7 +20,8 @@ def test_bip_type_distribution():
     offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
     sim = GameSimulation(defense, offense, cfg, rng)
     b_state = BatterState(batter)
-    p_state = PitcherState(pitcher)
+    p_state = PitcherState()
+    p_state.player = pitcher
 
     total = 5000
     counts = {"ground": 0, "line": 0, "fly": 0}

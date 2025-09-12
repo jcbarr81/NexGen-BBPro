@@ -28,10 +28,10 @@ from logic.schedule_generator import generate_mlb_schedule
 from .simulation import (
     FieldingState,
     GameSimulation,
-    PitcherState,
     TeamState,
     generate_boxscore,
 )
+from playbalance.state import PitcherState
 from logic.sim_config import load_tuned_playbalance_config
 from playbalance.benchmarks import load_benchmarks, league_average
 from utils.lineup_loader import build_default_game_state
@@ -77,11 +77,12 @@ def _clone_team_state(base: TeamState) -> TeamState:
     team.bullpen_warmups = {}
     if team.pitchers:
         starter = team.pitchers[0]
-        ps = PitcherState(starter)
+        ps = PitcherState()
+        ps.player = starter
         team.pitcher_stats[starter.player_id] = ps
         team.current_pitcher_state = ps
-        ps.g += 1
-        ps.gs += 1
+        ps.g = getattr(ps, "g", 0) + 1
+        ps.gs = getattr(ps, "gs", 0) + 1
         fs = team.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
         fs.g += 1
         fs.gs += 1

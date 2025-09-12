@@ -1,12 +1,13 @@
 from tests.test_simulation import make_pitcher
-from logic.simulation import PitcherState
+from playbalance.state import PitcherState
 from logic.stats import compute_pitching_derived, compute_pitching_rates
 from pytest import approx
 
 
 def test_pitching_stat_helpers():
     pitcher = make_pitcher("p")
-    stats = PitcherState(pitcher)
+    stats = PitcherState()
+    stats.player = pitcher
     stats.gs = 1
     stats.gf = 1
     stats.outs = 27

@@ -10,10 +10,10 @@ from __future__ import annotations
 from logic.simulation import (
     FieldingState as _FieldingState,
     GameSimulation as _GameSimulation,
-    PitcherState as _PitcherState,
     TeamState as _TeamState,
     generate_boxscore as _generate_boxscore,
 )
+from playbalance.state import PitcherState as _PitcherState
 
 # Re-export the simulation classes so callers can import them from
 # ``playbalance.simulation`` without touching the legacy ``logic`` package.

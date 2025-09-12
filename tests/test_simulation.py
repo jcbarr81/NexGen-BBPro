@@ -3,10 +3,10 @@ import random
 from logic.simulation import (
     BatterState,
     GameSimulation,
-    PitcherState,
     TeamState,
     generate_boxscore,
 )
+from playbalance.state import PitcherState
 from models.player import Player
 from models.pitcher import Pitcher
 from tests.util.pbini_factory import load_config, make_cfg
@@ -878,7 +878,8 @@ def test_throw_error_results_in_roe(monkeypatch):
     monkeypatch.setattr(sim.fielding_ai, "catch_action", lambda *a, **k: "throw")
     monkeypatch.setattr(sim.fielding_ai, "catch_probability", lambda *a, **k: 1.0)
     monkeypatch.setattr(sim.fielding_ai, "resolve_throw", lambda *a, **k: (False, True))
-    pitcher_state = PitcherState(pitcher)
+    pitcher_state = PitcherState()
+    pitcher_state.player = pitcher
     bases, error = sim._swing_result(
         batter, pitcher, defense, batter_state, pitcher_state, pitch_speed=50
     )

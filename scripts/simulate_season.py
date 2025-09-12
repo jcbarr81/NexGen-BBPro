@@ -31,10 +31,10 @@ from logic.season_simulator import SeasonSimulator
 from logic.simulation import (
     FieldingState,
     GameSimulation,
-    PitcherState,
     TeamState,
     generate_boxscore,
 )
+from playbalance.state import PitcherState
 from utils.lineup_loader import build_default_game_state
 from utils.path_utils import get_base_dir
 from utils.team_loader import load_teams
@@ -81,11 +81,12 @@ def clone_team_state(base: TeamState) -> TeamState:
     team.bullpen_warmups = {}
     if team.pitchers:
         starter = team.pitchers[0]
-        state = PitcherState(starter)
+        state = PitcherState()
+        state.player = starter
         team.pitcher_stats[starter.player_id] = state
         team.current_pitcher_state = state
-        state.g += 1
-        state.gs += 1
+        state.g = getattr(state, "g", 0) + 1
+        state.gs = getattr(state, "gs", 0) + 1
         fs = team.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
         fs.g += 1
         fs.gs += 1
