@@ -281,9 +281,10 @@ def test_owner_dashboard_stats_windows(monkeypatch):
 
     dash = owner_dashboard.OwnerDashboard('X')
     dash.open_team_stats_window()
-    dash.open_player_stats_window()
+    dash.open_team_stats_window(tab="batting")
+    dash.open_team_stats_window(tab="pitching")
 
-    assert called == [2, 0]
+    assert called == [2, 0, 1]
 
 
 def test_team_schedule_window_no_entries(monkeypatch, tmp_path):
