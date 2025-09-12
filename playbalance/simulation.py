@@ -1799,7 +1799,7 @@ class GameSimulation:
         bounce_vert, bounce_horiz = self.physics.ball_bounce(
             bat_speed / 2.0,
             bat_speed / 2.0,
-            self.surface,
+            surface=self.surface,
             wet=self.wet,
             temperature=self.temperature,
         )
@@ -1917,7 +1917,7 @@ class GameSimulation:
                 _, bounce_dist = self.physics.ball_bounce(
                     spd / 2.0,
                     spd / 2.0,
-                    self.surface,
+                    surface=self.surface,
                     wet=self.wet,
                     temperature=self.temperature,
                 )
@@ -1948,7 +1948,7 @@ class GameSimulation:
                 _, bounce_dist = self.physics.ball_bounce(
                     spd / 2.0,
                     spd / 2.0,
-                    self.surface,
+                    surface=self.surface,
                     wet=self.wet,
                     temperature=self.temperature,
                 )
