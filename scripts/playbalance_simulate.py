@@ -18,6 +18,7 @@ Enable PerfTune profiling with ``--perftune`` and analyze the results with
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import multiprocessing as mp
 import os
@@ -105,7 +106,7 @@ STAT_KEYS = [
 STAT_INDEX = {k: i for i, k in enumerate(STAT_KEYS)}
 
 
-BASE_STATES: dict[str, bytes] = {}
+BASE_STATES: dict[str, TeamState] = {}
 CFG = None
 
 
@@ -139,14 +140,16 @@ class FastRNG:
 
 def _init_worker(states: dict[str, bytes], cfg) -> None:
     global BASE_STATES, CFG
-    BASE_STATES = states
+    BASE_STATES = {
+        team_id: pickle.loads(state) for team_id, state in states.items()
+    }
     CFG = cfg
 
 
 def clone_team_state(team_id: str) -> TeamState:
-    """Return a fresh ``TeamState`` cloned from pickled baseline."""
+    """Return a fresh ``TeamState`` cloned from the baseline."""
 
-    return pickle.loads(BASE_STATES[team_id])
+    return copy.deepcopy(BASE_STATES[team_id])
 
 
 def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
