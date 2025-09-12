@@ -1131,7 +1131,7 @@ class GameSimulation:
                     pitch_speed, miss_amt, rand=dec_r
                 )
             self.last_pitch_speed = pitch_speed
-            swing, contact = self.batter_ai.decide_swing(
+            swing, contact_quality = self.batter_ai.decide_swing(
                 batter,
                 pitcher,
                 pitch_type=pitch_type,
@@ -1140,6 +1140,7 @@ class GameSimulation:
                 dist=dist,
                 random_value=dec_r,
             )
+            contact = getattr(self.batter_ai, "last_contact", contact_quality > 0)
             catcher_fs = self._get_fielder(defense, "C")
             if swing and self._maybe_catcher_interference(
                 offense,
@@ -1156,14 +1157,14 @@ class GameSimulation:
                 return outs + outs_from_pick
 
             pitcher_state.record_pitch(
-                in_zone=dist <= 3, swung=swing, contact=contact > 0
+                in_zone=dist <= 3, swung=swing, contact=contact
             )
 
             if swing:
                 self.infield_fly = False
                 out_of_zone = dist > 3
                 if (
-                    contact > 0
+                    contact
                     and out_of_zone
                     and self.rng.random()
                     >= self.config.get("outOfZoneContactHitChance", 0.1)
@@ -1189,9 +1190,9 @@ class GameSimulation:
                     )
                     return outs + outs_from_pick
 
-                contact_quality = contact
-                if contact > 0 and out_of_zone:
-                    contact_quality = max(0.1, contact_quality * 0.25)
+                contact_quality_var = contact_quality
+                if contact and out_of_zone:
+                    contact_quality_var = max(0.1, contact_quality_var * 0.25)
                 bases, error = self._swing_result(
                     batter,
                     pitcher,
@@ -1199,7 +1200,7 @@ class GameSimulation:
                     batter_state,
                     pitcher_state,
                     pitch_speed=pitch_speed,
-                    contact_quality=contact_quality,
+                    contact_quality=contact_quality_var,
                     is_third_strike=strikes >= 2,
                 )
                 if self._last_swing_strikeout:
@@ -1401,7 +1402,7 @@ class GameSimulation:
                 foul_chance = self._foul_probability(
                     batter, pitcher, dist=dist, misread=self.batter_ai.last_misread
                 )
-                if contact > 0 and self.rng.random() < foul_chance:
+                if contact and self.rng.random() < foul_chance:
                     if dist > 3:
                         pitcher_state.balls_thrown += 1
                     pitcher_state.strikes_thrown += 1

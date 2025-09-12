@@ -64,3 +64,13 @@
 [2025-09-12 04:39:23] Generated regular season schedule with 162 games
 [2025-09-12 04:39:23] Generated regular season schedule with 162 games
 [2025-09-12 04:39:23] No unsigned players available
+[2025-09-12 16:09:00] Simulated a regular season day; 1 days until Midseason
+[2025-09-12 16:09:00] Simulated a regular season day; 0 days until Midseason
+[2025-09-12 16:09:00] Simulated week; 0 days until Midseason
+[2025-09-12 16:09:00] Simulated month; 0 days until Midseason
+[2025-09-12 16:09:00] Season advanced to Preseason
+[2025-09-12 16:09:00] No unsigned players available
+[2025-09-12 16:09:00] Training camp completed; players marked ready
+[2025-09-12 16:09:00] Generated regular season schedule with 162 games
+[2025-09-12 16:09:00] Generated regular season schedule with 162 games
+[2025-09-12 16:09:01] No unsigned players available
