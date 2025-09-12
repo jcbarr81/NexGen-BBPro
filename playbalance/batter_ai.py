@@ -249,11 +249,26 @@ class BatterAI:
         balls: int = 0,
         strikes: int = 0,
         look_for: str | None = None,
+        dist: int = 0,
+        swing_type: str = "normal",
+        dx: int | None = None,
+        dy: int | None = None,
+        random_value: float | None = None,
+        check_random: float | None = None,
     ) -> Tuple[bool, float]:
-        """Return ``(swing, contact_quality)`` for the pitch."""
+        """Return ``(swing, contact_quality)`` for the pitch.
+
+        Parameters beyond ``balls``, ``strikes`` and ``look_for`` are accepted
+        for API compatibility with the legacy implementation.  The simplified
+        logic only uses ``random_value`` (falling back to :func:`random.random`)
+        to determine whether the batter swings; the remaining values are
+        currently ignored but kept to avoid :class:`TypeError` in callers.
+        """
 
         swing = False
         contact_quality = 1.0
+
+        rv = random.random() if random_value is None else random_value
 
         pitch_match = False
         if look_for == "primary" and pitch_type == self._primary_pitch(pitcher):
@@ -271,7 +286,7 @@ class BatterAI:
         id_base = getattr(self.config, "idRatingBase", 0)
         id_scale = getattr(self.config, "idRatingEaseScale", 1.0)
         id_chance = id_base * id_scale
-        if random.random() * 100 <= id_chance:
+        if rv * 100 <= id_chance:
             swing = True
 
         self.last_decision = (swing, max(0.0, min(1.0, contact_quality)))
