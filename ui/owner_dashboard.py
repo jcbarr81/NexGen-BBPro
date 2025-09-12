@@ -249,20 +249,14 @@ class OwnerDashboard(QMainWindow):
             return
         show_on_top(TeamScheduleWindow(self.team_id, self))
 
-    def open_team_stats_window(self) -> None:
+    def open_team_stats_window(self, tab: str = "team") -> None:
+        """Open the team statistics window with the specified default tab."""
         if not getattr(self, "team", None):
             QMessageBox.warning(self, "Error", "Team information not available.")
             return
         w = TeamStatsWindow(self.team, self.players, self.roster, self)
-        w.tabs.setCurrentIndex(2)
-        show_on_top(w)
-
-    def open_player_stats_window(self) -> None:
-        if not getattr(self, "team", None):
-            QMessageBox.warning(self, "Error", "Team information not available.")
-            return
-        w = TeamStatsWindow(self.team, self.players, self.roster, self)
-        w.tabs.setCurrentIndex(0)
+        index_map = {"batting": 0, "pitching": 1, "team": 2}
+        w.tabs.setCurrentIndex(index_map.get(tab.lower(), 2))
         show_on_top(w)
 
     def open_league_stats_window(self) -> None:
