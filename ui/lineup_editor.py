@@ -1,4 +1,16 @@
-from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout, QComboBox, QPushButton, QWidget, QMessageBox, QScrollArea, QGroupBox
+from PyQt6.QtWidgets import (
+    QDialog,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+    QComboBox,
+    QPushButton,
+    QWidget,
+    QMessageBox,
+    QGroupBox,
+    QListWidget,
+)
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QPropertyAnimation
 import csv
@@ -46,15 +58,24 @@ class LineupEditor(QDialog):
         self.field_overlay.setStyleSheet("background: transparent;")
 
         self.position_labels = {}
-        y_offset = 10
+        y_offset = 0
         position_coords = {
-            "C": (160, 481), "1B": (225, 341), "2B": (220, 289), "SS": (98, 289),
-            "3B": (62, 340), "LF": (55, 235), "CF": (158, 200), "RF": (230, 235), "DH": (275, 415)
+            "C": (160, 481),
+            "1B": (225, 341),
+            "2B": (220, 289),
+            "SS": (98, 289),
+            "3B": (62, 340),
+            "LF": (55, 235),
+            "CF": (158, 200),
+            "RF": (230, 235),
+            "DH": (275, 415),
         }
         for pos, (x, y) in position_coords.items():
             label = QLabel("", self.field_overlay)
             label.move(x, y + y_offset)
-            label.setStyleSheet("color: blue; font-size: 9px; font-weight: bold; background-color: rgba(255, 255, 255, 0.6); border-radius: 4px;")
+            label.setStyleSheet(
+                "color: blue; font-size: 9px; font-weight: bold; background-color: rgba(255, 255, 255, 0.6); border-radius: 4px;"
+            )
             label.setFixedWidth(100)
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setWordWrap(True)
@@ -116,11 +137,13 @@ class LineupEditor(QDialog):
         bench_label.setStyleSheet("font-weight: bold; margin-top: 20px;")
         right_panel.addWidget(bench_label)
 
-        self.bench_display = QLabel()
+        self.bench_display = QListWidget()
         self.bench_display.setMinimumHeight(100)
+        self.bench_display.setMaximumHeight(150)
         self.bench_display.setStyleSheet("margin-bottom: 10px;")
-        self.bench_display.setWordWrap(True)
-        self.bench_display.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.bench_display.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
         right_panel.addWidget(self.bench_display)
 
         save_button = QPushButton("Save Lineup")
@@ -283,7 +306,7 @@ class LineupEditor(QDialog):
                         break
 
     def update_bench_display(self):
-        used_ids = set(self.player_dropdowns[i].currentData() for i in range(9))
+        used_ids = {self.player_dropdowns[i].currentData() for i in range(9)}
         bench_players = sorted(
             [
                 pdata["name"]
@@ -294,22 +317,11 @@ class LineupEditor(QDialog):
             ]
         )
 
-        columns = [[], [], []]
-        for i, name in enumerate(bench_players):
-            columns[i // 5 % 3].append(name)
-
-        formatted = ""
-        max_rows = max(len(col) for col in columns)
-        for i in range(max_rows):
-            row = []
-            for col in columns:
-                row.append(f"{col[i]:<30}" if i < len(col) else " " * 30)
-            formatted += "".join(row).rstrip() + ""
-
-        if not formatted.strip():
-            formatted = "(none)"
-
-        self.bench_display.setText(formatted)
+        self.bench_display.clear()
+        if bench_players:
+            self.bench_display.addItems(bench_players)
+        else:
+            self.bench_display.addItem("(none)")
 
     def update_overlay_label(self, index):
         position = self.position_dropdowns[index].currentText()
