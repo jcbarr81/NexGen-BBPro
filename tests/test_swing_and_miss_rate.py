@@ -1,6 +1,6 @@
 import pytest
 
-from logic.simulation import PitcherState
+from playbalance.state import PitcherState
 from logic.stats import compute_pitching_rates
 
 
@@ -9,7 +9,8 @@ class DummyPitcher:
 
 
 def test_swing_and_miss_rate():
-    ps = PitcherState(DummyPitcher())
+    ps = PitcherState()
+    ps.player = DummyPitcher()
     ps.pitches_thrown = 100
     ps.zone_swings = 25
     ps.zone_contacts = 18

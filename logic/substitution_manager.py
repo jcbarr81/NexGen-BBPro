@@ -23,7 +23,8 @@ from .playbalance_config import PlayBalanceConfig
 from .bullpen import WarmupTracker
 
 if TYPE_CHECKING:  # pragma: no cover - used only for type checking
-    from .simulation import BatterState, PitcherState, TeamState
+    from .simulation import BatterState, TeamState
+    from playbalance.state import PitcherState
 
 
 class SubstitutionManager:
@@ -212,7 +213,7 @@ class SubstitutionManager:
         offense.bench.remove(best)
         offense.lineup[idx] = best
 
-        from .simulation import PitcherState  # local import to avoid cycle
+        from playbalance.state import PitcherState  # local import to avoid cycle
 
         offense.pitchers.pop(0)
         new_pitcher = offense.pitchers[0]
@@ -760,7 +761,7 @@ class SubstitutionManager:
             return None
 
         # Change pitcher first
-        from .simulation import PitcherState  # local import to avoid cycle
+        from playbalance.state import PitcherState  # local import to avoid cycle
 
         defense.pitchers.pop(0)
         new_pitcher = defense.pitchers[0]
@@ -905,7 +906,7 @@ class SubstitutionManager:
                 tracker = defense.bullpen_warmups.get(next_pitcher.player_id)
                 if tracker is None or not tracker.is_ready():
                     return False
-        from .simulation import PitcherState  # local import to avoid cycle
+        from playbalance.state import PitcherState  # local import to avoid cycle
         if not defense.pitchers:
             return False
         defense.pitchers.pop(0)

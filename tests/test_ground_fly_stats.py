@@ -5,9 +5,9 @@ import pytest
 from logic.simulation import (
     BatterState,
     GameSimulation,
-    PitcherState,
     TeamState,
 )
+from playbalance.state import PitcherState
 from logic.playbalance_config import PlayBalanceConfig
 from logic.stats import compute_batting_rates, compute_pitching_rates
 from tests.test_physics import make_player, make_pitcher
@@ -25,7 +25,8 @@ def test_swing_result_tracks_ground_line_fly(monkeypatch):
     monkeypatch.setattr(sim.physics, "ball_roll_distance", lambda *a, **k: 0.0)
     monkeypatch.setattr(sim.physics, "ball_bounce", lambda *a, **k: (0.0, 0.0))
     b_state = BatterState(batter)
-    p_state = PitcherState(pitcher)
+    p_state = PitcherState()
+    p_state.player = pitcher
     sim._swing_result(batter, pitcher, defense, b_state, p_state, pitch_speed=90)
     assert (
         b_state.gb == 1
@@ -43,7 +44,8 @@ def test_swing_result_tracks_ground_line_fly(monkeypatch):
     monkeypatch.setattr(sim_line.physics, "ball_bounce", lambda *a, **k: (0.0, 0.0))
     monkeypatch.setattr(sim_line.physics, "vertical_hit_angle", lambda *a, **k: 10.0)
     b_state_line = BatterState(batter)
-    p_state_line = PitcherState(pitcher)
+    p_state_line = PitcherState()
+    p_state_line.player = pitcher
     sim_line._swing_result(
         batter, pitcher, defense, b_state_line, p_state_line, pitch_speed=90
     )
@@ -61,7 +63,8 @@ def test_swing_result_tracks_ground_line_fly(monkeypatch):
     monkeypatch.setattr(sim_fly.physics, "ball_bounce", lambda *a, **k: (0.0, 0.0))
     monkeypatch.setattr(sim_fly.physics, "vertical_hit_angle", lambda *a, **k: 20.0)
     b_state_fly = BatterState(batter)
-    p_state_fly = PitcherState(pitcher)
+    p_state_fly = PitcherState()
+    p_state_fly.player = pitcher
     sim_fly._swing_result(
         batter, pitcher, defense, b_state_fly, p_state_fly, pitch_speed=90
     )
@@ -87,7 +90,8 @@ def test_batted_ball_rates():
     assert rates["ld_fb_ratio"] == pytest.approx(0.5)
 
     pitcher = make_pitcher("p")
-    ps = PitcherState(pitcher)
+    ps = PitcherState()
+    ps.player = pitcher
     ps.gb = 40
     ps.ld = 10
     ps.fb = 10

@@ -18,6 +18,7 @@ from logic.batter_ai import BatterAI
 from logic.bullpen import WarmupTracker
 from logic.fielding_ai import FieldingAI
 from logic.field_geometry import DEFAULT_POSITIONS, Stadium
+from playbalance.state import PitcherState
 from utils.path_utils import get_base_dir
 from utils.putout_probabilities import load_putout_probabilities
 from utils.stats_persistence import save_stats
@@ -73,75 +74,6 @@ class BatterState:
     fb: int = 0  # Fly balls put in play
 
 
-@dataclass(slots=True)
-class PitcherState:
-    """Tracks state for a pitcher."""
-
-    player: Pitcher
-    g: int = 0  # Games pitched
-    gs: int = 0  # Games started
-    bf: int = 0  # Batters faced
-    outs: int = 0  # Outs recorded
-    r: int = 0  # Runs allowed
-    er: int = 0  # Earned runs allowed
-    h: int = 0  # Hits allowed
-    b1: int = 0  # Singles allowed
-    b2: int = 0  # Doubles allowed
-    b3: int = 0  # Triples allowed
-    hr: int = 0  # Home runs allowed
-    bb: int = 0  # Walks issued
-    ibb: int = 0  # Intentional walks issued
-    hbp: int = 0  # Hit batters
-    so: int = 0  # Strikeouts
-    so_looking: int = 0  # Called third strikes
-    so_swinging: int = 0  # Swinging strikeouts
-    wp: int = 0  # Wild pitches
-    bk: int = 0  # Balks
-    pk: int = 0  # Pickoffs
-    pocs: int = 0  # Pickoff caught stealing
-    ir: int = 0  # Inherited runners
-    irs: int = 0  # Inherited runners scored
-    gf: int = 0  # Games finished
-    sv: int = 0  # Saves
-    bs: int = 0  # Blown saves
-    hld: int = 0  # Holds
-    svo: int = 0  # Save opportunities
-    pitches_thrown: int = 0  # Total pitches
-    strikes_thrown: int = 0  # Strikes thrown
-    balls_thrown: int = 0  # Balls thrown
-    first_pitch_strikes: int = 0  # First-pitch strikes
-    zone_pitches: int = 0  # Pitches in the strike zone
-    zone_swings: int = 0  # Swings at pitches in the zone
-    zone_contacts: int = 0  # Contact on zone swings
-    o_zone_swings: int = 0  # Swings at pitches outside the zone
-    o_zone_contacts: int = 0  # Contact on outside-zone swings
-    in_save_situation: bool = False  # Internal flag tracking save opp
-    toast: int = 0  # Accumulated toast points
-    consecutive_hits: int = 0  # Consecutive hits allowed
-    consecutive_baserunners: int = 0  # Consecutive batters reaching base
-    is_toast: bool = False  # Reliever toast flag
-    allowed_hr: bool = False  # True if last batter hit a home run
-    gb: int = 0  # Ground balls induced
-    ld: int = 0  # Line drives induced
-    fb: int = 0  # Fly balls induced
-
-    # Backwards compatibility accessors
-    @property
-    def walks(self) -> int:  # pragma: no cover - simple alias
-        return self.bb
-
-    @walks.setter
-    def walks(self, value: int) -> None:  # pragma: no cover - simple alias
-        self.bb = value
-
-    @property
-    def strikeouts(self) -> int:  # pragma: no cover - simple alias
-        return self.so
-
-    @strikeouts.setter
-    def strikeouts(self, value: int) -> None:  # pragma: no cover - simple alias
-        self.so = value
-
 
 @dataclass(slots=True)
 class FieldingState:
@@ -191,11 +123,12 @@ class TeamState:
     def __post_init__(self) -> None:
         if self.pitchers:
             starter = self.pitchers[0]
-            state = PitcherState(starter)
+            state = PitcherState()
+            state.player = starter
             self.pitcher_stats[starter.player_id] = state
             self.current_pitcher_state = state
-            state.g += 1
-            state.gs += 1
+            state.g = getattr(state, "g", 0) + 1
+            state.gs = getattr(state, "gs", 0) + 1
             fs = self.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
             fs.g += 1
             fs.gs += 1
@@ -668,15 +601,16 @@ class GameSimulation:
 
                 for ps in team.pitcher_stats.values():
                     season = getattr(ps.player, "season_stats", {})
-                    for f in fields(PitcherState):
-                        if f.name in {"player", "in_save_situation"}:
+                    for attr, value in vars(ps).items():
+                        if attr in {"player", "in_save_situation"}:
                             continue
-                        season[f.name] = season.get(f.name, 0) + getattr(ps, f.name)
-                    season_state = PitcherState(ps.player)
-                    for f in fields(PitcherState):
-                        if f.name in {"player", "in_save_situation"}:
+                        season[attr] = season.get(attr, 0) + value
+                    season_state = PitcherState()
+                    season_state.player = ps.player
+                    for attr, value in season.items():
+                        if attr in {"player", "in_save_situation"}:
                             continue
-                        setattr(season_state, f.name, season.get(f.name, 0))
+                        setattr(season_state, attr, value)
                     season.update(compute_pitching_derived(season_state))
                     season.update(compute_pitching_rates(season_state))
                     ps.player.season_stats = season
@@ -2548,7 +2482,6 @@ def save_boxscore_html(game_type: str, html: str, game_id: str | None = None) ->
 
 __all__ = [
     "BatterState",
-    "PitcherState",
     "FieldingState",
     "TeamState",
     "GameSimulation",

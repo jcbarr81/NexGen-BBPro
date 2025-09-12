@@ -4,9 +4,9 @@ import pytest
 from logic.simulation import (
     BatterState,
     GameSimulation,
-    PitcherState,
     TeamState,
 )
+from playbalance.state import PitcherState
 from logic.playbalance_config import PlayBalanceConfig
 from tests.test_physics import make_player, make_pitcher
 
@@ -20,7 +20,8 @@ def test_ground_air_distribution():
     offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
     sim = GameSimulation(defense, offense, cfg, rng)
     b_state = BatterState(batter)
-    p_state = PitcherState(pitcher)
+    p_state = PitcherState()
+    p_state.player = pitcher
 
     total = 5000
     ground = line = fly = 0
@@ -58,7 +59,8 @@ def test_vert_angle_gf_pct_shifts_distribution():
         offense = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("op")])
         sim = GameSimulation(defense, offense, cfg, rng)
         b_state = BatterState(batter)
-        p_state = PitcherState(pitcher)
+        p_state = PitcherState()
+        p_state.player = pitcher
         ground = air = 0
         for _ in range(1000):
             sim._swing_result(

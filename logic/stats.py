@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .simulation import BatterState, PitcherState, FieldingState, TeamState
+    from .simulation import BatterState, FieldingState, TeamState
+    from playbalance.state import PitcherState
 
 
 def compute_batting_derived(stats: 'BatterState') -> Dict[str, float]:

@@ -5,9 +5,9 @@ import pytest
 from logic.simulation import (
     BatterState,
     GameSimulation,
-    PitcherState,
     TeamState,
 )
+from playbalance.state import PitcherState
 from tests.test_physics import make_player, make_pitcher
 from tests.util.pbini_factory import make_cfg
 
@@ -100,7 +100,8 @@ def test_ball_in_play_outs(monkeypatch, rates, action, needs_throw):
     batter = away.lineup[0]
     pitcher = home.pitchers[0]
     batter_state = BatterState(batter)
-    pitcher_state = PitcherState(pitcher)
+    pitcher_state = PitcherState()
+    pitcher_state.player = pitcher
     bases, error = sim._swing_result(
         batter,
         pitcher,
