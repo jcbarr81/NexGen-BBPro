@@ -18,7 +18,12 @@ class PlayerState:
 
 @dataclass
 class PitcherState:
-    """Tracks pitch-level statistics for a pitcher."""
+    """Tracks pitch-level statistics for a pitcher.
+
+    ``toast`` accumulates numeric toast points used when evaluating pitcher
+    fatigue, while ``is_toast`` is a boolean flag indicating the pitcher has
+    been deemed toast and should be considered for replacement.
+    """
 
     player: Any | None = None
     g: int = 0
@@ -50,6 +55,7 @@ class PitcherState:
     ld: int = 0
     fb: int = 0
     toast: float = 0.0
+    is_toast: bool = False
     consecutive_hits: int = 0
     consecutive_baserunners: int = 0
     allowed_hr: bool = False
