@@ -219,6 +219,7 @@ class BatterAI:
     _primary_cache: Dict[str, str] = None  # type: ignore[assignment]
     _best_cache: Dict[str, str] = None  # type: ignore[assignment]
     last_decision: Tuple[bool, float] | None = None
+    last_misread: bool = False
 
     def _primary_pitch(self, pitcher: Pitcher) -> str:
         if self._primary_cache is None:
@@ -282,6 +283,9 @@ class BatterAI:
 
         if look_for and not pitch_match:
             contact_quality -= getattr(self.config, "lookMismatchPenalty", 0) / 100.0
+            self.last_misread = True
+        else:
+            self.last_misread = False
 
         id_base = getattr(self.config, "idRatingBase", 0)
         id_scale = getattr(self.config, "idRatingEaseScale", 1.0)
