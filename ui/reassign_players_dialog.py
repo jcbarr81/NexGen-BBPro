@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
 
 from models.base_player import BasePlayer
 from models.roster import Roster
+from ui.player_profile_dialog import PlayerProfileDialog
 from utils.roster_loader import save_roster
 
 
@@ -66,6 +67,7 @@ class ReassignPlayersDialog(QDialog):
             vbox.addWidget(label)
             self.labels[level] = label
             lw = RosterListWidget(level, self)
+            lw.itemDoubleClicked.connect(self._open_player_profile)
             self.lists[level] = lw
 
             for pid in getattr(self.roster, level):
@@ -99,6 +101,12 @@ class ReassignPlayersDialog(QDialog):
         layout.addWidget(info)
         layout.addLayout(columns)
         layout.addWidget(move_btn)
+
+        note = QLabel(
+            "Changes will not be saved until you click 'Save Roster'."
+        )
+        note.setWordWrap(True)
+        layout.addWidget(note)
         layout.addWidget(save_btn)
 
         def _calc_height(lw: QListWidget) -> int:
@@ -106,7 +114,7 @@ class ReassignPlayersDialog(QDialog):
             return row * max(lw.count(), 1) + 80
 
         height = max(_calc_height(lw) for lw in self.lists.values())
-        self.resize(600, height)
+        self.resize(900, height)
         self._update_counts()
 
     def _calculate_age(self, birthdate_str: str):
@@ -118,6 +126,14 @@ class ReassignPlayersDialog(QDialog):
             )
         except Exception:
             return "?"
+
+    def _open_player_profile(self, item: QListWidgetItem) -> None:
+        """Open the player profile dialog for the selected player."""
+        pid = item.data(Qt.ItemDataRole.UserRole)
+        player = self.players.get(pid)
+        if not player:
+            return
+        PlayerProfileDialog(player, self).exec()
 
     def _apply_moves(self) -> None:
         selected_item = None
