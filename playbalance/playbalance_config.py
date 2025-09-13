@@ -162,7 +162,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability tuned for a lower league-wide average
     # to curb excessive offense after other modifiers.
-    "hitProbBase": 0.05,
+    "hitProbBase": 0.045,
     "contactFactorBase": 0.9,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
@@ -176,11 +176,11 @@ _DEFAULTS: Dict[str, Any] = {
     # (32% outs), fly balls ~14% hits (86% outs).  These defaults keep the
     # simplified simulation in a reasonable range when league benchmarks are
     # unavailable.
-    "groundOutProb": 0.76,
-    "lineOutProb": 0.32,
-    "flyOutProb": 0.86,
+    "groundOutProb": 0.78,
+    "lineOutProb": 0.34,
+    "flyOutProb": 0.88,
     # Scaling factor for outs on balls in play (BABIP tuning)
-    "babipScale": 1.0,
+    "babipScale": 1.05,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
