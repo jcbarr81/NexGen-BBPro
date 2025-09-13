@@ -326,6 +326,13 @@ class BatterAI:
         count_key = f"swingProb{balls}{strikes}CountAdjust"
         swing_chance += getattr(self.config, count_key, 0) / 100.0
 
+        # Strike-sensitive bonus for pitches just off the plate.
+        if pitch_kind == "close ball":
+            swing_chance += strikes * getattr(
+                self.config, "closeBallStrikeBonus", 0
+            ) / 100.0
+            swing_chance = clamp01(swing_chance)
+
         # Discipline pushes aggressiveness in the expected direction.
         if pitch_kind in {"sure strike", "close strike"}:
             swing_chance += (discipline - 0.5) * 0.2

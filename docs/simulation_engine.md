@@ -41,8 +41,9 @@ A collection of focused modules encapsulate specific decision making:
 
 - `PitcherAI` selects pitches and objectives using configurable weights and
   tracks which pitches have been established【F:playbalance/pitcher_ai.py†L1-L33】【F:playbalance/pitcher_ai.py†L48-L60】.
-- `BatterAI` applies count-based adjustments to swing decisions and computes the
-  contact quality of a swing【F:playbalance/batter_ai.py†L1-L39】【F:playbalance/batter_ai.py†L58-L70】.
+- `BatterAI` applies count-based adjustments to swing decisions—including a
+  strike-sensitive bonus for close balls—and computes the contact quality of a
+  swing【F:playbalance/batter_ai.py†L1-L39】【F:playbalance/batter_ai.py†L58-L70】.
 - `SubstitutionManager` evaluates pinch hitting, defensive replacements and
   bullpen usage using ratings derived from player attributes and configuration
   chances【F:playbalance/substitution_manager.py†L1-L108】.

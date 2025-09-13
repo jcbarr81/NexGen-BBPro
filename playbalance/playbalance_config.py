@@ -227,6 +227,8 @@ _DEFAULTS: Dict[str, Any] = {
     # Separate scaling factors for pitches in and out of the zone
     "zSwingProbScale": 1.0,
     "oSwingProbScale": 1.0,
+    # Bonus applied to close-ball swing probability per strike
+    "closeBallStrikeBonus": 0,
     # Count and location adjustments to swing probability
     "swingProb00CountAdjust": 0,
     "swingProb01CountAdjust": 0,
