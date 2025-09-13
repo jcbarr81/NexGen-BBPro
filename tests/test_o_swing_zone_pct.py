@@ -13,4 +13,5 @@ def test_o_swing_and_zone_pct():
     rates = compute_pitching_rates(ps)
     assert ps.o_zone_pitches == 2
     assert rates["ozone_swing_pct"] == approx(1 / 2)
+    assert rates["z_swing_pct"] == approx(0)
     assert rates["zone_pct"] == approx(1 / 3)

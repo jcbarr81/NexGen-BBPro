@@ -37,10 +37,18 @@ def apply_league_benchmarks(
     pitches_per_pa = benchmarks["pitches_per_pa"]
     cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
 
-    swing_pct = benchmarks.get("swing_pct")
-    zone_pct = benchmarks.get("zone_pct")
     z_swing_pct = benchmarks.get("z_swing_pct")
     o_swing_pct = benchmarks.get("o_swing_pct")
+    if None not in (z_swing_pct, o_swing_pct):
+        base_z = (cfg.swingProbSureStrike + cfg.swingProbCloseStrike) / 2
+        base_o = (cfg.swingProbCloseBall + cfg.swingProbSureBall) / 2
+        base_z *= cfg.swingProbScale
+        base_o *= cfg.swingProbScale
+        cfg.zSwingProbScale = round(z_swing_pct / base_z, 2) if base_z else 1.0
+        cfg.oSwingProbScale = round(o_swing_pct / base_o, 2) if base_o else 1.0
+
+    swing_pct = benchmarks.get("swing_pct")
+    zone_pct = benchmarks.get("zone_pct")
     z_contact_pct = benchmarks.get("z_contact_pct")
     o_contact_pct = benchmarks.get("o_contact_pct")
     swstr_pct = benchmarks.get("swstr_pct")
