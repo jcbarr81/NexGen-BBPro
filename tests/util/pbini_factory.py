@@ -19,10 +19,10 @@ def make_cfg(**entries: int) -> PlayBalanceConfig:
         "hit2BProb": 0,
         "hit3BProb": 0,
         "hitHRProb": 0,
-        "swingProbSureStrike": 0.75,
-        "swingProbCloseStrike": 0.5,
-        "swingProbCloseBall": 0.35,
-        "swingProbSureBall": 0.1,
+        "swingProbSureStrike": 0.66,
+        "swingProbCloseStrike": 0.46,
+        "swingProbCloseBall": 0.51,
+        "swingProbSureBall": 0.13,
     }
     base_entries.update(entries)
     return PlayBalanceConfig.from_dict({"PlayBalance": base_entries})
@@ -46,10 +46,10 @@ def load_config(path: Path | None = None) -> PlayBalanceConfig:
             "hit2BProb": 0,
             "hit3BProb": 0,
             "hitHRProb": 0,
-            "swingProbSureStrike": 0.75,
-            "swingProbCloseStrike": 0.5,
-            "swingProbCloseBall": 0.35,
-            "swingProbSureBall": 0.1,
+            "swingProbSureStrike": 0.66,
+            "swingProbCloseStrike": 0.46,
+            "swingProbCloseBall": 0.51,
+            "swingProbSureBall": 0.13,
         }
     )
     # The real configuration contains pitch objective weights which would

@@ -218,10 +218,10 @@ _DEFAULTS: Dict[str, Any] = {
     "closeStrikeDist": 5,
     "closeBallDist": 4,
     # Baseline swing probabilities reflecting MLB averages
-    "swingProbSureStrike": 0.75,
-    "swingProbCloseStrike": 0.5,
-    "swingProbCloseBall": 0.2,
-    "swingProbSureBall": 0.05,
+    "swingProbSureStrike": 0.66,
+    "swingProbCloseStrike": 0.46,
+    "swingProbCloseBall": 0.51,
+    "swingProbSureBall": 0.13,
     # Global swing probability scaling factor
     "swingProbScale": 0.9,
     # Separate scaling factors for pitches in and out of the zone
