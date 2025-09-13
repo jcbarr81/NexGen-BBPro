@@ -13,4 +13,4 @@ def test_pitches_per_pa():
     bs.pa = 100
     bs.pitches = 386
     derived = compute_batting_derived(bs)
-    assert derived["p_pa"] == pytest.approx(3.86, abs=0.01)
+    assert derived["p_pa"] == pytest.approx(3.86, abs=0.001)
