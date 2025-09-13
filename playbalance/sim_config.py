@@ -135,7 +135,7 @@ def load_tuned_playbalance_config(
     # Boost batter pitch recognition to curb excessive strikeouts seen in
     # season simulations. Increasing the ease scale makes identifying pitches
     # easier which leads to more contact and fewer swinging strikes.
-    cfg.idRatingEaseScale = 2.0
+    cfg.idRatingEaseScale = 2.5
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
