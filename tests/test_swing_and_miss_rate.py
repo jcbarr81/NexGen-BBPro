@@ -57,8 +57,8 @@ def test_swstr_and_bip_rates():
 
 def test_swing_rates_match_modern_game():
     cfg = make_cfg(idRatingBase=50)
-    cfg.values["zSwingProbScale"] = 0.82
-    cfg.values["oSwingProbScale"] = 0.45
+    cfg.values["zSwingProbScale"] = 0.79
+    cfg.values["oSwingProbScale"] = 0.43
     ai = BatterAI(cfg)
     batter = make_player("B", ch=50)
     pitcher = make_pitcher("P", movement=50)

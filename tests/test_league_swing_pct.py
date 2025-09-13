@@ -10,9 +10,9 @@ from tests.util.pbini_factory import make_cfg
 
 def test_league_wide_swing_percentage():
     cfg = make_cfg(idRatingBase=50)
-    cfg.values["swingProbScale"] = 1.2
-    cfg.values["zSwingProbScale"] = 0.82
-    cfg.values["oSwingProbScale"] = 0.72
+    cfg.values["swingProbScale"] = 1.25
+    cfg.values["zSwingProbScale"] = 0.79
+    cfg.values["oSwingProbScale"] = 0.69
     ai = BatterAI(cfg)
     batter = make_player("B", ch=50)
     pitcher = make_pitcher("P", movement=50)
