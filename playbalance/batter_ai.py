@@ -316,6 +316,10 @@ class BatterAI:
         }[pitch_kind]
         base = getattr(self.config, prob_key, 0.0)
         base *= getattr(self.config, "swingProbScale", 1.0)
+        in_zone = pitch_kind in {"sure strike", "close strike"}
+        zone_scale = getattr(self.config, "zSwingProbScale", 1.0)
+        o_zone_scale = getattr(self.config, "oSwingProbScale", 1.0)
+        base *= zone_scale if in_zone else o_zone_scale
         swing_chance = base
 
         # Count-based adjustment allows tuning per ball-strike count.

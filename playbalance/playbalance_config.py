@@ -224,6 +224,9 @@ _DEFAULTS: Dict[str, Any] = {
     "swingProbSureBall": 0.05,
     # Global swing probability scaling factor
     "swingProbScale": 0.9,
+    # Separate scaling factors for pitches in and out of the zone
+    "zSwingProbScale": 1.0,
+    "oSwingProbScale": 1.0,
     # Count and location adjustments to swing probability
     "swingProb00CountAdjust": 0,
     "swingProb01CountAdjust": 0,
