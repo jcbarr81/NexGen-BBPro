@@ -139,7 +139,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Exit velocity and launch characteristics
     "exitVeloBase": 0,
     "exitVeloPHPct": 0,
-    "exitVeloPowerPct": 85,
+    "exitVeloPowerPct": 83,
     "exitVeloNormalPct": 85,
     "exitVeloContactPct": 100,
     "vertAngleGFPct": 0,
@@ -155,10 +155,10 @@ _DEFAULTS: Dict[str, Any] = {
     # League average strike percentage
     "leagueStrikePct": _LEAGUE_STRIKE_PCT,
     # Hit type distribution reflecting recent MLB averages
-    "hit1BProb": 65,
+    "hit1BProb": 66,
     "hit2BProb": 20,
     "hit3BProb": 2,
-    "hitHRProb": 13,
+    "hitHRProb": 12,
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability tuned for a lower league-wide average
     # to curb excessive offense after other modifiers.
