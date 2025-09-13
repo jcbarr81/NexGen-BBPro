@@ -1780,7 +1780,7 @@ class GameSimulation:
                     * contact_factor
                     * movement_factor
                 )
-                + self.config.hit_prob_base,
+                + self.config.hit_prob_base,  # value scaled in PlayBalanceConfig
             ),
         )
         # Modify hit probability based on current defensive alignment.

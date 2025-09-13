@@ -31,9 +31,11 @@ def apply_league_benchmarks(
         default) ``cfg.babip_scale`` is used.
     """
 
-    hr_rate = cfg.hitHRProb / 100
-    # Base hit probability derived directly from league BABIP
-    cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
+    # Base hit probability derived from league BABIP.  ``hitProbBase`` is
+    # scaled down in :mod:`playbalance.simulation` so multiply the MLB BABIP
+    # by ``1.5`` to produce a small additive term in the final hit probability
+    # calculation.
+    cfg.hitProbBase = benchmarks["babip"] * 1.5
     pip_pct = benchmarks["pitches_put_in_play_pct"]
     cfg.ballInPlayPitchPct = int(round(pip_pct * 100)) - 1
     pitches_per_pa = benchmarks["pitches_per_pa"]
