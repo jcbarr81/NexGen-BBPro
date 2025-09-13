@@ -583,36 +583,38 @@ def generate_player(
     cl = roll_dice(35, 5, 5)  # close/late
     hm = roll_dice(35, 5, 5)  # home
     sc = roll_dice(35, 5, 5)  # scoring position
-    pl = roll_dice(35, 5, 5)  # pull rating
+    # Widen pull rating distribution for greater variance
+    pl = roll_dice(25, 5, 10)  # pull rating
 
     if is_pitcher:
         bats, throws = assign_bats_throws("P")
-        vl = roll_dice(30, 10, 4) if throws == "L" else roll_dice(20, 10, 4)
+        # Expand pitcher platoon splits for more variation
+        vl = roll_dice(20, 10, 6) if throws == "L" else roll_dice(10, 10, 6)
         # Allocate pitching related ratings from a shared pool using the ARR
         # derived weights.  A second pool is used to determine the pitcher's
         # fielding ability.
         pitch_pool = random.randint(
-            10 * len(PITCHER_RATING_WEIGHTS),
-            99 * len(PITCHER_RATING_WEIGHTS),
+            5 * len(PITCHER_RATING_WEIGHTS),
+            110 * len(PITCHER_RATING_WEIGHTS),
         )
         pitch_attrs = distribute_rating_points(pitch_pool, PITCHER_RATING_WEIGHTS)
 
         field_pool = random.randint(
-            10 * len(HITTER_RATING_WEIGHTS["P"]),
-            99 * len(HITTER_RATING_WEIGHTS["P"]),
+            5 * len(HITTER_RATING_WEIGHTS["P"]),
+            110 * len(HITTER_RATING_WEIGHTS["P"]),
         )
         field_attrs = distribute_rating_points(field_pool, HITTER_RATING_WEIGHTS["P"])
 
         endurance = _adjust_endurance(pitch_attrs["endurance"])
-        control = pitch_attrs["control"]
-        movement = pitch_attrs["movement"]
+        control = max(1, min(99, pitch_attrs["control"]))
+        movement = max(1, min(99, pitch_attrs["movement"]))
         if throws == "L":
             # Left-handed pitchers gain movement at the expense of control.
             movement = min(90, movement + 10)
             control = max(50, control - 10)
-        hold_runner = pitch_attrs["hold_runner"]
-        arm = pitch_attrs["arm"]
-        fa = field_attrs["fa"]
+        hold_runner = max(1, min(99, pitch_attrs["hold_runner"]))
+        arm = max(1, min(99, pitch_attrs["arm"]))
+        fa = max(1, min(99, field_attrs["fa"]))
 
         role = "SP" if endurance > 55 else "RP"
         delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
@@ -672,22 +674,22 @@ def generate_player(
         primary_pos = primary_position or assign_primary_position()
         bats, throws = assign_bats_throws(primary_pos)
         if bats == "L":
-            vl = roll_dice(20, 10, 4)
+            vl = roll_dice(15, 10, 6)
         elif bats == "R":
-            vl = roll_dice(30, 10, 4)
+            vl = roll_dice(20, 10, 6)
         else:
-            vl = roll_dice(25, 10, 4)
+            vl = roll_dice(18, 10, 6)
         other_pos = assign_secondary_positions(primary_pos)
         pool = random.randint(
-            10 * len(HITTER_RATING_WEIGHTS[primary_pos]),
-            99 * len(HITTER_RATING_WEIGHTS[primary_pos]),
+            5 * len(HITTER_RATING_WEIGHTS[primary_pos]),
+            110 * len(HITTER_RATING_WEIGHTS[primary_pos]),
         )
         attr = distribute_rating_points(pool, HITTER_RATING_WEIGHTS[primary_pos])
-        ch = attr["ch"]
-        ph = attr["ph"]
-        sp = attr["sp"]
-        fa = attr["fa"]
-        arm = attr["arm"]
+        ch = max(1, min(99, attr["ch"]))
+        ph = max(1, min(99, attr["ph"]))
+        sp = max(1, min(99, attr["sp"]))
+        fa = max(1, min(99, attr["fa"]))
+        arm = max(1, min(99, attr["arm"]))
 
         player = {
             "first_name": first_name,

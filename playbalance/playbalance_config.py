@@ -171,7 +171,7 @@ _DEFAULTS: Dict[str, Any] = {
     "contactFactorBase": 1.48,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
-    "contactFactorDiv": 200,
+    "contactFactorDiv": 150,
     "movementFactorMin": 0.18,
     "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
