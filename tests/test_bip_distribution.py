@@ -20,9 +20,9 @@ def test_bip_distribution():
 
     foul_pitch_pct = PB_CFG.foulPitchBasePct / 100.0
     bip_pitch_pct = PB_CFG.ballInPlayPitchPct / 100.0
-    # Verify configured baselines roughly match MLB averages (~18% each)
-    assert foul_pitch_pct == pytest.approx(0.18, abs=0.01)
-    assert bip_pitch_pct == pytest.approx(0.18, abs=0.01)
+    # Verify configured baselines roughly match MLB averages
+    assert foul_pitch_pct == pytest.approx(0.16, abs=0.01)
+    assert bip_pitch_pct == pytest.approx(0.17, abs=0.01)
     contact_rate = foul_pitch_pct + bip_pitch_pct
     prob = GameSimulation._foul_probability(sim_stub, batter, pitcher)
     expected_foul_pct = contact_rate * prob

@@ -16,7 +16,7 @@ _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 # MLB averages used to derive strike-based foul rates from all pitches.
 # These baseline percentages are tuned to yield roughly four pitches per
 # plate appearance, matching modern MLB norms.
-_FOUL_PITCH_BASE_PCT = 15  # Percent of all pitches that are fouls
+_FOUL_PITCH_BASE_PCT = 16  # Percent of all pitches that are fouls
 _LEAGUE_STRIKE_PCT = 65.3  # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
@@ -848,7 +848,7 @@ class PlayBalanceConfig:
 if _benchmarks:
     _DEFAULTS["ballInPlayPitchPct"] = int(
         round(_benchmarks.get("pitches_put_in_play_pct", 0.175) * 100)
-    )
+    ) - 1
     _DEFAULTS["targetPitchesPerPA"] = _benchmarks.get("pitches_per_pa", 4.0)
     dp_pct = _benchmarks.get("bip_double_play_pct", 0.028)
     gb_pct = _benchmarks.get("bip_gb_pct", 0.44)
