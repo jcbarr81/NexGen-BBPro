@@ -162,9 +162,11 @@ _DEFAULTS: Dict[str, Any] = {
     "hit3BProb": 2,
     "hitHRProb": 12,
     # Hit probability tuning ----------------------------------------
-    # Baseline additive hit probability tuned for a lower league-wide average
-    # to curb excessive offense after other modifiers.
-    "hitProbBase": 0.045,
+    # Baseline hit probability value scaled down when accessed via
+    # :pyattr:`hit_prob_base`.  The property multiplies the stored value by
+    # ``0.1`` so a default of ``1.2`` yields an effective additive term of
+    # ``0.12`` in the simulation.
+    "hitProbBase": 1.2,
     # Boost contact to raise overall zone contact rate closer to MLB levels
     "contactFactorBase": 1.48,
     # Lower divisor so contact-heavy hitters see a larger boost
@@ -799,7 +801,7 @@ class PlayBalanceConfig:
     @property
     def hit_prob_base(self) -> float:
         """Baseline additive probability for a ball in play to become a hit."""
-        return float(self.hitProbBase)
+        return float(self.hitProbBase) * 0.1
 
     @property
     def contact_factor_base(self) -> float:
