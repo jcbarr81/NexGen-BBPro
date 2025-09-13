@@ -17,7 +17,9 @@ _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 # These baseline percentages are tuned to yield roughly four pitches per
 # plate appearance, matching modern MLB norms.
 _FOUL_PITCH_BASE_PCT = 16  # Percent of all pitches that are fouls
-_LEAGUE_STRIKE_PCT = 64.7  # Percent of all pitches that are strikes
+# Percent of all pitches that are strikes.
+# Slightly reduced to encourage a few more walks across simulations.
+_LEAGUE_STRIKE_PCT = 63.8
 
 # Default values for PlayBalance configuration entries used throughout the
 # simplified game playbalance.  Missing keys will fall back to these values when
@@ -224,7 +226,8 @@ _DEFAULTS: Dict[str, Any] = {
     "swingProbCloseBall": 0.56,
     "swingProbSureBall": 0.18,
     # Global swing probability scaling factor
-    "swingProbScale": 1.25,
+    # Modest reduction to raise walk frequency when strike percentage is low
+    "swingProbScale": 1.22,
     # Separate scaling factors for pitches in and out of the zone
     "zSwingProbScale": 0.79,
     "oSwingProbScale": 0.69,
