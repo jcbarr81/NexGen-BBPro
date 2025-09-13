@@ -18,7 +18,7 @@ def test_playbalance_config_defaults():
     assert cfg.exit_velo_contact_pct == 100
     assert cfg.vert_angle_gf_pct == 0
     assert cfg.spray_angle_pl_pct == 0
-    assert cfg.ground_ball_base_rate == 44
+    assert cfg.ground_ball_base_rate == 41
     assert cfg.fly_ball_base_rate == 35
     assert cfg.hit_prob_base == pytest.approx(0.12)
     assert cfg.foulPitchBasePct == 16
