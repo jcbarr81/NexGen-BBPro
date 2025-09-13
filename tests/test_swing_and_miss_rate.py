@@ -51,8 +51,8 @@ def test_swstr_and_bip_rates():
         if swing and contact:
             contacts += 1
     rates = compute_pitching_rates(ps)
-    assert rates["swstr_pct"] == pytest.approx(0.165, abs=0.02)
-    assert contacts / pitches == pytest.approx(0.495, abs=0.03)
+    assert rates["swstr_pct"] == pytest.approx(0.116, abs=0.02)
+    assert contacts / pitches == pytest.approx(0.53, abs=0.03)
 
 
 def test_swing_rates_match_modern_game():

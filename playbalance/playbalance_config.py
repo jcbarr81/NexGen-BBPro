@@ -164,7 +164,7 @@ _DEFAULTS: Dict[str, Any] = {
     # to curb excessive offense after other modifiers.
     "hitProbBase": 0.045,
     # Boost contact to raise overall zone contact rate closer to MLB levels
-    "contactFactorBase": 1.4,
+    "contactFactorBase": 1.48,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
     "contactFactorDiv": 200,
