@@ -155,22 +155,22 @@ _DEFAULTS: Dict[str, Any] = {
     # League average strike percentage
     "leagueStrikePct": _LEAGUE_STRIKE_PCT,
     # Hit type distribution reflecting recent MLB averages
-    "hit1BProb": 78,
-    "hit2BProb": 15,
+    "hit1BProb": 65,
+    "hit2BProb": 20,
     "hit3BProb": 2,
-    "hitHRProb": 5,
+    "hitHRProb": 13,
     # Hit probability tuning ----------------------------------------
     # Baseline additive hit probability tuned for a lower league-wide average
     # to curb excessive offense after other modifiers.
-    "hitProbBase": 0.12,
-    "contactFactorBase": 1.0,
+    "hitProbBase": 0.05,
+    "contactFactorBase": 0.9,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
-    "contactFactorDiv": 200,
+    "contactFactorDiv": 300,
     "movementFactorMin": 0.2,
-    "movementImpactScale": 0.8,
+    "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
-    "hitProbCap": 0.95,
+    "hitProbCap": 0.80,
     # Baseline probabilities for converting batted balls into outs
     # MLB averages: ground balls ~24% hits (76% outs), line drives ~68% hits
     # (32% outs), fly balls ~14% hits (86% outs).  These defaults keep the
