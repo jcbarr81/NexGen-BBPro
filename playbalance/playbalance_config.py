@@ -146,7 +146,7 @@ _DEFAULTS: Dict[str, Any] = {
     "sprayAnglePLPct": 0,
     # Baseline batted ball type distribution (ground/line/fly)
     "groundBallBaseRate": 41,
-    "flyBallBaseRate": 35,
+    "flyBallBaseRate": 38,
     "lineDriveBaseRate": 21,
     # Weighting factors for batter/pitcher influence on batted ball types
     "bipPowerWeight": 0.2,
