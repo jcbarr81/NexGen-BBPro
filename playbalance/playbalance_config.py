@@ -178,12 +178,13 @@ _DEFAULTS: Dict[str, Any] = {
     # MLB averages: ground balls ~24% hits (76% outs), line drives ~68% hits
     # (32% outs), fly balls ~14% hits (86% outs).  These defaults keep the
     # simplified simulation in a reasonable range when league benchmarks are
-    # unavailable.
-    "groundOutProb": 0.78,
-    "lineOutProb": 0.34,
-    "flyOutProb": 0.88,
+    # unavailable.  Values are tuned so that, with ``babipScale`` at ``1.2``,
+    # the league-wide batting average on balls in play approaches ``.291``.
+    "groundOutProb": 0.767,
+    "lineOutProb": 0.323,
+    "flyOutProb": 0.869,
     # Scaling factor for outs on balls in play (BABIP tuning)
-    "babipScale": 1.05,
+    "babipScale": 1.2,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
