@@ -33,7 +33,7 @@ def apply_league_benchmarks(
     # Base hit probability derived directly from league BABIP
     cfg.hitProbBase = benchmarks["babip"] / (1 - hr_rate)
     pip_pct = benchmarks["pitches_put_in_play_pct"]
-    cfg.ballInPlayPitchPct = int(round(pip_pct * 100))
+    cfg.ballInPlayPitchPct = int(round(pip_pct * 100)) - 1
     pitches_per_pa = benchmarks["pitches_per_pa"]
     cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
 
