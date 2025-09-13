@@ -245,11 +245,12 @@ class PlayerProfileDialog(QDialog):
         group = QGroupBox(title)
         grid = QGridLayout()
         for col, (key, val) in enumerate(data.items()):
-            grid.addWidget(
-                QLabel(str(key).replace("_", " ").title()),
-                0,
-                col,
-            )
+            label = str(key)
+            if label.isupper():
+                label_text = label
+            else:
+                label_text = label.replace("_", " ").title()
+            grid.addWidget(QLabel(label_text), 0, col)
             grid.addWidget(QLabel(self._format_stat(val)), 1, col)
         group.setLayout(grid)
         return group
