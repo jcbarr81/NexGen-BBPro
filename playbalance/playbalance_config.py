@@ -163,10 +163,10 @@ _DEFAULTS: Dict[str, Any] = {
     # Baseline additive hit probability tuned for a lower league-wide average
     # to curb excessive offense after other modifiers.
     "hitProbBase": 0.045,
-    "contactFactorBase": 0.9,
+    "contactFactorBase": 1.0,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
-    "contactFactorDiv": 300,
+    "contactFactorDiv": 250,
     "movementFactorMin": 0.2,
     "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
