@@ -223,10 +223,10 @@ _DEFAULTS: Dict[str, Any] = {
     "swingProbCloseBall": 0.51,
     "swingProbSureBall": 0.13,
     # Global swing probability scaling factor
-    "swingProbScale": 0.9,
+    "swingProbScale": 1.1,
     # Separate scaling factors for pitches in and out of the zone
-    "zSwingProbScale": 1.0,
-    "oSwingProbScale": 1.0,
+    "zSwingProbScale": 0.85,
+    "oSwingProbScale": 2.7,
     # Bonus applied to close-ball swing probability per strike
     "closeBallStrikeBonus": 0,
     # Count and location adjustments to swing probability
