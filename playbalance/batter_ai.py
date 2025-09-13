@@ -353,6 +353,11 @@ class BatterAI:
             batter_contact = getattr(batter, "ch", 50)
             pitch_quality = getattr(pitcher, pitch_type, getattr(pitcher, "movement", 50))
             miss_chance = (pitch_quality - batter_contact + 50) / 200.0
+            contact_factor = (
+                self.config.contact_factor_base
+                + (batter_contact - 50) / self.config.contact_factor_div
+            )
+            miss_chance /= contact_factor
             miss_chance = max(0.05, min(0.95, miss_chance))
             rv_contact = rv if check_random is None else check_random
             if rv_contact < miss_chance:
