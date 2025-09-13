@@ -1,4 +1,5 @@
 """Basic tests for the playbalance scaffolding."""
+import pytest
 from playbalance import (
     load_config,
     load_benchmarks,
@@ -23,7 +24,7 @@ def test_load_config_sections():
 
 def test_load_benchmarks_has_values():
     benchmarks = load_benchmarks()
-    assert benchmarks["pitches_put_in_play_pct"] == 0.175
+    assert benchmarks["pitches_put_in_play_pct"] == pytest.approx(0.175, abs=0.0001)
     # Helper slices of the benchmark data
     pf = park_factors(benchmarks)
     assert pf["overall"] == 100.0

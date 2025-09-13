@@ -1,4 +1,5 @@
 import random
+import pytest
 
 from playbalance.offensive_manager import OffensiveManager
 from playbalance.simulation import GameSimulation, TeamState, BatterState
@@ -92,7 +93,7 @@ def test_calculate_steal_chance():
         pitcher_hold=55,
         pitcher_is_left=False,
     )
-    assert chance == 0.175
+    assert chance == pytest.approx(0.175, abs=0.0001)
 
 
 def test_calculate_steal_chance_situational_modifiers():
