@@ -197,7 +197,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.70,
     # Baseline aggression for runners attempting extra bases
-    "baserunningAggression": 0.40,
+    "baserunningAggression": 0.50,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 18,
     "hbpBaseChance": 0.0,
@@ -351,7 +351,7 @@ _DEFAULTS: Dict[str, Any] = {
     "stealChance30Count": 15,
     "stealChance31Count": 15,
     "stealChance32Count": 20,
-    "offManStealChancePct": 67,
+    "offManStealChancePct": 80,
     "stealSuccessTagOutPct": 25,
     "stealSuccessSafePct": 75,
     "stealChanceVerySlowThresh": 13,
