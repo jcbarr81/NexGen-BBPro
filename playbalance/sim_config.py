@@ -132,10 +132,19 @@ def load_tuned_playbalance_config(
 
     apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
+    # Apply swing-rate and contact-factor adjustments to curb excessive
+    # strikeouts observed in full season simulations.  Slightly reducing swing
+    # aggression on balls and boosting the contact factor nudges the engine
+    # towards league-average strikeout rates.
+    cfg.zSwingProbScale *= 0.98
+    cfg.oSwingProbScale *= 0.92
+    cfg.contactFactorBase = round(cfg.contactFactorBase * 1.05, 2)
+    cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.9)
+
     # Boost batter pitch recognition to curb excessive strikeouts seen in
     # season simulations. Increasing the ease scale makes identifying pitches
     # easier which leads to more contact and fewer swinging strikes.
-    cfg.idRatingEaseScale = 2.5
+    cfg.idRatingEaseScale = 3.0
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
