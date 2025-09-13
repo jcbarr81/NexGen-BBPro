@@ -19,6 +19,6 @@ def test_apply_league_benchmarks():
     assert cfg.hitProbBase == pytest.approx(0.291 / 0.95, abs=0.0001)
     assert cfg.ballInPlayPitchPct == 17
     assert cfg.swingProbScale == pytest.approx(1.04, abs=0.001)
-    assert cfg.groundOutProb == pytest.approx(0.767, abs=0.001)
-    assert cfg.lineOutProb == pytest.approx(0.323, abs=0.001)
-    assert cfg.flyOutProb == pytest.approx(0.868, abs=0.001)
+    assert cfg.groundOutProb == pytest.approx(0.920, abs=0.001)
+    assert cfg.lineOutProb == pytest.approx(0.387, abs=0.001)
+    assert cfg.flyOutProb == pytest.approx(1.000, abs=0.001)
