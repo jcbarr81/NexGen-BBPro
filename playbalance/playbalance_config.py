@@ -234,6 +234,9 @@ _DEFAULTS: Dict[str, Any] = {
     # Separate scaling factors for pitches in and out of the zone
     "zSwingProbScale": 0.79,
     "oSwingProbScale": 0.69,
+    # Additional tuning applied after benchmark adjustments
+    "extraZSwingScale": 0.98,
+    "extraOSwingScale": 0.92,
     # Bonus applied to close-ball swing probability per strike
     "closeBallStrikeBonus": 0,
     # Count and location adjustments to swing probability
@@ -832,6 +835,26 @@ class PlayBalanceConfig:
     def babip_scale(self, value: float) -> None:
         """Set scaling factor for outs on balls in play."""
         self.babipScale = value
+
+    @property
+    def extra_z_swing_scale(self) -> float:
+        """Additional scaling applied to zone swing probability."""
+        return float(self.extraZSwingScale)
+
+    @extra_z_swing_scale.setter
+    def extra_z_swing_scale(self, value: float) -> None:
+        """Set additional scaling for zone swing probability."""
+        self.extraZSwingScale = value
+
+    @property
+    def extra_o_swing_scale(self) -> float:
+        """Additional scaling applied to out-of-zone swing probability."""
+        return float(self.extraOSwingScale)
+
+    @extra_o_swing_scale.setter
+    def extra_o_swing_scale(self, value: float) -> None:
+        """Set additional scaling for out-of-zone swing probability."""
+        self.extraOSwingScale = value
 
     # ------------------------------------------------------------------
     # Mapping style helpers

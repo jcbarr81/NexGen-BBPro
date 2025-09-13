@@ -50,6 +50,12 @@ def apply_league_benchmarks(
         base_o *= cfg.swingProbScale
         cfg.zSwingProbScale = round(z_swing_pct / base_z, 2) if base_z else 1.0
         cfg.oSwingProbScale = round(o_swing_pct / base_o, 2) if base_o else 1.0
+        cfg.zSwingProbScale = round(
+            cfg.zSwingProbScale * cfg.extra_z_swing_scale, 2
+        )
+        cfg.oSwingProbScale = round(
+            cfg.oSwingProbScale * cfg.extra_o_swing_scale, 2
+        )
 
     swing_pct = benchmarks.get("swing_pct")
     zone_pct = benchmarks.get("zone_pct")
@@ -141,12 +147,9 @@ def load_tuned_playbalance_config(
 
         apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
-        # Apply swing-rate and contact-factor adjustments to curb excessive
-        # strikeouts observed in full season simulations.  Slightly reducing swing
-        # aggression on balls and boosting the contact factor nudges the engine
-        # towards league-average strikeout rates.
-        cfg.zSwingProbScale *= 0.98
-        cfg.oSwingProbScale *= 0.92
+        # Apply contact-factor adjustments to curb excessive strikeouts observed
+        # in full season simulations. Slightly boosting the contact factor nudges
+        # the engine toward league-average strikeout rates.
         cfg.contactFactorBase = round(cfg.contactFactorBase * 1.05, 2)
         cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.9)
 
