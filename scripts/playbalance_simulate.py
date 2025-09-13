@@ -281,7 +281,7 @@ def main(argv: list[str] | None = None) -> int:
     configure_perf_tuning()
 
     benchmarks = load_benchmarks()
-    cfg, _ = load_tuned_playbalance_config()
+    cfg, _ = load_tuned_playbalance_config(apply_benchmarks=False)
 
     team_ids = [t.team_id for t in load_teams("data/teams.csv")]
     base_states = {tid: pickle.dumps(build_default_game_state(tid)) for tid in team_ids}

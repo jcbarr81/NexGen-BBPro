@@ -13,6 +13,8 @@ from utils.path_utils import get_base_dir
 # and raise BABIP, values above ``1`` increase outs and lower BABIP. ``1.0``
 # uses the MLB averages without additional adjustment.
 _BABIP_OUT_ADJUST = 1.0
+
+
 def apply_league_benchmarks(
     cfg: PlayBalanceConfig, benchmarks: Dict[str, float], babip_scale: float | None = None
 ) -> None:
@@ -94,6 +96,7 @@ def apply_league_benchmarks(
 def load_tuned_playbalance_config(
     babip_scale_param: float | None = None,
     baserunning_aggression: float | None = None,
+    apply_benchmarks: bool = True,
 ) -> Tuple[PlayBalanceConfig, Dict[str, float]]:
     """Return a tuned :class:`PlayBalanceConfig` and MLB averages.
 
@@ -105,6 +108,9 @@ def load_tuned_playbalance_config(
     baserunning_aggression:
         Optional aggression factor for advancing on the basepaths. When
         ``None`` the value from ``PlayBalanceConfig`` is used.
+    apply_benchmarks:
+        When ``False`` the configuration is returned without applying league
+        benchmark adjustments.
     """
 
     base = get_base_dir()
@@ -126,25 +132,26 @@ def load_tuned_playbalance_config(
     cfg.hit3BProb = int(round(float(row["Triples"]) / hits * 100))
     cfg.hitHRProb = max(0, 100 - cfg.hit1BProb - cfg.hit2BProb - cfg.hit3BProb)
 
-    bench_path = base / "data" / "MLB_avg" / "mlb_league_benchmarks_2025_filled.csv"
-    with bench_path.open(newline="") as bf:
-        benchmarks = {r["metric_key"]: float(r["value"]) for r in csv.DictReader(bf)}
+    if apply_benchmarks:
+        bench_path = base / "data" / "MLB_avg" / "mlb_league_benchmarks_2025_filled.csv"
+        with bench_path.open(newline="") as bf:
+            benchmarks = {r["metric_key"]: float(r["value"]) for r in csv.DictReader(bf)}
 
-    apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
+        apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
-    # Apply swing-rate and contact-factor adjustments to curb excessive
-    # strikeouts observed in full season simulations.  Slightly reducing swing
-    # aggression on balls and boosting the contact factor nudges the engine
-    # towards league-average strikeout rates.
-    cfg.zSwingProbScale *= 0.98
-    cfg.oSwingProbScale *= 0.92
-    cfg.contactFactorBase = round(cfg.contactFactorBase * 1.05, 2)
-    cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.9)
+        # Apply swing-rate and contact-factor adjustments to curb excessive
+        # strikeouts observed in full season simulations.  Slightly reducing swing
+        # aggression on balls and boosting the contact factor nudges the engine
+        # towards league-average strikeout rates.
+        cfg.zSwingProbScale *= 0.98
+        cfg.oSwingProbScale *= 0.92
+        cfg.contactFactorBase = round(cfg.contactFactorBase * 1.05, 2)
+        cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.9)
 
-    # Boost batter pitch recognition to curb excessive strikeouts seen in
-    # season simulations. Increasing the ease scale makes identifying pitches
-    # easier which leads to more contact and fewer swinging strikes.
-    cfg.idRatingEaseScale = 3.0
+        # Boost batter pitch recognition to curb excessive strikeouts seen in
+        # season simulations. Increasing the ease scale makes identifying pitches
+        # easier which leads to more contact and fewer swinging strikes.
+        cfg.idRatingEaseScale = 3.0
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
