@@ -17,7 +17,7 @@ _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 # These baseline percentages are tuned to yield roughly four pitches per
 # plate appearance, matching modern MLB norms.
 _FOUL_PITCH_BASE_PCT = 16  # Percent of all pitches that are fouls
-_LEAGUE_STRIKE_PCT = 65.3  # Percent of all pitches that are strikes
+_LEAGUE_STRIKE_PCT = 64.7  # Percent of all pitches that are strikes
 
 # Default values for PlayBalance configuration entries used throughout the
 # simplified game playbalance.  Missing keys will fall back to these values when
