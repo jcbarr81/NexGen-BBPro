@@ -191,7 +191,7 @@ _DEFAULTS: Dict[str, Any] = {
     "ballInPlayPitchPct": 17,
     "ballInPlayOuts": 0,
     # Probability that a ground ball with a force at second becomes a double play
-    "doublePlayProb": 0.35,
+    "doublePlayProb": 0.60,
     # Baseline aggression for runners attempting extra bases
     "baserunningAggression": 0.35,
     # Hit by pitch avoidance ----------------------------------------
