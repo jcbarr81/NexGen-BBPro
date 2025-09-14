@@ -20,34 +20,34 @@ def test_catch_slop_changes_decision():
 def test_relay_slop_affects_choice():
     cfg = PlayBalanceConfig()
     ai = FieldingAI(cfg)
-    assert not ai.should_relay_throw(fielder_time=10, runner_time=30)
+    assert not ai.should_relay_throw(fielder_time=1.0, runner_time=1.1)
 
     cfg = PlayBalanceConfig()
     cfg.relaySlop = -10
     ai = FieldingAI(cfg)
-    assert ai.should_relay_throw(fielder_time=10, runner_time=30)
+    assert ai.should_relay_throw(fielder_time=1.0, runner_time=1.1)
 
 
 def test_tag_slop_affects_choice():
     cfg = PlayBalanceConfig()
     ai = FieldingAI(cfg)
-    assert not ai.should_tag_runner(fielder_time=10, runner_time=20)
+    assert not ai.should_tag_runner(fielder_time=1.0, runner_time=1.05)
 
     cfg = PlayBalanceConfig()
     cfg.tagTimeSlop = -10
     ai = FieldingAI(cfg)
-    assert ai.should_tag_runner(fielder_time=10, runner_time=20)
+    assert ai.should_tag_runner(fielder_time=1.0, runner_time=1.05)
 
 
 def test_run_to_bag_slop_affects_choice():
     cfg = PlayBalanceConfig()
     ai = FieldingAI(cfg)
-    assert ai.should_run_to_bag(fielder_time=10, runner_time=20)
+    assert ai.should_run_to_bag(fielder_time=1.0, runner_time=1.05)
 
     cfg = PlayBalanceConfig()
     cfg.stepOnBagSlop = 15
     ai = FieldingAI(cfg)
-    assert not ai.should_run_to_bag(fielder_time=10, runner_time=20)
+    assert not ai.should_run_to_bag(fielder_time=1.0, runner_time=1.05)
 
 
 def test_higher_fa_reduces_throw_errors():
