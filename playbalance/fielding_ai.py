@@ -188,23 +188,17 @@ class FieldingAI:
     def should_relay_throw(self, fielder_time: float, runner_time: float) -> bool:
         """Return ``True`` if a relay throw should be attempted."""
 
-        return (
-            fielder_time + self.config.generalSlop + self.config.relaySlop
-            <= runner_time
-        )
+        slop = (self.config.generalSlop + self.config.relaySlop) / 60
+        return fielder_time + slop <= runner_time
 
     def should_tag_runner(self, fielder_time: float, runner_time: float) -> bool:
         """Return ``True`` if a tag play beats the runner."""
 
-        return (
-            fielder_time + self.config.generalSlop + self.config.tagTimeSlop
-            <= runner_time
-        )
+        slop = (self.config.generalSlop + self.config.tagTimeSlop) / 60
+        return fielder_time + slop <= runner_time
 
     def should_run_to_bag(self, fielder_time: float, runner_time: float) -> bool:
         """Return ``True`` if the fielder can reach the bag in time."""
 
-        return (
-            fielder_time + self.config.generalSlop + self.config.stepOnBagSlop
-            <= runner_time
-        )
+        slop = (self.config.generalSlop + self.config.stepOnBagSlop) / 60
+        return fielder_time + slop <= runner_time
