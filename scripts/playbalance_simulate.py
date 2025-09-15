@@ -29,7 +29,11 @@ from contextlib import nullcontext
 from datetime import date
 from pathlib import Path
 
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:  # pragma: no cover - fallback when tqdm unavailable
+    def tqdm(iterable, **kwargs):
+        return iterable
 
 # Allow running the script without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -281,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
     configure_perf_tuning()
 
     benchmarks = load_benchmarks()
-    cfg, _ = load_tuned_playbalance_config(apply_benchmarks=False)
+    cfg, _ = load_tuned_playbalance_config(apply_benchmarks=True)
 
     team_ids = [t.team_id for t in load_teams("data/teams.csv")]
     base_states = {tid: pickle.dumps(build_default_game_state(tid)) for tid in team_ids}

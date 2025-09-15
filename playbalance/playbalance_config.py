@@ -16,10 +16,10 @@ _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 # MLB averages used to derive strike-based foul rates from all pitches.
 # These baseline percentages are tuned to yield roughly four pitches per
 # plate appearance, matching modern MLB norms.
-_FOUL_PITCH_BASE_PCT = 16  # Percent of all pitches that are fouls
+_FOUL_PITCH_BASE_PCT = 30  # Percent of all pitches that are fouls
 # Percent of all pitches that are strikes.
 # Slightly reduced to encourage a few more walks across simulations.
-_LEAGUE_STRIKE_PCT = 63.8
+_LEAGUE_STRIKE_PCT = 60.0
 
 # Default values for PlayBalance configuration entries used throughout the
 # simplified game playbalance.  Missing keys will fall back to these values when
@@ -65,22 +65,22 @@ _DEFAULTS: Dict[str, Any] = {
     "siSpeedBase": 64,
     "siSpeedRange": 2,
     "siSpeedASPct": 30,
-    "fbControlBoxWidth": 1,
-    "fbControlBoxHeight": 1,
-    "cbControlBoxWidth": 1,
-    "cbControlBoxHeight": 1,
-    "cuControlBoxWidth": 1,
-    "cuControlBoxHeight": 1,
-    "slControlBoxWidth": 1,
-    "slControlBoxHeight": 1,
-    "sbControlBoxWidth": 1,
-    "sbControlBoxHeight": 1,
-    "kbControlBoxWidth": 1,
-    "kbControlBoxHeight": 1,
-    "siControlBoxWidth": 1,
-    "siControlBoxHeight": 1,
+    "fbControlBoxWidth": 1.5,
+    "fbControlBoxHeight": 1.5,
+    "cbControlBoxWidth": 1.5,
+    "cbControlBoxHeight": 1.5,
+    "cuControlBoxWidth": 1.5,
+    "cuControlBoxHeight": 1.5,
+    "slControlBoxWidth": 1.5,
+    "slControlBoxHeight": 1.5,
+    "sbControlBoxWidth": 1.5,
+    "sbControlBoxHeight": 1.5,
+    "kbControlBoxWidth": 1.5,
+    "kbControlBoxHeight": 1.5,
+    "siControlBoxWidth": 1.5,
+    "siControlBoxHeight": 1.5,
     "controlBoxIncreaseEffCOPct": 15,
-    "controlScale": 110,
+    "controlScale": 130,
     "speedReductionBase": 3,
     "speedReductionRange": 3,
     "speedReductionEffMOPct": 5,
@@ -130,9 +130,9 @@ _DEFAULTS: Dict[str, Any] = {
     "hitAngleBaseBunt": -30,
     "maxThrowDistBase": 190,
     "maxThrowDistASPct": 100,
-    "throwSpeedIFBase": 52,
-    "throwSpeedIFDistPct": 3,
-    "throwSpeedIFASPct": 0,
+    "throwSpeedIFBase": 77,
+    "throwSpeedIFDistPct": 15,
+    "throwSpeedIFASPct": 21,
     "throwSpeedIFMax": 92,
     "throwSpeedOFBase": 52,
     "throwSpeedOFDistPct": 3,
@@ -166,12 +166,12 @@ _DEFAULTS: Dict[str, Any] = {
     # :pyattr:`hit_prob_base`.  The property multiplies the stored value by
     # ``0.1`` so a default of ``1.2`` yields an effective additive term of
     # ``0.12`` in the simulation.
-    "hitProbBase": 1.2,
+    "hitProbBase": 1.0,
     # Boost contact to raise overall zone contact rate closer to MLB levels
-    "contactFactorBase": 1.48,
+    "contactFactorBase": 1.88,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
-    "contactFactorDiv": 150,
+    "contactFactorDiv": 108,
     "movementFactorMin": 0.18,
     "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
@@ -182,24 +182,38 @@ _DEFAULTS: Dict[str, Any] = {
     # simplified simulation in a reasonable range when league benchmarks are
     # unavailable.  Values are tuned so that, with ``babipScale`` at ``1.2``,
     # the league-wide batting average on balls in play approaches ``.291``.
-    "groundOutProb": 0.767,
+    "groundOutProb": 0.800,
     "lineOutProb": 0.323,
     "flyOutProb": 0.869,
+    # Double play timing tuning (per-second probability boosts)
+    "dpForceBoostPerSec": 0.50,
+    "dpRelayBoostPerSec": 0.70,
+    # Double play auto-convert thresholds (seconds)
+    "dpForceAutoSec": 0.02,
+    "dpRelayAutoSec": 0.05,
+    # Hard minimum DP probability once a turn is on (0..1)
+    "dpHardMinProb": 0.78,
+    # Drastic calibration switch: when enabled, any successful force at 2B
+    # will attempt to complete the turn with certainty (useful for testing
+    # pipeline end-to-end; dial back after verifying DP path works leaguewide)
+    "dpAlwaysTurn": 0,
     # Scaling factor for outs on balls in play (BABIP tuning)
     "babipScale": 1.2,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
-    "foulStrikeBasePct": 31,
+    "foulStrikeBasePct": 36,
     "foulContactTrendPct": 2.0,
     # Target roughly 17% of all pitches being put into play
-    "ballInPlayPitchPct": 17,
+    "ballInPlayPitchPct": 8,
     "ballInPlayOuts": 0,
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.70,
     # Baseline aggression for runners attempting extra bases
     "baserunningAggression": 0.50,
+    # Baseline steal success rate (as percent, before arm/speed mods)
+    "stealSuccessBasePct": 72,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 18,
     "hbpBaseChance": 0.0,
@@ -222,34 +236,36 @@ _DEFAULTS: Dict[str, Any] = {
     # Batter AI -------------------------------------------------------
     "sureStrikeDist": 4,
     "closeStrikeDist": 5,
-    "closeBallDist": 4,
+    "closeBallDist": 8,
     # Baseline swing probabilities reflecting MLB averages
-    "swingProbSureStrike": 0.66,
-    "swingProbCloseStrike": 0.46,
-    "swingProbCloseBall": 0.56,
-    "swingProbSureBall": 0.18,
+    "swingProbSureStrike": 0.43,
+    "swingProbCloseStrike": 0.29,
+    "swingProbCloseBall": 0.48,
+    "swingProbSureBall": 0.24,
     # Global swing probability scaling factor
     # Modest reduction to raise walk frequency when strike percentage is low
-    "swingProbScale": 1.22,
+    "swingProbScale": 0.88,
     # Separate scaling factors for pitches in and out of the zone
-    "zSwingProbScale": 0.79,
-    "oSwingProbScale": 0.69,
+    "zSwingProbScale": 0.62,
+    "oSwingProbScale": 0.54,
     # Additional tuning applied after benchmark adjustments
-    "extraZSwingScale": 0.98,
-    "extraOSwingScale": 0.92,
+    "extraZSwingScale": 1.0,
+    "extraOSwingScale": 1.0,
     # Bonus applied to close-ball swing probability per strike
-    "closeBallStrikeBonus": 0,
+    "closeBallStrikeBonus": 1,
+    # Two-strike additive swing bonus (percent)
+    "twoStrikeSwingBonus": 4,
     # Count and location adjustments to swing probability
-    "swingProb00CountAdjust": 0,
+    "swingProb00CountAdjust": -0.03,
     "swingProb01CountAdjust": 0,
-    "swingProb02CountAdjust": 0.05,
-    "swingProb10CountAdjust": 0,
+    "swingProb02CountAdjust": 0.08,
+    "swingProb10CountAdjust": -0.03,
     "swingProb11CountAdjust": 0,
-    "swingProb12CountAdjust": 0.04,
-    "swingProb20CountAdjust": 0,
+    "swingProb12CountAdjust": 0.06,
+    "swingProb20CountAdjust": 0.00,
     "swingProb21CountAdjust": 0,
-    "swingProb22CountAdjust": 0.03,
-    "swingProb30CountAdjust": 0,
+    "swingProb22CountAdjust": 0.04,
+    "swingProb30CountAdjust": -0.02,
     "swingProb31CountAdjust": 0,
     "swingProb32CountAdjust": 0.02,
     "swingLocationFactor": 0,
@@ -626,18 +642,18 @@ _DEFAULTS: Dict[str, Any] = {
     # Fielding AI -------------------------------------------------------
     "couldBeCaughtSlop": -18,
     "shouldBeCaughtSlop": 6,
-    "generalSlop": 6,
-    "relaySlop": 8,
-    "tagTimeSlop": 1,
-    "stepOnBagSlop": -5,
+    "generalSlop": -12,
+    "relaySlop": -46,
+    "tagTimeSlop": -22,
+    "stepOnBagSlop": -65,
     "tagAtBagSlop": 4,
     "throwToBagSlop": 8,
     # Multipliers improving defensive efficiency
     "fielderReactionScale": 1.0,
     "throwSuccessScale": 1.1,
     # Strike zone dimensions (half-width/height in control-box units)
-    "plateWidth": 3,
-    "plateHeight": 3,
+    "plateWidth": 1,
+    "plateHeight": 1,
 }
 _BASE_DEFAULTS = dict(_DEFAULTS)
 
@@ -879,11 +895,16 @@ if _benchmarks:
     _DEFAULTS["ballInPlayPitchPct"] = int(
         round(_benchmarks.get("pitches_put_in_play_pct", 0.175) * 100)
     ) - 1
+    # Disable pitch injection to let natural swing decisions set Pitches/PA
+    # Aim for MLB-like pitches per plate appearance; allow engine to
+    # inject non-decisive pitches to reach the target on average.
     _DEFAULTS["targetPitchesPerPA"] = _benchmarks.get("pitches_per_pa", 4.0)
     dp_pct = _benchmarks.get("bip_double_play_pct", 0.028)
     gb_pct = _benchmarks.get("bip_gb_pct", 0.44)
     if gb_pct:
-        _DEFAULTS["doublePlayProb"] = round(dp_pct / gb_pct, 3)
+        # Moderate calibration bump so DP probability approaches MLB in-season.
+        base_dp = dp_pct / gb_pct
+        _DEFAULTS["doublePlayProb"] = round(min(1.0, max(0.0, base_dp + 0.08)), 3)
 
 # Apply overrides after incorporating league benchmark defaults so that any
 # manual tuning in ``playbalance_overrides.json`` takes precedence.

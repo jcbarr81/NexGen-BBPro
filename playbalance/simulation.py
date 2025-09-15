@@ -17,7 +17,7 @@ from playbalance.pitcher_ai import PitcherAI
 from playbalance.batter_ai import BatterAI
 from playbalance.bullpen import WarmupTracker
 from playbalance.fielding_ai import FieldingAI
-from playbalance.field_geometry import DEFAULT_POSITIONS, Stadium
+from playbalance.field_geometry import DEFAULT_POSITIONS, Stadium, FIRST_BASE, SECOND_BASE
 from playbalance.state import PitcherState
 from utils.path_utils import get_base_dir
 from utils.putout_probabilities import load_putout_probabilities
@@ -198,6 +198,11 @@ class GameSimulation:
         self.wind_speed = wind_speed
         self.stadium = stadium or Stadium()
         self.last_batted_ball_angles: tuple[float, float] | None = None
+        # Debug counters for double play diagnosis
+        self.dp_candidates: int = 0
+        self.dp_attempts: int = 0
+        self.dp_made: int = 0
+        self.last_ground_fielder: str | None = None
         self.last_batted_ball_type: str | None = None
         self.last_pitch_speed: float | None = None
         base = get_base_dir()
@@ -683,6 +688,8 @@ class GameSimulation:
             teams = [t.team for t in (self.home, self.away) if t.team is not None]
             save_stats(players.values(), teams)
 
+        # DP debug print removed after calibration
+
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
         inning = len(offense.inning_runs) + 1
@@ -1114,7 +1121,9 @@ class GameSimulation:
             miss_amt = 0.0
             if loc_r >= control_chance:
                 miss_amt = (loc_r - control_chance) * 100.0
+                # Increase variance/magnitude so more pitches end up just off the plate
                 miss_amt += self.rng.uniform(0.0, miss_amt)
+                miss_amt *= 1.2
                 width, height = self.physics.expand_control_box(width, height, miss_amt)
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
@@ -1124,6 +1133,9 @@ class GameSimulation:
             dx, dy = self.physics.pitch_break(pitch_type, rand=loc_r)
             x_off += dx
             y_off += dy
+            # Add small random drift so more borderline pitches finish just off the plate
+            x_off += self.rng.uniform(-0.4, 0.4)
+            y_off += self.rng.uniform(-0.4, 0.4)
             dist = int(round(max(abs(x_off), abs(y_off))))
             plate_w = getattr(self.config, "plateWidth", 3)
             plate_h = getattr(self.config, "plateHeight", 3)
@@ -1267,16 +1279,100 @@ class GameSimulation:
                         self.last_batted_ball_type == "ground"
                         and offense.bases[0] is not None
                     ):
-                        if self.rng.random() < self.config.get("doublePlayProb", 0):
-                            outs += 1
-                            self._add_stat(batter_state, "gidp")
+                        self.dp_candidates += 1
+                        # Use timing-based decision for force at 2B and relay to 1B
+                        runner = offense.bases[0]
+                        batter_sp = getattr(batter, "sp", 50)
+                        runner_sp = getattr(runner.player, "sp", 50)
+                        # Choose likely fielder based on spray side
+                        primary = self.last_ground_fielder or "SS"
+                        if primary not in {"SS", "2B", "3B", "1B"}:
+                            primary = "SS"
+                        ffs = self._get_fielder(defense, primary)
+                        fa = getattr(ffs.player, "fa", 50) if ffs else 50
+                        arm = getattr(ffs.player, "arm", 50) if ffs else 50
+                        # Time to force at second vs runner (use geometric throw distance)
+                        fx, fy = DEFAULT_POSITIONS.get(primary, (90.0, 0.0))
+                        sx, sy = SECOND_BASE
+                        throw_dist_2b = math.hypot(sx - fx, sy - fy)
+                        runner_time_2b = 90 / self.physics.player_speed(runner_sp)
+                        force_time = self.physics.reaction_delay(primary, fa) + self.physics.throw_time(
+                            arm, throw_dist_2b, primary
+                        )
+                        # For force plays, stepping on the bag is more appropriate than a tag
+                        # Primary force decision: always attempt close grounder forces
+                        # Use PBINI helper, but treat any plausibly close play as an attempt.
+                        can_force = True
+                        dp_done = False
+                        if can_force:
+                            self.dp_attempts += 1
+                            # Now evaluate relay 2B->1B vs batter
+                            # Pick pivot based on which side fielded the ball: SS/3B -> 2B; 2B/1B -> SS
+                            pivot_pos = "2B" if primary in {"SS", "3B"} else "SS"
+                            two_fs = self._get_fielder(defense, pivot_pos)
+                            two_fa = getattr(two_fs.player, "fa", 50) if two_fs else 50
+                            two_arm = getattr(two_fs.player, "arm", 50) if two_fs else 50
+                            # Record the force out at second immediately
+                            if two_fs is not None:
+                                self._add_fielding_stat(two_fs, "po", position=pivot_pos)
                             offense.bases[0] = None
                             offense.base_pitchers[0] = None
-                        else:
-                            offense.bases[1] = offense.bases[0]
-                            offense.base_pitchers[1] = offense.base_pitchers[0]
-                            offense.bases[0] = None
-                            offense.base_pitchers[0] = None
+                            batter_time_1b = 90 / self.physics.player_speed(batter_sp)
+                            px, py = DEFAULT_POSITIONS.get(pivot_pos, (90.0, 90.0))
+                            bx, by = FIRST_BASE
+                            relay_dist = math.hypot(bx - px, by - py)
+                            relay_time = self.physics.reaction_delay(pivot_pos, two_fa) + self.physics.throw_time(
+                                two_arm, relay_dist, pivot_pos
+                            )
+                            # Base probability with timing margins and hard minimum
+                            if self.config.get("dpAlwaysTurn", 0):
+                                dp_success = True
+                            else:
+                                dp_prob = float(self.config.get("doublePlayProb", 0))
+                                dp_prob = max(dp_prob, float(self.config.get("dpHardMinProb", 0.35)))
+                            # Positive margins increase DP chance
+                            margin2 = runner_time_2b - force_time
+                            margin1 = batter_time_1b - relay_time
+                            # Auto-convert when both legs have strong positive margins
+                            force_auto = margin2 >= float(self.config.get("dpForceAutoSec", 0.25))
+                            relay_auto = margin1 >= float(self.config.get("dpRelayAutoSec", 0.30))
+                            if not self.config.get("dpAlwaysTurn", 0):
+                                if force_auto and relay_auto:
+                                    dp_success = True
+                                else:
+                                    if margin2 > 0:
+                                        dp_prob = min(
+                                            1.0,
+                                            dp_prob
+                                            + margin2
+                                            * float(self.config.get("dpForceBoostPerSec", 0.10)),
+                                        )
+                                    if margin1 > 0:
+                                        dp_prob = min(
+                                            1.0,
+                                            dp_prob
+                                            + margin1
+                                            * float(self.config.get("dpRelayBoostPerSec", 0.12)),
+                                        )
+                                    dp_success = self.rng.random() < dp_prob
+                            if dp_success:
+                                outs += 1
+                                self._add_stat(batter_state, "gidp")
+                                self.dp_made += 1
+                                # Credit pivot putout and 1B putout/assist
+                                if two_fs is not None:
+                                    self._add_fielding_stat(two_fs, "po", position=pivot_pos)
+                                oneb_fs = self._get_fielder(defense, "1B")
+                                if oneb_fs is not None:
+                                    self._add_fielding_stat(oneb_fs, "po", position="1B")
+                                if ffs is not None:
+                                    self._add_fielding_stat(ffs, "a")
+                                dp_done = True
+                        if not dp_done and can_force:
+                            # Fielder's choice: batter safe at 1B after force at 2B
+                            offense.bases[0] = batter_state
+                            offense.base_pitchers[0] = defense.current_pitcher_state
+                            self._add_stat(batter_state, "fc")
                     pitcher_state.toast += self.config.get("pitchScoringOut", 0)
                     pitcher_state.consecutive_hits = 0
                     pitcher_state.consecutive_baserunners = 0
@@ -1401,7 +1497,11 @@ class GameSimulation:
                     )
                     return outs + outs_from_pick
                 foul_chance = self._foul_probability(
-                    batter, pitcher, dist=dist, misread=self.batter_ai.last_misread
+                    batter,
+                    pitcher,
+                    dist=dist,
+                    strikes=strikes,
+                    misread=self.batter_ai.last_misread,
                 )
                 if contact and self.rng.random() < foul_chance:
                     if not in_zone:
@@ -1562,6 +1662,7 @@ class GameSimulation:
         pitcher: Pitcher,
         *,
         dist: float = 0.0,
+        strikes: int = 0,
         misread: bool = False,
     ) -> float:
         """Return foul ball probability derived from configuration and ratings.
@@ -1604,7 +1705,9 @@ class GameSimulation:
             prob *= max(0.0, 1.0 - dist * 0.1)
         if misread:
             prob *= 1.5
-
+        # Two-strike resilience: nudge toward more fouls to stay alive
+        if strikes >= 2:
+            prob *= 1.1
         return max(0.0, min(1.0, prob))
 
     def _attempt_foul_catch(
@@ -1839,6 +1942,73 @@ class GameSimulation:
         landing_dist = math.hypot(x, y)
         angle = math.atan2(abs(y), abs(x))
 
+        # Record likely fielder side for grounders to aid DP logic
+        if self.last_batted_ball_type == "ground":
+            abs_x, abs_y = abs(x), abs(y)
+            if abs_y > abs_x * 1.35:
+                self.last_ground_fielder = "3B"
+            elif abs_x > abs_y * 1.35:
+                self.last_ground_fielder = "1B"
+            else:
+                self.last_ground_fielder = "SS" if abs_y >= abs_x else "2B"
+
+        # Fast-path for routine infield grounders: attempt out at first.
+        # Always evaluate this so batter-out DP timing can trigger when R1.
+        if self.last_batted_ball_type == "ground":
+            abs_x, abs_y = abs(x), abs(y)
+            # Strong pull to 3B line, or push to 1B line, else middle infield.
+            if abs_y > abs_x * 1.35:
+                primary_pos = "3B"
+            elif abs_x > abs_y * 1.35:
+                primary_pos = "1B"
+            else:
+                primary_pos = "SS" if abs_y >= abs_x else "2B"
+            self.last_ground_fielder = primary_pos
+            fielder_fs = self._get_fielder(defense, primary_pos)
+            if fielder_fs is None:
+                # Fallbacks: prefer middle infielders if corner not available
+                order = [
+                    p for p in ("SS", "2B", "3B", "1B") if p != primary_pos
+                ]
+                for alt in order:
+                    fielder_fs = self._get_fielder(defense, alt)
+                    if fielder_fs is not None:
+                        primary_pos = alt
+                        break
+            if fielder_fs is not None:
+                fa = getattr(fielder_fs.player, "fa", 50)
+                arm = getattr(fielder_fs.player, "arm", 50)
+                batter_sp = getattr(batter, "sp", 50)
+                batter_time = 90 / self.physics.player_speed(batter_sp)
+                if primary_pos == "1B":
+                    # Unassisted groundout at first: quick step or short toss
+                    fielder_time = (
+                        self.physics.reaction_delay("1B", fa)
+                        + self.physics.throw_time(arm, 10.0, "1B")
+                    )
+                else:
+                    # Use geometric distance from fielder's default spot to 1B
+                    fx, fy = DEFAULT_POSITIONS.get(primary_pos, (90.0, 0.0))
+                    d = math.hypot(FIRST_BASE[0] - fx, FIRST_BASE[1] - fy)
+                    fielder_time = (
+                        self.physics.reaction_delay(primary_pos, fa)
+                        + self.physics.throw_time(arm, d, primary_pos)
+                    )
+                if self.fielding_ai.should_run_to_bag(fielder_time, batter_time):
+                    if primary_pos == "1B":
+                        # Unassisted putout by first baseman
+                        self._add_fielding_stat(fielder_fs, "po", position="1B")
+                    else:
+                        # Assist to fielder and putout to 1B
+                        self._add_fielding_stat(fielder_fs, "a")
+                        oneb_fs = self._get_fielder(defense, "1B") or self._get_fielder(
+                            defense, "P"
+                        )
+                        if oneb_fs is not None:
+                            self._add_fielding_stat(oneb_fs, "po", position="1B")
+                    # Out at first; main loop will handle DP chance if a runner is on 1B.
+                    return 0, False
+
         offense = self.away if defense is self.home else self.home
         if (
             self.current_outs < 2
@@ -1912,7 +2082,10 @@ class GameSimulation:
         runs_scored = 0
         outs = 0
         aggression = float(self.config.get("baserunningAggression", 0.5))
-        arm = getattr(defense.lineup[0], "arm", 0) if defense.lineup else 0
+        # Fallback arm strength used for generic throws when a specific fielder
+        # is not referenced. Use a neutral default instead of 0 to avoid
+        # unrealistic infinite/very slow throws suppressing DP chances.
+        arm = getattr(defense.lineup[0], "arm", 50) if defense.lineup else 50
 
         if error:
             self._add_stat(batter_state, "roe")
@@ -1961,75 +2134,118 @@ class GameSimulation:
                     new_bases[2] = b[1]
                     new_bp[2] = bp[1]
             if b[0]:
-                spd = self.physics.player_speed(b[0].player.sp)
-                roll_dist = self.physics.ball_roll_distance(
-                    spd,
-                    self.surface,
-                    altitude=self.altitude,
-                    temperature=self.temperature,
-                    wind_speed=self.wind_speed,
-                )
-                _, bounce_dist = self.physics.ball_bounce(
-                    spd / 2.0,
-                    spd / 2.0,
-                    surface=self.surface,
-                    wet=self.wet,
-                    temperature=self.temperature,
-                )
-                attempt_third = roll_dist + bounce_dist >= 25 or self.rng.random() < aggression
-                if attempt_third:
-                    runner_time = 180 / spd
+                # Runner on first; attempt force at 2B on grounders using geometry and bag-step timing
+                runner_spd = self.physics.player_speed(b[0].player.sp)
+                # Default: move runner safely if not a grounder scenario
+                moved_runner = False
+                if self.last_batted_ball_type == "ground":
+                    # Count DP candidate on grounder with runner on first
+                    self.dp_candidates += 1
+                    primary = self.last_ground_fielder or "SS"
+                    if primary not in {"SS", "2B", "3B", "1B"}:
+                        primary = "SS"
+                    ffs = self._get_fielder(defense, primary)
+                    fa = getattr(ffs.player, "fa", 50) if ffs else 50
+                    arm_f = getattr(ffs.player, "arm", 50) if ffs else arm
+                    # Compute times to second base and attempt the force when timing is
+                    # favorable or within a small grace window.
+                    rx, ry = DEFAULT_POSITIONS.get(primary, (90.0, 0.0))
+                    sx, sy = SECOND_BASE
+                    dist2 = math.hypot(sx - rx, sy - ry)
+                    runner_time = 90 / runner_spd
                     fielder_time = (
-                        self.physics.reaction_delay("LF", 0)
-                        + self.physics.throw_time(arm, 180, "LF")
+                        self.physics.reaction_delay(primary, fa)
+                        + self.physics.throw_time(arm_f, dist2, primary)
                     )
-                    if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
-                        outs += 1
-                    else:
-                        if new_bases[2] is None:
-                            new_bases[2] = b[0]
-                            new_bp[2] = bp[0]
-                        else:
-                            new_bases[1] = b[0]
-                            new_bp[1] = bp[0]
-                else:
-                    runner_time = 90 / spd
-                    fielder_time = (
-                        self.physics.reaction_delay("SS", 0)
-                        + self.physics.throw_time(arm, 90, "SS")
-                    )
-                    if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
+                    # Always attempt the force on grounders with R1 to drive DP turns
+                    can_force = True
+                    if can_force:
+                        self.dp_attempts += 1
                         outs += 1
                         runner_on_first_out = True
                         force_runner_time = runner_time
                         force_fielder_time = fielder_time
-                    else:
-                        new_bases[1] = b[0]
-                        new_bp[1] = bp[0]
+                        pivot_pos = "2B" if primary in {"SS", "3B"} else "SS"
+                        pivot_fs = self._get_fielder(defense, pivot_pos)
+                        if pivot_fs is not None:
+                            self._add_fielding_stat(pivot_fs, "po", position=pivot_pos)
+                        # Clear runner on first after force
+                        b[0] = None
+                        bp[0] = None
+                        moved_runner = True
+                if not moved_runner and b[0] is not None:
+                    # No force; advance runner by default
+                    new_bases[1] = b[0]
+                    new_bp[1] = bp[0]
 
             if runner_on_first_out:
                 batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
+                # Compute geometric relay from pivot to 1B using pivot's ratings
+                piv = self.last_ground_fielder or "SS"
+                pivot_pos = "2B" if piv in {"SS", "3B"} else "SS"
+                piv_fs = self._get_fielder(defense, pivot_pos)
+                piv_fa = getattr(piv_fs.player, "fa", 50) if piv_fs else 50
+                piv_arm = getattr(piv_fs.player, "arm", 50) if piv_fs else arm
+                px, py = DEFAULT_POSITIONS.get(pivot_pos, (90.0, 90.0))
+                bx, by = FIRST_BASE
+                relay_dist = math.hypot(bx - px, by - py)
                 relay_time = (
-                    self.physics.reaction_delay("2B", 0)
-                    + self.physics.throw_time(arm, 90, "2B")
+                    self.physics.reaction_delay(pivot_pos, piv_fa)
+                    + self.physics.throw_time(piv_arm, relay_dist, pivot_pos)
                 )
-                dp_prob = self.config.get("doublePlayProb", 0)
-                if force_runner_time and force_fielder_time:
-                    margin = force_runner_time - force_fielder_time
-                    if margin > 0:
-                        dp_prob = min(1.0, dp_prob + margin * 0.05)
+                if self.config.get("dpAlwaysTurn", 0):
+                    dp_success = True
+                else:
+                    dp_prob = float(self.config.get("doublePlayProb", 0))
+                    dp_prob = max(dp_prob, float(self.config.get("dpHardMinProb", 0.35)))
+                margin = (force_runner_time - force_fielder_time) if (force_runner_time and force_fielder_time) else None
                 time_margin = batter_time - relay_time
-                if time_margin > 0:
-                    dp_prob = min(1.0, dp_prob + time_margin * 0.05)
-                if self.rng.random() < dp_prob:
+                # Auto-convert when both legs have strong positive margins
+                force_auto = (margin is not None) and margin >= float(self.config.get("dpForceAutoSec", 0.25))
+                relay_auto = time_margin >= float(self.config.get("dpRelayAutoSec", 0.30))
+                if not self.config.get("dpAlwaysTurn", 0):
+                    if force_auto and relay_auto:
+                        dp_success = True
+                    else:
+                        if margin is not None and margin > 0:
+                            dp_prob = min(
+                                1.0,
+                                dp_prob
+                                + margin
+                                * float(self.config.get("dpForceBoostPerSec", 0.10)),
+                            )
+                        if time_margin > 0:
+                            dp_prob = min(
+                                1.0,
+                                dp_prob
+                                + time_margin
+                                * float(self.config.get("dpRelayBoostPerSec", 0.12)),
+                            )
+                        dp_success = self.rng.random() < dp_prob
+                if dp_success:
                     outs += 1
                     self._add_stat(batter_state, "gidp")
+                    self.dp_made += 1
+                    # Second out at first: 4-3 on the relay (2B -> 1B)
+                    two_fs = self._get_fielder(defense, "2B")
+                    oneb_fs = self._get_fielder(defense, "1B")
+                    if oneb_fs is not None:
+                        self._add_fielding_stat(oneb_fs, "po", position="1B")
+                    if two_fs is not None:
+                        self._add_fielding_stat(two_fs, "a")
                 elif (
                     self.fielding_ai.should_relay_throw(relay_time, batter_time)
                     and self.fielding_ai.should_tag_runner(relay_time, batter_time)
                 ):
                     outs += 1
                     self._add_stat(batter_state, "gidp")
+                    # Second out at first on relay: credit as above
+                    two_fs = self._get_fielder(defense, "2B")
+                    oneb_fs = self._get_fielder(defense, "1B")
+                    if oneb_fs is not None:
+                        self._add_fielding_stat(oneb_fs, "po", position="1B")
+                    if two_fs is not None:
+                        self._add_fielding_stat(two_fs, "a")
                 else:
                     new_bases[0] = batter_state
                     new_bp[0] = defense.current_pitcher_state
@@ -2219,16 +2435,16 @@ class GameSimulation:
             if catcher_fs and self._maybe_passed_ball(offense, defense, catcher_fs):
                 self._add_stat(runner_state, "sb")
                 return True
-            fa = catcher_fs.player.fa if catcher_fs else 0
-            delay = self.physics.reaction_delay("C", fa)
-            # Original logic assumes the tag play beats the runner; incorporate
-            # arm strength by reducing the success probability for stronger
-            # pitcher/catcher arms.
-            self.fielding_ai.should_tag_runner(delay, 10)
-            tag_pct = self.config.get("stealSuccessTagOutPct", 20) / 100.0
-            catcher_arm = catcher_fs.player.arm if catcher_fs else 0
-            arm_factor = (catcher_arm + pitcher.arm) / 200.0
-            success_prob = tag_pct * (1 - arm_factor / 2)
+            # Determine success probability; invert prior logic which used a tag-out chance as success.
+            catcher_arm = catcher_fs.player.arm if catcher_fs else 50
+            runner_sp = runner_state.player.sp
+            base_success = self.config.get("stealSuccessBasePct", 72) / 100.0
+            # Adjustments: faster runner increases success; stronger catcher/pitcher arms decrease it;
+            # better pitcher hold reduces success. Clamp to reasonable MLB-like bounds.
+            sp_adj = (runner_sp - 50) / 200.0
+            arm_adj = -((catcher_arm - 50) / 250.0 + (pitcher.arm - 50) / 300.0)
+            hold_adj = -(pitcher.hold_runner - 50) / 300.0
+            success_prob = max(0.55, min(0.90, base_success + sp_adj + arm_adj + hold_adj))
             if self.rng.random() < success_prob:
                 ps_runner = offense.base_pitchers[base_idx]
                 offense.bases[base_idx] = None
@@ -2239,6 +2455,7 @@ class GameSimulation:
                 if catcher_fs:
                     self._add_fielding_stat(catcher_fs, "sba")
                 return True
+            # Caught stealing
             offense.bases[base_idx] = None
             offense.base_pitchers[base_idx] = None
             self._add_stat(runner_state, "cs")
@@ -2302,35 +2519,35 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
         for ps in team.pitcher_stats.values():
             line = {
                 "player": ps.player,
-                "g": ps.g,
-                "gs": ps.gs,
-                "bf": ps.bf,
-                "outs": ps.outs,
-                "r": ps.r,
-                "er": ps.er,
-                "h": ps.h,
-                "1b": ps.b1,
-                "2b": ps.b2,
-                "3b": ps.b3,
-                "hr": ps.hr,
-                "bb": ps.bb,
-                "ibb": ps.ibb,
-                "hbp": ps.hbp,
-                "so": ps.so,
-                "wp": ps.wp,
-                "bk": ps.bk,
-                "pk": ps.pk,
-                "pocs": ps.pocs,
-                "ir": ps.ir,
-                "irs": ps.irs,
-                "gf": ps.gf,
-                "sv": ps.sv,
-                "bs": ps.bs,
-                "hld": ps.hld,
-                "svo": ps.svo,
-                "pitches": ps.pitches_thrown,
-                "strikes": ps.strikes_thrown,
-                "balls": ps.balls_thrown,
+                "g": getattr(ps, "g", 0),
+                "gs": getattr(ps, "gs", 0),
+                "bf": getattr(ps, "bf", 0),
+                "outs": getattr(ps, "outs", 0),
+                "r": getattr(ps, "r", 0),
+                "er": getattr(ps, "er", 0),
+                "h": getattr(ps, "h", 0),
+                "1b": getattr(ps, "b1", 0),
+                "2b": getattr(ps, "b2", 0),
+                "3b": getattr(ps, "b3", 0),
+                "hr": getattr(ps, "hr", 0),
+                "bb": getattr(ps, "bb", 0),
+                "ibb": getattr(ps, "ibb", 0),
+                "hbp": getattr(ps, "hbp", 0),
+                "so": getattr(ps, "so", 0),
+                "wp": getattr(ps, "wp", 0),
+                "bk": getattr(ps, "bk", 0),
+                "pk": getattr(ps, "pk", 0),
+                "pocs": getattr(ps, "pocs", 0),
+                "ir": getattr(ps, "ir", 0),
+                "irs": getattr(ps, "irs", 0),
+                "gf": getattr(ps, "gf", 0),
+                "sv": getattr(ps, "sv", 0),
+                "bs": getattr(ps, "bs", 0),
+                "hld": getattr(ps, "hld", 0),
+                "svo": getattr(ps, "svo", 0),
+                "pitches": getattr(ps, "pitches_thrown", 0),
+                "strikes": getattr(ps, "strikes_thrown", 0),
+                "balls": getattr(ps, "balls_thrown", 0),
             }
             line.update(compute_pitching_derived(ps))
             line.update(compute_pitching_rates(ps))

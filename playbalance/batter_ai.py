@@ -346,6 +346,12 @@ class BatterAI:
         swing_chance -= (dx_abs + dy_abs) * loc_factor
 
         swing_chance = clamp01(swing_chance)
+
+        # Two-strike protection: become more aggressive to reduce called Ks.
+        # Tunable via config key "twoStrikeSwingBonus" (percent additive).
+        if strikes >= 2:
+            swing_chance += getattr(self.config, "twoStrikeSwingBonus", 0) / 100.0
+            swing_chance = clamp01(swing_chance)
         if rv < swing_chance:
             swing = True
 
@@ -358,6 +364,9 @@ class BatterAI:
                 + (batter_contact - 50) / self.config.contact_factor_div
             )
             miss_chance /= contact_factor
+            # Two-strike contact safety: modestly reduce miss probability
+            if strikes >= 2:
+                miss_chance *= 0.80
             miss_chance = max(0.05, min(0.95, miss_chance))
             rv_contact = rv if check_random is None else check_random
             if rv_contact < miss_chance:

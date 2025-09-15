@@ -1,0 +1,18 @@
+{
+  "throwSpeedIFBase": 77,
+  "throwSpeedIFDistPct": 15,
+  "throwSpeedIFASPct": 21,
+  "groundOutProb": 0.806,
+  "dpForceBoostPerSec": 0.50,
+  "dpRelayBoostPerSec": 0.70,
+  "dpForceAutoSec": 0.02,
+  "dpRelayAutoSec": 0.05,
+  "dpHardMinProb": 0.78,
+  "doublePlayProbMappingBump": 0.08,
+  "slops": {
+    "generalSlop": -12,
+    "relaySlop": -46,
+    "tagTimeSlop": -22,
+    "stepOnBagSlop": -65
+  }
+}
