@@ -334,10 +334,12 @@ class BatterAI:
             swing_chance = clamp01(swing_chance)
 
         # Discipline pushes aggressiveness in the expected direction.
+        zone_weight = 0.22
+        ball_weight = 0.05
         if pitch_kind in {"sure strike", "close strike"}:
-            swing_chance += (discipline - 0.5) * 0.2
+            swing_chance += (discipline - 0.5) * zone_weight
         else:
-            swing_chance -= (discipline - 0.5) * 0.2
+            swing_chance -= (discipline - 0.5) * ball_weight
 
         # Location-based adjustment penalises pitches further from the target.
         dx_abs = abs(dx) if dx is not None else 0.0

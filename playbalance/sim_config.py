@@ -35,11 +35,14 @@ def apply_league_benchmarks(
     # scaled down in :mod:`playbalance.simulation` so multiply the MLB BABIP
     # by ``1.5`` to produce a small additive term in the final hit probability
     # calculation.
-    cfg.hitProbBase = benchmarks["babip"] * 1.5
+    cfg.hitProbBase = benchmarks["babip"] * 1.40
     pip_pct = benchmarks["pitches_put_in_play_pct"]
     cfg.ballInPlayPitchPct = int(round(pip_pct * 100)) - 1
     pitches_per_pa = benchmarks["pitches_per_pa"]
-    cfg.swingProbScale = round(4.0 / pitches_per_pa, 2) if pitches_per_pa else 1.0
+    if pitches_per_pa:
+        cfg.swingProbScale = round((4.0 / pitches_per_pa) * 1.32, 2)
+    else:
+        cfg.swingProbScale = 1.0
 
     z_swing_pct = benchmarks.get("z_swing_pct")
     o_swing_pct = benchmarks.get("o_swing_pct")
@@ -51,10 +54,10 @@ def apply_league_benchmarks(
         cfg.zSwingProbScale = round(z_swing_pct / base_z, 2) if base_z else 1.0
         cfg.oSwingProbScale = round(o_swing_pct / base_o, 2) if base_o else 1.0
         cfg.zSwingProbScale = round(
-            cfg.zSwingProbScale * cfg.extra_z_swing_scale, 2
+            cfg.zSwingProbScale * cfg.extra_z_swing_scale * 0.96, 2
         )
         cfg.oSwingProbScale = round(
-            cfg.oSwingProbScale * cfg.extra_o_swing_scale, 2
+            cfg.oSwingProbScale * cfg.extra_o_swing_scale * 2.10, 2
         )
 
     swing_pct = benchmarks.get("swing_pct")
@@ -147,11 +150,24 @@ def load_tuned_playbalance_config(
 
         apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
+        cfg.swingProbSureStrike = round(cfg.swingProbSureStrike * 1.04, 2)
+        cfg.swingProbCloseStrike = round(cfg.swingProbCloseStrike * 1.06, 2)
+        cfg.swingProbCloseBall = round(cfg.swingProbCloseBall * 1.25, 2)
+        cfg.swingProbSureBall = round(cfg.swingProbSureBall * 1.45, 2)
+        cfg.extraZSwingScale = min(cfg.extraZSwingScale, 0.98)
+        cfg.extraOSwingScale = max(cfg.extraOSwingScale, 1.55)
+        cfg.doublePlayProb = min(cfg.doublePlayProb, 0.74)
+        cfg.offManStealChancePct = max(cfg.offManStealChancePct, 115)
+        cfg.stealSuccessBasePct = max(cfg.stealSuccessBasePct, 86)
+        cfg.stealChanceMedThresh = min(cfg.stealChanceMedThresh, 52)
+
         # Apply contact-factor adjustments to curb excessive strikeouts observed
         # in full season simulations. Slightly boosting the contact factor nudges
         # the engine toward league-average strikeout rates.
-        cfg.contactFactorBase = round(cfg.contactFactorBase * 1.05, 2)
-        cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.9)
+        cfg.contactFactorBase = round(cfg.contactFactorBase * 1.04, 2)
+        cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.94)
+        cfg.closeBallStrikeBonus = max(cfg.closeBallStrikeBonus, 2)
+        cfg.twoStrikeSwingBonus = max(cfg.twoStrikeSwingBonus, 8)
 
         # Boost batter pitch recognition to curb excessive strikeouts seen in
         # season simulations. Increasing the ease scale makes identifying pitches
