@@ -7,6 +7,13 @@ from PyQt6.QtWidgets import (
 import csv
 from pathlib import Path
 
+try:
+    from PyQt6.QtCore import Qt
+except Exception:  # pragma: no cover - tests provide stub
+    class Qt:
+        class ItemDataRole:
+            UserRole = 0
+
 from .boxscore_window import BoxScoreWindow
 
 SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "schedule.csv"
@@ -46,6 +53,11 @@ class ScheduleWindow(QDialog):
             for row, game in enumerate(self._schedule_data):
                 for col, key in enumerate(["date", "away", "home", "result"]):
                     item = QTableWidgetItem(game.get(key, ""))
+                    if key == "result":
+                        try:
+                            item.setData(Qt.ItemDataRole.UserRole, game.get("boxscore", ""))
+                        except Exception:  # pragma: no cover - stub fallback
+                            pass
                     self.viewer.setItem(row, col, item)
         except Exception:  # pragma: no cover
             pass
@@ -54,8 +66,20 @@ class ScheduleWindow(QDialog):
         """Open box score for the selected game if available."""
         if column != 3:
             return
-        game = self._schedule_data[row]
-        path = game.get("boxscore")
+        item = None
+        try:
+            item = self.viewer.item(row, column)
+        except Exception:  # pragma: no cover - stub fallback
+            item = None
+        path = None
+        if item is not None:
+            try:
+                path = item.data(Qt.ItemDataRole.UserRole)
+            except Exception:  # pragma: no cover
+                path = None
+        if not path and 0 <= row < len(self._schedule_data):
+            game = self._schedule_data[row]
+            path = game.get("boxscore")
         if path:
             dlg = BoxScoreWindow(path, self)
             try:

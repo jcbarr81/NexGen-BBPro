@@ -1,4 +1,5 @@
 import csv
+import json
 from collections import Counter
 from datetime import date
 from playbalance.league_creator import create_league, _dict_to_model, _abbr
@@ -58,6 +59,34 @@ def test_create_league_generates_files(tmp_path):
                 assert 21 <= age <= 38
             else:
                 assert 18 <= age <= 21
+    lineup_dir = tmp_path / "lineups"
+    assert lineup_dir.is_dir()
+    for t in teams:
+        for suffix in ("vs_rhp", "vs_lhp"):
+            lineup_file = lineup_dir / f"{t['team_id']}_{suffix}.csv"
+            assert lineup_file.exists()
+            with lineup_file.open(newline="") as fh:
+                entries = list(csv.DictReader(fh))
+            assert len(entries) == 9
+            for entry in entries:
+                assert entry["player_id"] in players_by_id
+
+    stats_path = tmp_path / "season_stats.json"
+    assert json.loads(stats_path.read_text()) == {"players": {}, "teams": {}, "history": []}
+    progress_path = tmp_path / "season_progress.json"
+    progress = json.loads(progress_path.read_text())
+    assert progress["preseason_done"] == {
+        "free_agency": False,
+        "training_camp": False,
+        "schedule": False,
+    }
+    assert progress["sim_index"] == 0
+    news_path = tmp_path / "news_feed.txt"
+    assert news_path.exists()
+    assert news_path.read_text() == ""
+    standings_path = tmp_path / "standings.json"
+    assert json.loads(standings_path.read_text()) == {}
+
     with open(league_path) as f:
         assert f.read() == "Test League"
 
@@ -179,7 +208,10 @@ def test_create_league_purges_old_files_but_keeps_avatars(tmp_path):
     create_league(str(data_dir), divisions, "Test League")
 
     assert not old_file.exists()
-    assert not old_dir.exists()
+    lineup_dir = data_dir / "lineups"
+    assert lineup_dir.is_dir()
+    assert not (lineup_dir / "dummy.csv").exists()
+    assert any(lineup_dir.glob("*.csv"))
     assert avatar.exists()
 
 

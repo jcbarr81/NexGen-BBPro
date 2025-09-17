@@ -6,7 +6,7 @@ import csv
 import shutil
 from collections import Counter, defaultdict
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Dict, Tuple
 
 from PIL import Image
@@ -94,7 +94,7 @@ def _select_template(ethnicity: str, facial_hair: str | None) -> Path:
         path = ethnic_dir / "clean.png"
         if not path.exists():
             path = base / "Anglo" / "clean.png"
-    return path
+    return PurePosixPath(path.as_posix())
 
 
 def _hex_to_bgr(h: str):

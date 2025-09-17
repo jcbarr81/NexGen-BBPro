@@ -290,14 +290,9 @@ class GameSimulation:
     # Stat helpers
     # ------------------------------------------------------------------
     def _add_stat(self, state: BatterState, attr: str, amount: int = 1) -> None:
-        """Increment ``attr`` on ``state`` and the player's season totals."""
+        """Increment ``attr`` on ``state``."""
 
         setattr(state, attr, getattr(state, attr) + amount)
-        season = getattr(state.player, "season_stats", None)
-        if season is None:
-            season = {}
-            state.player.season_stats = season
-        season[attr] = season.get(attr, 0) + amount
 
     def _add_fielding_stat(
         self,
@@ -307,7 +302,7 @@ class GameSimulation:
         *,
         position: str | None = None,
     ) -> None:
-        """Increment ``attr`` on ``state`` and season totals.
+        """Increment ``attr`` on ``state``.
 
         When recording a putout the credited position is tracked to allow
         comparison with MLB averages and to dynamically adjust fielding
@@ -315,11 +310,6 @@ class GameSimulation:
         """
 
         setattr(state, attr, getattr(state, attr) + amount)
-        season = getattr(state.player, "season_stats", None)
-        if season is None:
-            season = {}
-            state.player.season_stats = season
-        season[attr] = season.get(attr, 0) + amount
 
         if attr == "po":
             pos = (position or getattr(state.player, "primary_position", "")).upper()
@@ -658,6 +648,10 @@ class GameSimulation:
             for team, opp in ((self.home, self.away), (self.away, self.home)):
                 derived = compute_team_derived(team, opp)
                 season = team.team_stats
+                if team.runs > opp.runs:
+                    season["w"] = season.get("w", 0) + 1
+                elif team.runs < opp.runs:
+                    season["l"] = season.get("l", 0) + 1
                 season["g"] = season.get("g", 0) + 1
                 season["r"] = season.get("r", 0) + team.runs
                 season["ra"] = season.get("ra", 0) + opp.runs

@@ -412,10 +412,14 @@ def landing_point(vx: float, vy: float, vz: float) -> Tuple[float, float, float]
 
     g = 32.176370514590964
     start_height = 3.006101454579742
-    vz_r = round(vz, 2)
-    hang = (vz_r + math.sqrt(vz_r * vz_r + 2 * g * start_height)) / g
-    x = round(round(vx, 2) * hang, 2)
-    y = round(round(vy, 2) * hang, 2)
+    mph_to_fps = 5280.0 / 3600.0
+    # Convert launch velocities from mph to ft/s before applying gravity.
+    vx_fps = round(vx, 2) * mph_to_fps
+    vy_fps = round(vy, 2) * mph_to_fps
+    vz_fps = round(vz, 2) * mph_to_fps
+    hang = (vz_fps + math.sqrt(vz_fps * vz_fps + 2 * g * start_height)) / g
+    x = round(vx_fps * hang, 2)
+    y = round(vy_fps * hang, 2)
     return x, y, hang
 
 

@@ -23,7 +23,7 @@ def test_simulate_regular_season_to_completion():
 
 def test_default_simulation_runs_without_callback():
     """Ensure the built-in season simulation runs using full game playbalance."""
-    schedule = [{"date": "2024-04-01", "home": "DRO", "away": "CEA"}]
+    schedule = [{"date": "2024-04-01", "home": "AUS", "away": "BAL"}]
 
     sim = SeasonSimulator(schedule)
 
@@ -49,3 +49,19 @@ def test_parallel_simulation_invokes_after_game():
 
     assert len(recorded) == 2
     assert all("result" in g for g in schedule)
+
+def test_default_simulation_saves_team_stats(monkeypatch):
+    schedule = [{"date": "2024-04-01", "home": "AUS", "away": "BAL"}]
+    captured: dict[str, list] = {}
+
+    def _capture(players, teams):
+        captured["players"] = list(players)
+        captured["teams"] = list(teams)
+
+    monkeypatch.setattr("playbalance.simulation.save_stats", _capture)
+
+    sim = SeasonSimulator(schedule)
+    sim.simulate_next_day()
+
+    assert {team.team_id for team in captured.get("teams", [])} == {"AUS", "BAL"}
+    assert captured.get("players")

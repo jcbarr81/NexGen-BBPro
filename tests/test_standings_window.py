@@ -189,6 +189,7 @@ def test_standings_action_opens_dialog(monkeypatch):
             opened["shown"] = True
 
     monkeypatch.setattr(owner_dashboard, "StandingsWindow", DummyStandings)
+    monkeypatch.setattr(owner_dashboard, "show_on_top", lambda w: w.exec())
 
     def fake_init(self, team_id):
         self.team_id = team_id
@@ -206,8 +207,8 @@ def test_standings_action_opens_dialog(monkeypatch):
 def test_standings_window_displays_league_and_teams():
     window = standings_window.StandingsWindow()
     html = window.viewer.toHtml()
-    assert "UBL" in html
-    assert "East" in html
-    assert "Dallas Rockets" in html
+    assert "USABL" in html
+    assert "Central" in html
+    assert "Austin Thunder" in html
     assert "<pre>" in html
     assert "<ul>" not in html

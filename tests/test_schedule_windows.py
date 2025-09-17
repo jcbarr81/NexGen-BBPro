@@ -105,6 +105,11 @@ class QTableWidget(Dummy):
 class QTableWidgetItem:
     def __init__(self, text):
         self._text = text
+        self._data = {}
+    def setData(self, role, value):
+        self._data[role] = value
+    def data(self, role):
+        return self._data.get(role)
     def text(self):
         return self._text
 
@@ -201,10 +206,12 @@ def test_schedule_windows_show_data(monkeypatch, tmp_path):
 
     monkeypatch.setattr(schedule_window, 'SCHEDULE_FILE', schedule_path)
     monkeypatch.setattr(team_schedule_window, 'SCHEDULE_FILE', schedule_path)
+    monkeypatch.setattr(owner_dashboard, 'SCHEDULE_FILE', schedule_path)
     monkeypatch.setattr(owner_dashboard, 'ScheduleWindow', schedule_window.ScheduleWindow)
     monkeypatch.setattr(owner_dashboard, 'TeamScheduleWindow', team_schedule_window.TeamScheduleWindow)
 
     opened = {}
+    monkeypatch.setattr(owner_dashboard, "show_on_top", lambda w: opened.setdefault('windows', []).append(w))
 
     orig_sched_init = schedule_window.ScheduleWindow.__init__
     def spy_sched_init(self, *a, **k):
@@ -254,6 +261,7 @@ def test_owner_dashboard_stats_windows(monkeypatch):
     from types import SimpleNamespace
 
     called = []
+    monkeypatch.setattr(owner_dashboard, "show_on_top", lambda w: w.exec())
 
     class DummyTabs:
         def __init__(self):
@@ -304,7 +312,7 @@ def test_team_schedule_window_no_entries(monkeypatch, tmp_path):
     win = team_schedule_window.TeamScheduleWindow("Z")
     item = win.viewer.item(0, 0)
     assert item.text() == "No schedule available"
-    assert not hasattr(win, "_month")
+    assert "_month" not in win.__dict__
 
 
 def test_owner_dashboard_no_team_schedule(monkeypatch, tmp_path):
@@ -343,3 +351,44 @@ def test_owner_dashboard_no_team_schedule(monkeypatch, tmp_path):
 
     assert opened == []
     assert msgs == ["No schedule available for this team."]
+
+def test_schedule_window_opens_boxscore(monkeypatch, tmp_path):
+    from ui import schedule_window
+
+    schedule_path = tmp_path / "schedule.csv"
+    box_path = tmp_path / "game.html"
+    box_path.write_text("<html></html>", encoding="utf-8")
+    with schedule_path.open("w", newline="") as fh:
+        writer = csv.DictWriter(
+            fh, fieldnames=["date", "home", "away", "result", "boxscore"]
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "date": "2024-04-01",
+                "home": "A",
+                "away": "B",
+                "result": "W 3-2",
+                "boxscore": str(box_path),
+            }
+        )
+
+    monkeypatch.setattr(schedule_window, "SCHEDULE_FILE", schedule_path)
+
+    opened = {}
+
+    class DummyBox:
+        def __init__(self, path, parent=None):
+            opened["path"] = path
+            opened["parent"] = parent
+
+        def exec(self):
+            opened["executed"] = True
+
+    monkeypatch.setattr(schedule_window, "BoxScoreWindow", DummyBox)
+
+    win = schedule_window.ScheduleWindow()
+    win._open_boxscore(0, 3)
+
+    assert opened["path"] == str(box_path)
+    assert opened.get("executed")

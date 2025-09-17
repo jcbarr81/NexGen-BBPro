@@ -1,14 +1,18 @@
 import colorsys
 import csv
+import json
+import random
 import shutil
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Iterable, Set
 
 from models.player import Player
 from models.pitcher import Pitcher
 from utils.player_writer import save_players_to_csv
 from playbalance.player_generator import generate_player, reset_name_cache
 from utils.user_manager import clear_users
+from utils.player_loader import load_players_from_csv
+from utils.lineup_loader import build_default_game_state
 
 
 def _abbr(city: str, name: str, existing: set) -> str:
@@ -119,9 +123,20 @@ def _purge_old_league(base_dir: Path) -> None:
         if item.name in keep:
             continue
         if item.is_dir():
-            shutil.rmtree(item)
+            shutil.rmtree(item, ignore_errors=True)
         else:
-            item.unlink()
+            try:
+                item.unlink()
+            except OSError:
+                if item.exists():
+                    raise
+    # Remove lingering lock files that may live alongside stats.
+    lock_file = base_dir / "season_stats.json.lock"
+    if lock_file.exists():
+        try:
+            lock_file.unlink()
+        except OSError:
+            pass
 
 
 def _ensure_act_positions(players: List[dict]) -> None:
@@ -146,6 +161,70 @@ def _ensure_act_positions(players: List[dict]) -> None:
         )
 
 
+
+
+def _write_default_lineups(base_dir: Path, team_ids: Iterable[str]) -> None:
+    """Create simple left/right lineups for each team using roster data."""
+
+    lineup_dir = base_dir / "lineups"
+    if lineup_dir.exists():
+        shutil.rmtree(lineup_dir, ignore_errors=True)
+    lineup_dir.mkdir(parents=True, exist_ok=True)
+
+    players_file = base_dir / "players.csv"
+    roster_dir = base_dir / "rosters"
+
+    def _write_lineup(path: Path, lineup: List[Player]) -> None:
+        with path.open("w", newline="") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(["order", "player_id", "position"])
+            for order, player in enumerate(lineup, start=1):
+                position = getattr(player, "position", "") or getattr(player, "primary_position", "")
+                writer.writerow([order, player.player_id, position])
+
+    for team_id in team_ids:
+        state = build_default_game_state(
+            team_id,
+            players_file=str(players_file),
+            roster_dir=str(roster_dir),
+        )
+        _write_lineup(lineup_dir / f"{team_id}_vs_rhp.csv", list(state.lineup))
+        _write_lineup(lineup_dir / f"{team_id}_vs_lhp.csv", list(state.lineup))
+
+
+def _initialize_league_state(base_dir: Path) -> None:
+    """Reset season persistence files to empty defaults."""
+
+    stats_path = base_dir / "season_stats.json"
+    with stats_path.open("w", encoding="utf-8") as fh:
+        json.dump({"players": {}, "teams": {}, "history": []}, fh, indent=2)
+
+    progress_path = base_dir / "season_progress.json"
+    with progress_path.open("w", encoding="utf-8") as fh:
+        json.dump(
+            {
+                "preseason_done": {
+                    "free_agency": False,
+                    "training_camp": False,
+                    "schedule": False,
+                },
+                "sim_index": 0,
+            },
+            fh,
+            indent=2,
+        )
+
+    news_path = base_dir / "news_feed.txt"
+    news_path.write_text("", encoding="utf-8")
+
+    standings_path = base_dir / "standings.json"
+    with standings_path.open("w", encoding="utf-8") as fh:
+        json.dump({}, fh, indent=2)
+
+    schedule_path = base_dir / "schedule.csv"
+    if schedule_path.exists():
+        schedule_path.unlink()
+
 def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
@@ -165,25 +244,35 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
     existing_abbr = set()
     used_colors: set[str] = set()
 
+    used_ids: set[str] = set()
+
+    def _ensure_unique_id(player: dict) -> dict:
+        pid = str(player.get("player_id", ""))
+        while not pid or pid in used_ids:
+            pid = f"P{random.randint(1000, 9999)}"
+        player["player_id"] = pid
+        used_ids.add(pid)
+        return player
+
     def generate_roster(num_pitchers: int, num_hitters: int, age_range: Tuple[int, int], ensure_positions: bool = False):
         players = []
         for _ in range(num_pitchers):
             data = generate_player(is_pitcher=True, age_range=age_range)
             data["is_pitcher"] = True
-            players.append(data)
+            players.append(_ensure_unique_id(data))
         if ensure_positions:
             positions = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"]
             for pos in positions:
                 data = generate_player(is_pitcher=False, age_range=age_range, primary_position=pos)
                 data["is_pitcher"] = False
-                players.append(data)
+                players.append(_ensure_unique_id(data))
             remaining = num_hitters - len(positions)
         else:
             remaining = num_hitters
         for _ in range(remaining):
             data = generate_player(is_pitcher=False, age_range=age_range)
             data["is_pitcher"] = False
-            players.append(data)
+            players.append(_ensure_unique_id(data))
         return players
 
     for division, teams in divisions.items():
@@ -223,6 +312,10 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
 
     player_models = [_dict_to_model(p) for p in all_players]
     save_players_to_csv(player_models, players_path)
+
+    load_players_from_csv.cache_clear()
+    _write_default_lineups(base_dir, [row["team_id"] for row in team_rows])
+    _initialize_league_state(base_dir)
 
     with open(teams_path, "w", newline="") as f:
         fieldnames = [

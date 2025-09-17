@@ -96,6 +96,8 @@ class TeamScheduleWindow(QDialog):
             self._month = first.replace(day=1)
             self._populate_month()
         else:
+            if "_month" in self.__dict__:
+                del self.__dict__["_month"]
             self.month_label.setText("")
             self.viewer.setRowCount(1)
             self.viewer.setColumnCount(1)

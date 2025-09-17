@@ -93,6 +93,32 @@ class SlotItem(QtWidgets.QTableWidgetItem):
         return left < right
 
 
+class NumericItem(QtWidgets.QTableWidgetItem):
+    """Item that stores numeric sort keys when possible."""
+
+    def __init__(self, value: object, *, align_left: bool = False) -> None:
+        super().__init__()
+        flags = self.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable
+        self.setFlags(flags)
+        alignment = (
+            QtCore.Qt.AlignmentFlag.AlignLeft
+            if align_left
+            else QtCore.Qt.AlignmentFlag.AlignRight
+        )
+        self.setTextAlignment(alignment | QtCore.Qt.AlignmentFlag.AlignVCenter)
+        self._set_value(value)
+
+    def _set_value(self, value: object) -> None:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            self.setData(QtCore.Qt.ItemDataRole.DisplayRole, str(value))
+        else:
+            display = int(numeric) if numeric.is_integer() else numeric
+            self.setData(QtCore.Qt.ItemDataRole.DisplayRole, display)
+            self.setData(QtCore.Qt.ItemDataRole.EditRole, numeric)
+
+
 class RetroHeader(QtWidgets.QWidget):
     """Header area displaying team name and subheader strip."""
 
@@ -150,21 +176,21 @@ class RosterTable(QtWidgets.QTableWidget):
         self.setHorizontalHeaderLabels(COLUMNS)
         self.setRowCount(len(rows))
         for r, row in enumerate(rows):
-            # The player ID is stored as a hidden element at the end of the row.
             *data, pid = row
             for c, val in enumerate(data):
-                if COLUMNS[c] == "SLOT":
+                column = COLUMNS[c]
+                if column == "SLOT":
                     item = SlotItem(str(val))
+                    item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
+                    item.setTextAlignment(
+                        QtCore.Qt.AlignmentFlag.AlignCenter
+                        | QtCore.Qt.AlignmentFlag.AlignVCenter
+                    )
                 else:
-                    item = QtWidgets.QTableWidgetItem(str(val))
-                if (
-                    COLUMNS[c] in {"NO.", "AGE", "CH", "PH", "SP", "FA", "AS"}
-                    and str(val).isdigit()
-                ):
-                    item.setData(QtCore.Qt.ItemDataRole.DisplayRole, int(val))
-                if c == 0:  # store player id in first column
+                    align_left = column in {"Player Name", "POSN", "B"}
+                    item = NumericItem(val, align_left=align_left)
+                if c == 0:
                     item.setData(QtCore.Qt.ItemDataRole.UserRole, pid)
-                item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
                 self.setItem(r, c, item)
 
         widths = [50, 220, 50, 60, 60, 40, 60, 60, 60, 60, 60]

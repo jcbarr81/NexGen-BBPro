@@ -160,6 +160,8 @@ def load_tuned_playbalance_config(
         cfg.offManStealChancePct = max(cfg.offManStealChancePct, 115)
         cfg.stealSuccessBasePct = max(cfg.stealSuccessBasePct, 86)
         cfg.stealChanceMedThresh = min(cfg.stealChanceMedThresh, 52)
+        cfg.carryDistanceScale = max(cfg.get("carryDistanceScale", 1.0), 2.1)
+        cfg.carryExitVeloBaseline = max(cfg.get("carryExitVeloBaseline", 90.0), 95.0)
 
         # Apply contact-factor adjustments to curb excessive strikeouts observed
         # in full season simulations. Slightly boosting the contact factor nudges

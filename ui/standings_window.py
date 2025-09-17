@@ -7,6 +7,7 @@ import json
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
 
 from utils.team_loader import load_teams
+from utils.standings_utils import default_record, normalize_record
 from utils.path_utils import get_base_dir
 
 
@@ -47,13 +48,17 @@ class StandingsWindow(QDialog):
             divisions[team.division].append((f"{team.city} {team.name}", team.abbreviation))
 
         standings_path = base_dir / "data" / "standings.json"
-        standings: dict[str, dict[str, int]] = {}
+        raw_standings: dict[str, dict[str, object]] = {}
         if standings_path.exists():
             try:
                 with standings_path.open("r", encoding="utf-8") as fh:
-                    standings = json.load(fh)
+                    raw_standings = json.load(fh)
             except (OSError, json.JSONDecodeError):
-                standings = {}
+                raw_standings = {}
+        standings: dict[str, dict[str, object]] = {
+            team_id: normalize_record(data)
+            for team_id, data in raw_standings.items()
+        }
 
         # Build HTML using the same format as the sample standings page.
         today = datetime.now().strftime("%A, %B %d, %Y")
@@ -73,34 +78,90 @@ class StandingsWindow(QDialog):
             "<pre>",
         ]
 
-        header = (
-            "{:<22}W   L   Pct.    GB    1-run  X-inn   L-10  Strk     Home   "
-            "Road    v.RHP  v.LHP   in Div  nonDiv"
-        )
-
-        def win_pct(team_abbr: str) -> float:
-            rec = standings.get(team_abbr, {})
-            wins = int(rec.get("wins", 0))
-            losses = int(rec.get("losses", 0))
+        def win_pct(record: dict[str, object]) -> float:
+            wins = int(record.get("wins", 0))
+            losses = int(record.get("losses", 0))
             games = wins + losses
             return wins / games if games else 0.0
 
+        def fmt_pair(wins: int, losses: int) -> str:
+            return f"{wins}-{losses}"
+
+        def fmt_last10(entries: list[str]) -> str:
+            wins = sum(1 for r in entries if r == "W")
+            losses = sum(1 for r in entries if r == "L")
+            return f"{wins}-{losses}"
+
+        def fmt_streak(streak: dict[str, object]) -> str:
+            result = streak.get("result")
+            length = streak.get("length", 0)
+            try:
+                length = int(length)
+            except (TypeError, ValueError):
+                length = 0
+            if result in {"W", "L"} and length > 0:
+                return f"{result}{length}"
+            return "--"
+
+        row_fmt = (
+            "{:<22}{:>2}  {:>2}  {:>5}  {:>4}  {:>5}  {:>6}  {:>5}  {:>4}  {:>6}  {:>6}  {:>7}  {:>7}  {:>8}  {:>8}"
+        )
+
         for division in sorted(divisions):
-            parts.append(f"<b>{header.format(division)}</b>")
-            teams = sorted(
-                divisions[division],
-                key=lambda t: win_pct(t[1]),
-                reverse=True,
+            parts.append(
+                f"<b>{row_fmt.format(division, 'W', 'L', 'Pct.', 'GB', '1-run', 'X-inn', 'L-10', 'Strk', 'Home', 'Road', 'v.RHP', 'v.LHP', 'in Div', 'nonDiv')}</b>"
             )
-            for name, abbr in teams:
-                record = standings.get(abbr, {})
-                wins = int(record.get("wins", 0))
-                losses = int(record.get("losses", 0))
+
+            def sort_key(team_info: tuple[str, str]) -> tuple[float, int]:
+                record = standings.get(team_info[1], default_record())
+                return (win_pct(record), int(record.get('wins', 0)))
+
+            teams_sorted = sorted(divisions[division], key=sort_key, reverse=True)
+            if teams_sorted:
+                leader_record = standings.get(teams_sorted[0][1], default_record())
+                leader_wins = int(leader_record.get('wins', 0))
+                leader_losses = int(leader_record.get('losses', 0))
+            else:
+                leader_wins = leader_losses = 0
+
+            for name, abbr in teams_sorted:
+                record = standings.get(abbr, default_record())
+                wins = int(record.get('wins', 0))
+                losses = int(record.get('losses', 0))
                 games = wins + losses
                 pct = wins / games if games else 0.0
+                gb_value = ((leader_wins - wins) + (losses - leader_losses)) / 2
+                gb_str = '---' if not teams_sorted or abs(gb_value) < 1e-6 else f"{gb_value:.1f}".rstrip('0').rstrip('.')
+                if gb_str == '':
+                    gb_str = '0'
+                one_run = fmt_pair(int(record.get('one_run_wins', 0)), int(record.get('one_run_losses', 0)))
+                extra = fmt_pair(int(record.get('extra_innings_wins', 0)), int(record.get('extra_innings_losses', 0)))
+                last10 = fmt_last10(list(record.get('last10', [])))
+                streak = fmt_streak(record.get('streak', {}))
+                home_rec = fmt_pair(int(record.get('home_wins', 0)), int(record.get('home_losses', 0)))
+                road_rec = fmt_pair(int(record.get('road_wins', 0)), int(record.get('road_losses', 0)))
+                vs_rhp = fmt_pair(int(record.get('vs_rhp_wins', 0)), int(record.get('vs_rhp_losses', 0)))
+                vs_lhp = fmt_pair(int(record.get('vs_lhp_wins', 0)), int(record.get('vs_lhp_losses', 0)))
+                div_rec = fmt_pair(int(record.get('division_wins', 0)), int(record.get('division_losses', 0)))
+                non_div = fmt_pair(int(record.get('non_division_wins', 0)), int(record.get('non_division_losses', 0)))
                 parts.append(
-                    f"{name:<22}{wins:>2}  {losses:>2}  {pct:.3f}   ---     0-0    0-0    0-0   W  0     "
-                    "0-0    0-0      0-0    0-0      0-0    0-0"
+                    row_fmt.format(
+                        name,
+                        wins,
+                        losses,
+                        f"{pct:.3f}",
+                        gb_str,
+                        one_run,
+                        extra,
+                        last10,
+                        streak,
+                        home_rec,
+                        road_rec,
+                        vs_rhp,
+                        vs_lhp,
+                        div_rec,
+                        non_div,
+                    )
                 )
             parts.append("")
 

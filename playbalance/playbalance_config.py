@@ -139,8 +139,9 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFASPct": 0,
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
-    "exitVeloBase": 0,
+    "exitVeloBase": 81.0,
     "exitVeloPHPct": 0,
+    "exitVeloSlope": 0.25,
     "exitVeloPowerPct": 83,
     "exitVeloNormalPct": 85,
     "exitVeloContactPct": 100,
@@ -208,6 +209,8 @@ _DEFAULTS: Dict[str, Any] = {
     # Target roughly 17% of all pitches being put into play
     "ballInPlayPitchPct": 8,
     "ballInPlayOuts": 0,
+    "carryDistanceScale": 0.85,
+    "carryExitVeloBaseline": 90.0,
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.70,
     # Baseline aggression for runners attempting extra bases
@@ -771,6 +774,11 @@ class PlayBalanceConfig:
     def exit_velo_normal_pct(self) -> int:
         """Exit velocity percentage for normal swings."""
         return int(self.exitVeloNormalPct)
+
+    @property
+    def exit_velo_slope(self) -> float:
+        """Slope applied to ratings when computing exit velocity."""
+        return float(self.exitVeloSlope)
 
     @property
     def exit_velo_contact_pct(self) -> int:

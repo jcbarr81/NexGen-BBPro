@@ -4,18 +4,13 @@ from typing import Callable, Dict, Iterable, List
 import multiprocessing as mp
 import random
 
-from playbalance.simulation import (
-    GameSimulation,
-    TeamState,
-    generate_boxscore,
-    render_boxscore_html,
-)
-from utils.lineup_loader import build_default_game_state
-from .sim_config import load_tuned_playbalance_config
+from playbalance.game_runner import simulate_game_scores
+
+
 
 
 def _simulate_game_worker(
-    simulate_func: Callable[[str, str], tuple[int, int, str] | tuple[int, int] | None],
+    simulate_func: Callable[[str, str], tuple[int, int] | tuple[int, int, str] | tuple[int, int, str, dict[str, object]] | None],
     home: str,
     away: str,
     seed: int,
@@ -87,6 +82,22 @@ class SeasonSimulator:
         current_date = self.dates[self._index]
         games = [g for g in self.schedule if g["date"] == current_date]
 
+        def _apply_result_to_game(game: Dict[str, str], result) -> None:
+            if not isinstance(result, tuple):
+                return
+            if len(result) >= 2:
+                game["result"] = f"{result[0]}-{result[1]}"
+            meta_index = 2
+            if len(result) > 2:
+                third = result[2]
+                if isinstance(third, str):
+                    game["boxscore_html"] = third
+                else:
+                    game["extra"] = third
+                meta_index = 3
+            if len(result) > meta_index:
+                game["extra"] = result[meta_index]
+
         if len(games) > 1:
             seeds = [random.randrange(1 << 30) for _ in games]
 
@@ -106,14 +117,7 @@ class SeasonSimulator:
                 ]
 
             for game, result in zip(games, results):
-                if isinstance(result, tuple):
-                    if len(result) >= 2:
-                        game["result"] = f"{result[0]}-{result[1]}"
-                    if len(result) >= 3:
-                        if isinstance(result[2], str):
-                            game["boxscore_html"] = result[2]
-                        else:
-                            game["extra"] = result[2]
+                _apply_result_to_game(game, result)
                 if self.after_game is not None:
                     try:
                         self.after_game(game)
@@ -122,14 +126,7 @@ class SeasonSimulator:
         else:
             for game in games:
                 result = self.simulate_game(game["home"], game["away"])
-                if isinstance(result, tuple):
-                    if len(result) >= 2:
-                        game["result"] = f"{result[0]}-{result[1]}"
-                    if len(result) >= 3:
-                        if isinstance(result[2], str):
-                            game["boxscore_html"] = result[2]
-                        else:
-                            game["extra"] = result[2]
+                _apply_result_to_game(game, result)
                 if self.after_game is not None:
                     try:
                         self.after_game(game)
@@ -141,23 +138,10 @@ class SeasonSimulator:
     @staticmethod
     def _default_simulate_game(
         home_id: str, away_id: str, seed: int | None = None
-    ) -> tuple[int, int, str]:
-        """Run a full pitch-by-pitch simulation between two teams.
+    ) -> tuple[int, int, str, dict[str, object]]:
+        """Run a full play-balance simulation and return score, HTML and metadata."""
 
-        This constructs team states from the default player and roster data and
-        then runs :class:`~playbalance.simulation.GameSimulation`.  The resulting runs
-        scored by each club are returned along with rendered box score HTML so
-        callers can persist results or update standings.
-        """
-
-        home = build_default_game_state(home_id)
-        away = build_default_game_state(away_id)
-        cfg, _ = load_tuned_playbalance_config()
-        sim = GameSimulation(home, away, cfg, random.Random(seed))
-        sim.simulate_game()
-        box = generate_boxscore(home, away)
-        html = render_boxscore_html(box, home_name=home_id, away_name=away_id)
-        return home.runs, away.runs, html
+        return simulate_game_scores(home_id, away_id, seed=seed)
 
 
 __all__ = ["SeasonSimulator"]

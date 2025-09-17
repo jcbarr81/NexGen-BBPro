@@ -29,6 +29,8 @@ from playbalance.season_simulator import SeasonSimulator
 from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
 from playbalance.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
+from utils.team_loader import load_teams
+from utils.standings_utils import default_record, normalize_record, update_record
 from playbalance.config import load_config as load_pb_config
 from playbalance.benchmarks import load_benchmarks as load_pb_benchmarks
 from playbalance.orchestrator import (
@@ -76,16 +78,22 @@ class SeasonProgressWindow(QDialog):
             self.simulator = SeasonSimulator(
                 schedule or [], after_game=self._record_game
             )
-        # Track basic win/loss records as games are played so the standings
-        # window and schedule pages can reflect results.
-        self._standings: dict[str, dict[str, int]] = {}
+        # Track season standings with detailed splits so that schedule and
+        # standings windows can display rich statistics.
         standings_file = DATA_DIR / "standings.json"
+        raw_standings: dict[str, dict[str, object]] = {}
         if standings_file.exists():
             try:
                 with standings_file.open("r", encoding="utf-8") as fh:
-                    self._standings = json.load(fh)
+                    raw_standings = json.load(fh)
             except (OSError, json.JSONDecodeError):
-                pass
+                raw_standings = {}
+        self._standings: dict[str, dict[str, object]] = {
+            team_id: normalize_record(data)
+            for team_id, data in raw_standings.items()
+        }
+        teams = load_teams()
+        self._team_divisions = {team.team_id: team.division for team in teams}
         self._preseason_done = {
             "free_agency": False,
             "training_camp": False,
@@ -455,21 +463,47 @@ class SeasonProgressWindow(QDialog):
             game["boxscore"] = path
         save_schedule(self.simulator.schedule, SCHEDULE_FILE)
 
-        # Update simple win/loss standings from the game's result.
+        # Update detailed standings splits from the game's result.
         result = game.get("result")
         try:
             if result:
                 home_score, away_score = map(int, result.split("-"))
                 home_id = game.get("home", "")
                 away_id = game.get("away", "")
-                home_rec = self._standings.setdefault(home_id, {"wins": 0, "losses": 0})
-                away_rec = self._standings.setdefault(away_id, {"wins": 0, "losses": 0})
-                if home_score > away_score:
-                    home_rec["wins"] += 1
-                    away_rec["losses"] += 1
-                elif away_score > home_score:
-                    away_rec["wins"] += 1
-                    home_rec["losses"] += 1
+                if not home_id or not away_id:
+                    raise ValueError("missing team identifiers")
+                home_rec = self._standings.setdefault(home_id, default_record())
+                away_rec = self._standings.setdefault(away_id, default_record())
+                meta = game.get("extra") or {}
+                one_run = abs(home_score - away_score) == 1
+                extra_innings = bool(meta.get("extra_innings"))
+                home_hand = (meta.get("home_starter_hand") or "").upper()
+                away_hand = (meta.get("away_starter_hand") or "").upper()
+                home_div = self._team_divisions.get(home_id)
+                away_div = self._team_divisions.get(away_id)
+                division_game = bool(home_div and away_div and home_div == away_div)
+                update_record(
+                    home_rec,
+                    won=home_score > away_score,
+                    runs_for=home_score,
+                    runs_against=away_score,
+                    home=True,
+                    opponent_hand=away_hand,
+                    division_game=division_game,
+                    one_run=one_run,
+                    extra_innings=extra_innings,
+                )
+                update_record(
+                    away_rec,
+                    won=away_score > home_score,
+                    runs_for=away_score,
+                    runs_against=home_score,
+                    home=False,
+                    opponent_hand=home_hand,
+                    division_game=division_game,
+                    one_run=one_run,
+                    extra_innings=extra_innings,
+                )
         except ValueError:
             pass
 

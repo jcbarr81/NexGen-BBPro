@@ -256,7 +256,11 @@ class OwnerDashboard(QMainWindow):
             return
         w = TeamStatsWindow(self.team, self.players, self.roster, self)
         index_map = {"batting": 0, "pitching": 1, "team": 2}
-        w.tabs.setCurrentIndex(index_map.get(tab.lower(), 2))
+        if isinstance(tab, bool) or tab is None:
+            tab_name = "team"
+        else:
+            tab_name = str(tab).lower()
+        w.tabs.setCurrentIndex(index_map.get(tab_name, 2))
         show_on_top(w)
 
     def open_league_stats_window(self) -> None:
