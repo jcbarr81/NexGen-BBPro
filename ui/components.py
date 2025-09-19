@@ -8,6 +8,8 @@ from PyQt6.QtWidgets import (
     QLabel,
     QSizePolicy,
     QSpacerItem,
+    QWidget,
+    QGridLayout,
 )
 
 
@@ -54,3 +56,34 @@ def spacer(h: int = 1, v: int = 1) -> QSpacerItem:
         QSizePolicy.Policy.Expanding,
         QSizePolicy.Policy.Expanding,
     )
+
+
+def metric_widget(title: str, value: str, *, highlight: bool = False) -> QWidget:
+    container = QWidget()
+    layout = QVBoxLayout(container)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(4)
+
+    title_label = QLabel(title.upper())
+    title_label.setObjectName('MetricLabel')
+    value_label = QLabel(value)
+    value_label.setObjectName('MetricValue')
+    if highlight:
+        value_label.setProperty('highlight', True)
+
+    layout.addWidget(title_label)
+    layout.addWidget(value_label)
+    layout.addStretch()
+    return container
+
+
+def build_metric_row(pairs: list[tuple[str, str]], *, columns: int = 4) -> QWidget:
+    wrapper = QWidget()
+    grid = QGridLayout(wrapper)
+    grid.setContentsMargins(0, 0, 0, 0)
+    grid.setSpacing(18)
+    for idx, (title, value) in enumerate(pairs):
+        row = idx // columns
+        col = idx % columns
+        grid.addWidget(metric_widget(title, value), row, col)
+    return wrapper

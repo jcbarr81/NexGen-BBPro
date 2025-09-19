@@ -147,15 +147,26 @@ def test_simulate_day_until_midseason(tmp_path, monkeypatch):
     win.simulate_day_button.clicked.emit()
     assert games == [("A", "B")]
     assert win.remaining_label.text() == "Days until Midseason: 1"
+    assert win.simulate_day_button.isEnabled()
 
     win.simulate_day_button.clicked.emit()
-    assert games == [("A", "B"), ("A", "B")]
-    assert win.remaining_label.text() == "Days until Midseason: 0"
+    assert len(games) == 2
+    assert win.remaining_label.text() == "Days until Season End: 2"
+    assert win.simulate_day_button.isEnabled()
+
+    win.simulate_day_button.clicked.emit()
+    assert len(games) == 3
+    assert win.remaining_label.text() == "Days until Season End: 1"
+
+    win.simulate_day_button.clicked.emit()
+    assert len(games) == 4
+    assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_day_button.isEnabled()
+    assert win.next_button.isEnabled()
 
     # Further clicks should not simulate more games
     win.simulate_day_button.clicked.emit()
-    assert games == [("A", "B"), ("A", "B")]
+    assert len(games) == 4
 
 
 def test_simulate_day_warns_when_missing_data(tmp_path, monkeypatch):
@@ -192,9 +203,16 @@ def test_simulate_week_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Days until Midseason: 5"
 
     win.simulate_week_button.clicked.emit()
-    assert len(games) == 5
-    assert win.remaining_label.text() == "Days until Midseason: 0"
+    assert len(games) == 7
+    assert win.remaining_label.text() == "Days until Season End: 3"
+    assert win.simulate_week_button.isEnabled()
+    assert not win.next_button.isEnabled()
+
+    win.simulate_week_button.clicked.emit()
+    assert len(games) == 10
+    assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_week_button.isEnabled()
+    assert win.next_button.isEnabled()
 
 
 def test_simulate_month_until_midseason(tmp_path, monkeypatch):
@@ -213,9 +231,79 @@ def test_simulate_month_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Days until Midseason: 20"
 
     win.simulate_month_button.clicked.emit()
-    assert len(games) == 20
-    assert win.remaining_label.text() == "Days until Midseason: 0"
+    assert len(games) == 30
+    assert win.remaining_label.text() == "Days until Season End: 10"
+    assert win.simulate_month_button.isEnabled()
+    assert not win.next_button.isEnabled()
+
+    win.simulate_month_button.clicked.emit()
+    assert len(games) == 40
+    assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_month_button.isEnabled()
+    assert win.next_button.isEnabled()
+
+
+
+def test_simulate_to_next_phase(tmp_path, monkeypatch):
+    spw.SeasonManager = DummyManager
+    schedule = [
+        {"date": f"2024-04-{i:02d}", "home": "A", "away": "B"}
+        for i in range(1, 11)
+    ]
+
+    games = []
+
+    def fake_sim(home, away):
+        games.append((home, away))
+
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
+    assert win.remaining_label.text() == "Days until Midseason: 5"
+    assert win.simulate_phase_button.text() == "Simulate to Midseason"
+
+    win.simulate_phase_button.clicked.emit()
+    assert len(games) == 5
+    assert win.remaining_label.text() == "Days until Season End: 5"
+    assert win.simulate_phase_button.isEnabled()
+    assert win.simulate_phase_button.text() == "Simulate to Playoffs"
+    assert not win.next_button.isEnabled()
+
+    win.simulate_phase_button.clicked.emit()
+    assert len(games) == 10
+    assert win.remaining_label.text() == "Regular season complete."
+    assert not win.simulate_phase_button.isEnabled()
+    assert not win.simulate_day_button.isEnabled()
+    assert win.next_button.isEnabled()
+
+
+def test_playoffs_require_simulation(tmp_path, monkeypatch):
+    class PlayoffManager:
+        def __init__(self):
+            self.phase = SeasonPhase.PLAYOFFS
+
+        def handle_phase(self):
+            return "Playoffs"
+
+        def advance_phase(self):
+            self.phase = self.phase.next()
+
+        def save(self):
+            pass
+
+    spw.SeasonManager = PlayoffManager
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=[])
+    assert win.remaining_label.text() == "Playoffs underway; simulate to continue."
+    assert win.simulate_phase_button.text() == "Simulate Playoffs"
+    assert win.simulate_phase_button.isEnabled()
+    assert not win.next_button.isEnabled()
+
+    win.simulate_phase_button.clicked.emit()
+    assert not win.simulate_phase_button.isEnabled()
+    assert win.next_button.isEnabled()
+    assert win.remaining_label.text() == "Playoffs complete."
+    assert "Simulated playoffs; championship decided." in win.notes_label.text()
+    spw.SeasonManager = DummyManager
 
 
 from datetime import date

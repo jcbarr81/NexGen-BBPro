@@ -69,6 +69,18 @@ QLabel#SectionTitle {
     font-weight: 700;
     color: #462d0d;
 }
+QLabel#MetricLabel {
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #6f5c42;
+}
+QLabel#MetricValue {
+    font-size: 24px;
+    font-weight: 800;
+    color: #462d0d;
+}
+QLabel#MetricValue[highlight="true"] { color: #c3521f; }
 
 /* Buttons */
 QPushButton {
@@ -156,6 +168,18 @@ QLabel#SectionTitle {
     font-weight: 700;
     color: #fffdf0;
 }
+QLabel#MetricLabel {
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #a59c8c;
+}
+QLabel#MetricValue {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fffdf0;
+}
+QLabel#MetricValue[highlight="true"] { color: #e67700; }
 QPushButton {
     background: #3b2810;
     color: #fffdf0;

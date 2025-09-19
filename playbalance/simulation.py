@@ -183,6 +183,11 @@ class GameSimulation:
         self.batter_ai = BatterAI(config)
         self.fielding_ai = FieldingAI(config, self.rng)
         self.debug_log: List[str] = []
+        self._pitcher_of_record: dict[str, PitcherState | None] = {
+            "home": self.home.current_pitcher_state,
+            "away": self.away.current_pitcher_state,
+        }
+        self._losing_pitcher: PitcherState | None = None
         self.pitches_since_pickoff = 4
         self.current_outs = 0
         self.infield_fly: bool = False
@@ -532,7 +537,12 @@ class GameSimulation:
         runner = offense.bases[base_idx]
         if runner is None:
             return
+        was_trailing_or_tied = offense.runs <= defense.runs
+        offense_key = "home" if offense is self.home else "away"
         offense.runs += 1
+        if was_trailing_or_tied and offense.runs > defense.runs:
+            self._pitcher_of_record[offense_key] = offense.current_pitcher_state
+            self._losing_pitcher = defense.current_pitcher_state
         self._add_stat(runner, "r")
         # Pitcher on scoring team receives positive toast points
         scoring_pitcher = offense.current_pitcher_state
@@ -617,7 +627,9 @@ class GameSimulation:
                 for ps in team.pitcher_stats.values():
                     season = getattr(ps.player, "season_stats", {})
                     for attr, value in vars(ps).items():
-                        if attr in {"player", "in_save_situation"}:
+                        # Games pitched/started are tracked via fielding stats to avoid
+                        # double counting, so skip them here.
+                        if attr in {"player", "in_save_situation", "g", "gs"}:
                             continue
                         season[attr] = season.get(attr, 0) + value
                     season_state = PitcherState()
@@ -670,6 +682,22 @@ class GameSimulation:
                 team.team_stats = season
                 if team.team is not None:
                     team.team.season_stats = season
+
+            if self.home.runs != self.away.runs:
+                winner_key = "home" if self.home.runs > self.away.runs else "away"
+                loser_key = "away" if winner_key == "home" else "home"
+                winning_state = self._pitcher_of_record.get(winner_key)
+                if winning_state is not None:
+                    winning_state.w += 1
+                losing_state = self._losing_pitcher
+                if losing_state is None:
+                    losing_state = (
+                        self.home.current_pitcher_state
+                        if loser_key == "home"
+                        else self.away.current_pitcher_state
+                    )
+                if losing_state is not None:
+                    losing_state.l += 1
 
             players: Dict[str, Player] = {}
             for state in (self.home, self.away):
@@ -1932,6 +1960,16 @@ class GameSimulation:
             vert_angle,
             swing_type=swing_type,
         )
+        air = self.physics.air_resistance(
+            altitude=self.altitude,
+            temperature=self.temperature,
+            wind_speed=self.wind_speed,
+        )
+        carry = getattr(self.config, "ballCarryPct", 65) / 100.0
+        factor = air * carry
+        vx *= factor
+        vy *= factor
+        vz *= air
         x, y, hang_time = self.physics.landing_point(vx, vy, vz)
         landing_dist = math.hypot(x, y)
         angle = math.atan2(abs(y), abs(x))
@@ -2051,14 +2089,33 @@ class GameSimulation:
                 return 1, True
 
         total_dist = landing_dist + bounce_horiz + roll_dist
+        self._last_hit_distance = total_dist
         wall = self.stadium.wall_distance(angle)
         if total_dist >= wall:
-            return 4, False
-        if total_dist >= self.stadium.triple_distance(angle):
-            return 3, False
-        if total_dist >= self.stadium.double_distance(angle):
-            return 2, False
-        return 1, False
+            distance_base = 4
+        elif total_dist >= self.stadium.triple_distance(angle):
+            distance_base = 3
+        elif total_dist >= self.stadium.double_distance(angle):
+            distance_base = 2
+        else:
+            distance_base = 1
+
+        hit1 = max(0, getattr(self.config, "hit1BProb", 65))
+        hit2 = max(0, getattr(self.config, "hit2BProb", 20))
+        hit3 = max(0, getattr(self.config, "hit3BProb", 2))
+        hit4 = max(0, 100 - hit1 - hit2 - hit3)
+        roll = self.rng.random() * 100
+        if roll < hit1:
+            target_base = 1
+        elif roll < hit1 + hit2:
+            target_base = 2
+        elif roll < hit1 + hit2 + hit3:
+            target_base = 3
+        else:
+            target_base = 4
+        base = min(distance_base, target_base)
+        base = max(1, base)
+        return base, False
 
     def _advance_runners(
         self,

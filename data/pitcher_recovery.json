@@ -1,0 +1,1009 @@
+{
+  "teams": {
+    "IND": {
+      "rotation": [
+        "P8997",
+        "P4212",
+        "P1649",
+        "P3188",
+        "P6028"
+      ],
+      "next_index": 4,
+      "pitchers": {
+        "P8997": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 17
+        },
+        "P3650": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 7
+        },
+        "P2028": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 8
+        },
+        "P5513": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P1488": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 3
+        },
+        "P9183": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 10
+        },
+        "P4212": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 25
+        },
+        "P3188": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 4
+        },
+        "P9988": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P1649": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 81
+        },
+        "P6028": {
+          "available_on": "2025-05-08",
+          "last_used": "2025-05-07",
+          "last_pitches": 5
+        }
+      }
+    },
+    "WAS": {
+      "rotation": [
+        "P8187",
+        "P4287",
+        "P9233",
+        "P7128",
+        "P2647"
+      ],
+      "next_index": 1,
+      "pitchers": {
+        "P9233": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 51
+        },
+        "P8187": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 70
+        },
+        "P9954": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P7469": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P7294": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P7031": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-13",
+          "last_pitches": 21
+        },
+        "P3881": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 17
+        },
+        "P2647": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-13",
+          "last_pitches": 33
+        },
+        "P8372": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 4
+        },
+        "P7128": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 6
+        },
+        "P4287": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-13",
+          "last_pitches": 54
+        }
+      }
+    },
+    "SAN": {
+      "rotation": [
+        "P8136",
+        "P7300",
+        "P2817",
+        "P2361",
+        "P2129"
+      ],
+      "next_index": 0,
+      "pitchers": {
+        "P1653": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 36
+        },
+        "P8136": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 85
+        },
+        "P7300": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 36
+        },
+        "P9922": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P2817": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 9
+        },
+        "P3098": {
+          "available_on": "2025-07-12",
+          "last_used": "2025-07-10",
+          "last_pitches": 28
+        },
+        "P7182": {
+          "available_on": "2025-07-11",
+          "last_used": "2025-07-10",
+          "last_pitches": 12
+        },
+        "P7846": {
+          "available_on": "2025-07-11",
+          "last_used": "2025-07-10",
+          "last_pitches": 19
+        },
+        "P1912": {
+          "available_on": "2025-07-12",
+          "last_used": "2025-07-10",
+          "last_pitches": 24
+        },
+        "P2129": {
+          "available_on": "2025-05-10",
+          "last_used": "2025-05-09",
+          "last_pitches": 16
+        },
+        "P2361": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-10",
+          "last_pitches": 57
+        }
+      }
+    },
+    "CHA": {
+      "rotation": [
+        "P8065",
+        "P7210",
+        "P6617",
+        "P8996",
+        "P2161"
+      ],
+      "next_index": 4,
+      "pitchers": {
+        "P4253": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 48
+        },
+        "P8606": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 8
+        },
+        "P8065": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 86
+        },
+        "P6617": {
+          "available_on": "2025-07-11",
+          "last_used": "2025-07-10",
+          "last_pitches": 4
+        },
+        "P7432": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-13",
+          "last_pitches": 30
+        },
+        "P2605": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 4
+        },
+        "P2161": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 20
+        },
+        "P7210": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 18
+        },
+        "P1308": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 4
+        },
+        "P8996": {
+          "available_on": "2025-07-06",
+          "last_used": "2025-07-05",
+          "last_pitches": 4
+        },
+        "P2342": {
+          "available_on": "2025-06-21",
+          "last_used": "2025-06-20",
+          "last_pitches": 16
+        }
+      }
+    },
+    "DET": {
+      "rotation": [
+        "P7063",
+        "P3783",
+        "P4098",
+        "P9836",
+        "P5201"
+      ],
+      "next_index": 2,
+      "pitchers": {
+        "P4098": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 77
+        },
+        "P9341": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 3
+        },
+        "P7063": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 56
+        },
+        "P2543": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 38
+        },
+        "P5201": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 5
+        },
+        "P4384": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-13",
+          "last_pitches": 43
+        },
+        "P1249": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 5
+        },
+        "P7384": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 11
+        },
+        "P7115": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 6
+        },
+        "P3783": {
+          "available_on": "2025-05-07",
+          "last_used": "2025-05-06",
+          "last_pitches": 8
+        },
+        "P9836": {
+          "available_on": "2025-04-06",
+          "last_used": "2025-04-05",
+          "last_pitches": 5
+        }
+      }
+    },
+    "SAN1": {
+      "rotation": [
+        "P1886",
+        "P2415",
+        "P6540",
+        "P1267",
+        "P5712"
+      ],
+      "next_index": 0,
+      "pitchers": {
+        "P1886": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 84
+        },
+        "P6655": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 44
+        },
+        "P5797": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 9
+        },
+        "P6540": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 20
+        },
+        "P1267": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 18
+        },
+        "P5712": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 8
+        },
+        "P4983": {
+          "available_on": "2025-07-11",
+          "last_used": "2025-07-10",
+          "last_pitches": 4
+        },
+        "P8702": {
+          "available_on": "2025-07-11",
+          "last_used": "2025-07-10",
+          "last_pitches": 6
+        },
+        "P2415": {
+          "available_on": "2025-07-08",
+          "last_used": "2025-07-07",
+          "last_pitches": 11
+        },
+        "P2433": {
+          "available_on": "2025-07-11",
+          "last_used": "2025-07-10",
+          "last_pitches": 10
+        },
+        "P5734": {
+          "available_on": "2025-05-15",
+          "last_used": "2025-05-14",
+          "last_pitches": 10
+        }
+      }
+    },
+    "JAC": {
+      "rotation": [
+        "P3243",
+        "P5725",
+        "P2416",
+        "P2852",
+        "P9926"
+      ],
+      "next_index": 2,
+      "pitchers": {
+        "P3243": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 90
+        },
+        "P7029": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 33
+        },
+        "P9926": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 32
+        },
+        "P6138": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 10
+        },
+        "P5725": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 5
+        },
+        "P4200": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-08",
+          "last_pitches": 11
+        },
+        "P2852": {
+          "available_on": "2025-06-23",
+          "last_used": "2025-06-20",
+          "last_pitches": 60
+        },
+        "P7563": {
+          "available_on": "2025-07-08",
+          "last_used": "2025-07-06",
+          "last_pitches": 35
+        },
+        "P6067": {
+          "available_on": "2025-07-07",
+          "last_used": "2025-07-06",
+          "last_pitches": 4
+        },
+        "P4140": {
+          "available_on": "2025-07-07",
+          "last_used": "2025-07-06",
+          "last_pitches": 4
+        },
+        "P2416": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0
+        }
+      }
+    },
+    "OKL": {
+      "rotation": [
+        "P5971",
+        "P1297",
+        "P7409",
+        "P7444",
+        "P3800"
+      ],
+      "next_index": 4,
+      "pitchers": {
+        "P7213": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 15
+        },
+        "P3164": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 8
+        },
+        "P5792": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 10
+        },
+        "P9298": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P5971": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 61
+        },
+        "P5408": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 10
+        },
+        "P3800": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 27
+        },
+        "P1297": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 18
+        },
+        "P7409": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 8
+        },
+        "P7444": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-07",
+          "last_pitches": 28
+        },
+        "P7703": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 6
+        }
+      }
+    },
+    "ALB": {
+      "rotation": [
+        "P2210",
+        "P5521",
+        "P9896",
+        "P1530",
+        "P3787"
+      ],
+      "next_index": 4,
+      "pitchers": {
+        "P7905": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 27
+        },
+        "P2210": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 64
+        },
+        "P3741": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P1530": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-12",
+          "last_pitches": 38
+        },
+        "P6234": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 12
+        },
+        "P6806": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 23
+        },
+        "P3787": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 8
+        },
+        "P5521": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-12",
+          "last_pitches": 28
+        },
+        "P9896": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-08",
+          "last_pitches": 8
+        },
+        "P1613": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-08",
+          "last_pitches": 4
+        },
+        "P8248": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-08",
+          "last_pitches": 13
+        }
+      }
+    },
+    "BOS": {
+      "rotation": [
+        "P6494",
+        "P4549",
+        "P2580",
+        "P7771",
+        "P7159"
+      ],
+      "next_index": 0,
+      "pitchers": {
+        "P4549": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 74
+        },
+        "P4641": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 15
+        },
+        "P3617": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 4
+        },
+        "P8797": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 18
+        },
+        "P6555": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 10
+        },
+        "P6494": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 46
+        },
+        "P2580": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-12",
+          "last_pitches": 46
+        },
+        "P7771": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 5
+        },
+        "P7159": {
+          "available_on": "2025-07-10",
+          "last_used": "2025-07-09",
+          "last_pitches": 17
+        },
+        "P8034": {
+          "available_on": "2025-07-08",
+          "last_used": "2025-07-07",
+          "last_pitches": 5
+        },
+        "P3082": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-07",
+          "last_pitches": 33
+        }
+      }
+    },
+    "SAN2": {
+      "rotation": [
+        "P4654",
+        "P5333",
+        "P8733",
+        "P1037",
+        "P1923"
+      ],
+      "next_index": 2,
+      "pitchers": {
+        "P8733": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 9
+        },
+        "P1923": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 34
+        },
+        "P1188": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 6
+        },
+        "P8812": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 5
+        },
+        "P6330": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 8
+        },
+        "P5333": {
+          "available_on": "2025-07-12",
+          "last_used": "2025-07-11",
+          "last_pitches": 18
+        },
+        "P4251": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 6
+        },
+        "P7190": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 9
+        },
+        "P1037": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 45
+        },
+        "P4654": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P5777": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 50
+        }
+      }
+    },
+    "LAS": {
+      "rotation": [
+        "P1344",
+        "P1199",
+        "P1338",
+        "P6834",
+        "P4923"
+      ],
+      "next_index": 0,
+      "pitchers": {
+        "P4923": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 15
+        },
+        "P8679": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 13
+        },
+        "P4870": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 40
+        },
+        "P1344": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 85
+        },
+        "P1864": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 23
+        },
+        "P6834": {
+          "available_on": "2025-07-10",
+          "last_used": "2025-07-09",
+          "last_pitches": 4
+        },
+        "P1199": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 18
+        },
+        "P1338": {
+          "available_on": "2025-07-05",
+          "last_used": "2025-07-03",
+          "last_pitches": 37
+        },
+        "P1556": {
+          "available_on": "2025-05-31",
+          "last_used": "2025-05-30",
+          "last_pitches": 5
+        },
+        "P7702": {
+          "available_on": "2025-06-14",
+          "last_used": "2025-06-13",
+          "last_pitches": 6
+        },
+        "P5481": {
+          "available_on": "2025-06-14",
+          "last_used": "2025-06-13",
+          "last_pitches": 10
+        }
+      }
+    },
+    "SAN3": {
+      "rotation": [
+        "P8748",
+        "P3010",
+        "P5589",
+        "P2960",
+        "P4040"
+      ],
+      "next_index": 4,
+      "pitchers": {
+        "P8389": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-13",
+          "last_pitches": 33
+        },
+        "P8641": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 5
+        },
+        "P2960": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 15
+        },
+        "P8748": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-13",
+          "last_pitches": 50
+        },
+        "P4040": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-13",
+          "last_pitches": 40
+        },
+        "P4705": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 4
+        },
+        "P3010": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-13",
+          "last_pitches": 21
+        },
+        "P7822": {
+          "available_on": "2025-07-13",
+          "last_used": "2025-07-12",
+          "last_pitches": 4
+        },
+        "P5184": {
+          "available_on": "2025-07-09",
+          "last_used": "2025-07-08",
+          "last_pitches": 3
+        },
+        "P5589": {
+          "available_on": "2025-06-25",
+          "last_used": "2025-06-24",
+          "last_pitches": 13
+        },
+        "P7625": {
+          "available_on": "2025-07-06",
+          "last_used": "2025-07-04",
+          "last_pitches": 29
+        }
+      }
+    },
+    "MIL": {
+      "rotation": [
+        "P1949",
+        "P4533",
+        "P7383",
+        "P7591",
+        "P8122"
+      ],
+      "next_index": 0,
+      "pitchers": {
+        "P4533": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 65
+        },
+        "P1949": {
+          "available_on": "2025-07-18",
+          "last_used": "2025-07-14",
+          "last_pitches": 79
+        },
+        "P5044": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 7
+        },
+        "P4322": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 5
+        },
+        "P7383": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-13",
+          "last_pitches": 58
+        },
+        "P8256": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 5
+        },
+        "P8122": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 13
+        },
+        "P6327": {
+          "available_on": "2025-07-12",
+          "last_used": "2025-07-11",
+          "last_pitches": 4
+        },
+        "P2902": {
+          "available_on": "2025-07-12",
+          "last_used": "2025-07-11",
+          "last_pitches": 5
+        },
+        "P3497": {
+          "available_on": "2025-07-12",
+          "last_used": "2025-07-11",
+          "last_pitches": 4
+        },
+        "P7591": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-11",
+          "last_pitches": 71
+        }
+      }
+    },
+    "DAL": {
+      "rotation": [
+        "P3187",
+        "P4114",
+        "P2686",
+        "P3453",
+        "P3495"
+      ],
+      "next_index": 2,
+      "pitchers": {
+        "P3908": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 13
+        },
+        "P5241": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P3495": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 52
+        },
+        "P3779": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P2686": {
+          "available_on": "2025-07-16",
+          "last_used": "2025-07-14",
+          "last_pitches": 31
+        },
+        "P3187": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 16
+        },
+        "P7788": {
+          "available_on": "2025-07-17",
+          "last_used": "2025-07-14",
+          "last_pitches": 49
+        },
+        "P9677": {
+          "available_on": "2025-07-15",
+          "last_used": "2025-07-14",
+          "last_pitches": 4
+        },
+        "P4114": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 6
+        },
+        "P7234": {
+          "available_on": "2025-07-14",
+          "last_used": "2025-07-13",
+          "last_pitches": 16
+        },
+        "P3453": {
+          "available_on": "2025-07-10",
+          "last_used": "2025-07-08",
+          "last_pitches": 24
+        }
+      }
+    }
+  }
+}

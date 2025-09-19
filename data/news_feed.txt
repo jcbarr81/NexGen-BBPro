@@ -1,12 +1,5 @@
-[2025-09-17 14:48:53] No unsigned players available
-[2025-09-17 14:49:05] Training camp completed; players marked ready
-[2025-09-17 14:49:09] Generated regular season schedule with 1215 games
-[2025-09-17 14:49:12] Season advanced to Regular Season
-[2025-09-17 14:50:24] Simulated month; 57 days until Midseason
-[2025-09-17 14:54:04] Simulated month; 27 days until Midseason
-[2025-09-17 14:54:57] Simulated week; 20 days until Midseason
-[2025-09-17 14:56:20] Simulated week; 13 days until Midseason
-[2025-09-17 14:57:30] Simulated week; 6 days until Midseason
-[2025-09-17 14:57:42] Simulated a regular season day; 5 days until Midseason
-[2025-09-17 14:57:53] Simulated a regular season day; 4 days until Midseason
-[2025-09-17 14:58:39] Simulated week; 0 days until Midseason
+[2025-09-18 22:07:50] No unsigned players available
+[2025-09-18 22:07:51] Training camp completed; players marked ready
+[2025-09-18 22:07:52] Generated regular season schedule with 1215 games
+[2025-09-18 22:07:52] Season advanced to Regular Season
+[2025-09-18 22:14:39] Simulation cancelled during midseason; completed 87 days this run, 87 days until Season End

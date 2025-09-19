@@ -121,6 +121,7 @@ def load_players_from_csv(file_path):
                         "fa": _optional_int(row, "pot_fa", fa),
                     },
                 )
+                player.is_pitcher = True
             else:
                 ch = _required_int(row, "ch")
                 ph = _required_int(row, "ph")
@@ -152,6 +153,7 @@ def load_players_from_csv(file_path):
                         "arm": _optional_int(row, "pot_arm", arm),
                     },
                 )
+                player.is_pitcher = False
 
             players.append(player)
     stats = load_stats()

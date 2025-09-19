@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import random
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, List, Mapping, Sequence, Tuple
@@ -14,10 +15,13 @@ from playbalance.simulation import (
     generate_boxscore,
     render_boxscore_html,
 )
-from utils.lineup_loader import build_default_game_state
+from utils.lineup_loader import build_default_game_state, load_lineup
+from utils.pitcher_recovery import PitcherRecoveryTracker
+from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 
 LineupEntry = Tuple[str, str]
+
 
 
 @lru_cache(maxsize=1)
@@ -25,6 +29,14 @@ def _teams_by_id() -> Mapping[str, Team]:
     """Return a cached mapping of team IDs to :class:`Team` objects."""
 
     return {team.team_id: team for team in load_teams()}
+
+
+def _normalize_game_date(value: str | date | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
 
 
 def _starter_hand(state: TeamState) -> str:
@@ -35,6 +47,20 @@ def _starter_hand(state: TeamState) -> str:
     starter = state.pitchers[0]
     hand = getattr(starter, "throws", "") or getattr(starter, "bats", "")
     return str(hand or "").upper()[:1]
+
+
+def _load_saved_lineup(
+    team_id: str,
+    vs: str,
+    *,
+    lineup_dir: str | Path,
+) -> Sequence[LineupEntry] | None:
+    try:
+        return load_lineup(team_id, vs=vs, lineup_dir=lineup_dir)
+    except FileNotFoundError:
+        return None
+    except ValueError:
+        return None
 
 
 def read_lineup_file(path: Path) -> List[LineupEntry]:
@@ -116,7 +142,10 @@ def prepare_team_state(
     state = build_default_game_state(
         team_id, players_file=players_file, roster_dir=roster_dir
     )
-    state.team = _teams_by_id().get(team_id)
+    team_obj = _teams_by_id().get(team_id)
+    state.team = team_obj
+    if team_obj is not None and getattr(team_obj, "season_stats", None):
+        state.team_stats = dict(team_obj.season_stats)
     if lineup:
         apply_lineup(state, lineup)
     reorder_pitchers(state, starter_id)
@@ -133,25 +162,86 @@ def run_single_game(
     away_starter: str | None = None,
     players_file: str = "data/players.csv",
     roster_dir: str = "data/rosters",
+    lineup_dir: str | Path = "data/lineups",
+    game_date: str | date | None = None,
     seed: int | None = None,
 ) -> tuple[TeamState, TeamState, dict[str, object], str, dict[str, object]]:
     """Simulate a single game and return team states, box score, HTML and metadata."""
 
+    date_token = _normalize_game_date(game_date)
+    tracker = PitcherRecoveryTracker.instance() if date_token else None
+    if tracker and date_token:
+        if home_starter is None:
+            assigned = tracker.assign_starter(
+                home_id, date_token, players_file, roster_dir
+            )
+            if assigned:
+                home_starter = assigned
+        else:
+            tracker.ensure_team(home_id, players_file, roster_dir)
+        if away_starter is None:
+            assigned = tracker.assign_starter(
+                away_id, date_token, players_file, roster_dir
+            )
+            if assigned:
+                away_starter = assigned
+        else:
+            tracker.ensure_team(away_id, players_file, roster_dir)
+
+    player_source = str(players_file)
+    players_lookup = {
+        player.player_id: player
+        for player in load_players_from_csv(player_source)
+    }
+
+    def _pitcher_matchup(starter_id: str | None) -> str:
+        if not starter_id:
+            return "rhp"
+        pitcher = players_lookup.get(starter_id)
+        hand = str(getattr(pitcher, "throws", "") or getattr(pitcher, "bats", "") or "").upper()
+        return "lhp" if hand.startswith("L") else "rhp"
+
+    def _select_saved_lineup(team_id: str, opponent_starter: str | None) -> Sequence[LineupEntry] | None:
+        desired: list[str] = []
+        primary = _pitcher_matchup(opponent_starter)
+        desired.append(primary)
+        for fallback in ("rhp", "lhp"):
+            if fallback not in desired:
+                desired.append(fallback)
+        for variant in desired:
+            lineup = _load_saved_lineup(team_id, vs=variant, lineup_dir=lineup_dir)
+            if lineup and len(lineup) == 9:
+                return lineup
+        return None
+
+    if home_lineup is None:
+        home_lineup = _select_saved_lineup(home_id, away_starter)
+    if away_lineup is None:
+        away_lineup = _select_saved_lineup(away_id, home_starter)
+
+    def _build_state(team_id: str, lineup: Sequence[LineupEntry] | None, starter_id: str | None) -> TeamState:
+        try:
+            return prepare_team_state(
+                team_id,
+                lineup=lineup,
+                starter_id=starter_id,
+                players_file=players_file,
+                roster_dir=roster_dir,
+            )
+        except ValueError:
+            if lineup:
+                return prepare_team_state(
+                    team_id,
+                    lineup=None,
+                    starter_id=starter_id,
+                    players_file=players_file,
+                    roster_dir=roster_dir,
+                )
+            raise
+
     rng = random.Random(seed)
-    home_state = prepare_team_state(
-        home_id,
-        lineup=home_lineup,
-        starter_id=home_starter,
-        players_file=players_file,
-        roster_dir=roster_dir,
-    )
-    away_state = prepare_team_state(
-        away_id,
-        lineup=away_lineup,
-        starter_id=away_starter,
-        players_file=players_file,
-        roster_dir=roster_dir,
-    )
+    home_state = _build_state(home_id, home_lineup, home_starter)
+    away_state = _build_state(away_id, away_lineup, away_starter)
 
     cfg, _ = load_tuned_playbalance_config()
     sim = GameSimulation(home_state, away_state, cfg, rng)
@@ -172,6 +262,21 @@ def run_single_game(
         "home_starter_hand": _starter_hand(home_state),
         "away_starter_hand": _starter_hand(away_state),
     }
+    if tracker and date_token:
+        tracker.record_game(
+            home_id,
+            date_token,
+            home_state.pitcher_stats.values(),
+            players_file,
+            roster_dir,
+        )
+        tracker.record_game(
+            away_id,
+            date_token,
+            away_state.pitcher_stats.values(),
+            players_file,
+            roster_dir,
+        )
     return home_state, away_state, box, html, meta
 
 
@@ -182,6 +287,8 @@ def simulate_game_scores(
     seed: int | None = None,
     players_file: str = "data/players.csv",
     roster_dir: str = "data/rosters",
+    lineup_dir: str | Path = "data/lineups",
+    game_date: str | date | None = None,
 ) -> tuple[int, int, str, dict[str, object]]:
     """Return the final score, rendered HTML and metadata for a matchup."""
 
@@ -191,6 +298,8 @@ def simulate_game_scores(
         seed=seed,
         players_file=players_file,
         roster_dir=roster_dir,
+        lineup_dir=lineup_dir,
+        game_date=game_date,
     )
     return home_state.runs, away_state.runs, html, meta
 
@@ -204,3 +313,6 @@ __all__ = [
     "run_single_game",
     "simulate_game_scores",
 ]
+
+
+

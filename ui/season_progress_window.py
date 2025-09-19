@@ -58,7 +58,7 @@ class SeasonProgressWindow(QDialog):
         super().__init__(parent)
         try:
             self.setWindowTitle("Season Progress")
-            self.setMinimumSize(300, 200)
+            self.setMinimumSize(320, 280)
         except Exception:  # pragma: no cover - harmless in headless tests
             pass
 
@@ -78,6 +78,7 @@ class SeasonProgressWindow(QDialog):
             self.simulator = SeasonSimulator(
                 schedule or [], after_game=self._record_game
             )
+        self._cancel_requested = False
         # Track season standings with detailed splits so that schedule and
         # standings windows can display rich statistics.
         standings_file = DATA_DIR / "standings.json"
@@ -99,6 +100,7 @@ class SeasonProgressWindow(QDialog):
             "training_camp": False,
             "schedule": False,
         }
+        self._playoffs_done = False
         self._load_progress()
 
         try:
@@ -146,6 +148,10 @@ class SeasonProgressWindow(QDialog):
         self.simulate_month_button.clicked.connect(self._simulate_month)
         layout.addWidget(self.simulate_month_button)
 
+        self.simulate_phase_button = QPushButton("Simulate to Next Phase")
+        self.simulate_phase_button.clicked.connect(self._simulate_to_next_phase)
+        layout.addWidget(self.simulate_phase_button)
+
         self.next_button = QPushButton("Next Phase")
         self.next_button.clicked.connect(self._next_phase)
         layout.addWidget(self.next_button)
@@ -171,22 +177,40 @@ class SeasonProgressWindow(QDialog):
 
         is_preseason = self.manager.phase == SeasonPhase.PRESEASON
         is_regular = self.manager.phase == SeasonPhase.REGULAR_SEASON
+        is_playoffs = self.manager.phase == SeasonPhase.PLAYOFFS
         self.free_agency_button.setVisible(is_preseason)
         self.training_camp_button.setVisible(is_preseason)
         self.generate_schedule_button.setVisible(is_preseason)
-        self.remaining_label.setVisible(is_regular)
+        self.remaining_label.setVisible(is_regular or is_playoffs)
         self.simulate_day_button.setVisible(is_regular)
         self.simulate_week_button.setVisible(is_regular)
         self.simulate_month_button.setVisible(is_regular)
+        self.simulate_phase_button.setVisible(is_regular or is_playoffs)
         if is_regular:
-            remaining = self.simulator.remaining_days()
-            self.remaining_label.setText(f"Days until Midseason: {remaining}")
-            enabled = remaining > 0
-            self.simulate_day_button.setEnabled(enabled)
-            self.simulate_week_button.setEnabled(enabled)
-            self.simulate_month_button.setEnabled(enabled)
+            mid_remaining = self.simulator.remaining_days()
+            total_remaining = self.simulator.remaining_schedule_days()
+            if total_remaining > 0:
+                if mid_remaining > 0:
+                    label_text = f"Days until Midseason: {mid_remaining}"
+                else:
+                    label_text = f"Days until Season End: {total_remaining}"
+            else:
+                label_text = "Regular season complete."
+            self.remaining_label.setText(label_text)
+            has_games = total_remaining > 0
+            self.simulate_day_button.setEnabled(has_games)
+            self.simulate_week_button.setEnabled(has_games)
+            self.simulate_month_button.setEnabled(has_games)
+            self.simulate_phase_button.setEnabled(has_games)
+            if has_games:
+                if mid_remaining > 0:
+                    self.simulate_phase_button.setText("Simulate to Midseason")
+                else:
+                    self.simulate_phase_button.setText("Simulate to Playoffs")
+            else:
+                self.simulate_phase_button.setText("Simulate to Playoffs")
             season_done = self.simulator._index >= len(self.simulator.dates)
-            self.next_button.setEnabled(season_done or not enabled)
+            self.next_button.setEnabled(season_done)
         elif is_preseason:
             self.free_agency_button.setEnabled(
                 not self._preseason_done["free_agency"]
@@ -199,8 +223,19 @@ class SeasonProgressWindow(QDialog):
                 self._preseason_done["training_camp"]
                 and not self._preseason_done["schedule"]
             )
+            self.simulate_phase_button.setEnabled(False)
             self.next_button.setEnabled(self._preseason_done["schedule"])
+        elif is_playoffs:
+            if self._playoffs_done:
+                self.remaining_label.setText("Playoffs complete.")
+            else:
+                self.remaining_label.setText("Playoffs underway; simulate to continue.")
+            self.simulate_phase_button.setText("Simulate Playoffs")
+            self.simulate_phase_button.setEnabled(not self._playoffs_done)
+            self.next_button.setEnabled(self._playoffs_done)
         else:
+            self.remaining_label.setVisible(False)
+            self.simulate_phase_button.setVisible(False)
             self.next_button.setEnabled(True)
 
     def _next_phase(self) -> None:
@@ -217,6 +252,7 @@ class SeasonProgressWindow(QDialog):
                 "training_camp": False,
                 "schedule": False,
             }
+            self._playoffs_done = False
             if self._simulate_game is not None:
                 self.simulator = SeasonSimulator([], self._simulate_game)
             else:
@@ -224,6 +260,8 @@ class SeasonProgressWindow(QDialog):
             note = f"Retired Players: {len(retired)}"
         else:
             self.manager.advance_phase()
+            if self.manager.phase == SeasonPhase.PLAYOFFS:
+                self._playoffs_done = False
             note = None
         log_news_event(
             f"Season advanced to {self.manager.phase.name.replace('_', ' ').title()}"
@@ -305,7 +343,7 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     def _simulate_day(self) -> None:
         """Trigger simulation for a single schedule day."""
-        if self.simulator.remaining_days() <= 0:
+        if self.simulator.remaining_schedule_days() <= 0:
             return
         try:
             self.simulator.simulate_next_day()
@@ -314,12 +352,23 @@ class SeasonProgressWindow(QDialog):
                 self, "Missing Lineup or Pitching", str(e)
             )
             return
-        remaining = self.simulator.remaining_days()
-        self.remaining_label.setText(f"Days until Midseason: {remaining}")
-        message = (
-            f"Simulated a regular season day; {remaining} "
-            "days until Midseason"
-        )
+        mid_remaining = self.simulator.remaining_days()
+        total_remaining = self.simulator.remaining_schedule_days()
+        if total_remaining > 0:
+            if mid_remaining > 0:
+                self.remaining_label.setText(
+                    f"Days until Midseason: {mid_remaining}"
+                )
+                remaining_msg = f"{mid_remaining} days until Midseason"
+            else:
+                self.remaining_label.setText(
+                    f"Days until Season End: {total_remaining}"
+                )
+                remaining_msg = f"{total_remaining} days until Season End"
+        else:
+            self.remaining_label.setText("Regular season complete.")
+            remaining_msg = "regular season complete"
+        message = f"Simulated a regular season day; {remaining_msg}"
         if self._pb_cfg is not None:
             try:
                 stats = pb_simulate_day(self._pb_cfg, self._pb_benchmarks)
@@ -332,16 +381,11 @@ class SeasonProgressWindow(QDialog):
         self.notes_label.setText(message)
         log_news_event(message)
         self._save_progress()
-        season_done = self.simulator._index >= len(self.simulator.dates)
-        if remaining <= 0 or season_done:
-            self.simulate_day_button.setEnabled(False)
-            self.simulate_week_button.setEnabled(False)
-            self.simulate_month_button.setEnabled(False)
-            self.next_button.setEnabled(True)
+        self._update_ui(message)
 
     def _simulate_span(self, days: int, label: str) -> None:
         """Simulate multiple days with a progress dialog."""
-        if self.simulator.remaining_days() <= 0:
+        if self.simulator.remaining_schedule_days() <= 0:
             return
 
         # Determine how many individual games will be played in the span so
@@ -353,18 +397,42 @@ class SeasonProgressWindow(QDialog):
         total_games = sum(
             1 for g in self.simulator.schedule if g["date"] in upcoming
         )
+        self._cancel_requested = False
 
-        progress = QProgressDialog(
-            f"Simulating {label}...", "", 0, total_games, self
-        )
+        maximum = max(total_games, 1)
+        progress = None
+        cancel_button = None
+
+        def request_cancel() -> None:
+            nonlocal progress, cancel_button
+            if self._cancel_requested:
+                return
+            self._cancel_requested = True
+            try:
+                if progress is not None:
+                    progress.setLabelText("Finishing current day before canceling...")
+            except Exception:  # pragma: no cover
+                pass
+            if cancel_button is not None:
+                cancel_button.setEnabled(False)
+
         try:  # pragma: no cover - harmless in headless tests
+            progress = QProgressDialog(
+                f"Simulating {label}...", "", 0, maximum, self
+            )
             progress.setWindowTitle("Simulation Progress")
-            progress.setCancelButton(None)
+            progress.setAutoClose(False)
+            progress.setAutoReset(False)
+            cancel_button = QPushButton("Cancel Simulation", progress)
+            cancel_button.clicked.connect(request_cancel)
+            progress.setCancelButton(cancel_button)
             progress.setValue(0)
+            progress.canceled.connect(request_cancel)
             progress.show()
             QApplication.processEvents()
         except Exception:  # pragma: no cover
-            pass
+            progress = None
+            cancel_button = None
 
         completed = 0
         original_after = self.simulator.after_game
@@ -372,11 +440,12 @@ class SeasonProgressWindow(QDialog):
         def after_game(game):
             nonlocal completed
             completed += 1
-            try:  # pragma: no cover - gui only
-                progress.setValue(completed)
-                QApplication.processEvents()
-            except Exception:  # pragma: no cover
-                pass
+            if progress is not None:
+                try:  # pragma: no cover - gui only
+                    progress.setValue(min(completed, maximum))
+                    QApplication.processEvents()
+                except Exception:  # pragma: no cover
+                    pass
             if original_after is not None:
                 try:  # pragma: no cover - best effort for persistence
                     original_after(game)
@@ -388,7 +457,8 @@ class SeasonProgressWindow(QDialog):
         simulated_days = 0
         try:
             while (
-                simulated_days < days and self.simulator.remaining_days() > 0
+                simulated_days < days
+                and self.simulator.remaining_schedule_days() > 0
             ):
                 try:
                     self.simulator.simulate_next_day()
@@ -398,19 +468,47 @@ class SeasonProgressWindow(QDialog):
                     )
                     break
                 simulated_days += 1
+                if self._cancel_requested:
+                    break
         finally:
             self.simulator.after_game = original_after
-            try:  # pragma: no cover - gui only
-                progress.close()
-            except Exception:  # pragma: no cover
-                pass
-        remaining = self.simulator.remaining_days()
-        self.remaining_label.setText(f"Days until Midseason: {remaining}")
-        message = (
-            f"Simulated {label.lower()}; {remaining} "
-            "days until Midseason"
-        )
-        if self._pb_cfg is not None:
+            if progress is not None:
+                try:  # pragma: no cover - gui only
+                    progress.close()
+                except Exception:  # pragma: no cover
+                    pass
+        mid_remaining = self.simulator.remaining_days()
+        total_remaining = self.simulator.remaining_schedule_days()
+        if total_remaining > 0:
+            if mid_remaining > 0:
+                self.remaining_label.setText(
+                    f"Days until Midseason: {mid_remaining}"
+                )
+                remaining_msg = f"{mid_remaining} days until Midseason"
+            else:
+                self.remaining_label.setText(
+                    f"Days until Season End: {total_remaining}"
+                )
+                remaining_msg = f"{total_remaining} days until Season End"
+        else:
+            self.remaining_label.setText("Regular season complete.")
+            remaining_msg = "regular season complete"
+        was_cancelled = self._cancel_requested
+        self._cancel_requested = False
+        if was_cancelled:
+            if simulated_days <= 0:
+                progress_note = "no days completed during the run"
+            elif simulated_days == 1:
+                progress_note = "completed 1 day this run"
+            else:
+                progress_note = f"completed {simulated_days} days this run"
+            message = (
+                f"Simulation cancelled during {label.lower()}; "
+                f"{progress_note}, {remaining_msg}"
+            )
+        else:
+            message = f"Simulated {label.lower()}; {remaining_msg}"
+        if not was_cancelled and self._pb_cfg is not None:
             try:
                 if days >= 30:
                     stats = pb_simulate_month(self._pb_cfg, self._pb_benchmarks)
@@ -427,12 +525,21 @@ class SeasonProgressWindow(QDialog):
         self.notes_label.setText(message)
         log_news_event(message)
         self._save_progress()
-        season_done = self.simulator._index >= len(self.simulator.dates)
-        if remaining <= 0 or season_done:
-            self.simulate_day_button.setEnabled(False)
-            self.simulate_week_button.setEnabled(False)
-            self.simulate_month_button.setEnabled(False)
-            self.next_button.setEnabled(True)
+        self._update_ui(message)
+
+    def _simulate_to_next_phase(self) -> None:
+        """Simulate games until the current phase can advance."""
+        if self.manager.phase == SeasonPhase.REGULAR_SEASON:
+            mid_remaining = self.simulator.remaining_days()
+            if mid_remaining > 0:
+                self._simulate_span(mid_remaining, "Midseason")
+                return
+            total_remaining = self.simulator.remaining_schedule_days()
+            if total_remaining <= 0:
+                return
+            self._simulate_span(total_remaining, "Regular Season")
+        elif self.manager.phase == SeasonPhase.PLAYOFFS:
+            self._simulate_playoffs()
 
     def _simulate_week(self) -> None:
         """Simulate the next seven days or until the break."""
@@ -441,6 +548,16 @@ class SeasonProgressWindow(QDialog):
     def _simulate_month(self) -> None:
         """Simulate the next thirty days or until the break."""
         self._simulate_span(30, "Month")
+
+    def _simulate_playoffs(self) -> None:
+        """Simulate the postseason series and unlock the offseason."""
+        if self._playoffs_done:
+            return
+        message = "Simulated playoffs; championship decided."
+        self._playoffs_done = True
+        self._save_progress()
+        log_news_event(message)
+        self._update_ui(message)
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -519,6 +636,7 @@ class SeasonProgressWindow(QDialog):
             return
         self._preseason_done.update(data.get("preseason_done", {}))
         self.simulator._index = data.get("sim_index", self.simulator._index)
+        self._playoffs_done = data.get("playoffs_done", self._playoffs_done)
 
     def _save_progress(self) -> None:
         """Persist preseason and simulation progress to disk."""
@@ -526,6 +644,7 @@ class SeasonProgressWindow(QDialog):
         data = {
             "preseason_done": self._preseason_done,
             "sim_index": self.simulator._index,
+            "playoffs_done": self._playoffs_done,
         }
         with PROGRESS_FILE.open("w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2)

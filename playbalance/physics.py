@@ -388,7 +388,9 @@ def launch_vector(
         "normal": getattr(cfg, "exitVeloNormalPct", 100.0),
     }.get(swing_type, getattr(cfg, "exitVeloNormalPct", 100.0))
 
-    raw_speed = 86.268 + 0.3883 * (ph + pl)
+    base = getattr(cfg, "exitVeloBase", 86.268)
+    slope = getattr(cfg, "exitVeloSlope", 0.3883)
+    raw_speed = base + slope * (ph + pl)
     speed = raw_speed * scale / 100.0
 
     launch_vert = swing_angle + vert_angle + (ph - 50) * 0.08

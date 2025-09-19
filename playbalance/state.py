@@ -28,6 +28,8 @@ class PitcherState:
     player: Any | None = None
     g: int = 0
     gs: int = 0
+    w: int = 0
+    l: int = 0
     gf: int = 0
     sv: int = 0
     svo: int = 0

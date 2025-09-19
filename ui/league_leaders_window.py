@@ -2,19 +2,38 @@ from __future__ import annotations
 
 from typing import Iterable, List, Tuple
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog,
+    QGridLayout,
+    QHeaderView,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
 
 from models.base_player import BasePlayer
+from .components import Card, section_title
+from .stat_helpers import format_number, top_players
+
+_BATTING_CATEGORIES: List[Tuple[str, str, bool, bool, int]] = [
+    ("Average", "avg", False, False, 3),
+    ("Home Runs", "hr", True, False, 0),
+    ("RBI", "rbi", True, False, 0),
+    ("Stolen Bases", "sb", True, False, 0),
+    ("On-Base %", "obp", False, False, 3),
+]
+
+_PITCHING_CATEGORIES: List[Tuple[str, str, bool, bool, int]] = [
+    ("ERA", "era", False, True, 2),
+    ("WHIP", "whip", False, True, 2),
+    ("Wins", "w", True, True, 0),
+    ("Strikeouts", "so", True, True, 0),
+    ("Saves", "sv", True, True, 0),
+]
 
 
 class LeagueLeadersWindow(QDialog):
-    """Dialog showing leaders in common statistical categories."""
-
     def __init__(
         self,
         players: Iterable[BasePlayer],
@@ -23,59 +42,50 @@ class LeagueLeadersWindow(QDialog):
         super().__init__(parent)
         self.setWindowTitle("League Leaders")
         if callable(getattr(self, "resize", None)):
-            self.resize(1000, 600)
+            self.resize(960, 640)
 
         layout = QVBoxLayout(self)
-        self.table = QTableWidget()
-        layout.addWidget(self.table)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(18)
 
         player_list = list(players)
-        rows = self._gather_leaders(player_list)
+        hitters = [p for p in player_list if not getattr(p, "is_pitcher", False)]
+        pitchers = [p for p in player_list if getattr(p, "is_pitcher", False)]
 
-        self.table.setRowCount(len(rows))
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Category", "Player", "Value"])
-        for row, (cat, name, value) in enumerate(rows):
-            self.table.setItem(row, 0, QTableWidgetItem(cat))
-            self.table.setItem(row, 1, QTableWidgetItem(name))
-            self.table.setItem(row, 2, QTableWidgetItem(value))
-        self.table.setSortingEnabled(True)
+        layout.addWidget(self._build_leader_section("Batting Leaders", hitters, _BATTING_CATEGORIES))
+        layout.addWidget(self._build_leader_section("Pitching Leaders", pitchers, _PITCHING_CATEGORIES))
+
+    def _build_leader_section(
+        self,
+        title: str,
+        players: List[BasePlayer],
+        categories: List[Tuple[str, str, bool, bool, int]],
+    ) -> Card:
+        card = Card()
+        card.layout().addWidget(section_title(title))
+        grid = QGridLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(16)
+        for idx, (label, key, descending, pitcher_only, decimals) in enumerate(categories):
+            leaders = top_players(players, key, pitcher_only=pitcher_only, descending=descending, limit=5)
+            table = QTableWidget(len(leaders), 3)
+            table.setHorizontalHeaderLabels([label, "Player", "Value"])
+            table.verticalHeader().setVisible(False)
+            table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+            table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+            table.horizontalHeader().setStretchLastSection(True)
+            table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+            table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+            for row, (player, value) in enumerate(leaders):
+                table.setItem(row, 0, QTableWidgetItem(str(row + 1)))
+                name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
+                item = QTableWidgetItem(name)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                table.setItem(row, 1, item)
+                table.setItem(row, 2, QTableWidgetItem(format_number(value, decimals=decimals)))
+            grid.addWidget(table, idx // 2, idx % 2)
+        card.layout().addLayout(grid)
+        return card
 
 
-    # ------------------------------------------------------------------
-    def _gather_leaders(
-        self, players: List[BasePlayer]
-    ) -> List[Tuple[str, str, str]]:
-        categories = [
-            ("AVG", "avg", False, False),
-            ("HR", "hr", True, False),
-            ("RBI", "rbi", True, False),
-            ("ERA", "era", False, True),
-            ("SO", "so", True, True),
-        ]
-        rows: List[Tuple[str, str, str]] = []
-        for label, key, high, pitcher_only in categories:
-            candidates = [
-                p
-                for p in players
-                if getattr(p, "is_pitcher", False) == pitcher_only
-                and key in (getattr(p, "season_stats", {}) or {})
-            ]
-            if not candidates:
-                continue
-            if high:
-                best = max(
-                    candidates, key=lambda p: p.season_stats.get(key, 0)
-                )
-            else:
-                best = min(
-                    candidates,
-                    key=lambda p: p.season_stats.get(key, float("inf")),
-                )
-            value = best.season_stats.get(key, 0)
-            name = (
-                f"{getattr(best, 'first_name', '')} "
-                f"{getattr(best, 'last_name', '')}"
-            ).strip()
-            rows.append((label, name, str(value)))
-        return rows

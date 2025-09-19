@@ -90,6 +90,32 @@ def make_pitcher(
         fa=50,
         role=role,
     )
+
+def test_pitcher_games_counted_once(monkeypatch):
+    cfg = load_config()
+    home = TeamState(
+        lineup=[make_player(f"home{i}") for i in range(9)],
+        bench=[],
+        pitchers=[make_pitcher("p-home")],
+    )
+    away = TeamState(
+        lineup=[make_player(f"away{i}") for i in range(9)],
+        bench=[],
+        pitchers=[make_pitcher("p-away")],
+    )
+    starter_id = home.pitchers[0].player_id
+    captured: dict[str, int] = {}
+
+    def record(players, teams):
+        for player in players:
+            if getattr(player, "player_id", None) == starter_id:
+                captured["g"] = player.season_stats.get("g", 0)
+
+    monkeypatch.setattr("playbalance.simulation.save_stats", record)
+    game = GameSimulation(home, away, cfg, random.Random())
+    game.simulate_game(innings=0)
+    assert captured.get("g") == 1
+
 def test_pinch_hitter_used():
     cfg = load_config()
     bench = make_player("bench", ph=80)
