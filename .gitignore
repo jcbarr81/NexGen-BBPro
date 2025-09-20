@@ -1,8 +1,98 @@
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Editor swap files
+*.swp
+*.swo
+
+# Python bytecode
 __pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+*.pyd
+*.dll
+
+# Distribution / packaging
+.Python
 build/
 dist/
-*.spec
-.venv/
+downloads/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+share/python-wheels/
+wheels/
 
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytestdebug.log
+
+# Type checker caches
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+.ruff_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env/
+.venv/
+pythonenv*
+
+# IDE / Editor directories
+.vscode/
+.idea/
+*.code-workspace
+.spyderproject
+.spyproject
+.ropeproject
+
+# Docs builds
+docs/_build/
+doc/_build/
+
+# Project-specific
 config.ini
 data/schedules/
+
+# Logs and temp files
+*.log
+*.tmp
