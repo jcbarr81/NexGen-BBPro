@@ -1,5 +1,0 @@
-[2025-09-18 22:07:50] No unsigned players available
-[2025-09-18 22:07:51] Training camp completed; players marked ready
-[2025-09-18 22:07:52] Generated regular season schedule with 1215 games
-[2025-09-18 22:07:52] Season advanced to Regular Season
-[2025-09-18 22:14:39] Simulation cancelled during midseason; completed 87 days this run, 87 days until Season End

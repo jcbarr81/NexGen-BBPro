@@ -28,6 +28,34 @@ PLAYERS_FILE = DATA_DIR / "players.csv"
 STATS_FILE = DATA_DIR / "season_stats.json"
 
 
+def _games_from_history() -> Dict[str, int]:
+    """Return max games played per player from history snapshots."""
+    try:
+        with STATS_FILE.open('r', encoding='utf-8') as handle:
+            stats = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    history = stats.get('history', [])
+    games: Dict[str, int] = {}
+    for snapshot in history:
+        players = snapshot.get('players', {}) if isinstance(snapshot, dict) else {}
+        if not isinstance(players, dict):
+            continue
+        for player_id, data in players.items():
+            if not isinstance(data, dict):
+                continue
+            value = data.get('g', data.get('games'))
+            if value is None:
+                continue
+            try:
+                games_played = int(float(value))
+            except (TypeError, ValueError):
+                continue
+            if games_played > games.get(player_id, 0):
+                games[player_id] = games_played
+    return games
+
+
 def _normalize_player_stats(data: Dict[str, Any] | None) -> Dict[str, Any]:
     stats = dict(data or {})
     if 'b2' in stats and '2b' not in stats:
