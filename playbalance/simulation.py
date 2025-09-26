@@ -613,6 +613,13 @@ class GameSimulation:
                         if f.name == "player":
                             continue
                         season[f.name] = season.get(f.name, 0) + getattr(bs, f.name)
+                    # Ensure a game appearance is recorded for hitters who batted
+                    # but did not record a defensive appearance (e.g. pure pinch hitters).
+                    if getattr(bs, "pa", 0) > 0:
+                        fs = team.fielding_stats.get(bs.player.player_id)
+                        appeared_defensively = fs is not None and getattr(fs, "g", 0) > 0
+                        if not appeared_defensively:
+                            season["g"] = season.get("g", 0) + 1
                     season_state = BatterState(bs.player)
                     for f in fields(BatterState):
                         if f.name == "player":
@@ -627,9 +634,10 @@ class GameSimulation:
                 for ps in team.pitcher_stats.values():
                     season = getattr(ps.player, "season_stats", {})
                     for attr, value in vars(ps).items():
-                        # Games pitched/started are tracked via fielding stats to avoid
-                        # double counting, so skip them here.
-                        if attr in {"player", "in_save_situation", "g", "gs"}:
+                        # Persist all pitcher counting stats, including G/GS, directly from
+                        # PitcherState. FieldingState G/GS for pitchers will be ignored during
+                        # fielding aggregation to prevent double counting.
+                        if attr in {"player", "in_save_situation"}:
                             continue
                         season[attr] = season.get(attr, 0) + value
                     season_state = PitcherState()
@@ -646,6 +654,9 @@ class GameSimulation:
                     season = getattr(fs.player, "season_stats", {})
                     for f in fields(FieldingState):
                         if f.name == "player":
+                            continue
+                        # Do not accumulate fielding G/GS for pitchers; those come from PitcherState
+                        if getattr(fs.player, "is_pitcher", False) and f.name in {"g", "gs"}:
                             continue
                         season[f.name] = season.get(f.name, 0) + getattr(fs, f.name)
                     season_state = FieldingState(fs.player)

@@ -14,7 +14,12 @@ from io import BytesIO
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from PIL import Image
+try:
+    from PIL import Image  # type: ignore
+    _PIL_AVAILABLE = True
+except Exception:  # pragma: no cover - allow running without Pillow
+    Image = None  # type: ignore[assignment]
+    _PIL_AVAILABLE = False
 
 try:  # Allow running as a standalone script
     from utils.openai_client import client
@@ -25,6 +30,22 @@ except ModuleNotFoundError:  # pragma: no cover - for direct script execution
     from team_loader import load_teams
     from path_utils import get_base_dir
 
+def _require_pillow() -> None:
+    """Raise a helpful error if Pillow is not installed.
+
+    Using a central guard avoids import-time crashes in the GUI and surfaces a
+    clear message guiding the user to install the dependency.
+    """
+
+    if not _PIL_AVAILABLE:
+        raise RuntimeError(
+            "Pillow (PIL) is not installed. Install it with:\
+  python -m pip install Pillow\n\n"
+            "If you use virtual environments, ensure you install into the same\n"
+            "environment that runs NexGen-BBPro."
+        )
+
+
 
 def _auto_logo_fallback(
     teams: List[object],
@@ -34,6 +55,7 @@ def _auto_logo_fallback(
 ) -> None:
     """Generate logos using the legacy ``images.auto_logo`` module."""
 
+    _require_pillow()
     from images.auto_logo import (
         TeamSpec,
         generate_logo,
@@ -98,6 +120,7 @@ def generate_team_logos(
         ``False`` to raise a ``RuntimeError`` instead.
     """
 
+    _require_pillow()
     teams = load_teams("data/teams.csv")
 
     if out_dir is None:
@@ -129,6 +152,7 @@ def generate_team_logos(
         b64 = result.data[0].b64_json
         image_bytes = base64.b64decode(b64)
         path = out_dir / f"{t.team_id.lower()}.png"
+        _require_pillow()
         with Image.open(BytesIO(image_bytes)) as img:
             if size != 1024:
                 img = img.resize((size, size), Image.LANCZOS)
