@@ -1,60 +1,10 @@
-import sys
-import types
 from types import SimpleNamespace
-
-# ---- Stub PyQt6 modules ----
-class Dummy:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __getattr__(self, name):
-        return Dummy()
-
-    # Methods used in windows
-    def addTab(self, *args, **kwargs):
-        pass
-
-    def setRowCount(self, *args, **kwargs):
-        pass
-
-    def setColumnCount(self, *args, **kwargs):
-        pass
-
-    def setHorizontalHeaderLabels(self, *args, **kwargs):
-        pass
-
-    def setItem(self, *args, **kwargs):
-        pass
-
-    def setSortingEnabled(self, *args, **kwargs):
-        pass
-
-    def addWidget(self, *args, **kwargs):
-        pass
-
-    def setLayout(self, *args, **kwargs):
-        pass
-
-    def setWindowTitle(self, *args, **kwargs):
-        pass
-
-qtwidgets = types.ModuleType("PyQt6.QtWidgets")
-for name in [
-    "QDialog",
-    "QTabWidget",
-    "QTableWidget",
-    "QTableWidgetItem",
-    "QVBoxLayout",
-]:
-    setattr(qtwidgets, name, Dummy)
-
-sys.modules.setdefault("PyQt6", types.ModuleType("PyQt6"))
-sys.modules["PyQt6.QtWidgets"] = qtwidgets
-sys.modules["PyQt6.QtCore"] = types.ModuleType("PyQt6.QtCore")
-sys.modules["PyQt6.QtGui"] = types.ModuleType("PyQt6.QtGui")
-
-# ---- Imports after stubbing ----
 import importlib
+
+from tests.qt_stubs import patch_qt
+
+patch_qt()
+
 import ui.team_stats_window as team_stats_window
 import ui.league_stats_window as league_stats_window
 import ui.league_leaders_window as league_leaders_window

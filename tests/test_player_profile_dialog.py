@@ -1,67 +1,13 @@
-import sys
-import types
 from types import SimpleNamespace
 import importlib
 
+from tests.qt_stubs import patch_qt
+
+patch_qt()
 
 class Dummy:
     def __init__(self, *args, **kwargs):
         pass
-
-    def __getattr__(self, name):
-        return Dummy()
-
-    def addWidget(self, *args, **kwargs):
-        pass
-
-    def addLayout(self, *args, **kwargs):
-        pass
-
-    def setLayout(self, *args, **kwargs):
-        pass
-
-    def setPixmap(self, *args, **kwargs):
-        pass
-
-    def scaled(self, *args, **kwargs):
-        return self
-
-    def isNull(self):
-        return True
-
-    def setWindowTitle(self, *args, **kwargs):
-        pass
-
-    def adjustSize(self, *args, **kwargs):
-        pass
-
-    def sizeHint(self, *args, **kwargs):
-        return self
-
-    def setFixedSize(self, *args, **kwargs):
-        pass
-
-
-qtwidgets = types.ModuleType("PyQt6.QtWidgets")
-for name in [
-    "QDialog",
-    "QLabel",
-    "QVBoxLayout",
-    "QHBoxLayout",
-    "QGridLayout",
-    "QGroupBox",
-]:
-    setattr(qtwidgets, name, Dummy)
-
-sys.modules.setdefault("PyQt6", types.ModuleType("PyQt6"))
-sys.modules["PyQt6.QtWidgets"] = qtwidgets
-sys.modules["PyQt6.QtGui"] = types.ModuleType("PyQt6.QtGui")
-sys.modules["PyQt6.QtGui"].QPixmap = Dummy
-sys.modules["PyQt6.QtCore"] = types.ModuleType("PyQt6.QtCore")
-sys.modules["PyQt6.QtCore"].Qt = SimpleNamespace(
-    AspectRatioMode=SimpleNamespace(KeepAspectRatio=None),
-    TransformationMode=SimpleNamespace(SmoothTransformation=None),
-)
 
 import ui.player_profile_dialog as ppd
 importlib.reload(ppd)
@@ -101,16 +47,17 @@ def test_player_profile_dialog_uses_history(monkeypatch):
 
     calls = []
 
-    def fake_build_stats_table(self, rows):
-        calls.append(rows)
+    def fake_create_stats_table(self, rows, columns):
+        calls.append((rows, columns))
         return Dummy()
 
-    monkeypatch.setattr(ppd.PlayerProfileDialog, "_build_stats_table", fake_build_stats_table)
+    monkeypatch.setattr(ppd.PlayerProfileDialog, "_create_stats_table", fake_create_stats_table)
 
     ppd.PlayerProfileDialog(player)
 
     assert calls, "Stats table should be built"
-    years = [r[0] for r in calls[0]]
+    rows_seen, _cols = calls[0]
+    years = [r[0] for r in rows_seen]
     assert "Year 1" in years
     assert "Year 2" in years
 
@@ -137,12 +84,12 @@ def test_player_profile_dialog_handles_missing_positions(monkeypatch):
 
     calls: list = []
 
-    def fake_build_stats_table(self, rows):
-        calls.append(rows)
+    def fake_create_stats_table(self, rows, columns):
+        calls.append((rows, columns))
         return Dummy()
 
-    monkeypatch.setattr(ppd.PlayerProfileDialog, "_build_stats_table", fake_build_stats_table)
+    monkeypatch.setattr(ppd.PlayerProfileDialog, "_create_stats_table", fake_create_stats_table)
 
     dlg = ppd.PlayerProfileDialog(player)
     assert dlg is not None
-    assert calls and calls[0] == []
+    assert calls == []
