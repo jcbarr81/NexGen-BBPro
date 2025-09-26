@@ -12,3 +12,31 @@
 [2025-09-26 09:32:47] Generated regular season schedule with 162 games
 [2025-09-26 09:32:48] Generated regular season schedule with 162 games
 [2025-09-26 09:32:48] No unsigned players available
+[2025-09-26 10:04:59] Simulated a regular season day; 1 days until Midseason
+[2025-09-26 10:04:59] Simulated a regular season day; 2 days until Season End
+[2025-09-26 10:04:59] Simulated a regular season day; 1 days until Season End
+[2025-09-26 10:04:59] Simulated a regular season day; regular season complete
+[2025-09-26 10:04:59] Simulated week; 3 days until Season End
+[2025-09-26 10:04:59] Simulated week; regular season complete
+[2025-09-26 10:04:59] Simulated month; 10 days until Season End
+[2025-09-26 10:04:59] Simulated month; regular season complete
+[2025-09-26 10:04:59] Season advanced to Preseason
+[2025-09-26 10:04:59] No unsigned players available
+[2025-09-26 10:04:59] Training camp completed; players marked ready
+[2025-09-26 10:04:59] Generated regular season schedule with 162 games
+[2025-09-26 10:04:59] Generated regular season schedule with 162 games
+[2025-09-26 10:04:59] No unsigned players available
+[2025-09-26 10:12:41] Simulated a regular season day; 1 days until Midseason
+[2025-09-26 10:12:41] Simulated a regular season day; 2 days until Season End
+[2025-09-26 10:12:41] Simulated a regular season day; 1 days until Season End
+[2025-09-26 10:12:41] Simulated a regular season day; regular season complete
+[2025-09-26 10:12:41] Simulated week; 3 days until Season End
+[2025-09-26 10:12:41] Simulated week; regular season complete
+[2025-09-26 10:12:41] Simulated month; 10 days until Season End
+[2025-09-26 10:12:41] Simulated month; regular season complete
+[2025-09-26 10:12:41] Season advanced to Preseason
+[2025-09-26 10:12:41] No unsigned players available
+[2025-09-26 10:12:41] Training camp completed; players marked ready
+[2025-09-26 10:12:41] Generated regular season schedule with 162 games
+[2025-09-26 10:12:41] Generated regular season schedule with 162 games
+[2025-09-26 10:12:42] No unsigned players available

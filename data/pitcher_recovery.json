@@ -33,7 +33,7 @@
         "P8459": {
           "available_on": "2024-04-02",
           "last_used": "2024-04-01",
-          "last_pitches": 8
+          "last_pitches": 13
         },
         "P8344": {
           "available_on": "2024-04-02",
@@ -75,12 +75,12 @@
         "P1387",
         "P3487"
       ],
-      "next_index": 2,
+      "next_index": 3,
       "pitchers": {
         "P2323": {
           "available_on": "2024-04-03",
           "last_used": "2024-04-01",
-          "last_pitches": 34
+          "last_pitches": 22
         },
         "P5446": {
           "available_on": "2024-04-04",
