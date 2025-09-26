@@ -17,7 +17,7 @@ class TeamPage(QWidget):
         btn_sched.clicked.connect(dashboard.open_team_schedule_window)
         card.layout().addWidget(btn_sched)
 
-        btn_stats = QPushButton("Team & Player Stats", objectName="Primary")
+        btn_stats = QPushButton("Team Stats", objectName="Primary")
         btn_stats.clicked.connect(dashboard.open_team_stats_window)
         card.layout().addWidget(btn_stats)
 

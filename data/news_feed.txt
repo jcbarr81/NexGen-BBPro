@@ -1,0 +1,14 @@
+[2025-09-26 09:32:47] Simulated a regular season day; 1 days until Midseason
+[2025-09-26 09:32:47] Simulated a regular season day; 2 days until Season End
+[2025-09-26 09:32:47] Simulated a regular season day; 1 days until Season End
+[2025-09-26 09:32:47] Simulated a regular season day; regular season complete
+[2025-09-26 09:32:47] Simulated week; 3 days until Season End
+[2025-09-26 09:32:47] Simulated week; regular season complete
+[2025-09-26 09:32:47] Simulated month; 10 days until Season End
+[2025-09-26 09:32:47] Simulated month; regular season complete
+[2025-09-26 09:32:47] Season advanced to Preseason
+[2025-09-26 09:32:47] No unsigned players available
+[2025-09-26 09:32:47] Training camp completed; players marked ready
+[2025-09-26 09:32:47] Generated regular season schedule with 162 games
+[2025-09-26 09:32:48] Generated regular season schedule with 162 games
+[2025-09-26 09:32:48] No unsigned players available
