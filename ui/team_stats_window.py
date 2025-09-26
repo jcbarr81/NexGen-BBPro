@@ -7,20 +7,54 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (
-    QComboBox,
-    QDialog,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QTabWidget,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QHeaderView,
-)
+try:
+    from PyQt6.QtCore import Qt
+except ImportError:  # pragma: no cover - test stubs
+    Qt = SimpleNamespace(
+        AlignmentFlag=SimpleNamespace(
+            AlignCenter=None,
+            AlignLeft=None,
+            AlignRight=None,
+            AlignVCenter=None,
+        ),
+        ItemDataRole=SimpleNamespace(DisplayRole=None, EditRole=None, UserRole=None),
+        ItemFlag=SimpleNamespace(ItemIsEditable=None),
+        SortOrder=SimpleNamespace(AscendingOrder=None, DescendingOrder=None),
+    )
+try:
+    from PyQt6.QtWidgets import (
+        QComboBox,
+        QDialog,
+        QHBoxLayout,
+        QLabel,
+        QLineEdit,
+        QPushButton,
+        QTabWidget,
+        QTableWidget,
+        QTableWidgetItem,
+        QVBoxLayout,
+        QHeaderView,
+    )
+except ImportError:  # pragma: no cover - test stubs
+    class _QtDummy:
+        EditTrigger = SimpleNamespace(NoEditTriggers=None)
+        SelectionBehavior = SimpleNamespace(SelectRows=None)
+
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __getattr__(self, name):
+            def _dummy(*_args, **_kwargs):
+                return self
+
+            return _dummy
+
+    QComboBox = QDialog = QHBoxLayout = QLabel = QLineEdit = QPushButton = QTabWidget = QTableWidget = QTableWidgetItem = QVBoxLayout = _QtDummy
+
+    class QHeaderView:  # type: ignore[too-many-ancestors]
+        class ResizeMode:
+            Stretch = None
+            ResizeToContents = None
 
 from models.team import Team
 from models.roster import Roster
