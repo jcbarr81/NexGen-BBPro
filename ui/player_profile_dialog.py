@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
+from pathlib import Path
+import csv
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
@@ -249,8 +251,19 @@ class PlayerProfileDialog(QDialog):
 
         root.addStretch()
         self.setLayout(root)
+        # Size policy: provide a generous default width so headers and row titles
+        # are visible without manual column resizing, but still allow the user to
+        # resize the window larger if desired.
         self.adjustSize()
-        self.setFixedSize(self.sizeHint())
+        hint = self.sizeHint()
+        min_w = max(hint.width(), 1200)
+        min_h = max(hint.height(), 720)
+        try:
+            self.setMinimumSize(min_w, min_h)
+            self.resize(min_w, min_h)
+        except Exception:
+            # Fallback in headless test stubs
+            pass
 
     # ------------------------------------------------------------------
     def _build_header_section(self) -> QFrame:
@@ -641,7 +654,14 @@ class PlayerProfileDialog(QDialog):
         table.setAlternatingRowColors(True)
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        # Make the first column (Year/range labels) fit its text while the
+        # remaining columns stretch to fill the available space.
+        header = table.horizontalHeader()
+        try:
+            header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        except Exception:
+            pass
 
         for row_idx, (year, data) in enumerate(rows):
             label_lower = str(year).lower()
@@ -884,21 +904,25 @@ class PlayerProfileDialog(QDialog):
         return key.title()
 
     def _collect_stats_history(self) -> List[Tuple[str, Dict[str, Any]]]:
-        history: List[Tuple[str, Dict[str, Any]]] = []
-        is_pitcher = getattr(self.player, "is_pitcher", False)
-        for year, _ratings, stats in self._load_history():
-            if stats:
-                history.append((year, self._stats_to_dict(stats, is_pitcher)))
+        """Return rows for the stats table: current season year and career.
 
+        Historical ad-hoc snapshots ("Year 1", etc.) are omitted to avoid
+        confusion. The current season row is labelled with the actual season
+        year derived from the schedule if available, otherwise the current
+        calendar year. The last row is career totals when provided.
+        """
+        is_pitcher = getattr(self.player, "is_pitcher", False)
+        rows: List[Tuple[str, Dict[str, Any]]] = []
+
+        current_year = self._current_season_year()
         season = self._stats_to_dict(getattr(self.player, "season_stats", {}), is_pitcher)
         if season:
-            history.append(("Current", season))
+            rows.append((str(current_year), season))
 
         career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)
         if career:
-            history.append(("Career", career))
-
-        return history
+            rows.append(("Career", career))
+        return rows
 
     def _load_history(self) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
         data = load_stats()
@@ -925,12 +949,45 @@ class PlayerProfileDialog(QDialog):
                     if k not in rating_fields and not k.startswith("pot_")
                 }
             year = entry.get("year")
-            year_label = str(year) if year is not None else f"Year {len(history) + 1}"
+            # Skip snapshots that don't identify a season year to avoid
+            # placeholder labels like "Year 1".
+            if year is None:
+                continue
+            year_label = str(year)
             if year_label in used_years:
                 continue
             used_years.add(year_label)
             history.append((year_label, ratings, stats))
         return history
+
+    def _current_season_year(self) -> int:
+        """Best-effort determination of the current season year.
+
+        Reads data/schedule.csv and returns the maximum year in the date
+        column. Falls back to the current calendar year when the file is
+        missing or malformed.
+        """
+        try:
+            data_dir = Path(__file__).resolve().parents[1] / "data"
+            sched = data_dir / "schedule.csv"
+            if not sched.exists():
+                return datetime.now().year
+            max_year = None
+            with sched.open("r", encoding="utf-8", newline="") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    ds = (row.get("date") or "").strip()
+                    if not ds:
+                        continue
+                    try:
+                        y = int(ds.split("-")[0])
+                    except Exception:
+                        continue
+                    if max_year is None or y > max_year:
+                        max_year = y
+            return max_year or datetime.now().year
+        except Exception:
+            return datetime.now().year
 
     def _stats_to_dict(self, stats: Any, is_pitcher: bool) -> Dict[str, Any]:
         if isinstance(stats, dict):

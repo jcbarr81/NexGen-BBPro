@@ -127,6 +127,11 @@ class TeamsPage(QWidget):
             self.set_pitching_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
+        self.auto_reassign_button = QPushButton("Auto Reassign All Rosters")
+        card.layout().addWidget(
+            self.auto_reassign_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
         card.layout().addStretch()
         layout.addWidget(card)
         layout.addStretch()
@@ -279,6 +284,7 @@ class MainWindow(QMainWindow):
         tp.team_dashboard_button.clicked.connect(self.open_team_dashboard)
         tp.set_lineups_button.clicked.connect(self.set_all_lineups)
         tp.set_pitching_button.clicked.connect(self.set_all_pitching_roles)
+        tp.auto_reassign_button.clicked.connect(self.auto_reassign_rosters)
 
         up: UsersPage = self.pages["users"]
         up.add_user_button.clicked.connect(self.open_add_user)
@@ -719,6 +725,25 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, "Pitching Staff Set", "Pitching roles auto-filled for all teams."
         )
+
+    def auto_reassign_rosters(self) -> None:
+        """Automatically reassign players across roster levels for all teams.
+
+        Policies:
+        - Active roster: max 25 players and at least 11 position players
+        - AAA roster: max 15 players
+        - Low roster: max 10 players
+        Injured players remain on DL/IR and are not considered for promotion.
+        """
+        try:
+            from services.roster_auto_assign import auto_assign_all_teams
+
+            auto_assign_all_teams()
+            QMessageBox.information(
+                self, "Rosters Updated", "Auto reassigned rosters for all teams."
+            )
+        except Exception as exc:  # pragma: no cover - UI feedback only
+            QMessageBox.warning(self, "Auto Reassign Failed", str(exc))
 
     def open_create_league(self) -> None:
         confirm = QMessageBox.question(

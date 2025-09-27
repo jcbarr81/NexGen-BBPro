@@ -83,6 +83,9 @@ from models.team import Team
 from models.roster import Roster
 from models.base_player import BasePlayer
 from utils.roster_loader import load_roster
+from utils.player_loader import load_players_from_csv
+from utils.path_utils import get_base_dir
+from utils.stats_persistence import load_stats as _load_season_stats
 from .stat_helpers import (
     format_number,
     format_ip,
@@ -90,8 +93,9 @@ from .stat_helpers import (
     pitching_summary,
 )
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DATA_DIR = get_base_dir() / "data"
 PLAYERS_FILE = DATA_DIR / "players.csv"
+# Stats file path is resolved by utils.stats_persistence; keep constant for reference only
 STATS_FILE = DATA_DIR / "season_stats.json"
 
 RETRO_GREEN = "#0f3b19"
@@ -170,8 +174,9 @@ def _normalize_team_stats(data: Dict[str, Any] | None) -> Dict[str, Any]:
 
 
 def _games_from_history() -> dict[str, int]:
+    # Load via stats_persistence to ensure identical resolution as the simulator
     try:
-        data = json.loads(STATS_FILE.read_text(encoding="utf-8"))
+        data = _load_season_stats()
     except Exception:
         return {}
     history = data.get("history", [])
@@ -196,10 +201,10 @@ def _games_from_history() -> dict[str, int]:
 
 
 def _load_players_lookup() -> tuple[Dict[str, SimpleNamespace], Dict[str, Dict[str, Any]]]:
+    # Use centralized loader so GUI and simulator read the same file
     try:
-        with STATS_FILE.open("r", encoding="utf-8") as handle:
-            stats = json.load(handle)
-    except (OSError, json.JSONDecodeError):
+        stats = _load_season_stats()
+    except Exception:
         stats = {"players": {}, "teams": {}}
     player_stats: Dict[str, Dict[str, Any]] = stats.get("players", {})
     team_stats: Dict[str, Dict[str, Any]] = stats.get("teams", {})
@@ -340,6 +345,26 @@ class TeamStatsWindow(QDialog):
 
         batters = [self.players[pid] for pid in batter_ids]
         pitchers = [self.players[pid] for pid in pitcher_ids]
+        self._debug_team_id = getattr(team, 'team_id', 'UNK')
+
+        # Debug dump to help verify roster vs. displayed players and stats
+        try:
+            debug_path = DATA_DIR / f"_debug_team_stats_{team.team_id}.txt"
+            with debug_path.open("w", encoding="utf-8") as fh:
+                fh.write(f"Team {team.team_id} — roster hitters: {len(batter_ids)}\n")
+                fh.write("player_id,name,G,AB,H,BB,HR,SB\n")
+                for pid in batter_ids:
+                    p = self.players.get(pid)
+                    if not p:
+                        fh.write(f"{pid},<missing in players.csv>\n")
+                        continue
+                    s = getattr(p, "season_stats", {}) or {}
+                    name = f"{getattr(p,'first_name','')} {getattr(p,'last_name','')}".strip()
+                    fh.write(
+                        f"{pid},{name},{s.get('g',0)},{s.get('ab',0)},{s.get('h',0)},{s.get('bb',0)},{s.get('hr',0)},{s.get('sb',0)}\n"
+                    )
+        except Exception:
+            pass
 
         self.tabs.addTab(
             self._build_player_tab(batters, _BATTING_COLS, title="Batting"),
@@ -508,19 +533,53 @@ class TeamStatsWindow(QDialog):
         headers = ["Name"] + [col.upper() for col in columns]
         table = QTableWidget(len(player_list), len(headers))
         self._configure_table(table, headers)
+        # Prevent row reordering while we populate cells; re-enable after filling.
+        try:
+            table.setSortingEnabled(False)
+        except Exception:
+            pass
 
         any_stats = False
+        # Prepare per-row debug logging for the first tab (Batting) and Pitching
+        debug_rows_path = None
+        try:
+            if columns is _BATTING_COLS:
+                debug_rows_path = DATA_DIR / f"_debug_team_stats_rows_{getattr(self, '_debug_team_id', 'UNK')}_batting.csv"
+            elif columns is _PITCHING_COLS:
+                debug_rows_path = DATA_DIR / f"_debug_team_stats_rows_{getattr(self, '_debug_team_id', 'UNK')}_pitching.csv"
+                with debug_rows_path.open('w', encoding='utf-8') as fh:
+                    fh.write('player_id,name,' + ','.join(columns) + '\n')
+        except Exception:
+            debug_rows_path = None
         for row, player in enumerate(player_list):
             name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
-            table.setItem(row, 0, self._text_item(name, align_left=True))
+            name_item = self._text_item(name, align_left=True)
+            try:
+                pid = getattr(player, 'player_id', '')
+                name_item.setData(Qt.ItemDataRole.UserRole, pid)
+            except Exception:
+                pass
+            table.setItem(row, 0, name_item)
             stats = getattr(player, "season_stats", {}) or {}
             is_pitching = columns is _PITCHING_COLS
             stats = self._normalize_pitching(stats) if is_pitching else self._normalize_batting(stats)
             has_stats = self._player_has_stats(stats, columns)
             any_stats = any_stats or has_stats
+            # Write cells and capture the exact values used
+            row_values = []
             for col, key in enumerate(columns, start=1):
                 value = stats.get(key, 0)
                 table.setItem(row, col, self._stat_item(key, value, has_stats=has_stats))
+                row_values.append(value)
+            # Append debug row
+            if debug_rows_path is not None:
+                try:
+                    pid = getattr(player, 'player_id', '')
+                    name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
+                    with debug_rows_path.open('a', encoding='utf-8') as fh:
+                        fh.write(pid + ',' + name.replace(',', ' ') + ',' + ','.join(str(v or 0) for v in row_values) + '\n')
+                except Exception:
+                    pass
 
         if not player_list:
             layout.addWidget(self._empty_label("No players on the active roster."))
@@ -533,11 +592,43 @@ class TeamStatsWindow(QDialog):
         else:
             layout.addWidget(self._empty_label("No statistics recorded yet."))
 
+        # Re-enable sorting now that population is complete
+        try:
+            table.setSortingEnabled(True)
+        except Exception:
+            pass
+        # Open player profile on double click
+        try:
+            table.itemDoubleClicked.connect(lambda item, table=table: self._open_player_from_table(item, table))
+        except Exception:
+            pass
         placeholder = f"Search {'pitchers' if columns is _PITCHING_COLS else 'hitters'}"
         default_sort = 1 if table.columnCount() > 1 else 0
         layout.addWidget(self._build_filter_bar(table, placeholder=placeholder, default_sort=default_sort))
         layout.addWidget(table, 1)
         return tab
+
+    def _open_player_from_table(self, item: QTableWidgetItem, table: QTableWidget) -> None:
+        try:
+            row = item.row()
+            name_cell = table.item(row, 0)
+            pid = name_cell.data(Qt.ItemDataRole.UserRole) if name_cell else None
+            if not pid:
+                return
+            # Load full player objects to feed the profile dialog
+            players = {p.player_id: p for p in load_players_from_csv(str(PLAYERS_FILE))}
+            player = players.get(pid)
+            if not player:
+                return
+            from .player_profile_dialog import PlayerProfileDialog
+            try:
+                dlg = PlayerProfileDialog(player, self)
+                if callable(getattr(dlg, 'exec', None)):
+                    dlg.exec()
+            except Exception:
+                pass
+        except Exception:
+            pass
 
     def _build_team_totals(self, team: Team) -> QWidget:
         tab = QWidget()
@@ -722,37 +813,25 @@ class TeamStatsWindow(QDialog):
 
     def _stat_item(self, key: str, value: Any, *, has_stats: bool) -> QTableWidgetItem:
         key_lower = key.lower()
-        blank = not has_stats and not _has_stat_value(value)
-        if blank:
-            display = ""
-            numeric: float | None = None
+        # Always display a value (zero if missing) so rows are never blank when a player is listed.
+        # This avoids confusion when stats exist but a previous gating heuristic hides them.
+        if key_lower in {"avg", "obp", "slg", "era", "whip"}:
+            display = format_number(value, decimals=3)
+        elif key_lower == "ip":
+            display = format_ip(value)
         else:
-            if key_lower in {"avg", "obp", "slg", "era", "whip"}:
-                display = format_number(value, decimals=3)
-            elif key_lower == "ip":
-                display = format_ip(value)
-            else:
-                display = format_number(value, decimals=0)
-            coerced = _coerce_float(value)
-            if coerced is None:
-                try:
-                    coerced = float(display)
-                except (TypeError, ValueError):
-                    coerced = 0.0
-            numeric = coerced
+            display = format_number(value, decimals=0)
+        coerced = _coerce_float(value)
+        if coerced is None:
+            try:
+                coerced = float(display) if display else 0.0
+            except (TypeError, ValueError):
+                coerced = 0.0
+        numeric = coerced
         item = QTableWidgetItem(display)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        # If the cell is meant to appear blank, do NOT set an EditRole numeric;
-        # some styles will render a 0 when EditRole is numeric and DisplayRole is empty.
-        if blank:
-            try:
-                item.setData(Qt.ItemDataRole.DisplayRole, "")
-                item.setData(Qt.ItemDataRole.EditRole, None)
-            except Exception:
-                pass
-        else:
-            item.setData(Qt.ItemDataRole.EditRole, numeric)
+        item.setData(Qt.ItemDataRole.EditRole, numeric)
         return item
 
     def _normalize_batting(self, stats: Dict[str, Any]) -> Dict[str, Any]:

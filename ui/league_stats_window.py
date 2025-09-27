@@ -56,7 +56,11 @@ except ImportError:  # pragma: no cover - test stubs
             Stretch = None
             ResizeToContents = None
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+from utils.path_utils import get_base_dir
+from utils.player_loader import load_players_from_csv
+from utils.stats_persistence import load_stats as _load_season_stats
+
+DATA_DIR = get_base_dir() / "data"
 PLAYERS_FILE = DATA_DIR / "players.csv"
 STATS_FILE = DATA_DIR / "season_stats.json"
 
@@ -64,9 +68,8 @@ STATS_FILE = DATA_DIR / "season_stats.json"
 def _games_from_history() -> Dict[str, int]:
     """Return max games played per player from history snapshots."""
     try:
-        with STATS_FILE.open('r', encoding='utf-8') as handle:
-            stats = json.load(handle)
-    except (OSError, json.JSONDecodeError):
+        stats = _load_season_stats()
+    except Exception:
         return {}
     history = stats.get('history', [])
     games: Dict[str, int] = {}
@@ -112,9 +115,8 @@ def _normalize_team_stats(data: Dict[str, Any] | None) -> Dict[str, Any]:
 
 def _load_players_with_stats() -> tuple[list[SimpleNamespace], Dict[str, Any]]:
     try:
-        with STATS_FILE.open('r', encoding='utf-8') as handle:
-            stats = json.load(handle)
-    except (OSError, json.JSONDecodeError):
+        stats = _load_season_stats()
+    except Exception:
         stats = {"players": {}, "teams": {}}
     player_stats: Dict[str, Dict[str, Any]] = stats.get('players', {})
     team_stats: Dict[str, Dict[str, Any]] = stats.get('teams', {})
@@ -252,7 +254,12 @@ class LeagueStatsWindow(QDialog):
         is_pitching = columns is _PITCHING_COLS
         for row, player in enumerate(players):
             name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
-            table.setItem(row, 0, self._text_item(name, align_left=True))
+            item = self._text_item(name, align_left=True)
+            try:
+                item.setData(Qt.ItemDataRole.UserRole, getattr(player, 'player_id', ''))
+            except Exception:
+                pass
+            table.setItem(row, 0, item)
             stats = getattr(player, 'season_stats', {}) or {}
             stats = self._normalize_pitching(stats) if is_pitching else self._normalize_batting(stats)
             for col, key in enumerate(columns, start=1):
@@ -262,8 +269,30 @@ class LeagueStatsWindow(QDialog):
         sort_index = 1 if table.columnCount() > 1 else 0
         placeholder = "Search players or stats"
         self._attach_table_controls(card, table, placeholder=placeholder, default_sort=sort_index)
+        try:
+            table.itemDoubleClicked.connect(lambda item, table=table: self._open_player_from_table(item, table))
+        except Exception:
+            pass
         card.layout().addWidget(table)
         return card
+
+    def _open_player_from_table(self, item: QTableWidgetItem, table: QTableWidget) -> None:
+        try:
+            row = item.row()
+            name_cell = table.item(row, 0)
+            pid = name_cell.data(Qt.ItemDataRole.UserRole) if name_cell else None
+            if not pid:
+                return
+            players = {p.player_id: p for p in load_players_from_csv(str(PLAYERS_FILE))}
+            player = players.get(pid)
+            if not player:
+                return
+            from .player_profile_dialog import PlayerProfileDialog
+            dlg = PlayerProfileDialog(player, self)
+            if callable(getattr(dlg, 'exec', None)):
+                dlg.exec()
+        except Exception:
+            pass
 
     def _configure_table(self, table: QTableWidget, headers: List[str]) -> None:
         table.setHorizontalHeaderLabels(headers)

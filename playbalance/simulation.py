@@ -606,6 +606,24 @@ class GameSimulation:
                 game_finished=True,
             )
 
+            # Assign winning/losing pitchers before aggregating season stats so
+            # W/L are included in the per-pitcher season totals persisted below.
+            if self.home.runs != self.away.runs:
+                winner_key = "home" if self.home.runs > self.away.runs else "away"
+                loser_key = "away" if winner_key == "home" else "home"
+                winning_state = self._pitcher_of_record.get(winner_key)
+                if winning_state is not None:
+                    winning_state.w += 1
+                losing_state = self._losing_pitcher
+                if losing_state is None:
+                    losing_state = (
+                        self.home.current_pitcher_state
+                        if loser_key == "home"
+                        else self.away.current_pitcher_state
+                    )
+                if losing_state is not None:
+                    losing_state.l += 1
+
             for team in (self.home, self.away):
                 for bs in team.lineup_stats.values():
                     season = getattr(bs.player, "season_stats", {})
@@ -694,21 +712,7 @@ class GameSimulation:
                 if team.team is not None:
                     team.team.season_stats = season
 
-            if self.home.runs != self.away.runs:
-                winner_key = "home" if self.home.runs > self.away.runs else "away"
-                loser_key = "away" if winner_key == "home" else "home"
-                winning_state = self._pitcher_of_record.get(winner_key)
-                if winning_state is not None:
-                    winning_state.w += 1
-                losing_state = self._losing_pitcher
-                if losing_state is None:
-                    losing_state = (
-                        self.home.current_pitcher_state
-                        if loser_key == "home"
-                        else self.away.current_pitcher_state
-                    )
-                if losing_state is not None:
-                    losing_state.l += 1
+            
 
             players: Dict[str, Player] = {}
             for state in (self.home, self.away):

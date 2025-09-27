@@ -112,15 +112,65 @@ def apply_lineup(state: TeamState, lineup: Sequence[LineupEntry]) -> None:
 
 
 def reorder_pitchers(state: TeamState, starter_id: str | None) -> None:
-    """Move ``starter_id`` to the front of ``state.pitchers`` if provided."""
+    """Move ``starter_id`` to the front and set as current starter.
+
+    TeamState initializes the current pitcher (and credits G/GS) in
+    ``__post_init__`` using the first entry in ``state.pitchers``. When a
+    starter is supplied later (e.g., by the recovery tracker), simply
+    reordering the list is not sufficient — the already-created
+    ``current_pitcher_state`` would still point at the previous first pitcher
+    who already received a G/GS credit. This helper reorders the list and also
+    transfers the game/GS credit and ``current_pitcher_state`` to the desired
+    starter so starts are attributed correctly.
+    """
 
     if not starter_id:
         return
-    for idx, pitcher in enumerate(state.pitchers):
-        if pitcher.player_id == starter_id:
-            state.pitchers.insert(0, state.pitchers.pop(idx))
-            return
-    raise ValueError(f"Pitcher {starter_id} not found on pitching staff")
+    # Find desired starter
+    target_index = None
+    for idx, p in enumerate(state.pitchers):
+        if p.player_id == starter_id:
+            target_index = idx
+            break
+    if target_index is None:
+        raise ValueError(f"Pitcher {starter_id} not found on pitching staff")
+
+    # If already first, ensure current_pitcher_state exists and points to him
+    if target_index == 0:
+        if state.current_pitcher_state is None or (
+            state.current_pitcher_state.player.player_id != starter_id
+        ):
+            from playbalance.state import PitcherState  # local import to avoid cycle
+
+            new_ps = state.pitcher_stats.get(starter_id)
+            if new_ps is None:
+                new_ps = PitcherState(state.pitchers[0])
+                new_ps.g += 1
+                new_ps.gs += 1
+                state.pitcher_stats[starter_id] = new_ps
+            state.current_pitcher_state = new_ps
+        return
+
+    # Move target pitcher to front
+    starter = state.pitchers.pop(target_index)
+    state.pitchers.insert(0, starter)
+
+    from playbalance.state import PitcherState  # local import to avoid cycle
+    # Remove the credit from the prior assumed starter
+    prev_ps = state.current_pitcher_state
+    if prev_ps is not None:
+        if getattr(prev_ps, "g", 0) > 0:
+            prev_ps.g -= 1
+        if getattr(prev_ps, "gs", 0) > 0:
+            prev_ps.gs -= 1
+    # Credit the selected starter and set current state
+    ps = state.pitcher_stats.get(starter.player_id)
+    if ps is None:
+        ps = PitcherState(starter)
+        state.pitcher_stats[starter.player_id] = ps
+    ps.g += 1
+    ps.gs += 1
+    state.current_pitcher_state = ps
 
 
 def prepare_team_state(
