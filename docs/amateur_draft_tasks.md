@@ -5,14 +5,14 @@
 Status legend: [ ] pending · [~] in progress · [x] done
 
 ## Phase 1 — Event Hook and Pause
-- [ ] Detect Draft Day (third Tuesday in July) or read explicit date from schedule
-- [ ] SeasonSimulator: add `draft_date` and `on_draft_day(date_str)` callback
-- [ ] SeasonProgressWindow: open Draft Console on Draft Day and pause sim until it closes
-- [ ] Persist flag in `season_progress.json` to avoid duplicate triggers
+- [x] Detect Draft Day (third Tuesday in July) or read explicit date from schedule
+- [x] SeasonSimulator: add `draft_date` and `on_draft_day(date_str)` callback
+- [x] SeasonProgressWindow: open Draft Console on Draft Day and pause sim until it closes (modal)
+- [ ] Persist flag in `season_progress.json` to avoid duplicate triggers (currently in‑memory only)
 
 ## Phase 2 — Draft Pool Generation & Persistence
-- [ ] `playbalance/draft_pool.py` with `generate_draft_pool` and `load_draft_pool`
-- [ ] Pool schema and position/age distributions; write `draft_pool_<year>.csv/json`
+- [x] `playbalance/draft_pool.py` with `generate_draft_pool` and `load_draft_pool`
+- [x] Pool schema and position/age distributions; write `draft_pool_<year>.csv/json`
 - [ ] Locking for writes (reuse pattern from `utils.stats_persistence`)
 
 ## Phase 3 — Draft Order & Scouting
@@ -22,7 +22,7 @@ Status legend: [ ] pending · [~] in progress · [x] done
 
 ## Phase 4 — UI: Pool Browser & Draft Console
 - [ ] `ui/draft_pool_window.py` (filter/sort, open profile)
-- [ ] `ui/draft_console.py` (board, on‑clock, pool table, profile preview)
+- [~] `ui/draft_console.py` (board, on‑clock, pool table, profile preview) — minimal console scaffolded; opens on Draft Day
 - [ ] Human pick + AI pick; Auto‑draft remaining
 - [ ] Persist after each pick to `draft_state_<year>.json` and append to `draft_results_<year>.csv`
 
@@ -48,5 +48,5 @@ Status legend: [ ] pending · [~] in progress · [x] done
 ---
 
 ## Notes / Decisions Log
+- 2025‑09‑27: Phase 1 hooks implemented; minimal Draft Console added; basic pool gen saved to data/.
 - 2025‑07‑XX: Plan created and tracker initialized.
-

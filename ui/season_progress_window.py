@@ -26,6 +26,7 @@ from playbalance.season_manager import SeasonManager, SeasonPhase
 from playbalance.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
 from playbalance.season_simulator import SeasonSimulator
+from ui.draft_console import DraftConsole
 from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
 from playbalance.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
@@ -70,13 +71,22 @@ class SeasonProgressWindow(QDialog):
                 schedule = list(reader)
         # Persist league data after each game so that standings, schedules and
         # statistics remain current even if a simulation run is interrupted.
+        # Compute Draft Day from schedule (third Tuesday in July)
+        draft_date = self._compute_draft_date((schedule or [{}])[0].get("date") if schedule else None)
         if simulate_game is not None:
             self.simulator = SeasonSimulator(
-                schedule or [], simulate_game, after_game=self._record_game
+                schedule or [],
+                simulate_game,
+                on_draft_day=self._on_draft_day,
+                draft_date=draft_date,
+                after_game=self._record_game,
             )
         else:
             self.simulator = SeasonSimulator(
-                schedule or [], after_game=self._record_game
+                schedule or [],
+                on_draft_day=self._on_draft_day,
+                draft_date=draft_date,
+                after_game=self._record_game,
             )
         self._cancel_requested = False
         # Track season standings with detailed splits so that schedule and
@@ -157,6 +167,30 @@ class SeasonProgressWindow(QDialog):
         layout.addWidget(self.next_button)
 
         self._update_ui()
+
+    # ------------------------------------------------------------------
+    # Draft helpers
+    def _compute_draft_date(self, first_date: str | None) -> str | None:
+        try:
+            if not first_date:
+                return None
+            year = int(str(first_date).split("-")[0])
+            import datetime as _dt
+            d = _dt.date(year, 7, 1)
+            # Tuesday is 1
+            while d.weekday() != 1:
+                d += _dt.timedelta(days=1)
+            d += _dt.timedelta(days=14)
+            return d.isoformat()
+        except Exception:
+            return None
+
+    def _on_draft_day(self, date_str: str) -> None:
+        try:
+            dlg = DraftConsole(date_str, self)
+            dlg.exec()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # UI helpers

@@ -17,6 +17,9 @@ class SeasonSimulator:
         simulate_game: Callable[[str, str], None] | None = None,
         on_all_star_break: Callable[[], None] | None = None,
         after_game: Callable[[Dict[str, str]], None] | None = None,
+        *,
+        draft_date: str | None = None,
+        on_draft_day: Callable[[str], None] | None = None,
     ) -> None:
         self.schedule = list(schedule)
         self.dates: List[str] = sorted({g["date"] for g in self.schedule})
@@ -27,6 +30,10 @@ class SeasonSimulator:
         self._all_star_played = False
         self.after_game = after_game
         self._tracker = PitcherRecoveryTracker.instance()
+        # Amateur draft hook
+        self.draft_date: str | None = str(draft_date) if draft_date else None
+        self._draft_triggered: bool = False
+        self.on_draft_day = on_draft_day
 
         self._seed_positional = False
         self._seed_keyword = False
@@ -94,6 +101,20 @@ class SeasonSimulator:
         if self._index >= len(self.dates):
             return
         current_date = self.dates[self._index]
+        # Draft Day pause (before any games on that date)
+        if (
+            self.draft_date
+            and not self._draft_triggered
+            and str(current_date) == str(self.draft_date)
+        ):
+            if self.on_draft_day is not None:
+                try:
+                    self.on_draft_day(current_date)
+                finally:
+                    # Ensure we only trigger once even if callback errors
+                    self._draft_triggered = True
+            else:
+                self._draft_triggered = True
         games = [g for g in self.schedule if g["date"] == current_date]
         if not games:
             self._index += 1

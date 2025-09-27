@@ -15,7 +15,7 @@ considered for the Active roster. Existing DL/IR assignments are preserved.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple, Set
 
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
@@ -27,6 +27,10 @@ from utils.pitcher_role import get_role
 ACTIVE_MAX = 25
 AAA_MAX = 15
 LOW_MAX = 10
+
+# Defensive positions that must be represented by at least one
+# eligible player on the Active (ACT) roster to allow a legal lineup.
+REQUIRED_POSITIONS: Tuple[str, ...] = ("C", "SS", "CF", "2B", "3B", "1B", "LF", "RF")
 
 
 @dataclass
@@ -74,14 +78,41 @@ def _pitcher_score(p) -> float:
     return 0.35 * control + 0.35 * movement + 0.2 * endurance + 0.1 * arm
 
 
-def _pick_active_roster(hitters: List[object], pitchers: List[object]) -> Tuple[List[str], List[object], List[object]]:
-    # Choose 12 hitters and 13 pitchers by default, ensuring min 11 hitters.
+def _eligible_positions(player: object) -> Set[str]:
+    """Return defensive positions the hitter can play.
+
+    A player is considered eligible for their ``primary_position`` and any
+    entries in ``other_positions``. Values are normalized to uppercase.
+    Pitchers are excluded by the caller.
+    """
+
+    primary = str(getattr(player, "primary_position", "")).upper()
+    others = getattr(player, "other_positions", []) or []
+    elig = {primary} if primary else set()
+    for pos in others:
+        if not pos:
+            continue
+        elig.add(str(pos).upper())
+    return elig
+
+
+def _pick_active_roster(
+    hitters: List[object],
+    pitchers: List[object],
+) -> Tuple[List[str], List[object], List[object]]:
+    """Select a 25-man active roster with legal defensive coverage.
+
+    - Target 12 hitters and 13 pitchers (min 11 hitters)
+    - Ensure at least one eligible player for each defensive position in
+      ``REQUIRED_POSITIONS`` among the 12 hitters.
+    - Prefer best-graded players by role when multiple candidates exist.
+    """
+
     hitters_sorted = sorted(hitters, key=_hitter_score, reverse=True)
     pitchers_sorted = sorted(pitchers, key=_pitcher_score, reverse=True)
 
-    # Ensure at least 5 SP in the active pitchers by preferring SPs from the top
+    # Build the pitching staff: at least 5 SPs if available, then best remaining
     sps = [p for p in pitchers_sorted if get_role(p) == "SP"]
-    rps = [p for p in pitchers_sorted if get_role(p) != "SP"]
     active_pitchers: List[object] = []
     active_pitchers.extend(sps[:5])
     remaining_slots = 13 - len(active_pitchers)
@@ -89,24 +120,65 @@ def _pick_active_roster(hitters: List[object], pitchers: List[object]) -> Tuple[
         pool = [p for p in pitchers_sorted if p not in active_pitchers]
         active_pitchers.extend(pool[:remaining_slots])
 
-    active_hitters = hitters_sorted[:12]
-    # Adjust if not enough pitchers/hitters
-    while len(active_hitters) < 11 and len(hitters_sorted) > len(active_hitters):
-        active_hitters.append(hitters_sorted[len(active_hitters)])
+    # First, guarantee required defensive coverage among the hitters
+    active_hitters: List[object] = []
+    selected_ids: Set[str] = set()
+
+    # Scarcity-aware order: C/SS/CF are typically the rarest
+    for pos in REQUIRED_POSITIONS:
+        candidate = None
+        for h in hitters_sorted:
+            pid = getattr(h, "player_id")
+            if pid in selected_ids:
+                continue
+            elig = _eligible_positions(h)
+            if pos in elig:
+                candidate = h
+                break
+        if candidate is not None:
+            active_hitters.append(candidate)
+            selected_ids.add(getattr(candidate, "player_id"))
+
+    # Fill remaining hitter slots up to 12 with best available
+    for h in hitters_sorted:
+        if len(active_hitters) >= 12:
+            break
+        pid = getattr(h, "player_id")
+        if pid in selected_ids:
+            continue
+        active_hitters.append(h)
+        selected_ids.add(pid)
+
+    # Ensure at least 11 hitters overall; if short on hitters in org,
+    # reduce pitchers to keep ACT at 25 while maximizing hitters.
+    while len(active_hitters) < 11 and hitters_sorted:
+        # Add next best hitter not already selected
+        for h in hitters_sorted:
+            pid = getattr(h, "player_id")
+            if pid not in selected_ids:
+                active_hitters.append(h)
+                selected_ids.add(pid)
+                break
+        # Trim one pitcher if we somehow exceeded 13 earlier (safety)
+        if len(active_pitchers) + len(active_hitters) > ACTIVE_MAX and active_pitchers:
+            active_pitchers.pop()
+
+    # Top off the 25-man roster if underfilled (shouldn't generally happen)
     total = len(active_hitters) + len(active_pitchers)
     if total < ACTIVE_MAX:
-        # Fill remaining slots by next best available across both lists
-        pool = [p for p in hitters_sorted if p not in active_hitters] + [
-            p for p in pitchers_sorted if p not in active_pitchers
-        ]
-        # Interleave hitters/pitchers while respecting min hitters
-        for p in pool:
-            if len(active_hitters) < 11 and not getattr(p, "is_pitcher", False):
-                active_hitters.append(p)
+        # Prefer pitchers next to reach 25, but keep at least 11 hitters
+        extra_pitchers = [p for p in pitchers_sorted if p not in active_pitchers]
+        extra_hitters = [h for h in hitters_sorted if getattr(h, "player_id") not in selected_ids]
+        while total < ACTIVE_MAX:
+            if len(active_pitchers) < 13 and extra_pitchers:
+                active_pitchers.append(extra_pitchers.pop(0))
+            elif extra_hitters:
+                active_hitters.append(extra_hitters.pop(0))
+            elif extra_pitchers:
+                active_pitchers.append(extra_pitchers.pop(0))
             else:
-                active_pitchers.append(p) if getattr(p, "is_pitcher", False) else active_hitters.append(p)
-            if len(active_hitters) + len(active_pitchers) >= ACTIVE_MAX:
                 break
+            total = len(active_hitters) + len(active_pitchers)
 
     act_ids = [getattr(p, "player_id") for p in (active_pitchers + active_hitters)]
     rest_hitters = [p for p in hitters_sorted if getattr(p, "player_id") not in act_ids]
@@ -164,4 +236,3 @@ def auto_assign_all_teams(*, players_file: str = "data/players.csv", roster_dir:
 
 
 __all__ = ["auto_assign_team", "auto_assign_all_teams"]
-
