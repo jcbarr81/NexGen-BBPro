@@ -646,10 +646,22 @@ class TeamStatsWindow(QDialog):
         headers = ["CATEGORY", "VALUE"]
         table = QTableWidget(len(_TEAM_COLUMNS), len(headers))
         self._configure_table(table, headers)
+        # Prevent the table from reordering rows while we populate cells.
+        # With sorting enabled, Qt may re-sort after each setItem call which
+        # can misalign category/value pairs and leave many cells blank.
+        try:
+            table.setSortingEnabled(False)
+        except Exception:
+            pass
         for row, key in enumerate(_TEAM_COLUMNS):
             category = key.upper()
             table.setItem(row, 0, self._text_item(category, align_left=True))
             table.setItem(row, 1, self._stat_item(key, stats.get(key, 0), has_stats=has_stats))
+        # Re-enable sorting now that the table is fully populated.
+        try:
+            table.setSortingEnabled(True)
+        except Exception:
+            pass
 
         if not has_stats:
             layout.addWidget(self._empty_label("No team totals available yet."))

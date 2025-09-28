@@ -4,3 +4,17 @@
 [2025-09-28 09:06:20] Season advanced to Regular Season
 [2025-09-28 09:10:48] Simulation cancelled during midseason; completed 81 days this run, 81 days until Season End
 [2025-09-28 09:15:26] Amateur Draft 2025 committed: 36 players added; 36 roster assignments
+[2025-09-28 10:00:39] Simulated a regular season day; 1 days until Midseason
+[2025-09-28 10:00:39] Simulated a regular season day; 2 days until Season End
+[2025-09-28 10:00:39] Simulated a regular season day; 1 days until Season End
+[2025-09-28 10:00:39] Simulated a regular season day; regular season complete
+[2025-09-28 10:00:39] Simulated week; 3 days until Season End
+[2025-09-28 10:00:39] Simulated week; regular season complete
+[2025-09-28 10:00:39] Simulated month; 10 days until Season End
+[2025-09-28 10:00:39] Simulated month; regular season complete
+[2025-09-28 10:00:40] Season advanced to Preseason
+[2025-09-28 10:00:40] No unsigned players available
+[2025-09-28 10:00:40] Training camp completed; players marked ready
+[2025-09-28 10:00:40] Generated regular season schedule with 162 games
+[2025-09-28 10:00:40] Generated regular season schedule with 162 games
+[2025-09-28 10:00:41] No unsigned players available

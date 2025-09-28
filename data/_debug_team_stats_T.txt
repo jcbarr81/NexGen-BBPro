@@ -1,0 +1,2 @@
+Team T — roster hitters: 0
+player_id,name,G,AB,H,BB,HR,SB
