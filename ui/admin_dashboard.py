@@ -43,6 +43,7 @@ from .theme import _toggle_theme
 from .team_entry_dialog import TeamEntryDialog
 from .exhibition_game_dialog import ExhibitionGameDialog
 from .playbalance_editor import PlayBalanceEditor
+from playbalance.draft_config import load_draft_config, save_draft_config
 from .season_progress_window import SeasonProgressWindow
 from .owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades, save_trade
@@ -95,6 +96,20 @@ class LeaguePage(QWidget):
         self.season_progress_button = QPushButton("Season Progress")
         card.layout().addWidget(
             self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
+        # Amateur Draft actions
+        self.view_draft_pool_button = QPushButton("View Draft Pool")
+        card.layout().addWidget(
+            self.view_draft_pool_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+        self.start_resume_draft_button = QPushButton("Start/Resume Draft")
+        card.layout().addWidget(
+            self.start_resume_draft_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+        self.draft_settings_button = QPushButton("Draft Settings")
+        card.layout().addWidget(
+            self.draft_settings_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         card.layout().addStretch()
@@ -280,6 +295,9 @@ class MainWindow(QMainWindow):
         lp.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         lp.playbalance_button.clicked.connect(self.open_playbalance_editor)
         lp.season_progress_button.clicked.connect(self.open_season_progress)
+        lp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
+        lp.start_resume_draft_button.clicked.connect(self.open_draft_console)
+        lp.draft_settings_button.clicked.connect(self.open_draft_settings)
 
         tp: TeamsPage = self.pages["teams"]
         tp.team_dashboard_button.clicked.connect(self.open_team_dashboard)
@@ -827,6 +845,110 @@ class MainWindow(QMainWindow):
     def open_season_progress(self) -> None:
         win = SeasonProgressWindow(self)
         win.show()
+
+    # ------------------------------------------------------------------
+    # Amateur Draft helpers
+    # ------------------------------------------------------------------
+    def _compute_draft_date_for_year(self, year: int) -> str:
+        import datetime as _dt
+        d = _dt.date(year, 7, 1)
+        while d.weekday() != 1:  # Tuesday is 1
+            d += _dt.timedelta(days=1)
+        d += _dt.timedelta(days=14)
+        return d.isoformat()
+
+    def _current_season_year(self) -> int:
+        # Heuristic: attempt to read from schedule.csv if present; else use today
+        try:
+            from utils.path_utils import get_base_dir
+            import csv as _csv
+            sched = get_base_dir() / "data" / "schedule.csv"
+            if sched.exists():
+                with sched.open(newline="") as fh:
+                    r = _csv.DictReader(fh)
+                    first = next(r, None)
+                    if first and first.get("date"):
+                        return int(str(first["date"]).split("-")[0])
+        except Exception:
+            pass
+        from datetime import date as _date
+        return _date.today().year
+
+    def _open_draft_console(self) -> None:
+        try:
+            from ui.draft_console import DraftConsole
+        except Exception as exc:
+            QMessageBox.warning(self, "Draft Console", f"Unable to open Draft Console: {exc}")
+            return
+        year = self._current_season_year()
+        date_str = self._compute_draft_date_for_year(year)
+        dlg = DraftConsole(date_str, self)
+        dlg.exec()
+
+    def open_draft_console(self) -> None:
+        self._open_draft_console()
+
+    def open_draft_pool(self) -> None:
+        # For now, open the same console; users can browse pool without drafting
+        self._open_draft_console()
+
+    def open_draft_settings(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Draft Settings")
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+
+        cfg = load_draft_config()
+
+        layout.addWidget(QLabel("Rounds:"))
+        rounds_input = QLineEdit(str(cfg.get("rounds", 10)))
+        layout.addWidget(rounds_input)
+
+        layout.addWidget(QLabel("Pool Size:"))
+        pool_input = QLineEdit(str(cfg.get("pool_size", 200)))
+        layout.addWidget(pool_input)
+
+        layout.addWidget(QLabel("Random Seed (blank = default):"))
+        seed_val = cfg.get("seed")
+        seed_input = QLineEdit("" if seed_val in (None, "") else str(seed_val))
+        layout.addWidget(seed_input)
+
+        row = QHBoxLayout()
+        save_btn = QPushButton("Save")
+        cancel_btn = QPushButton("Cancel")
+        row.addWidget(save_btn)
+        row.addWidget(cancel_btn)
+        layout.addLayout(row)
+
+        def do_save() -> None:
+            try:
+                rounds = int(rounds_input.text().strip())
+                pool_size = int(pool_input.text().strip())
+            except ValueError:
+                QMessageBox.warning(dialog, "Invalid Input", "Rounds and Pool Size must be integers.")
+                return
+            seed_txt = seed_input.text().strip()
+            seed: int | None
+            if seed_txt == "":
+                seed = None
+            else:
+                try:
+                    seed = int(seed_txt)
+                except ValueError:
+                    QMessageBox.warning(dialog, "Invalid Seed", "Seed must be an integer or blank.")
+                    return
+            try:
+                save_draft_config({"rounds": rounds, "pool_size": pool_size, "seed": seed})
+                QMessageBox.information(dialog, "Saved", "Draft settings saved. New drafts will use these settings.")
+                dialog.accept()
+            except Exception as exc:
+                QMessageBox.warning(dialog, "Save Failed", str(exc))
+
+        save_btn.clicked.connect(do_save)
+        cancel_btn.clicked.connect(dialog.reject)
+        dialog.setLayout(layout)
+        dialog.exec()
 
 
 __all__ = [

@@ -2,199 +2,26 @@ from __future__ import annotations
 
 """Minimal Draft Console (phase 2 scaffold).
 
-Pauses on Draft Day; can generate a pool, compute a draft order, and auto-draft
-multiple rounds while persisting state/results. UI will be expanded in later
-phases.
+Pauses on Draft Day; can generate a pool, compute a draft order, and auto‑draft
+one round while persisting state/results. UI will be expanded in later phases.
 """
 
-try:
-    from PyQt6.QtWidgets import (
-        QDialog,
-        QVBoxLayout,
-        QLabel,
-        QPushButton,
-        QMessageBox,
-        QTableWidget,
-        QTableWidgetItem,
-        QHBoxLayout,
-        QLineEdit,
-        QFrame,
-        QGridLayout,
-    )
-    from PyQt6.QtCore import Qt
-except Exception:  # pragma: no cover - lightweight stubs for headless tests
-    class _Signal:
-        def __init__(self):
-            self._slot = None
-
-        def connect(self, slot):
-            self._slot = slot
-
-        def emit(self, *a, **k):
-            if self._slot:
-                self._slot(*a, **k)
-
-    class QDialog:
-        def __init__(self, *a, **k):
-            pass
-
-        def accept(self):
-            pass
-
-        def exec(self):
-            return 0
-
-    class QLabel:
-        def __init__(self, text: str = "", *a, **k):
-            self._text = text
-
-        def setText(self, text: str):
-            self._text = text
-
-        def text(self) -> str:
-            return self._text
-
-        class _Font:
-            def setPointSize(self, *a, **k):
-                pass
-
-            def setBold(self, *a, **k):
-                pass
-
-        def font(self):
-            return QLabel._Font()
-
-        def setFont(self, *a, **k):
-            pass
-
-    class QPushButton:
-        def __init__(self, *a, **k):
-            self.clicked = _Signal()
-
-        def setObjectName(self, *a, **k):
-            pass
-
-    class QMessageBox:
-        class StandardButton:
-            Yes = 1
-            No = 2
-
-        @staticmethod
-        def warning(*a, **k):
-            return None
-
-        @staticmethod
-        def information(*a, **k):
-            return None
-
-        @staticmethod
-        def question(*a, **k):
-            return QMessageBox.StandardButton.Yes
-
-    class QTableWidgetItem:
-        def __init__(self, text=""):
-            self._text = str(text)
-
-        def text(self):
-            return self._text
-
-    class QTableWidget:
-        def __init__(self, *a, **k):
-            pass
-
-        def setHorizontalHeaderLabels(self, *a, **k):
-            pass
-
-        class _VH:
-            def setVisible(self, *a, **k):
-                pass
-
-        def verticalHeader(self):
-            return QTableWidget._VH()
-
-        class EditTrigger:
-            NoEditTriggers = 0
-
-        def setEditTriggers(self, *a, **k):
-            pass
-
-        def setRowCount(self, *a, **k):
-            pass
-
-        def setItem(self, *a, **k):
-            pass
-
-        def resizeColumnsToContents(self, *a, **k):
-            pass
-
-        def item(self, *a, **k):
-            return None
-
-        def rowCount(self):
-            return 0
-
-        def columnCount(self):
-            return 0
-
-        def setRowHidden(self, *a, **k):
-            pass
-
-    class QHBoxLayout:
-        def __init__(self, *a, **k):
-            pass
-
-        def addWidget(self, *a, **k):
-            pass
-
-        def addLayout(self, *a, **k):
-            pass
-
-        def addStretch(self, *a, **k):
-            pass
-
-    class QVBoxLayout(QHBoxLayout):
-        def setContentsMargins(self, *a, **k):
-            pass
-
-        def setSpacing(self, *a, **k):
-            pass
-
-    class QLineEdit:
-        def __init__(self, *a, **k):
-            self.textChanged = _Signal()
-
-        def text(self):
-            return ""
-
-    class QGridLayout:
-        def __init__(self, *a, **k):
-            pass
-
-        def setContentsMargins(self, *a, **k):
-            pass
-
-        def setHorizontalSpacing(self, *a, **k):
-            pass
-
-        def setVerticalSpacing(self, *a, **k):
-            pass
-
-        def addWidget(self, *a, **k):
-            pass
-
-    class QFrame:
-        class Shape:
-            StyledPanel = 0
-
-        def setFrameShape(self, *a, **k):
-            pass
-
-    class Qt:
-        class AlignmentFlag:
-            AlignHCenter = 0
+from PyQt6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QMessageBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QHBoxLayout,
+    QLineEdit,
+    QFrame,
+    QGridLayout,
+)
+from PyQt6.QtCore import Qt
 
 from playbalance.draft_pool import generate_draft_pool, save_draft_pool, load_draft_pool
-from playbalance.draft_config import load_draft_config
 from services.draft_state import (
     compute_order_from_season_stats,
     initialize_state,
@@ -215,16 +42,13 @@ class DraftConsole(QDialog):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        cfg = load_draft_config()
-        self._cfg = cfg
-        self._seed_value = None
-        self.DRAFT_ROUNDS = int(cfg.get("rounds", 10))
+        self.DRAFT_ROUNDS = 10
 
         year = int(draft_date.split("-")[0]) if draft_date else 0
         self.year = year
         self.banner = QLabel(f"Draft Day: {draft_date}")
         bfont = self.banner.font()
-        bfont.setPointSize(max(bfont.pointSize() + 2, 12))
+        bfont.setPointSize(max(bfont.pointSize()+2, 12))
         bfont.setBold(True)
         self.banner.setFont(bfont)
         layout.addWidget(self.banner)
@@ -289,7 +113,7 @@ class DraftConsole(QDialog):
             "hit": QLabel("CH/PH/SP:"),
             "def": QLabel("ARM/FA:"),
         }
-        self._pv_values = {k: QLabel("") for k in self._pv_labels}
+        self._pv_values = {k: QLabel("—") for k in self._pv_labels}
         for row, key in enumerate(["id", "name", "pos", "bt", "hit", "def"]):
             grid.addWidget(self._pv_labels[key], row, 0)
             grid.addWidget(self._pv_values[key], row, 1)
@@ -329,35 +153,23 @@ class DraftConsole(QDialog):
             self._populate_table(self.pool)
         self.state = load_state(self.year) or {}
         self._order_names = {t.team_id: f"{t.city} {t.name}" for t in load_teams()}
-        # Establish seed: prefer existing state, else config, else default to year
-        try:
-            self._seed_value = self.state.get("seed") if self.state else None
-        except Exception:
-            self._seed_value = None
-        if self._seed_value is None:
-            self._seed_value = cfg.get("seed")
-        if self._seed_value is None:
-            self._seed_value = self.year
         self._remove_already_selected()
         self._update_status_round()
         self._rebuild_board()
 
     def _generate_pool(self) -> None:
-        size = int(self._cfg.get("pool_size", 200))
-        seed = None if self._seed_value is None else int(self._seed_value)
-        pool = generate_draft_pool(self.year, size=size, seed=seed)
+        pool = generate_draft_pool(self.year, size=200)
         save_draft_pool(self.year, pool)
         self.pool = [p.__dict__ for p in pool]
         self.status.setText(f"Draft pool generated ({len(pool)} players).")
         self._populate_table(self.pool)
 
     def _compute_order(self) -> None:
-        seed = None if self._seed_value is None else int(self._seed_value)
-        order = compute_order_from_season_stats(seed=seed)
+        order = compute_order_from_season_stats(seed=self.year)
         if not order:
             QMessageBox.warning(self, "Draft Order", "Unable to compute order from season stats.")
             return
-        self.state = initialize_state(self.year, order=order, seed=seed)
+        self.state = initialize_state(self.year, order=order)
         self.status.setText(f"Draft order computed for {len(order)} teams. Ready to draft.")
         self._update_status_round()
         self._rebuild_board()
@@ -384,7 +196,7 @@ class DraftConsole(QDialog):
             pos = p.get("primary_position", "?")
             chphsp = f"{p.get('ch',0)}/{p.get('ph',0)}/{p.get('sp',0)}"
             armfa = f"{p.get('arm',0)}/{p.get('fa',0)}"
-            self.table.setItem(r, 0, QTableWidgetItem(p.get("player_id", "")))
+            self.table.setItem(r, 0, QTableWidgetItem(p.get("player_id","")))
             self.table.setItem(r, 1, QTableWidgetItem(name))
             self.table.setItem(r, 2, QTableWidgetItem(pos))
             self.table.setItem(r, 3, QTableWidgetItem(bt))
@@ -426,10 +238,7 @@ class DraftConsole(QDialog):
         team_id = self.state["order"][idx]
         team_name = self._order_names.get(team_id, team_id)
         self.state["round"] = rnd
-        banner = (
-            f"Round {rnd}/{self.DRAFT_ROUNDS} — Pick {idx+1} of {teams_count} — "
-            f"On the clock: {team_name}"
-        )
+        banner = f"Round {rnd}/{self.DRAFT_ROUNDS} — Pick {idx+1} of {teams_count} — On the clock: {team_name}"
         self.status.setText(banner)
         self.onclock.setText(f"On the clock: {team_name}")
 
@@ -441,24 +250,9 @@ class DraftConsole(QDialog):
         return self.state["order"][idx]
 
     def _score(self, p: dict) -> int:
-        """Fallback score (should not be used)."""
         if p.get("is_pitcher"):
             return int(p.get("endurance", 0)) + int(p.get("control", 0)) + int(p.get("movement", 0))
         return int(p.get("ch", 0)) + int(p.get("ph", 0)) + int(p.get("sp", 0))
-
-    def _score_needaware(self, p: dict, team_id: str) -> int:
-        try:
-            from services.draft_ai import compute_team_needs, score_prospect
-            cache = getattr(self, "_needs_cache", {})
-            needs = cache.get(team_id)
-            if needs is None:
-                needs = compute_team_needs(team_id)
-                if not hasattr(self, "_needs_cache"):
-                    self._needs_cache = {}
-                self._needs_cache[team_id] = needs
-            return score_prospect(p, needs)
-        except Exception:
-            return self._score(p)
 
     def _make_pick(self) -> None:
         team_id = self._current_team()
@@ -478,7 +272,7 @@ class DraftConsole(QDialog):
         if not self.pool:
             return
         # choose best by score
-        best = max(self.pool, key=lambda pr: self._score_needaware(pr, team_id))
+        best = max(self.pool, key=self._score)
         self._commit_pick(team_id, best.get("player_id", ""))
 
     def _commit_pick(self, team_id: str, pid: str) -> None:
@@ -486,14 +280,12 @@ class DraftConsole(QDialog):
             return
         overall = int(self.state.get("overall_pick", 1))
         rnd = int(self.state.get("round", 1))
-        self.state.setdefault("selected", []).append(
-            {
-                "round": rnd,
-                "overall_pick": overall,
-                "team_id": team_id,
-                "player_id": pid,
-            }
-        )
+        self.state.setdefault("selected", []).append({
+            "round": rnd,
+            "overall_pick": overall,
+            "team_id": team_id,
+            "player_id": pid,
+        })
         append_result(self.year, team_id=team_id, player_id=pid, rnd=rnd, overall=overall)
         # Remove from pool and advance
         self.pool = [p for p in self.pool if p.get("player_id") != pid]
@@ -512,15 +304,8 @@ class DraftConsole(QDialog):
 
     def _close_if_complete(self) -> None:
         if not self._is_complete():
-            if (
-                QMessageBox.question(
-                    self,
-                    "Close Draft",
-                    "Draft not complete. Close anyway?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                )
-                != QMessageBox.StandardButton.Yes
-            ):
+            if QMessageBox.question(self, "Close Draft", "Draft not complete. Close anyway?",
+                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
                 return
         self.accept()
 
@@ -533,18 +318,17 @@ class DraftConsole(QDialog):
                 log_news_event(
                     f"Amateur Draft {self.year} committed: "
                     f"{summary.get('players_added',0)} players added; "
-                    f"{summary.get('roster_assigned',0)} roster assignments",
+                    f"{summary.get('roster_assigned',0)} roster assignments"
                 )
             except Exception:
                 pass
             # Update parent SeasonProgress notes (toast-like)
             try:
                 parent = self.parent()
-                if parent is not None and hasattr(parent, "notes_label"):
+                if parent is not None and hasattr(parent, 'notes_label'):
                     parent.notes_label.setText(
-                        f"Draft {self.year} committed — players added: "
-                        f"{summary.get('players_added',0)}, roster assignments: "
-                        f"{summary.get('roster_assigned',0)}",
+                        f"Draft {self.year} committed — players added: {summary.get('players_added',0)}, "
+                        f"roster assignments: {summary.get('roster_assigned',0)}"
                     )
             except Exception:
                 pass
@@ -576,7 +360,7 @@ class DraftConsole(QDialog):
         row = self.table.currentRow()
         if row < 0:
             for v in self._pv_values.values():
-                v.setText("")
+                v.setText("—")
             return
         pid = self.table.item(row, 0).text() if self.table.item(row, 0) else ""
         name = self.table.item(row, 1).text() if self.table.item(row, 1) else ""
@@ -593,3 +377,4 @@ class DraftConsole(QDialog):
 
 
 __all__ = ["DraftConsole"]
+

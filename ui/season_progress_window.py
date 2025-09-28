@@ -186,9 +186,27 @@ class SeasonProgressWindow(QDialog):
             return None
 
     def _on_draft_day(self, date_str: str) -> None:
+        # Skip if already completed for this year
         try:
+            import json as _json
+            year = int(str(date_str).split("-")[0])
+            progress = {}
+            if PROGRESS_FILE.exists():
+                try:
+                    progress = _json.loads(PROGRESS_FILE.read_text(encoding="utf-8"))
+                except Exception:
+                    progress = {}
+            completed = set(progress.get("draft_completed_years", []))
+            if year in completed:
+                return
             dlg = DraftConsole(date_str, self)
             dlg.exec()
+            completed.add(year)
+            progress["draft_completed_years"] = sorted(completed)
+            try:
+                PROGRESS_FILE.write_text(_json.dumps(progress, indent=2), encoding="utf-8")
+            except Exception:
+                pass
         except Exception:
             pass
 

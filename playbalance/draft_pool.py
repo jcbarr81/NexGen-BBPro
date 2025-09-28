@@ -17,6 +17,8 @@ gains features:
 import csv
 import json
 import random
+import os
+import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -137,26 +139,28 @@ def save_draft_pool(year: int, prospects: List[DraftProspect]) -> None:
     base.mkdir(parents=True, exist_ok=True)
     csv_path = base / f"draft_pool_{year}.csv"
     json_path = base / f"draft_pool_{year}.json"
-    # CSV
-    with csv_path.open("w", newline="", encoding="utf-8") as fh:
-        fieldnames = list(asdict(prospects[0]).keys()) if prospects else [
-            "player_id",
-            "first_name",
-            "last_name",
-            "bats",
-            "throws",
-            "primary_position",
-            "other_positions",
-            "is_pitcher",
-            "birthdate",
-        ]
-        writer = csv.DictWriter(fh, fieldnames=fieldnames)
-        writer.writeheader()
-        for p in prospects:
-            writer.writerow(asdict(p))
-    # JSON
-    with json_path.open("w", encoding="utf-8") as fh:
-        json.dump([asdict(p) for p in prospects], fh, indent=2)
+    def _write_files():
+        # CSV
+        with csv_path.open("w", newline="", encoding="utf-8") as fh:
+            fieldnames = list(asdict(prospects[0]).keys()) if prospects else [
+                "player_id",
+                "first_name",
+                "last_name",
+                "bats",
+                "throws",
+                "primary_position",
+                "other_positions",
+                "is_pitcher",
+                "birthdate",
+            ]
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            for p in prospects:
+                writer.writerow(asdict(p))
+        # JSON
+        with json_path.open("w", encoding="utf-8") as fh:
+            json.dump([asdict(p) for p in prospects], fh, indent=2)
+    _with_lock(json_path.with_suffix(json_path.suffix + ".lock"), _write_files)
 
 
 def load_draft_pool(year: int) -> List[Dict[str, object]]:
@@ -176,3 +180,20 @@ __all__ = [
     "load_draft_pool",
 ]
 
+
+def _with_lock(lock_path: Path, action) -> None:
+    for _ in range(200):
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            try:
+                action()
+            finally:
+                os.close(fd)
+                try:
+                    os.remove(str(lock_path))
+                except OSError:
+                    pass
+            return
+        except FileExistsError:
+            time.sleep(0.05)
+    action()
