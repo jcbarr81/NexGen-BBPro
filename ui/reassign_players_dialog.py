@@ -22,6 +22,7 @@ from models.base_player import BasePlayer
 from models.roster import Roster
 from ui.player_profile_dialog import PlayerProfileDialog
 from utils.roster_loader import save_roster
+from utils.roster_validation import missing_positions
 
 
 class RosterListWidget(QListWidget):
@@ -226,6 +227,12 @@ class ReassignPlayersDialog(QDialog):
 
         if len(self.roster.low) > self.max_counts["low"]:
             errors.append("Low roster exceeds 10 players.")
+
+        # Defensive coverage check: ensure every position can be fielded
+        missing = missing_positions(self.roster, self.players)
+        if missing:
+            positions = ", ".join(missing)
+            errors.append(f"Active roster lacks coverage for: {positions}.")
 
         return errors
 

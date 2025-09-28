@@ -55,6 +55,7 @@ from utils.path_utils import get_base_dir
 from utils.pitcher_role import get_role
 from utils.pitching_autofill import autofill_pitching_staff
 from playbalance.league_creator import create_league
+from utils.roster_validation import missing_positions
 
 
 # ---------------------------------------------------------------------------
@@ -739,9 +740,30 @@ class MainWindow(QMainWindow):
             from services.roster_auto_assign import auto_assign_all_teams
 
             auto_assign_all_teams()
-            QMessageBox.information(
-                self, "Rosters Updated", "Auto reassigned rosters for all teams."
-            )
+            # After reassignment, validate defensive coverage and warn if needed
+            data_dir = get_base_dir() / "data"
+            players = {p.player_id: p for p in load_players_from_csv(data_dir / "players.csv")}
+            teams = load_teams(data_dir / "teams.csv")
+            issues: list[str] = []
+            for team in teams:
+                try:
+                    roster = load_roster(team.team_id)
+                except FileNotFoundError:
+                    continue
+                missing = missing_positions(roster, players)
+                if missing:
+                    issues.append(f"{team.team_id}: {', '.join(missing)}")
+            if issues:
+                QMessageBox.warning(
+                    self,
+                    "Coverage Warnings",
+                    "Some teams lack defensive coverage on the Active roster:\n"
+                    + "\n".join(issues),
+                )
+            else:
+                QMessageBox.information(
+                    self, "Rosters Updated", "Auto reassigned rosters for all teams."
+                )
         except Exception as exc:  # pragma: no cover - UI feedback only
             QMessageBox.warning(self, "Auto Reassign Failed", str(exc))
 
