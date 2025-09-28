@@ -253,10 +253,14 @@ class DraftConsole(QDialog):
 
         # Left: pool table + search
         left = QVBoxLayout()
-        self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["ID", "Name", "Pos", "B/T", "CH/PH/SP", "ARM/FA"])
+        self.table = QTableWidget(0, 7)
+        self.table.setHorizontalHeaderLabels(["ID", "Name", "Pos", "B/T", "CH/PH/SP", "ARM/FA", "EN/CO/MV"])
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        try:
+            self.table.itemDoubleClicked.connect(self._open_profile_from_selection)
+        except Exception:
+            pass
         left.addWidget(self.table, 1)
         sr = QHBoxLayout()
         sr.addWidget(QLabel("Search:"))
@@ -288,9 +292,10 @@ class DraftConsole(QDialog):
             "bt": QLabel("B/T:"),
             "hit": QLabel("CH/PH/SP:"),
             "def": QLabel("ARM/FA:"),
+            "pit": QLabel("EN/CO/MV:"),
         }
         self._pv_values = {k: QLabel("") for k in self._pv_labels}
-        for row, key in enumerate(["id", "name", "pos", "bt", "hit", "def"]):
+        for row, key in enumerate(["id", "name", "pos", "bt", "hit", "def", "pit"]):
             grid.addWidget(self._pv_labels[key], row, 0)
             grid.addWidget(self._pv_values[key], row, 1)
         right.addWidget(self.preview)
@@ -390,6 +395,11 @@ class DraftConsole(QDialog):
             self.table.setItem(r, 3, QTableWidgetItem(bt))
             self.table.setItem(r, 4, QTableWidgetItem(chphsp))
             self.table.setItem(r, 5, QTableWidgetItem(armfa))
+            encomo = (
+                f"{p.get('endurance',0)}/{p.get('control',0)}/{p.get('movement',0)}"
+                if p.get('is_pitcher') else ""
+            )
+            self.table.setItem(r, 6, QTableWidgetItem(encomo))
         self.table.resizeColumnsToContents()
         # Maintain preview after refresh
         self._update_preview_from_selection()
@@ -584,12 +594,72 @@ class DraftConsole(QDialog):
         bt = self.table.item(row, 3).text() if self.table.item(row, 3) else ""
         hit = self.table.item(row, 4).text() if self.table.item(row, 4) else ""
         df = self.table.item(row, 5).text() if self.table.item(row, 5) else ""
+        pit = self.table.item(row, 6).text() if self.table.item(row, 6) else ""
         self._pv_values["id"].setText(pid)
         self._pv_values["name"].setText(name)
         self._pv_values["pos"].setText(pos)
         self._pv_values["bt"].setText(bt)
         self._pv_values["hit"].setText(hit)
         self._pv_values["def"].setText(df)
+        self._pv_values["pit"].setText(pit)
+
+    def _open_profile_from_selection(self, *_args) -> None:
+        try:
+            from ui.player_profile_dialog import PlayerProfileDialog
+            from models.player import Player as _Player
+            from models.pitcher import Pitcher as _Pitcher
+        except Exception:
+            return
+        row = self.table.currentRow()
+        if row < 0:
+            return
+        pid = self.table.item(row, 0).text() if self.table.item(row, 0) else ""
+        if not pid:
+            return
+        # Find prospect dict by id
+        pmap = {p.get("player_id"): p for p in self.pool}
+        pr = pmap.get(pid)
+        if not pr:
+            return
+        is_pitcher = bool(pr.get("is_pitcher")) or str(pr.get("primary_position","")) == "P"
+        base_kwargs = dict(
+            player_id=pr.get("player_id",""),
+            first_name=pr.get("first_name","Prospect"),
+            last_name=pr.get("last_name",""),
+            birthdate=pr.get("birthdate","2006-01-01"),
+            height=72,
+            weight=195,
+            bats=pr.get("bats","R"),
+            primary_position=pr.get("primary_position","P" if is_pitcher else "SS"),
+            other_positions=pr.get("other_positions",[]) or [],
+            gf=50,
+        )
+        if is_pitcher:
+            player = _Pitcher(
+                **base_kwargs,
+                endurance=int(pr.get("endurance",0) or 0),
+                control=int(pr.get("control",0) or 0),
+                movement=int(pr.get("movement",0) or 0),
+                hold_runner=int(pr.get("hold_runner",0) or 0),
+                arm=int(pr.get("arm",0) or 0),
+                fa=int(pr.get("fa",0) or 0),
+            )
+        else:
+            player = _Player(
+                **base_kwargs,
+                ch=int(pr.get("ch",0) or 0),
+                ph=int(pr.get("ph",0) or 0),
+                sp=int(pr.get("sp",0) or 0),
+                pl=50,
+                vl=50,
+                sc=50,
+                fa=int(pr.get("fa",0) or 0),
+                arm=int(pr.get("arm",0) or 0),
+            )
+        try:
+            PlayerProfileDialog(player, self).exec()
+        except Exception:
+            pass
 
 
 __all__ = ["DraftConsole"]

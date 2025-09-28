@@ -53,6 +53,38 @@ Administrators control league configuration and high-level operations.
 - **Generate Team Logos**: create logo images for all teams.
 - **Simulate Exhibition Game**: run a quick simulation between two teams.
 
+### Amateur Draft
+The Amateur Draft introduces new prospects mid-season and pauses the season to conduct the draft.
+
+- Draft Timing: Draft Day is the third Tuesday in July (computed from the schedule).
+  - The Draft page shows a status line with the current simulation date and Draft Day.
+  - “View Draft Pool” and “Start/Resume Draft” enable only on/after Draft Day and only if the draft hasn’t been completed that year.
+  - “Draft Settings” is always available.
+
+- Draft Page Buttons:
+  - **Draft Settings**: configure rounds, pool size, and RNG seed for reproducibility. Settings are saved to `data/draft_config.json`.
+  - **View Draft Pool**: browse the prospect pool (enabled on/after Draft Day).
+  - **Start/Resume Draft**: open the Draft Console to conduct the draft and resume mid-draft if needed (enabled on/after Draft Day).
+
+- Draft Console Overview:
+  - Pool table with search filter; pitchers display EN/CO/MV (endurance/control/movement).
+  - On-the-clock banner indicating the current team and pick.
+  - Recent picks board (last 10); state and results are persisted per pick.
+  - Actions:
+    - “Make Pick” to select the highlighted prospect.
+    - “Auto Pick (This Team)” for an AI pick respecting organizational needs.
+    - “Auto Draft All” to finish the remaining rounds automatically.
+    - “Commit Draftees to Rosters” appends new players to `data/players.csv` and places them on each team’s `LOW` roster level.
+  - Double-click a prospect to open their Player Profile for detailed ratings.
+
+- Files and Persistence:
+  - Draft Pool: `data/draft_pool_<year>.csv` and `data/draft_pool_<year>.json`.
+  - Draft State: `data/draft_state_<year>.json` (order, current pick, selected ids, seed).
+  - Draft Results (log): `data/draft_results_<year>.csv` (round, overall_pick, team_id, player_id).
+  - Draft completion is tracked in `data/season_progress.json` under `draft_completed_years`.
+
+Tip: Use a non-empty seed in Draft Settings for deterministic pool generation and draft order.
+
 ## Default Administrator Login
 When user data is reset, a default administrator account is created. Although
 most passwords are stored using `bcrypt` hashes, the fallback administrator

@@ -1,4 +1,4 @@
-"""Admin dashboard window using modern navigation.
+﻿"""Admin dashboard window using modern navigation.
 
 This module restructures the legacy admin dashboard to follow the layout
 demonstrated in :mod:`ui_template`.  Navigation is handled through a sidebar
@@ -6,7 +6,7 @@ of :class:`NavButton` controls which swap pages in a :class:`QStackedWidget`.
 Each page groups related actions inside a :class:`Card` with a small section
 header provided by :func:`section_title`.
 
-Only the user interface wiring has changed – the underlying callbacks are the
+Only the user interface wiring has changed â€“ the underlying callbacks are the
 same routines that existed in the previous tab based implementation.  The goal
 is to keep behaviour intact while presenting a cleaner API for future
 expansion.
@@ -96,20 +96,6 @@ class LeaguePage(QWidget):
         self.season_progress_button = QPushButton("Season Progress")
         card.layout().addWidget(
             self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-
-        # Amateur Draft actions
-        self.view_draft_pool_button = QPushButton("View Draft Pool")
-        card.layout().addWidget(
-            self.view_draft_pool_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-        self.start_resume_draft_button = QPushButton("Start/Resume Draft")
-        card.layout().addWidget(
-            self.start_resume_draft_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-        self.draft_settings_button = QPushButton("Draft Settings")
-        card.layout().addWidget(
-            self.draft_settings_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
         card.layout().addStretch()
@@ -226,13 +212,14 @@ class MainWindow(QMainWindow):
         side.setContentsMargins(10, 12, 10, 12)
         side.setSpacing(6)
 
-        side.addWidget(QLabel("⚾  Commissioner"))
+        side.addWidget(QLabel("âš¾  Commissioner"))
 
         self.btn_league = NavButton("  League")
         self.btn_teams = NavButton("  Teams")
         self.btn_users = NavButton("  Users")
         self.btn_utils = NavButton("  Utilities")
-        for b in (self.btn_league, self.btn_teams, self.btn_users, self.btn_utils):
+        self.btn_draft = NavButton("  Draft")
+        for b in (self.btn_league, self.btn_teams, self.btn_users, self.btn_utils, self.btn_draft):
             side.addWidget(b)
         side.addStretch()
 
@@ -241,6 +228,7 @@ class MainWindow(QMainWindow):
             "teams": self.btn_teams,
             "users": self.btn_users,
             "utils": self.btn_utils,
+            "draft": self.btn_draft,
         }
 
         # header + stacked pages -----------------------------------------
@@ -251,11 +239,36 @@ class MainWindow(QMainWindow):
         h.addStretch()
 
         self.stack = QStackedWidget()
+        # Draft page
+        class DraftPage(QWidget):
+            def __init__(self):
+                super().__init__()
+                layout = QVBoxLayout(self)
+                layout.setContentsMargins(18, 18, 18, 18)
+                card = Card()
+                card.layout().addWidget(section_title("Amateur Draft"))
+                # Status label to explain availability
+                self.draft_status_label = QLabel("")
+                self.draft_status_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+                card.layout().addWidget(self.draft_status_label)
+                self.view_draft_pool_button = QPushButton("View Draft Pool")
+                self.view_draft_pool_button.setToolTip("Browse the draft pool once Draft Day arrives.")
+                card.layout().addWidget(self.view_draft_pool_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+                self.start_resume_draft_button = QPushButton("Start/Resume Draft")
+                self.start_resume_draft_button.setToolTip("Open the Draft Console on or after Draft Day.")
+                card.layout().addWidget(self.start_resume_draft_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+                self.draft_settings_button = QPushButton("Draft Settings")
+                self.draft_settings_button.setToolTip("Configure rounds, pool size, and RNG seed (always available).")
+                card.layout().addWidget(self.draft_settings_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+                card.layout().addStretch()
+                layout.addWidget(card)
+                layout.addStretch()
         self.pages = {
             "league": LeaguePage(),
             "teams": TeamsPage(),
             "users": UsersPage(),
             "utils": UtilitiesPage(),
+            "draft": DraftPage(),
         }
         for page in self.pages.values():
             self.stack.addWidget(page)
@@ -287,6 +300,7 @@ class MainWindow(QMainWindow):
         self.btn_teams.clicked.connect(lambda: self._go("teams"))
         self.btn_users.clicked.connect(lambda: self._go("users"))
         self.btn_utils.clicked.connect(lambda: self._go("utils"))
+        self.btn_draft.clicked.connect(lambda: self._go("draft"))
 
         # connect page buttons to actions
         lp: LeaguePage = self.pages["league"]
@@ -295,9 +309,10 @@ class MainWindow(QMainWindow):
         lp.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         lp.playbalance_button.clicked.connect(self.open_playbalance_editor)
         lp.season_progress_button.clicked.connect(self.open_season_progress)
-        lp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
-        lp.start_resume_draft_button.clicked.connect(self.open_draft_console)
-        lp.draft_settings_button.clicked.connect(self.open_draft_settings)
+        dp = self.pages["draft"]
+        dp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
+        dp.start_resume_draft_button.clicked.connect(self.open_draft_console)
+        dp.draft_settings_button.clicked.connect(self.open_draft_settings)
 
         tp: TeamsPage = self.pages["teams"]
         tp.team_dashboard_button.clicked.connect(self.open_team_dashboard)
@@ -340,7 +355,9 @@ class MainWindow(QMainWindow):
             btn.setChecked(True)
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
-        self.statusBar().showMessage(f"Ready • {key.capitalize()}")
+        self.statusBar().showMessage(f"Ready — {key.capitalize()}")
+        if key == "draft":
+            self._refresh_draft_page()
 
 
     # ------------------------------------------------------------------
@@ -379,7 +396,7 @@ class MainWindow(QMainWindow):
                 if pid in players
             ]
             summary = (
-                f"{t.trade_id}: {t.from_team} → {t.to_team} | "
+                f"{t.trade_id}: {t.from_team} â†’ {t.to_team} | "
                 f"Give: {', '.join(give_names)} | Get: {', '.join(recv_names)}"
             )
             trade_list.addItem(summary)
@@ -950,6 +967,120 @@ class MainWindow(QMainWindow):
         dialog.setLayout(layout)
         dialog.exec()
 
+    # Draft gating ------------------------------------------------------
+    def _refresh_draft_page(self) -> None:
+        try:
+            dp = self.pages.get("draft")
+            if dp is None:
+                return
+            available, cur_date, draft_date, completed = self._draft_availability_details()
+            # Gate only pool and draft console; keep settings always enabled
+            dp.view_draft_pool_button.setEnabled(available)
+            dp.start_resume_draft_button.setEnabled(available)
+            dp.draft_settings_button.setEnabled(True)
+            # Status message
+            if completed:
+                msg = f"Current date: {cur_date} | Draft Day: {draft_date} | Draft already completed this year"
+            elif cur_date and draft_date:
+                msg = (
+                    f"Current date: {cur_date} | Draft Day: {draft_date} | "
+                    f"Status: {'Ready' if available else 'Not yet'}"
+                )
+            else:
+                msg = "Draft status unavailable — missing schedule or progress data"
+            try:
+                dp.draft_status_label.setText(msg)
+                # Update tooltips to mirror availability and guidance
+                if completed:
+                    tip = "Draft already completed for this season."
+                elif cur_date and draft_date:
+                    tip = (
+                        f"Draft Day: {draft_date}. Current date: {cur_date}. "
+                        f"{'Ready to open the Draft Console.' if available else 'Buttons enable on Draft Day.'}"
+                    )
+                else:
+                    tip = "Draft timing unknown. Ensure schedule and season progress exist."
+                dp.view_draft_pool_button.setToolTip(tip)
+                dp.start_resume_draft_button.setToolTip(tip)
+                dp.draft_settings_button.setToolTip("Configure rounds, pool size, and RNG seed (always available).")
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def _is_draft_available(self) -> bool:
+        from utils.path_utils import get_base_dir
+        import csv as _csv
+        import json as _json
+        from datetime import date as _date
+        base = get_base_dir() / "data"
+        sched = base / "schedule.csv"
+        prog = base / "season_progress.json"
+        if not sched.exists() or not prog.exists():
+            return False
+        try:
+            with prog.open("r", encoding="utf-8") as fh:
+                progress = _json.load(fh)
+        except Exception:
+            return False
+        with sched.open(newline="") as fh:
+            rows = list(_csv.DictReader(fh))
+        if not rows:
+            return False
+        sim_index = int(progress.get("sim_index", 0) or 0)
+        sim_index = max(0, min(sim_index, len(rows) - 1))
+        cur_date = str(rows[sim_index].get("date") or "")
+        if not cur_date:
+            return False
+        year = int(cur_date.split("-")[0])
+        done = set(progress.get("draft_completed_years", []))
+        if year in done:
+            return False
+        draft_date = self._compute_draft_date_for_year(year)
+        try:
+            y1, m1, d1 = [int(x) for x in cur_date.split("-")]
+            y2, m2, d2 = [int(x) for x in draft_date.split("-")]
+            return _date(y1, m1, d1) >= _date(y2, m2, d2)
+        except Exception:
+            return False
+
+    def _draft_availability_details(self) -> tuple[bool, str | None, str | None, bool]:
+        """Return (available, current_date, draft_date, completed) with safe fallbacks."""
+        from utils.path_utils import get_base_dir
+        import csv as _csv
+        import json as _json
+        from datetime import date as _date
+        base = get_base_dir() / "data"
+        sched = base / "schedule.csv"
+        prog = base / "season_progress.json"
+        if not sched.exists() or not prog.exists():
+            return (False, None, None, False)
+        try:
+            with prog.open("r", encoding="utf-8") as fh:
+                progress = _json.load(fh)
+        except Exception:
+            return (False, None, None, False)
+        with sched.open(newline="") as fh:
+            rows = list(_csv.DictReader(fh))
+        if not rows:
+            return (False, None, None, False)
+        sim_index = int(progress.get("sim_index", 0) or 0)
+        sim_index = max(0, min(sim_index, len(rows) - 1))
+        cur_date = str(rows[sim_index].get("date") or "")
+        if not cur_date:
+            return (False, None, None, False)
+        year = int(cur_date.split("-")[0])
+        draft_date = self._compute_draft_date_for_year(year)
+        done = set(progress.get("draft_completed_years", []))
+        completed = year in done
+        try:
+            y1, m1, d1 = [int(x) for x in cur_date.split("-")]
+            y2, m2, d2 = [int(x) for x in draft_date.split("-")]
+            available = (not completed) and (_date(y1, m1, d1) >= _date(y2, m2, d2))
+        except Exception:
+            available = False
+        return (available, cur_date, draft_date, completed)
+
 
 __all__ = [
     "MainWindow",
@@ -958,4 +1089,5 @@ __all__ = [
     "UsersPage",
     "UtilitiesPage",
 ]
+
 

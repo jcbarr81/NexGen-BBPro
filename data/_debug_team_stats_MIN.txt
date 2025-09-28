@@ -1,0 +1,16 @@
+Team MIN — roster hitters: 14
+player_id,name,G,AB,H,BB,HR,SB
+P6818,Chance Litwiler,81,336,92,26,5,9
+P4223,Sung Lin,0,0,0,0,0,0
+P9164,Fernando Lopez,5,7,1,0,0,0
+P8688,Ricardo Martinez,0,0,0,0,0,0
+P5426,Malik Jackson,0,0,0,0,0,0
+P6875,Waylon Hykes,0,0,0,0,0,0
+P8287,Sung Wang,0,0,0,0,0,0
+P6273,Sung Liu,0,0,0,0,0,0
+P8719,Jude Snoderly,81,307,68,0,5,4
+P8023,Casey Kassab,0,0,0,0,0,0
+P2505,Darnell Harris,0,0,0,0,0,0
+P4918,Leroy Wright,81,344,107,26,7,20
+P9545,Forrest Townsand,81,316,89,31,5,8
+P4135,Rafael Ramos,0,0,0,0,0,0
