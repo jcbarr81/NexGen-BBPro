@@ -843,7 +843,18 @@ class TeamStatsWindow(QDialog):
         item = QTableWidgetItem(display)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        item.setData(Qt.ItemDataRole.EditRole, numeric)
+        # Ensure the human-friendly formatted string is what the cell displays,
+        # even when we attach a numeric value for sorting. Some Qt styles/renderers
+        # will render floats with a default precision if only EditRole is set.
+        try:
+            item.setData(Qt.ItemDataRole.DisplayRole, display)
+        except Exception:
+            pass
+        # Attach a numeric for reliable sorting without affecting display text.
+        try:
+            item.setData(Qt.ItemDataRole.EditRole, numeric)
+        except Exception:
+            pass
         return item
 
     def _normalize_batting(self, stats: Dict[str, Any]) -> Dict[str, Any]:

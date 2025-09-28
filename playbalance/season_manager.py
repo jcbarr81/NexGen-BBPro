@@ -102,6 +102,14 @@ class SeasonManager:
 
         for file in roster_path.glob("*.csv"):
             shutil.copy2(file, locked_dir / file.name)
+            # Do not lock pitching role files; they remain editable in-season.
+            if file.name.endswith("_pitching.csv"):
+                try:
+                    # Ensure writable in case a previous version locked it
+                    file.chmod(0o644)
+                except OSError:
+                    pass
+                continue
             try:
                 file.chmod(0o444)  # make read-only
             except OSError:

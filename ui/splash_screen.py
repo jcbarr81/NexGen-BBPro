@@ -164,12 +164,34 @@ class SplashScreen(QWidget):
             self._music_player = QMediaPlayer(self)
             self._audio_output = QAudioOutput(self)
             self._music_player.setAudioOutput(self._audio_output)
-            # Moderate volume
+            # Set volume to 100%
             try:
-                self._audio_output.setVolume(0.3)
+                # PyQt6 QAudioOutput volume is 0.0 - 1.0
+                self._audio_output.setVolume(1.0)
             except Exception:
                 pass
             self._music_player.setSource(QUrl.fromLocalFile(str(audio)))
+            # Seek to 24 seconds once media is loaded
+            try:
+                def _seek_to_24(status):  # pragma: no cover - depends on Qt version
+                    try:
+                        from PyQt6.QtMultimedia import QMediaPlayer as _MP
+                        if status == _MP.MediaStatus.LoadedMedia:
+                            self._music_player.setPosition(24000)
+                            try:
+                                self._music_player.mediaStatusChanged.disconnect(_seek_to_24)
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
+                self._music_player.mediaStatusChanged.connect(_seek_to_24)
+            except Exception:
+                # Fallback: attempt a delayed seek shortly after starting
+                try:
+                    QTimer.singleShot(300, lambda: self._music_player.setPosition(24000))
+                except Exception:
+                    pass
             # Loop if API available; otherwise restart on end
             if hasattr(self._music_player, "setLoops"):
                 try:

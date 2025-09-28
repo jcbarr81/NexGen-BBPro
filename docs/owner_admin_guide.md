@@ -42,6 +42,7 @@ Administrators control league configuration and high-level operations.
 
 ### League and User Management
 - **Create League**: generate a new league structure (overwrites current data).
+ - **Reset to Opening Day**: clear current season results and standings, reset progress to day one, and set the phase to Regular Season (non-destructive to teams/rosters). You will be prompted whether to also purge saved season boxscores (`data/boxscores/season`).
 - **Add User**: create a new account with optional team assignment.
 - **Edit User**: update passwords and team associations for existing accounts.
 - **Open Team Dashboard**: launch any team's owner dashboard for direct management.

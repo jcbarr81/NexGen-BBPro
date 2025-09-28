@@ -86,13 +86,21 @@ class PitchingEditor(QDialog):
             if player_id:
                 used_ids.add(player_id)
         path = get_base_dir() / "data" / "rosters" / f"{self.team_id}_pitching.csv"
-        with path.open("w", newline='', encoding="utf-8") as f:
-            writer = csv.writer(f)
-            for role, dropdown in self.pitcher_dropdowns.items():
-                player_id = dropdown.currentData()
-                if player_id:
-                    writer.writerow([player_id, role])
-        QMessageBox.information(self, "Saved", "Pitching staff saved successfully.")
+        try:
+            if path.exists():
+                try:
+                    path.chmod(0o644)  # ensure writable if previously locked
+                except OSError:
+                    pass
+            with path.open("w", newline='', encoding="utf-8") as f:
+                writer = csv.writer(f)
+                for role, dropdown in self.pitcher_dropdowns.items():
+                    player_id = dropdown.currentData()
+                    if player_id:
+                        writer.writerow([player_id, role])
+            QMessageBox.information(self, "Saved", "Pitching staff saved successfully.")
+        except PermissionError as exc:
+            QMessageBox.warning(self, "Permission Denied", f"Cannot save to {path}.\n{exc}")
 
     def load_pitching_staff(self):
         path = get_base_dir() / "data" / "rosters" / f"{self.team_id}_pitching.csv"

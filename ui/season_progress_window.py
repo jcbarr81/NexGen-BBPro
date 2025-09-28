@@ -681,14 +681,70 @@ class SeasonProgressWindow(QDialog):
 
     def _load_progress(self) -> None:
         """Load preseason and simulation progress from disk."""
+        saved_index: int | None = None
         try:
             with PROGRESS_FILE.open("r", encoding="utf-8") as fh:
                 data = json.load(fh)
+            self._preseason_done.update(data.get("preseason_done", {}))
+            # Saved index may be absent or out of range after refactors
+            raw = data.get("sim_index", None)
+            if isinstance(raw, int):
+                saved_index = raw
+            self._playoffs_done = data.get("playoffs_done", self._playoffs_done)
         except (OSError, json.JSONDecodeError):
-            return
-        self._preseason_done.update(data.get("preseason_done", {}))
-        self.simulator._index = data.get("sim_index", self.simulator._index)
-        self._playoffs_done = data.get("playoffs_done", self._playoffs_done)
+            # No saved file or invalid JSON — fall back to inference
+            pass
+
+        inferred_index = self._infer_sim_index_from_schedule()
+        # Prefer the larger of saved vs inferred to avoid regressing progress
+        if saved_index is None:
+            new_index = inferred_index
+        else:
+            new_index = max(int(saved_index), int(inferred_index))
+
+        # Clamp to available date range
+        if self.simulator.dates:
+            new_index = max(0, min(new_index, len(self.simulator.dates)))
+        else:
+            new_index = 0
+
+        self.simulator._index = new_index
+        # Persist a repaired/initialized progress file for future runs
+        try:
+            self._save_progress()
+        except Exception:
+            pass
+
+    def _infer_sim_index_from_schedule(self) -> int:
+        """Infer current day index from the schedule file/state.
+
+        A date is considered completed if all games for that date have
+        a truthy "played" flag or contain a result. This allows recovering
+        progress when ``season_progress.json`` is missing or stale but the
+        schedule and standings have persisted across code changes.
+        """
+        if not self.simulator.schedule or not self.simulator.dates:
+            return 0
+        by_date: dict[str, list[dict[str, str]]] = {}
+        for g in self.simulator.schedule:
+            by_date.setdefault(g.get("date", ""), []).append(g)
+        completed_days = 0
+        for d in self.simulator.dates:
+            games = by_date.get(d, [])
+            if not games:
+                break
+            all_done = True
+            for game in games:
+                played = game.get("played")
+                result = game.get("result")
+                if not (str(played).strip() == "1" or (result and str(result).strip())):
+                    all_done = False
+                    break
+            if all_done:
+                completed_days += 1
+            else:
+                break
+        return completed_days
 
     def _save_progress(self) -> None:
         """Persist preseason and simulation progress to disk."""

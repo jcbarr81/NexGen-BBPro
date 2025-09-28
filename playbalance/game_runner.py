@@ -107,6 +107,15 @@ def apply_lineup(state: TeamState, lineup: Sequence[LineupEntry]) -> None:
         setattr(player, "position", position)
         new_lineup.append(player)
         seen.add(player_id)
+    # Defensive programming: ensure we always field a complete batting order.
+    # If a saved lineup is incomplete or malformed (e.g., fewer than nine
+    # entries), fall back to the default lineup by signaling an error to the
+    # caller. This prevents simulations from running with 1–2 hitters and
+    # producing distorted stats.
+    if len(new_lineup) != 9:
+        raise ValueError(
+            f"Lineup must list 9 unique players; found {len(new_lineup)}"
+        )
     state.lineup = new_lineup
     state.bench = [p for p in hitters if p.player_id not in seen]
 

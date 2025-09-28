@@ -83,6 +83,11 @@ class LeaguePage(QWidget):
             self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter
         )
 
+        self.reset_opening_day_button = QPushButton("Reset to Opening Day")
+        card.layout().addWidget(
+            self.reset_opening_day_button, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
+
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         card.layout().addWidget(
             self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter
@@ -309,6 +314,7 @@ class MainWindow(QMainWindow):
         lp.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         lp.playbalance_button.clicked.connect(self.open_playbalance_editor)
         lp.season_progress_button.clicked.connect(self.open_season_progress)
+        lp.reset_opening_day_button.clicked.connect(self.reset_to_opening_day)
         dp = self.pages["draft"]
         dp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
         dp.start_resume_draft_button.clicked.connect(self.open_draft_console)
@@ -754,10 +760,23 @@ class MainWindow(QMainWindow):
             assignments = autofill_pitching_staff(available)
             path = data_dir / "rosters" / f"{team.team_id}_pitching.csv"
             path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                for role, pid in assignments.items():
-                    writer.writerow([pid, role])
+            try:
+                if path.exists():
+                    try:
+                        path.chmod(0o644)  # ensure writable if previously locked
+                    except OSError:
+                        pass
+                with path.open("w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    for role, pid in assignments.items():
+                        writer.writerow([pid, role])
+            except PermissionError as exc:
+                QMessageBox.warning(
+                    self,
+                    "Permission Denied",
+                    f"Cannot write pitching roles to {path}.\n{exc}",
+                )
+                return
         QMessageBox.information(
             self, "Pitching Staff Set", "Pitching roles auto-filled for all teams."
         )
@@ -858,6 +877,186 @@ class MainWindow(QMainWindow):
     def open_playbalance_editor(self) -> None:
         editor = PlayBalanceEditor(self)
         editor.exec()
+
+    def reset_to_opening_day(self) -> None:
+        """Reset league schedule and state to Opening Day.
+
+        - Clears results/played/boxscore from `data/schedule.csv`
+        - Resets `data/season_progress.json` to preseason-done and sim_index 0
+        - Clears `data/standings.json`
+        - Sets season phase to REGULAR_SEASON in `data/season_state.json`
+        - Attempts to lock current rosters (best effort)
+        - Optional: purge saved season boxscores under `data/boxscores/season`
+        """
+        confirm = QMessageBox.question(
+            self,
+            "Reset to Opening Day",
+            (
+                "This will clear all regular-season results and standings, "
+                "and rewind the season to Opening Day. Continue?"
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if confirm != QMessageBox.StandardButton.Yes:
+            return
+
+        base = get_base_dir() / "data"
+        sched = base / "schedule.csv"
+        progress = base / "season_progress.json"
+        standings = base / "standings.json"
+        stats_file = base / "season_stats.json"
+        # Ask whether to purge season boxscores as well
+        purge_box = (
+            QMessageBox.question(
+                self,
+                "Purge Boxscores?",
+                "Also delete saved season boxscores (data/boxscores/season)?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            == QMessageBox.StandardButton.Yes
+        )
+
+        # Require schedule to exist
+        if not sched.exists():
+            QMessageBox.warning(
+                self,
+                "No Schedule",
+                "Cannot reset: schedule.csv not found. Generate a schedule first.",
+            )
+            return
+
+        # 1) Load and rewrite schedule with cleared results
+        try:
+            rows: list[dict[str, str]] = []
+            with sched.open(newline="", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)
+                for r in reader:
+                    r = dict(r)
+                    r["result"] = ""
+                    r["played"] = ""
+                    r["boxscore"] = ""
+                    rows.append(r)
+            # Preserve column order preferred by save_schedule
+            fieldnames = ["date", "home", "away", "result", "played", "boxscore"]
+            with sched.open("w", newline="", encoding="utf-8") as fh:
+                writer = csv.DictWriter(fh, fieldnames=fieldnames)
+                writer.writeheader()
+                for r in rows:
+                    writer.writerow({
+                        "date": r.get("date", ""),
+                        "home": r.get("home", ""),
+                        "away": r.get("away", ""),
+                        "result": r.get("result", ""),
+                        "played": r.get("played", ""),
+                        "boxscore": r.get("boxscore", ""),
+                    })
+        except Exception as exc:
+            QMessageBox.warning(self, "Reset Failed", f"Failed rewriting schedule: {exc}")
+            return
+
+        # Determine season year from first row (for draft flags)
+        first_year: int | None = None
+        try:
+            if rows:
+                first = rows[0]
+                if first.get("date"):
+                    first_year = int(str(first["date"]).split("-")[0])
+        except Exception:
+            first_year = None
+
+        # 2) Reset progress file
+        try:
+            data: dict = {
+                "preseason_done": {
+                    "free_agency": True,
+                    "training_camp": True,
+                    "schedule": True,
+                },
+                "sim_index": 0,
+                "playoffs_done": False,
+            }
+            # If existing progress has draft flags, preserve past years but remove current
+            if progress.exists():
+                import json as _json
+                try:
+                    cur = _json.loads(progress.read_text(encoding="utf-8"))
+                    completed = set(cur.get("draft_completed_years", []))
+                    if first_year is not None and first_year in completed:
+                        completed.discard(first_year)
+                    if completed:
+                        data["draft_completed_years"] = sorted(completed)
+                except Exception:
+                    pass
+            progress.parent.mkdir(parents=True, exist_ok=True)
+            import json as _json2
+            progress.write_text(_json2.dumps(data, indent=2), encoding="utf-8")
+        except Exception as exc:
+            QMessageBox.warning(self, "Reset Failed", f"Failed resetting progress: {exc}")
+            return
+
+        # 3) Clear standings
+        try:
+            standings.parent.mkdir(parents=True, exist_ok=True)
+            standings.write_text("{}\n", encoding="utf-8")
+        except Exception:
+            # Not critical
+            pass
+
+        # 3b) Clear season stats (players and teams)
+        try:
+            stats_file.parent.mkdir(parents=True, exist_ok=True)
+            stats_file.write_text(
+                "{\n  \"players\": {},\n  \"teams\": {},\n  \"history\": []\n}\n",
+                encoding="utf-8",
+            )
+        except Exception:
+            # Not critical
+            pass
+
+        # 4) Set phase to REGULAR_SEASON and attempt to lock rosters
+        try:
+            from playbalance.season_manager import SeasonManager, SeasonPhase
+
+            mgr = SeasonManager()
+            mgr.phase = SeasonPhase.REGULAR_SEASON
+            mgr.save()
+            try:
+                mgr.finalize_rosters()
+            except Exception:
+                pass
+        except Exception as exc:
+            QMessageBox.warning(self, "Reset Partially Completed", f"State updated, but failed setting phase: {exc}")
+            # Still continue to notify completion of the rest
+
+        try:
+            log_news_event("League reset to Opening Day")
+        except Exception:
+            pass
+
+        # Optionally purge season boxscores
+        if purge_box:
+            try:
+                import shutil
+                box_dir = base / "boxscores" / "season"
+                if box_dir.exists():
+                    shutil.rmtree(box_dir)
+                log_news_event("Purged saved season boxscores")
+            except Exception as exc:
+                QMessageBox.warning(
+                    self,
+                    "Boxscore Purge Failed",
+                    f"Reset completed, but failed to purge boxscores: {exc}",
+                )
+
+        QMessageBox.information(
+            self,
+            "Reset Complete",
+            (
+                "League reset to Opening Day." +
+                (" Season boxscores purged." if purge_box else "")
+            ),
+        )
 
     def open_season_progress(self) -> None:
         win = SeasonProgressWindow(self)
