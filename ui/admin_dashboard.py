@@ -17,7 +17,7 @@ from __future__ import annotations
 import csv
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -31,6 +31,8 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressDialog,
+    QTableWidget,
+    QTableWidgetItem,
     QStackedWidget,
     QStatusBar,
     QVBoxLayout,
@@ -38,6 +40,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .components import Card, NavButton, section_title
+from .admin_home_page import AdminHomePage
 from ui.window_utils import ensure_on_top, show_on_top
 from .theme import _toggle_theme
 from .team_entry_dialog import TeamEntryDialog
@@ -66,109 +69,171 @@ from utils.roster_validation import missing_positions
 
 
 class LeaguePage(QWidget):
-    """Actions related to league-wide management."""
+    """Actions related to league-wide management, grouped by intent."""
 
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(18)
 
-        card = Card()
-        card.layout().addWidget(section_title("League Management"))
-
-        self.review_button = QPushButton("Review Trades")
-        card.layout().addWidget(self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-        self.create_league_button = QPushButton("Create League")
-        card.layout().addWidget(
-            self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.reset_opening_day_button = QPushButton("Reset to Opening Day")
-        card.layout().addWidget(
-            self.reset_opening_day_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.exhibition_button = QPushButton("Simulate Exhibition Game")
-        card.layout().addWidget(
-            self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
-
-        self.playbalance_button = QPushButton("Edit Play Balance")
-        card.layout().addWidget(
-            self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        # Season Control --------------------------------------------------
+        control = Card()
+        control.layout().addWidget(section_title("Season Control"))
 
         self.season_progress_button = QPushButton("Season Progress")
-        card.layout().addWidget(
-            self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        self.season_progress_button.setToolTip("Open the season progress window")
+        control.layout().addWidget(self.season_progress_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        card.layout().addStretch()
-        layout.addWidget(card)
+        self.reset_opening_day_button = QPushButton("Reset to Opening Day")
+        self.reset_opening_day_button.setObjectName("Danger")  # styled later
+        self.reset_opening_day_button.setToolTip("Clear results/standings and rewind season to Opening Day")
+        control.layout().addWidget(self.reset_opening_day_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.exhibition_button = QPushButton("Simulate Exhibition Game")
+        self.exhibition_button.setToolTip("Run a quick exhibition between two teams")
+        control.layout().addWidget(self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        control.layout().addStretch()
+
+        # Operations ------------------------------------------------------
+        ops = Card()
+        ops.layout().addWidget(section_title("Operations"))
+
+        self.review_button = QPushButton("Review Trades")
+        self.review_button.setToolTip("Approve or reject pending trades")
+        ops.layout().addWidget(self.review_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.create_league_button = QPushButton("Create League")
+        self.create_league_button.setToolTip("Generate a new league structure (destructive)")
+        ops.layout().addWidget(self.create_league_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.playbalance_button = QPushButton("Edit Play Balance")
+        self.playbalance_button.setToolTip("Tune game balance parameters")
+        ops.layout().addWidget(self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        ops.layout().addStretch()
+
+        layout.addWidget(control)
+        layout.addWidget(ops)
         layout.addStretch()
 
 
 class TeamsPage(QWidget):
-    """Team management helpers."""
+    """Team management helpers, grouped for access and bulk actions."""
 
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(18)
 
-        card = Card()
-        card.layout().addWidget(section_title("Team Management"))
+        # Team Access -----------------------------------------------------
+        access = Card()
+        access.layout().addWidget(section_title("Team Access"))
+        self.team_select = QComboBox()
+        try:
+            teams = load_teams("data/teams.csv")
+            self.team_select.addItems([t.team_id for t in teams])
+        except Exception:
+            pass
+        self.team_select.setEditable(True)
+        self.team_select.setToolTip("Type to search by team id; used by 'Open Team Dashboard'")
+        access.layout().addWidget(self.team_select)
 
         self.team_dashboard_button = QPushButton("Open Team Dashboard")
-        card.layout().addWidget(
-            self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        self.team_dashboard_button.setToolTip("Open selected team's Owner Dashboard")
+        access.layout().addWidget(self.team_dashboard_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        access.layout().addStretch()
+
+        # Bulk Actions ----------------------------------------------------
+        bulk = Card()
+        bulk.layout().addWidget(section_title("Bulk Actions"))
 
         self.set_lineups_button = QPushButton("Set All Team Lineups")
-        card.layout().addWidget(
-            self.set_lineups_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        self.set_lineups_button.setToolTip("Auto-fill batting orders for all teams")
+        bulk.layout().addWidget(self.set_lineups_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self.set_pitching_button = QPushButton("Set All Pitching Staff Roles")
-        card.layout().addWidget(
-            self.set_pitching_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        self.set_pitching_button.setToolTip("Auto-assign pitching roles for all teams")
+        bulk.layout().addWidget(self.set_pitching_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
         self.auto_reassign_button = QPushButton("Auto Reassign All Rosters")
-        card.layout().addWidget(
-            self.auto_reassign_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        self.auto_reassign_button.setToolTip("Reassign players across roster levels using policy constraints")
+        bulk.layout().addWidget(self.auto_reassign_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        card.layout().addStretch()
-        layout.addWidget(card)
+        # Pre-flight note
+        note = QLabel(
+            "Actions affect all teams. Constraints: Active ≤ 25; AAA ≤ 15; Low ≤ 10."
+        )
+        note.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        bulk.layout().addWidget(note)
+        bulk.layout().addStretch()
+
+        layout.addWidget(access)
+        layout.addWidget(bulk)
         layout.addStretch()
 
 
 class UsersPage(QWidget):
-    """User account management."""
+    """User account management with search and list."""
 
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(18)
 
         card = Card()
         card.layout().addWidget(section_title("User Management"))
 
-        self.add_user_button = QPushButton("Add User")
-        card.layout().addWidget(
-            self.add_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        # Search + users table
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search by username or team id…")
+        card.layout().addWidget(self.search)
 
+        self.user_table = QTableWidget(0, 3)
+        self.user_table.setHorizontalHeaderLabels(["Username", "Role", "Team"])
+        self.user_table.setSortingEnabled(True)
+        card.layout().addWidget(self.user_table)
+
+        # Action row
+        row = QHBoxLayout()
+        self.add_user_button = QPushButton("Add User")
         self.edit_user_button = QPushButton("Edit User")
-        card.layout().addWidget(
-            self.edit_user_button, alignment=Qt.AlignmentFlag.AlignHCenter
-        )
+        row.addWidget(self.add_user_button)
+        row.addWidget(self.edit_user_button)
+        card.layout().addLayout(row)
 
         card.layout().addStretch()
         layout.addWidget(card)
         layout.addStretch()
+
+        # State
+        self.selected_username: str | None = None
+        self.search.textChanged.connect(self._populate)
+        self.user_table.itemSelectionChanged.connect(self._capture_selection)
+        self._populate()
+
+    def _capture_selection(self) -> None:
+        items = self.user_table.selectedItems()
+        self.selected_username = items[0].text() if items else None
+
+    def _populate(self) -> None:
+        from utils.user_manager import load_users
+        needle = self.search.text().strip().lower()
+        users = []
+        try:
+            users = load_users()
+        except Exception:
+            users = []
+        rows = []
+        for u in users:
+            if not needle or needle in u["username"].lower() or needle in (u.get("team_id", "").lower()):
+                rows.append((u["username"], u.get("role", ""), u.get("team_id", "")))
+        self.user_table.setRowCount(len(rows))
+        for r, (username, role, team) in enumerate(rows):
+            self.user_table.setItem(r, 0, QTableWidgetItem(username))
+            self.user_table.setItem(r, 1, QTableWidgetItem(role))
+            self.user_table.setItem(r, 2, QTableWidgetItem(team))
 
 
 class UtilitiesPage(QWidget):
@@ -220,22 +285,43 @@ class MainWindow(QMainWindow):
 
         side.addWidget(QLabel("⚾  Commissioner"))
 
+        self.btn_dashboard = NavButton("  Dashboard")
         self.btn_league = NavButton("  League")
         self.btn_teams = NavButton("  Teams")
         self.btn_users = NavButton("  Users")
         self.btn_utils = NavButton("  Utilities")
         self.btn_draft = NavButton("  Draft")
-        for b in (self.btn_league, self.btn_teams, self.btn_users, self.btn_utils, self.btn_draft):
+        for b in (self.btn_dashboard, self.btn_league, self.btn_teams, self.btn_users, self.btn_utils, self.btn_draft):
             side.addWidget(b)
         side.addStretch()
 
         self.nav_buttons = {
+            "dashboard": self.btn_dashboard,
             "league": self.btn_league,
             "teams": self.btn_teams,
             "users": self.btn_users,
             "utils": self.btn_utils,
             "draft": self.btn_draft,
         }
+        # Nav icons and tooltips
+        try:
+            from pathlib import Path
+            icon_dir = Path(__file__).resolve().parent / "icons"
+            def _set(btn, name: str, tip: str) -> None:
+                try:
+                    btn.setIcon(QIcon(str(icon_dir / name)))
+                    btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+                except Exception:
+                    pass
+                btn.setToolTip(tip)
+            _set(self.btn_dashboard, "team_dashboard.svg", "League overview and quick actions")
+            _set(self.btn_league, "season_progress.svg", "Season control and operations")
+            _set(self.btn_teams, "team_dashboard.svg", "Open team dashboards and bulk actions")
+            _set(self.btn_users, "edit_user.svg", "Manage accounts and roles")
+            _set(self.btn_utils, "generate_logos.svg", "Logos/avatars and data tools")
+            _set(self.btn_draft, "play_balance.svg", "Amateur Draft console and settings")
+        except Exception:
+            pass
 
         # header + stacked pages -----------------------------------------
         header = QWidget(objectName="Header")
@@ -263,6 +349,9 @@ class MainWindow(QMainWindow):
                 self.start_resume_draft_button = QPushButton("Start/Resume Draft")
                 self.start_resume_draft_button.setToolTip("Open the Draft Console on or after Draft Day.")
                 card.layout().addWidget(self.start_resume_draft_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+                self.view_results_button = QPushButton("View Draft Results")
+                self.view_results_button.setToolTip("Open results for the current season (after completion).")
+                card.layout().addWidget(self.view_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
                 self.draft_settings_button = QPushButton("Draft Settings")
                 self.draft_settings_button.setToolTip("Configure rounds, pool size, and RNG seed (always available).")
                 card.layout().addWidget(self.draft_settings_button, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -270,6 +359,7 @@ class MainWindow(QMainWindow):
                 layout.addWidget(card)
                 layout.addStretch()
         self.pages = {
+            "dashboard": AdminHomePage(self),
             "league": LeaguePage(),
             "teams": TeamsPage(),
             "users": UsersPage(),
@@ -302,6 +392,7 @@ class MainWindow(QMainWindow):
         self._build_menu()
 
         # signals ---------------------------------------------------------
+        self.btn_dashboard.clicked.connect(lambda: self._go("dashboard"))
         self.btn_league.clicked.connect(lambda: self._go("league"))
         self.btn_teams.clicked.connect(lambda: self._go("teams"))
         self.btn_users.clicked.connect(lambda: self._go("users"))
@@ -319,6 +410,7 @@ class MainWindow(QMainWindow):
         dp = self.pages["draft"]
         dp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
         dp.start_resume_draft_button.clicked.connect(self.open_draft_console)
+        dp.view_results_button.clicked.connect(self.open_draft_results)
         dp.draft_settings_button.clicked.connect(self.open_draft_settings)
 
         tp: TeamsPage = self.pages["teams"]
@@ -336,8 +428,8 @@ class MainWindow(QMainWindow):
         util.generate_avatars_button.clicked.connect(self.generate_player_avatars)
 
         # default page
-        self.btn_league.setChecked(True)
-        self._go("league")
+        self.btn_dashboard.setChecked(True)
+        self._go("dashboard")
 
     # ------------------------------------------------------------------
     # Menu and navigation helpers
@@ -369,8 +461,57 @@ class MainWindow(QMainWindow):
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
         self.statusBar().showMessage(self._status_with_date(f"Ready - {key.capitalize()}"))
+        # Page-specific refresh hooks
+        try:
+            page = self.pages.get(key)
+            if page is not None and hasattr(page, "refresh"):
+                page.refresh()  # type: ignore[attr-defined]
+        except Exception:
+            pass
         if key == "draft":
             self._refresh_draft_page()
+
+    # ------------------------------------------------------------------
+    # Dashboard metrics helper
+    # ------------------------------------------------------------------
+    def get_admin_metrics(self) -> dict:
+        """Return a small set of overview metrics for the Admin home page."""
+        # Counts
+        try:
+            teams = load_teams("data/teams.csv")
+            team_count = len(teams)
+        except Exception:
+            team_count = 0
+        try:
+            players = load_players_from_csv("data/players.csv")
+            player_count = len(players)
+        except Exception:
+            player_count = 0
+        # Pending trades
+        try:
+            pending = sum(1 for t in load_trades() if getattr(t, "status", "") == "pending")
+        except Exception:
+            pending = 0
+        # Season phase (best-effort)
+        try:
+            from playbalance.season_manager import SeasonManager
+            phase = str(SeasonManager().phase.name)
+        except Exception:
+            phase = "Unknown"
+        # Draft day and status
+        try:
+            available, cur_date, draft_date, completed = self._draft_availability_details()
+            status = "Completed" if completed else ("Ready" if available else "Not yet")
+        except Exception:
+            draft_date, status = None, None
+        return {
+            "teams": team_count,
+            "players": player_count,
+            "pending_trades": pending,
+            "season_phase": phase,
+            "draft_day": draft_date,
+            "draft_status": status,
+        }
 
 
     # ------------------------------------------------------------------
@@ -642,6 +783,16 @@ class MainWindow(QMainWindow):
             password_input.clear()
 
         user_combo.currentIndexChanged.connect(lambda _: sync_fields())
+        # Prefer selection from Users page if available
+        try:
+            up = self.pages.get("users")
+            sel = getattr(up, "selected_username", None)
+            if sel:
+                idx = user_combo.findText(sel)
+                if idx >= 0:
+                    user_combo.setCurrentIndex(idx)
+        except Exception:
+            pass
         sync_fields()
 
         def handle_update() -> None:
@@ -675,10 +826,26 @@ class MainWindow(QMainWindow):
         if not team_ids:
             QMessageBox.information(self, "No Teams", "No teams available.")
             return
-        team_id, ok = QInputDialog.getItem(
-            self, "Open Team Dashboard", "Select a team:", team_ids, 0, False
-        )
-        if ok and team_id:
+        # Prefer selected value from TeamsPage if available
+        selected = None
+        try:
+            tp = self.pages.get("teams")
+            if tp is not None and getattr(tp, "team_select", None) is not None:
+                cur = tp.team_select.currentText().strip()
+                if cur:
+                    selected = cur
+        except Exception:
+            selected = None
+        team_id = None
+        if selected and selected in team_ids:
+            team_id = selected
+        else:
+            team_id, ok = QInputDialog.getItem(
+                self, "Open Team Dashboard", "Select a team:", team_ids, 0, False
+            )
+            if not ok:
+                return
+        if team_id:
             dashboard = OwnerDashboard(team_id)
             show_on_top(dashboard)
             self.team_dashboards.append(dashboard)
@@ -1143,6 +1310,37 @@ class MainWindow(QMainWindow):
         # For now, open the same console; users can browse pool without drafting
         self._open_draft_console()
 
+    def open_draft_results(self) -> None:
+        """Open a simple viewer for current season's draft results CSV, if present."""
+        import csv as _csv
+        year = self._current_season_year()
+        from utils.path_utils import get_base_dir as _gb
+        p = _gb() / "data" / f"draft_results_{year}.csv"
+        if not p.exists():
+            QMessageBox.information(self, "Draft Results", f"No draft results found for {year}.")
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"Draft Results {year}")
+        lay = QVBoxLayout(dlg)
+        lay.setContentsMargins(12, 12, 12, 12)
+        lay.setSpacing(8)
+        label = QLabel(str(p))
+        lay.addWidget(label)
+        lst = QListWidget()
+        try:
+            with p.open(newline="", encoding="utf-8") as fh:
+                r = _csv.DictReader(fh)
+                for row in r:
+                    rd = row.get("round", "")
+                    pick = row.get("overall_pick", "")
+                    team = row.get("team_id", "")
+                    pid = row.get("player_id", "")
+                    lst.addItem(f"R{rd} P{pick}: {team} -> {pid}")
+        except Exception:
+            lst.addItem("<Unable to read draft results>")
+        lay.addWidget(lst)
+        show_on_top(dlg)
+
     def open_draft_settings(self) -> None:
         dialog = QDialog(self)
         dialog.setWindowTitle("Draft Settings")
@@ -1212,6 +1410,11 @@ class MainWindow(QMainWindow):
             dp.view_draft_pool_button.setEnabled(available)
             dp.start_resume_draft_button.setEnabled(available)
             dp.draft_settings_button.setEnabled(True)
+            try:
+                dp.view_results_button.setVisible(bool(completed))
+                dp.view_results_button.setEnabled(bool(completed))
+            except Exception:
+                pass
             # Status message
             if completed:
                 msg = f"Current date: {cur_date} | Draft Day: {draft_date} | Draft already completed this year"
@@ -1221,7 +1424,7 @@ class MainWindow(QMainWindow):
                     f"Status: {'Ready' if available else 'Not yet'}"
                 )
             else:
-                msg = "Draft status unavailable — missing schedule or progress data"
+                msg = "Draft status unavailable - missing schedule or progress data"
             try:
                 dp.draft_status_label.setText(msg)
                 # Update tooltips to mirror availability and guidance
@@ -1237,6 +1440,8 @@ class MainWindow(QMainWindow):
                 dp.view_draft_pool_button.setToolTip(tip)
                 dp.start_resume_draft_button.setToolTip(tip)
                 dp.draft_settings_button.setToolTip("Configure rounds, pool size, and RNG seed (always available).")
+                if completed:
+                    dp.view_results_button.setToolTip("Open draft results for the current season.")
             except Exception:
                 pass
         except Exception:

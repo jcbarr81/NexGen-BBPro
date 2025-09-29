@@ -99,4 +99,31 @@ password: pass
 ```
 
 ---
+## Dashboard Updates
+
+The dashboards have been reorganized to improve clarity while keeping the
+existing visual style and theme.
+
+### Owner
+- New Home page with quick metrics (Record, Run Differential, Next Opponent
+  and Date) and shortcuts (Lineups, Pitching Staff, Recent Transactions).
+- Header shows: “Next: <opponent> <date> | Record W-L RD ±X”.
+- Unified **Players** browser with tabs for Position Players and Pitchers.
+- Roster page displays a defensive coverage notice when positions are missing.
+- Navigation labels: “Moves & Trades” and “League Hub”.
+
+### Admin
+- New Home page with overview metrics: Pending Trades, Teams, Players,
+  Season Phase; plus Draft Day and status. Quick Actions: Review Trades,
+  Season Progress, Exhibition Game, Create League.
+- League page grouped into:
+  - Season Control: Season Progress, Reset to Opening Day, Exhibition Game.
+  - Operations: Review Trades, Create League, Edit Play Balance.
+- Teams page grouped into:
+  - Team Access: searchable team selector + Open Team Dashboard.
+  - Bulk Actions: Set All Lineups, Set All Pitching Roles, Auto Reassign
+    All Rosters, with roster size constraints noted.
+- Draft page now shows “View Draft Results” after the draft is completed.
+- Users page shows a searchable list of users alongside Add/Edit actions.
+
 This document will evolve as new features are introduced.

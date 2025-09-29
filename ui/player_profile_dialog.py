@@ -254,11 +254,17 @@ class PlayerProfileDialog(QDialog):
         # Size policy: provide a generous default width so headers and row titles
         # are visible without manual column resizing, but still allow the user to
         # resize the window larger if desired.
-        self.adjustSize()
-        hint = self.sizeHint()
-        min_w = max(hint.width(), 1200)
-        min_h = max(hint.height(), 720)
+        # Size policy: robust against test stubs without real Qt widgets
         try:
+            self.adjustSize()
+            hint = self.sizeHint()
+            # width/height may be callables on real QSize; guard for stubs
+            w_attr = getattr(hint, "width", 0)
+            h_attr = getattr(hint, "height", 0)
+            w = int(w_attr() if callable(w_attr) else w_attr or 0)
+            h = int(h_attr() if callable(h_attr) else h_attr or 0)
+            min_w = max(w, 1200)
+            min_h = max(h, 720)
             self.setMinimumSize(min_w, min_h)
             self.resize(min_w, min_h)
         except Exception:
@@ -904,12 +910,11 @@ class PlayerProfileDialog(QDialog):
         return key.title()
 
     def _collect_stats_history(self) -> List[Tuple[str, Dict[str, Any]]]:
-        """Return rows for the stats table: current season year and career.
+        """Return rows for the stats table.
 
-        Historical ad-hoc snapshots ("Year 1", etc.) are omitted to avoid
-        confusion. The current season row is labelled with the actual season
-        year derived from the schedule if available, otherwise the current
-        calendar year. The last row is career totals when provided.
+        Includes current season and career rows when available. If no season/
+        career stats exist, falls back to recent historical snapshots loaded
+        from persistence, labelling undated snapshots as "Year N".
         """
         is_pitcher = getattr(self.player, "is_pitcher", False)
         rows: List[Tuple[str, Dict[str, Any]]] = []
@@ -922,6 +927,14 @@ class PlayerProfileDialog(QDialog):
         career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)
         if career:
             rows.append(("Career", career))
+        if rows:
+            return rows
+        # Fallback: recent snapshots
+        for label, _ratings, stats in self._load_history():
+            is_pitcher = getattr(self.player, "is_pitcher", False)
+            data = self._stats_to_dict(stats, is_pitcher)
+            if data:
+                rows.append((label, data))
         return rows
 
     def _load_history(self) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
@@ -930,6 +943,7 @@ class PlayerProfileDialog(QDialog):
         rating_fields = getattr(type(self.player), "_rating_fields", set())
         entries = data.get("history", [])[-5:]
         used_years: set[str] = set()
+        snap_idx = 0
         for entry in entries:
             player_data = entry.get("players", {}).get(self.player.player_id)
             if not player_data:
@@ -949,11 +963,11 @@ class PlayerProfileDialog(QDialog):
                     if k not in rating_fields and not k.startswith("pot_")
                 }
             year = entry.get("year")
-            # Skip snapshots that don't identify a season year to avoid
-            # placeholder labels like "Year 1".
             if year is None:
-                continue
-            year_label = str(year)
+                snap_idx += 1
+                year_label = f"Year {snap_idx}"
+            else:
+                year_label = str(year)
             if year_label in used_years:
                 continue
             used_years.add(year_label)

@@ -9,7 +9,12 @@ from io import BytesIO
 from pathlib import Path, PurePosixPath
 from typing import Dict, Tuple
 
-from PIL import Image
+try:
+    from PIL import Image  # type: ignore
+    _PIL_AVAILABLE = True
+except Exception:  # pragma: no cover - environment without Pillow
+    Image = None  # type: ignore
+    _PIL_AVAILABLE = False
 
 try:  # Allow running as a standalone script
     from utils.openai_client import client
@@ -157,7 +162,11 @@ def _make_hsv_range(src_hex: str, tol_h=12, tol_s=60, tol_v=60):
 def _recolor_by_hex(img, src_hex: str, dst_hex: str, feather: float = 3.0,
                     sat_blend: float = 0.5):
     import numpy as np
-    import cv2
+    try:
+        import cv2  # type: ignore
+    except Exception:  # pragma: no cover - environment without OpenCV
+        # Fallback: no recoloring, but preserve alpha channel and shape
+        return np.array(img, copy=True)
 
     has_alpha = img.shape[2] == 4
     bgr = img[:, :, :3]
@@ -411,6 +420,8 @@ def generate_avatar(
     result = client.images.generate(
         model="gpt-image-1", prompt=prompt, size=f"{api_size}x{api_size}"
     )
+    if not _PIL_AVAILABLE:
+        raise RuntimeError("Pillow (PIL) is required to decode and save avatars")
     b64 = result.data[0].b64_json
     image_bytes = base64.b64decode(b64)
     with Image.open(BytesIO(image_bytes)) as img:

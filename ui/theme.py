@@ -117,6 +117,18 @@ QPushButton#Success {
 QPushButton#Success:hover { background: #27903c; }
 QPushButton#Success:pressed { background: #237f35; }
 
+/* Destructive actions */
+QPushButton#Danger {
+    background: #a61e1e;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+QPushButton#Danger:hover { background: #b32d2d; }
+QPushButton#Danger:pressed { background: #8f1a1a; }
+
 QStatusBar { background: #fffdf0; border-top: 1px solid #968d7d; }
 """
 
@@ -211,6 +223,17 @@ QPushButton#Success {
 }
 QPushButton#Success:hover { background: #27903c; }
 QPushButton#Success:pressed { background: #237f35; }
+/* Destructive actions */
+QPushButton#Danger {
+    background: #8f1a1a;
+    color: white;
+    border: 1px solid #b32d2d;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+QPushButton#Danger:hover { background: #a61e1e; }
+QPushButton#Danger:pressed { background: #701313; }
 QStatusBar { background: #1e1207; border-top: 1px solid #3b2810; }
 """
 

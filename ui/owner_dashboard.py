@@ -6,10 +6,11 @@ from typing import Dict
 
 from PyQt6.QtCore import Qt
 try:
-    from PyQt6.QtGui import QAction, QFont, QPixmap
+    from PyQt6.QtGui import QAction, QFont, QPixmap, QIcon
 except ImportError:  # pragma: no cover - support test stubs
     from PyQt6.QtGui import QFont, QPixmap
     from PyQt6.QtWidgets import QAction
+    QIcon = None  # type: ignore[assignment]
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -29,6 +30,7 @@ from .roster_page import RosterPage
 from .transactions_page import TransactionsPage
 from .schedule_page import SchedulePage
 from .team_page import TeamPage
+from .owner_home_page import OwnerHomePage
 from .lineup_editor import LineupEditor
 from .pitching_editor import PitchingEditor
 from .position_players_dialog import PositionPlayersDialog
@@ -42,6 +44,7 @@ from .team_schedule_window import TeamScheduleWindow, SCHEDULE_FILE
 from .team_stats_window import TeamStatsWindow
 from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
+from .player_browser_dialog import PlayerBrowserDialog
 from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.free_agent_finder import find_free_agents
@@ -49,6 +52,7 @@ from utils.pitcher_role import get_role
 from utils.team_loader import load_teams
 from utils.path_utils import get_base_dir
 from utils.sim_date import get_current_sim_date
+from utils.roster_validation import missing_positions
 from ui.window_utils import show_on_top
 
 
@@ -94,15 +98,17 @@ class OwnerDashboard(QMainWindow):
         brand.setStyleSheet("font-weight:900; font-size:16px;")
         side.addWidget(brand)
 
+        self.btn_home = NavButton("  Dashboard")
         self.btn_roster = NavButton("  Roster")
         self.btn_team = NavButton("  Team")
-        self.btn_transactions = NavButton("  Transactions")
-        self.btn_league = NavButton("  League")
+        self.btn_transactions = NavButton("  Moves & Trades")
+        self.btn_league = NavButton("  League Hub")
 
-        for b in (self.btn_roster, self.btn_team, self.btn_transactions, self.btn_league):
+        for b in (self.btn_home, self.btn_roster, self.btn_team, self.btn_transactions, self.btn_league):
             side.addWidget(b)
 
         self.nav_buttons = {
+            "home": self.btn_home,
             "roster": self.btn_roster,
             "team": self.btn_team,
             "transactions": self.btn_transactions,
@@ -113,6 +119,26 @@ class OwnerDashboard(QMainWindow):
         self.btn_settings = NavButton("  Toggle Theme")
         self.btn_settings.clicked.connect(lambda: _toggle_theme(self.statusBar()))
         side.addWidget(self.btn_settings)
+
+        # Nav icons and tooltips (best-effort)
+        try:
+            from pathlib import Path
+            icon_dir = Path(__file__).resolve().parent / "icons"
+            def _set(btn, name: str, tip: str) -> None:
+                try:
+                    if QIcon is not None:
+                        btn.setIcon(QIcon(str(icon_dir / name)))
+                        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+                except Exception:
+                    pass
+                btn.setToolTip(tip)
+            _set(self.btn_home, "team_dashboard.svg", "Overview and quick actions")
+            _set(self.btn_roster, "team_dashboard.svg", "Roster and player tools")
+            _set(self.btn_team, "season_progress.svg", "Team schedule and stats")
+            _set(self.btn_transactions, "review_trades.svg", "Transactions and trades")
+            _set(self.btn_league, "season_progress.svg", "League schedule, standings, stats")
+        except Exception:
+            pass
 
         # Header
         header = QFrame()
@@ -133,6 +159,7 @@ class OwnerDashboard(QMainWindow):
         # Stacked pages
         self.stack = QStackedWidget()
         self.pages = {
+            "home": OwnerHomePage(self),
             "roster": RosterPage(self),
             "team": TeamPage(self),
             "transactions": TransactionsPage(self),
@@ -159,12 +186,13 @@ class OwnerDashboard(QMainWindow):
         self._build_menu()
 
         # Navigation signals
+        self.btn_home.clicked.connect(lambda: self._go("home"))
         self.btn_roster.clicked.connect(lambda: self._go("roster"))
         self.btn_team.clicked.connect(lambda: self._go("team"))
         self.btn_transactions.clicked.connect(lambda: self._go("transactions"))
         self.btn_league.clicked.connect(lambda: self._go("league"))
-        self.btn_roster.setChecked(True)
-        self._go("roster")
+        self.btn_home.setChecked(True)
+        self._go("home")
 
         # Expose actions for tests
         self.schedule_action = QAction(self)
@@ -194,6 +222,18 @@ class OwnerDashboard(QMainWindow):
         date_str = get_current_sim_date()
         suffix = f" | Date: {date_str}" if date_str else ""
         self.statusBar().showMessage(f"Ready • {key.capitalize()}" + suffix)
+        # Refresh page if it supports a refresh() hook
+        page = self.pages.get(key)
+        if page is not None and hasattr(page, "refresh"):
+            try:
+                page.refresh()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+        # Update header scoreboard context on navigation
+        try:
+            self._update_header_context()
+        except Exception:
+            pass
 
     # ---------- Actions used by pages ----------
     def open_lineup_editor(self) -> None:
@@ -207,6 +247,9 @@ class OwnerDashboard(QMainWindow):
 
     def open_pitchers_dialog(self) -> None:
         show_on_top(PitchersDialog(self.players, self.roster))
+
+    def open_player_browser_dialog(self) -> None:
+        show_on_top(PlayerBrowserDialog(self.players, self.roster, self))
 
     def open_reassign_players_dialog(self) -> None:
         show_on_top(ReassignPlayersDialog(self.players, self.roster, self))
@@ -294,3 +337,115 @@ class OwnerDashboard(QMainWindow):
         item = QListWidgetItem(label)
         item.setData(Qt.ItemDataRole.UserRole, p.player_id)
         return item
+
+    # ---------- Metrics for Home page and header ----------
+    def get_quick_metrics(self) -> dict:
+        """Compute lightweight metrics for display on the Home page.
+
+        Returns keys: record (e.g., '10-8'), run_diff ('+12'/'-3'/'0'),
+        next_opponent (e.g., 'vs BOS'), next_date (ISO date or '--').
+        """
+        from utils.path_utils import get_base_dir
+        from utils.standings_utils import normalize_record
+        import json
+        import csv
+
+        team_id = getattr(self, "team_id", None)
+        base = get_base_dir() / "data"
+
+        # Record and run diff from standings.json
+        record_str = "--"
+        run_diff_str = "--"
+        standings_path = base / "standings.json"
+        try:
+            raw = {}
+            if standings_path.exists():
+                with standings_path.open("r", encoding="utf-8") as fh:
+                    raw = json.load(fh) or {}
+            rec = normalize_record(raw.get(team_id)) if team_id else None
+            if rec:
+                wins = int(rec.get("wins", 0))
+                losses = int(rec.get("losses", 0))
+                record_str = f"{wins}-{losses}"
+                rd = int(rec.get("runs_for", 0)) - int(rec.get("runs_against", 0))
+                run_diff_str = f"{rd:+d}"
+        except Exception:
+            pass
+
+        # Next game info from schedule.csv and current sim date
+        next_opp = "--"
+        next_date = "--"
+        sched = base / "schedule.csv"
+        try:
+            cur_date = get_current_sim_date()
+            rows: list[dict[str, str]] = []
+            if sched.exists():
+                with sched.open(newline="", encoding="utf-8") as fh:
+                    rows = list(csv.DictReader(fh))
+            # Filter games for this team
+            games = [r for r in rows if r.get("home") == team_id or r.get("away") == team_id]
+            # Prefer next unplayed game on/after current date
+            def key_date(row: dict[str, str]) -> str:
+                return str(row.get("date") or "9999-12-31")
+            games.sort(key=key_date)
+            target = None
+            if games:
+                if cur_date:
+                    for g in games:
+                        date_val = str(g.get("date") or "")
+                        res = str(g.get("result") or "")
+                        if date_val >= cur_date and not res:
+                            target = g
+                            break
+                    if target is None:
+                        # fallback: first game on/after current date
+                        for g in games:
+                            if str(g.get("date") or "") >= cur_date:
+                                target = g
+                                break
+                if target is None:
+                    # fallback: first future unplayed regardless of date
+                    for g in games:
+                        if not str(g.get("result") or ""):
+                            target = g
+                            break
+                if target is None:
+                    # fallback: last game (season over)
+                    target = games[-1]
+            if target:
+                if target.get("home") == team_id:
+                    next_opp = f"vs {target.get('away','--')}"
+                else:
+                    next_opp = f"at {target.get('home','--')}"
+                next_date = str(target.get("date") or "--")
+        except Exception:
+            pass
+
+        return {
+            "record": record_str,
+            "run_diff": run_diff_str,
+            "next_opponent": next_opp,
+            "next_date": next_date,
+        }
+
+    def _update_header_context(self) -> None:
+        """Update header scoreboard label with quick context."""
+        metrics = self.get_quick_metrics()
+        rec = metrics.get("record", "--")
+        rd = metrics.get("run_diff", "--")
+        opp = metrics.get("next_opponent", "--")
+        date = metrics.get("next_date", "--")
+        text = f"Next: {opp} {date} | Record {rec} RD {rd}"
+        try:
+            self.scoreboard.setText(text)
+        except Exception:
+            pass
+        # Update roster nav tooltip with coverage summary
+        try:
+            miss = missing_positions(self.roster, self.players)
+            if miss:
+                self.btn_roster.setToolTip("Missing coverage: " + ", ".join(miss))
+            else:
+                self.btn_roster.setToolTip("Defensive coverage looks good.")
+        except Exception:
+            pass

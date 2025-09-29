@@ -1,9 +1,4 @@
-import sys
-import types
-
-pil_stub = types.ModuleType("PIL")
-pil_stub.Image = object
-sys.modules.setdefault("PIL", pil_stub)
+# No PIL stubbing required: avatar_generator handles missing Pillow gracefully.
 
 from utils.avatar_generator import _infer_ethnicity, _select_template
 
