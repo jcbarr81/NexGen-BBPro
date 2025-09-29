@@ -82,6 +82,8 @@ def update_user(
     new_password: Optional[str] = None,
     new_team_id: Optional[str] = None,
     file_path: str | Path = "data/users.txt",
+    *,
+    new_role: Optional[str] = None,
 ) -> None:
     """Update an existing user's password or team assignment.
 
@@ -96,6 +98,9 @@ def update_user(
         string removes the team assignment.
     file_path: str
         Path to the users file.
+    new_role: str | None
+        Optionally change the user role (e.g., 'admin' or 'owner'). When
+        promoting to 'owner', team ownership conflicts are validated.
 
     Raises
     ------
@@ -116,17 +121,30 @@ def update_user(
     if not user:
         raise ValueError("User not found")
 
-    # Check for team ownership conflicts when moving owners
-    if new_team_id is not None and user["role"] == "owner":
-        if new_team_id and any(
-            u["username"] != username
-            and u["role"] == "owner"
-            and u["team_id"] == new_team_id
-            for u in users
-        ):
-            raise ValueError("Team already has an owner")
-        user["team_id"] = new_team_id
-    elif new_team_id is not None:
+    # Handle role change first (so team validation can use final role)
+    if new_role is not None:
+        new_role = new_role.strip().lower()
+        if new_role not in {"admin", "owner"}:
+            raise ValueError("Invalid role; must be 'admin' or 'owner'")
+        # If promoting to owner, ensure no conflict with existing owners
+        if new_role == "owner":
+            team_for_user = new_team_id if new_team_id is not None else user.get("team_id", "")
+            if team_for_user:
+                if any(
+                    u["username"] != username and u["role"] == "owner" and u.get("team_id", "") == team_for_user
+                    for u in users
+                ):
+                    raise ValueError("Team already has an owner")
+        user["role"] = new_role
+
+    # Check for team ownership conflicts when assigning/moving owners
+    if new_team_id is not None:
+        if user["role"] == "owner" and new_team_id:
+            if any(
+                u["username"] != username and u["role"] == "owner" and u.get("team_id", "") == new_team_id
+                for u in users
+            ):
+                raise ValueError("Team already has an owner")
         user["team_id"] = new_team_id
 
     if new_password is not None:

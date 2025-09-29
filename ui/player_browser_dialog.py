@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QVBoxLayout,
 )
+from PyQt6.QtCore import Qt
 
 from models.base_player import BasePlayer
 from models.roster import Roster
@@ -121,7 +122,7 @@ class PlayerBrowserDialog(QDialog):
         first = item.tableWidget().item(row, 0)
         if not first:
             return
-        pid = first.data(first.DataRole.UserRole)
+        pid = first.data(Qt.ItemDataRole.UserRole)
         player = self.players.get(pid)
         if not player:
             return
@@ -135,4 +136,3 @@ class PlayerBrowserDialog(QDialog):
             return t.year - b.year - ((t.month, t.day) < (b.month, b.day))
         except Exception:
             return "?"
-

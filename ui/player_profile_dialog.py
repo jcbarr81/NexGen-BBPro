@@ -818,6 +818,11 @@ class PlayerProfileDialog(QDialog):
         card = Card()
         layout = card.layout()
         layout.addWidget(section_title("Stats"))
+        try:
+            year_label = QLabel(f"Season Year: {self._current_season_year():04d}")
+            layout.addWidget(year_label)
+        except Exception:
+            pass
 
         if not rows:
             layout.addWidget(QLabel("No stats available"))
@@ -922,7 +927,7 @@ class PlayerProfileDialog(QDialog):
         current_year = self._current_season_year()
         season = self._stats_to_dict(getattr(self.player, "season_stats", {}), is_pitcher)
         if season:
-            rows.append((str(current_year), season))
+            rows.append((f"{current_year:04d}", season))
 
         career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)
         if career:
@@ -975,31 +980,49 @@ class PlayerProfileDialog(QDialog):
         return history
 
     def _current_season_year(self) -> int:
-        """Best-effort determination of the current season year.
+        """Return the current season year based on schedule/progress.
 
-        Reads data/schedule.csv and returns the maximum year in the date
-        column. Falls back to the current calendar year when the file is
-        missing or malformed.
+        Prefer the year of the date at the current simulation index from
+        ``season_progress.json``. If unavailable, use the first scheduled
+        game's year rather than the maximum to avoid multi-year schedules
+        (e.g., repeated cycles) pushing the label into the future. Falls back
+        to the calendar year on error.
         """
         try:
             data_dir = Path(__file__).resolve().parents[1] / "data"
             sched = data_dir / "schedule.csv"
+            prog = data_dir / "season_progress.json"
             if not sched.exists():
                 return datetime.now().year
-            max_year = None
+            rows: list[dict] = []
             with sched.open("r", encoding="utf-8", newline="") as fh:
-                reader = csv.DictReader(fh)
-                for row in reader:
-                    ds = (row.get("date") or "").strip()
-                    if not ds:
-                        continue
-                    try:
-                        y = int(ds.split("-")[0])
-                    except Exception:
-                        continue
-                    if max_year is None or y > max_year:
-                        max_year = y
-            return max_year or datetime.now().year
+                rows = list(csv.DictReader(fh))
+            if not rows:
+                return datetime.now().year
+            # Try to read the current sim index
+            idx = 0
+            if prog.exists():
+                try:
+                    import json as _json
+                    data = _json.loads(prog.read_text(encoding="utf-8"))
+                    raw_idx = int(data.get("sim_index", 0) or 0)
+                    idx = max(0, min(raw_idx, len(rows) - 1))
+                except Exception:
+                    idx = 0
+            cur_date = str(rows[idx].get("date") or "").strip()
+            if cur_date:
+                try:
+                    return int(cur_date.split("-")[0])
+                except Exception:
+                    pass
+            # Fallback: use the first scheduled game's year
+            first_date = str(rows[0].get("date") or "").strip()
+            if first_date:
+                try:
+                    return int(first_date.split("-")[0])
+                except Exception:
+                    pass
+            return datetime.now().year
         except Exception:
             return datetime.now().year
 

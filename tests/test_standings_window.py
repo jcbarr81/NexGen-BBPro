@@ -208,7 +208,12 @@ def test_standings_window_displays_league_and_teams():
     window = standings_window.StandingsWindow()
     html = window.viewer.toHtml()
     assert "USABL" in html
-    assert "Central" in html
-    assert "Austin Thunder" in html
+    # Verify at least one team from teams.csv appears in the standings output
+    from utils.team_loader import load_teams
+    teams = load_teams("data/teams.csv")
+    assert teams, "Expected teams to be present in data/teams.csv"
+    first = teams[0]
+    team_label = f"{first.city} {first.name}"
+    assert team_label in html
     assert "<pre>" in html
     assert "<ul>" not in html

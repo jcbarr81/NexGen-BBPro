@@ -55,18 +55,57 @@ def _split_players(players: Iterable[object]) -> _Buckets:
     return _Buckets(hitters, pitchers, injured)
 
 
-def _hitter_score(p) -> float:
-    # Blend contact/power (CH/PH), speed (SP) and defensive ability (FA/ARM)
-    ch = float(getattr(p, "ch", 0)); ph = float(getattr(p, "ph", 0))
-    sp = float(getattr(p, "sp", 0))
-    fa = float(getattr(p, "fa", 0)); arm = float(getattr(p, "arm", 0))
-    off = 0.5 * ch + 0.5 * ph
-    defense = 0.5 * fa + 0.5 * arm
-    return 0.6 * off + 0.2 * sp + 0.2 * defense
+def _overall_score(p) -> float:
+    """Estimate an overall rating in line with the UI.
+
+    Mirrors the logic used by ``ui.player_profile_dialog._estimate_overall_rating``
+    so that auto-assignment aligns with what users see as a player's overall.
+    """
+    is_pitcher = bool(getattr(p, "is_pitcher", False) or str(getattr(p, "primary_position", "")).upper() == "P")
+    if is_pitcher:
+        keys = [
+            "endurance",
+            "control",
+            "movement",
+            "hold_runner",
+            "arm",
+            "fa",
+            "fb",
+            "cu",
+            "cb",
+            "sl",
+            "si",
+            "scb",
+            "kn",
+        ]
+    else:
+        keys = [
+            "ch",
+            "ph",
+            "sp",
+            "pl",
+            "vl",
+            "sc",
+            "fa",
+            "arm",
+            "gf",
+        ]
+    vals = []
+    for k in keys:
+        v = getattr(p, k, 0)
+        try:
+            vals.append(float(v))
+        except (TypeError, ValueError):
+            vals.append(0.0)
+    if not vals:
+        return 0.0
+    avg = sum(vals) / len(vals)
+    # Clamp to 0-99 range for consistency with ratings
+    return max(0.0, min(99.0, float(avg)))
 
 
 def _pitcher_score(p) -> float:
-    # Starters favour endurance; relievers favour stuff and control
+    # Preserve a role-aware score for tie-breaks and staff shaping
     endurance = float(getattr(p, "endurance", 0))
     control = float(getattr(p, "control", 0))
     movement = float(getattr(p, "movement", 0))
@@ -108,8 +147,10 @@ def _pick_active_roster(
     - Prefer best-graded players by role when multiple candidates exist.
     """
 
-    hitters_sorted = sorted(hitters, key=_hitter_score, reverse=True)
-    pitchers_sorted = sorted(pitchers, key=_pitcher_score, reverse=True)
+    # Sort by overall to align with UI/user expectations; use role-aware
+    # pitcher score only for shaping the staff (e.g., guaranteeing SPs)
+    hitters_sorted = sorted(hitters, key=_overall_score, reverse=True)
+    pitchers_sorted = sorted(pitchers, key=_overall_score, reverse=True)
 
     # Build the pitching staff: at least 5 SPs if available, then best remaining
     sps = [p for p in pitchers_sorted if get_role(p) == "SP"]
@@ -202,7 +243,7 @@ def auto_assign_team(team_id: str, *, players_file: str = "data/players.csv", ro
     # Next best to AAA (cap 15)
     remainder = rest_hitters + rest_pitchers
     aaa_ids: List[str] = []
-    for p in sorted(remainder, key=lambda x: (_pitcher_score(x) if getattr(x, 'is_pitcher', False) else _hitter_score(x)), reverse=True):
+    for p in sorted(remainder, key=_overall_score, reverse=True):
         if len(aaa_ids) >= AAA_MAX:
             break
         aaa_ids.append(getattr(p, "player_id"))
@@ -217,10 +258,14 @@ def auto_assign_team(team_id: str, *, players_file: str = "data/players.csv", ro
             break
         low_ids.append(pid)
 
-    # Preserve injured players on DL/IR
+    # Preserve injured players on DL/IR: keep existing DL/IR and move any newly
+    # identified injured players from the org pool to DL if they aren't already there.
+    injured_ids = {getattr(p, "player_id") for p in buckets.injured}
+    # Maintain original ordering but append any new injured
     roster.act = act_ids
     roster.aaa = aaa_ids
     roster.low = low_ids
+    roster.dl = list(dict.fromkeys(list(roster.dl) + [pid for pid in pool_ids if pid in injured_ids]))
     # Save
     save_roster(team_id, roster)
 

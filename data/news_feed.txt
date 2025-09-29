@@ -244,3 +244,18 @@
 [2025-09-29 10:50:45] Generated regular season schedule with 162 games
 [2025-09-29 10:50:45] Generated regular season schedule with 162 games
 [2025-09-29 10:50:45] No unsigned players available
+[2025-09-29 12:18:37] Season advanced to Preseason
+[2025-09-29 12:18:37] No unsigned players available
+[2025-09-29 12:18:37] Training camp completed; players marked ready
+[2025-09-29 12:18:37] Generated regular season schedule with 162 games
+[2025-09-29 12:18:37] Generated regular season schedule with 162 games
+[2025-09-29 12:18:37] No unsigned players available
+[2025-09-29 12:41:24] League reset to Opening Day
+[2025-09-29 12:41:24] Purged saved season boxscores
+[2025-09-29 12:41:33] Generated regular season schedule with 972 games
+[2025-09-29 12:48:23] Season advanced to Preseason
+[2025-09-29 12:48:23] No unsigned players available
+[2025-09-29 12:48:23] Training camp completed; players marked ready
+[2025-09-29 12:48:23] Generated regular season schedule with 162 games
+[2025-09-29 12:48:24] Generated regular season schedule with 162 games
+[2025-09-29 12:48:24] No unsigned players available

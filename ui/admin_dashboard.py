@@ -213,6 +213,10 @@ class UsersPage(QWidget):
         self.user_table.itemSelectionChanged.connect(self._capture_selection)
         self._populate()
 
+    def refresh(self) -> None:
+        """Public hook to repopulate the users table (used by Admin window)."""
+        self._populate()
+
     def _capture_selection(self) -> None:
         items = self.user_table.selectedItems()
         self.selected_username = items[0].text() if items else None
@@ -478,6 +482,8 @@ class MainWindow(QMainWindow):
         """Return a small set of overview metrics for the Admin home page."""
         # Counts
         try:
+            # Match the team list shown in the Standings window, which relies
+            # on load_teams(data/teams.csv).
             teams = load_teams("data/teams.csv")
             team_count = len(teams)
         except Exception:
@@ -692,12 +698,17 @@ class MainWindow(QMainWindow):
         username_input = QLineEdit()
         password_input = QLineEdit()
         password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        role_combo = QComboBox()
+        role_combo.addItem("Admin", userData="admin")
+        role_combo.addItem("Owner", userData="owner")
         team_combo = QComboBox()
 
         layout.addWidget(QLabel("Username:"))
         layout.addWidget(username_input)
         layout.addWidget(QLabel("Password:"))
         layout.addWidget(password_input)
+        layout.addWidget(QLabel("Role:"))
+        layout.addWidget(role_combo)
         layout.addWidget(QLabel("Team:"))
         layout.addWidget(team_combo)
 
@@ -718,17 +729,37 @@ class MainWindow(QMainWindow):
             username = username_input.text().strip()
             password = password_input.text().strip()
             team_id = team_combo.currentData()
+            role = role_combo.currentData()
             if not username or not password:
                 QMessageBox.warning(dialog, "Error", "Username and password required")
                 return
             try:
-                role = "owner" if team_id else "admin"
+                # If owner role selected, require team assignment
+                if role == "owner" and not team_id:
+                    QMessageBox.warning(dialog, "Error", "Select a team for the owner role")
+                    return
                 add_user(username, password, role, team_id, data_dir / "users.txt")
             except ValueError as e:
                 QMessageBox.warning(dialog, "Error", str(e))
                 return
             QMessageBox.information(dialog, "Success", f"User {username} added.")
             dialog.accept()
+            # Refresh Users page table if present
+            try:
+                up = self.pages.get("users")
+                if up is not None and hasattr(up, "refresh"):
+                    up.refresh()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+
+        def sync_team_enabled() -> None:
+            enabled = (role_combo.currentData() == "owner")
+            try:
+                team_combo.setEnabled(enabled)
+            except Exception:
+                pass
+        role_combo.currentIndexChanged.connect(lambda *_: sync_team_enabled())
+        sync_team_enabled()
 
         add_btn.clicked.connect(handle_add)
         cancel_btn.clicked.connect(dialog.reject)
@@ -756,6 +787,9 @@ class MainWindow(QMainWindow):
         password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
         team_combo = QComboBox()
+        role_combo = QComboBox()
+        role_combo.addItem("Admin", userData="admin")
+        role_combo.addItem("Owner", userData="owner")
         teams = load_teams(data_dir / "teams.csv")
         team_combo.addItem("None", "")
         for t in teams:
@@ -765,6 +799,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(user_combo)
         layout.addWidget(QLabel("New Password:"))
         layout.addWidget(password_input)
+        layout.addWidget(QLabel("Role:"))
+        layout.addWidget(role_combo)
         layout.addWidget(QLabel("Team:"))
         layout.addWidget(team_combo)
 
@@ -780,6 +816,10 @@ class MainWindow(QMainWindow):
             index = team_combo.findData(user["team_id"])
             if index >= 0:
                 team_combo.setCurrentIndex(index)
+            # Select current role in combo
+            r_index = role_combo.findData(user.get("role", "admin"))
+            if r_index >= 0:
+                role_combo.setCurrentIndex(r_index)
             password_input.clear()
 
         user_combo.currentIndexChanged.connect(lambda _: sync_fields())
@@ -793,18 +833,31 @@ class MainWindow(QMainWindow):
                     user_combo.setCurrentIndex(idx)
         except Exception:
             pass
+        def _sync_team_enabled() -> None:
+            try:
+                team_combo.setEnabled(role_combo.currentData() == "owner")
+            except Exception:
+                pass
+
+        role_combo.currentIndexChanged.connect(lambda *_: _sync_team_enabled())
         sync_fields()
+        _sync_team_enabled()
 
         def handle_update() -> None:
             user = user_combo.currentData()
             new_password = password_input.text().strip() or None
             new_team = team_combo.currentData()
+            new_role = role_combo.currentData()
             try:
+                if new_role == "owner" and not new_team:
+                    QMessageBox.warning(dialog, "Error", "Select a team for the owner role")
+                    return
                 update_user(
                     user["username"],
                     new_password,
                     new_team,
                     data_dir / "users.txt",
+                    new_role=new_role,
                 )
             except ValueError as e:
                 QMessageBox.warning(dialog, "Error", str(e))
@@ -813,6 +866,13 @@ class MainWindow(QMainWindow):
                 dialog, "Success", f"User {user['username']} updated."
             )
             dialog.accept()
+            # Refresh Users page table if present
+            try:
+                up = self.pages.get("users")
+                if up is not None and hasattr(up, "refresh"):
+                    up.refresh()  # type: ignore[attr-defined]
+            except Exception:
+                pass
 
         save_btn.clicked.connect(handle_update)
         cancel_btn.clicked.connect(dialog.reject)
