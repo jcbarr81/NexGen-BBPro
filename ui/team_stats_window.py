@@ -347,8 +347,8 @@ class TeamStatsWindow(QDialog):
         pitchers = [self.players[pid] for pid in pitcher_ids]
         self._debug_team_id = getattr(team, 'team_id', 'UNK')
 
-        # Debug dump to help verify roster vs. displayed players and stats
-        try:
+        # Debug dump removed to avoid writing temporary files
+        if False:
             debug_path = DATA_DIR / f"_debug_team_stats_{team.team_id}.txt"
             with debug_path.open("w", encoding="utf-8") as fh:
                 fh.write(f"Team {team.team_id} — roster hitters: {len(batter_ids)}\n")
@@ -363,8 +363,7 @@ class TeamStatsWindow(QDialog):
                     fh.write(
                         f"{pid},{name},{s.get('g',0)},{s.get('ab',0)},{s.get('h',0)},{s.get('bb',0)},{s.get('hr',0)},{s.get('sb',0)}\n"
                     )
-        except Exception:
-            pass
+        
 
         self.tabs.addTab(
             self._build_player_tab(batters, _BATTING_COLS, title="Batting"),
@@ -540,17 +539,16 @@ class TeamStatsWindow(QDialog):
             pass
 
         any_stats = False
-        # Prepare per-row debug logging for the first tab (Batting) and Pitching
+        # Debug row output removed to avoid writing temporary files
         debug_rows_path = None
-        try:
+        if False:
             if columns is _BATTING_COLS:
                 debug_rows_path = DATA_DIR / f"_debug_team_stats_rows_{getattr(self, '_debug_team_id', 'UNK')}_batting.csv"
             elif columns is _PITCHING_COLS:
                 debug_rows_path = DATA_DIR / f"_debug_team_stats_rows_{getattr(self, '_debug_team_id', 'UNK')}_pitching.csv"
                 with debug_rows_path.open('w', encoding='utf-8') as fh:
                     fh.write('player_id,name,' + ','.join(columns) + '\n')
-        except Exception:
-            debug_rows_path = None
+        
         for row, player in enumerate(player_list):
             name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
             name_item = self._text_item(name, align_left=True)
@@ -571,15 +569,7 @@ class TeamStatsWindow(QDialog):
                 value = stats.get(key, 0)
                 table.setItem(row, col, self._stat_item(key, value, has_stats=has_stats))
                 row_values.append(value)
-            # Append debug row
-            if debug_rows_path is not None:
-                try:
-                    pid = getattr(player, 'player_id', '')
-                    name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
-                    with debug_rows_path.open('a', encoding='utf-8') as fh:
-                        fh.write(pid + ',' + name.replace(',', ' ') + ',' + ','.join(str(v or 0) for v in row_values) + '\n')
-                except Exception:
-                    pass
+            # Debug row output removed
 
         if not player_list:
             layout.addWidget(self._empty_label("No players on the active roster."))
@@ -807,6 +797,11 @@ class TeamStatsWindow(QDialog):
             if column is None:
                 return
             order = Qt.SortOrder.AscendingOrder if int(column) == 0 else Qt.SortOrder.DescendingOrder
+            try:
+                header = table.horizontalHeader()
+                header.setSortIndicator(int(column), order)
+            except Exception:
+                pass
             table.sortItems(int(column), order)
 
         search.textChanged.connect(apply_filter)
@@ -840,19 +835,13 @@ class TeamStatsWindow(QDialog):
             except (TypeError, ValueError):
                 coerced = 0.0
         numeric = coerced
-        item = QTableWidgetItem(display)
+        # Use numeric-aware item so sorting is reliable for all numeric columns
+        item = _NumericItem(display)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        # Ensure the human-friendly formatted string is what the cell displays,
-        # even when we attach a numeric value for sorting. Some Qt styles/renderers
-        # will render floats with a default precision if only EditRole is set.
+        # Attach numeric sort key (UserRole) without changing display
         try:
-            item.setData(Qt.ItemDataRole.DisplayRole, display)
-        except Exception:
-            pass
-        # Attach a numeric for reliable sorting without affecting display text.
-        try:
-            item.setData(Qt.ItemDataRole.EditRole, numeric)
+            item.setData(Qt.ItemDataRole.UserRole, numeric)
         except Exception:
             pass
         return item
@@ -912,3 +901,22 @@ class TeamStatsWindow(QDialog):
 
 
 
+
+class _NumericItem(QTableWidgetItem):
+    """Table item that sorts by a numeric key (UserRole) if present.
+
+    Keeps display text as-is but ensures sorting uses the numeric value.
+    """
+
+    def __lt__(self, other: "QTableWidgetItem") -> bool:  # type: ignore[override]
+        try:
+            a = self.data(Qt.ItemDataRole.UserRole)
+            b = other.data(Qt.ItemDataRole.UserRole)
+            if a is None:
+                a = float(self.text() or 0)
+            if b is None:
+                b = float(other.text() or 0)
+            return float(a) < float(b)
+        except Exception:
+            # Fallback to default behaviour if conversion fails
+            return super().__lt__(other)

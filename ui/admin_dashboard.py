@@ -6,7 +6,7 @@ of :class:`NavButton` controls which swap pages in a :class:`QStackedWidget`.
 Each page groups related actions inside a :class:`Card` with a small section
 header provided by :func:`section_title`.
 
-Only the user interface wiring has changed â€“ the underlying callbacks are the
+Only the user interface wiring has changed – the underlying callbacks are the
 same routines that existed in the previous tab based implementation.  The goal
 is to keep behaviour intact while presenting a cleaner API for future
 expansion.
@@ -53,6 +53,7 @@ from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
 from utils.path_utils import get_base_dir
+from utils.sim_date import get_current_sim_date
 from utils.pitcher_role import get_role
 from utils.pitching_autofill import autofill_pitching_staff
 from playbalance.league_creator import create_league
@@ -217,7 +218,7 @@ class MainWindow(QMainWindow):
         side.setContentsMargins(10, 12, 10, 12)
         side.setSpacing(6)
 
-        side.addWidget(QLabel("âš¾  Commissioner"))
+        side.addWidget(QLabel("⚾  Commissioner"))
 
         self.btn_league = NavButton("  League")
         self.btn_teams = NavButton("  Teams")
@@ -353,6 +354,12 @@ class MainWindow(QMainWindow):
         theme_action.triggered.connect(lambda: _toggle_theme(self.statusBar()))
         view_menu.addAction(theme_action)
 
+    def _status_with_date(self, base: str) -> str:
+        date_str = get_current_sim_date()
+        if date_str:
+            return f"{base} | Date: {date_str}"
+        return base
+
     def _go(self, key: str) -> None:
         for btn in self.nav_buttons.values():
             btn.setChecked(False)
@@ -361,7 +368,7 @@ class MainWindow(QMainWindow):
             btn.setChecked(True)
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
-        self.statusBar().showMessage(f"Ready — {key.capitalize()}")
+        self.statusBar().showMessage(self._status_with_date(f"Ready - {key.capitalize()}"))
         if key == "draft":
             self._refresh_draft_page()
 
@@ -402,7 +409,7 @@ class MainWindow(QMainWindow):
                 if pid in players
             ]
             summary = (
-                f"{t.trade_id}: {t.from_team} â†’ {t.to_team} | "
+                f"{t.trade_id}: {t.from_team} → {t.to_team} | "
                 f"Give: {', '.join(give_names)} | Get: {', '.join(recv_names)}"
             )
             trade_list.addItem(summary)
@@ -884,6 +891,7 @@ class MainWindow(QMainWindow):
         - Clears results/played/boxscore from `data/schedule.csv`
         - Resets `data/season_progress.json` to preseason-done and sim_index 0
         - Clears `data/standings.json`
+        - Clears current year's draft state/results/pool files
         - Sets season phase to REGULAR_SEASON in `data/season_state.json`
         - Attempts to lock current rosters (best effort)
         - Optional: purge saved season boxscores under `data/boxscores/season`
@@ -1012,6 +1020,33 @@ class MainWindow(QMainWindow):
             )
         except Exception:
             # Not critical
+            pass
+
+        # 3c) Clear current year's draft state (pool, state, results)
+        try:
+            if first_year is not None:
+                draft_files = [
+                    f"draft_pool_{first_year}.json",
+                    f"draft_pool_{first_year}.csv",
+                    f"draft_state_{first_year}.json",
+                    f"draft_results_{first_year}.csv",
+                ]
+                for name in draft_files:
+                    p = base / name
+                    try:
+                        # Remove lock first if present
+                        lock = p.with_suffix(p.suffix + ".lock")
+                        if lock.exists():
+                            lock.unlink()
+                    except Exception:
+                        pass
+                    if p.exists():
+                        try:
+                            p.unlink()
+                        except Exception:
+                            pass
+        except Exception:
+            # Draft reset is best-effort; do not block overall reset
             pass
 
         # 4) Set phase to REGULAR_SEASON and attempt to lock rosters

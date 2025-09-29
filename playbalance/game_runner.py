@@ -211,6 +211,42 @@ def prepare_team_state(
     return state
 
 
+def _sanitize_lineup(
+    team_id: str,
+    desired: Sequence[LineupEntry],
+    *,
+    players_file: str = "data/players.csv",
+    roster_dir: str = "data/rosters",
+) -> Sequence[LineupEntry]:
+    """Return a valid 9-player lineup using ``desired`` as a hint.
+
+    Drops entries not on the active roster or duplicates and tops up from the
+    default selection until nine players are present.
+    """
+    base = build_default_game_state(team_id, players_file=players_file, roster_dir=roster_dir)
+    default_ids = [p.player_id for p in base.lineup]
+    allowed = set(default_ids + [p.player_id for p in base.bench])
+
+    seen: set[str] = set()
+    cleaned: list[LineupEntry] = []
+    for pid, pos in desired:
+        pid = str(pid).strip()
+        if not pid or pid in seen or pid not in allowed:
+            continue
+        cleaned.append((pid, pos))
+        seen.add(pid)
+        if len(cleaned) >= 9:
+            break
+    for pid in default_ids:
+        if len(cleaned) >= 9:
+            break
+        if pid in seen:
+            continue
+        cleaned.append((pid, getattr(base.lineup[default_ids.index(pid)], "position", "")))
+        seen.add(pid)
+    return cleaned[:9]
+
+
 def run_single_game(
     home_id: str,
     away_id: str,
@@ -289,13 +325,29 @@ def run_single_game(
             )
         except ValueError:
             if lineup:
-                return prepare_team_state(
+                # Salvage lineup instead of discarding entirely
+                safe = _sanitize_lineup(
                     team_id,
-                    lineup=None,
-                    starter_id=starter_id,
+                    lineup,
                     players_file=players_file,
                     roster_dir=roster_dir,
                 )
+                try:
+                    return prepare_team_state(
+                        team_id,
+                        lineup=safe,
+                        starter_id=starter_id,
+                        players_file=players_file,
+                        roster_dir=roster_dir,
+                    )
+                except ValueError:
+                    return prepare_team_state(
+                        team_id,
+                        lineup=None,
+                        starter_id=starter_id,
+                        players_file=players_file,
+                        roster_dir=roster_dir,
+                    )
             raise
 
     rng = random.Random(seed)

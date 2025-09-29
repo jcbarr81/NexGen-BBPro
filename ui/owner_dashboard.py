@@ -48,6 +48,7 @@ from utils.free_agent_finder import find_free_agents
 from utils.pitcher_role import get_role
 from utils.team_loader import load_teams
 from utils.path_utils import get_base_dir
+from utils.sim_date import get_current_sim_date
 from ui.window_utils import show_on_top
 
 
@@ -190,7 +191,9 @@ class OwnerDashboard(QMainWindow):
             btn.setChecked(True)
         idx = list(self.pages.keys()).index(key)
         self.stack.setCurrentIndex(idx)
-        self.statusBar().showMessage(f"Ready • {key.capitalize()}")
+        date_str = get_current_sim_date()
+        suffix = f" | Date: {date_str}" if date_str else ""
+        self.statusBar().showMessage(f"Ready • {key.capitalize()}" + suffix)
 
     # ---------- Actions used by pages ----------
     def open_lineup_editor(self) -> None:

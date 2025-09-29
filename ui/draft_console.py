@@ -343,6 +343,8 @@ class DraftConsole(QDialog):
             self._seed_value = cfg.get("seed")
         if self._seed_value is None:
             self._seed_value = self.year
+        # Ensure saved state aligns with current config (round count, team count)
+        self._repair_state_to_config()
         self._remove_already_selected()
         self._update_status_round()
         self._rebuild_board()
@@ -429,15 +431,22 @@ class DraftConsole(QDialog):
     def _update_status_round(self) -> None:
         if not self.state.get("order"):
             return
+        if self._is_complete():
+            # Draft is complete; show a clear message instead of an overflow round
+            self.status.setText(f"Draft complete — {self.DRAFT_ROUNDS} rounds finished.")
+            self.onclock.setText("Draft complete")
+            return
         overall = int(self.state.get("overall_pick", 1))
         teams_count = len(self.state["order"])
         rnd = (overall - 1) // teams_count + 1
         idx = (overall - 1) % teams_count
         team_id = self.state["order"][idx]
         team_name = self._order_names.get(team_id, team_id)
+        # Clamp round for display in case a stale state overshoots config
         self.state["round"] = rnd
+        disp_round = min(max(int(rnd), 1), int(self.DRAFT_ROUNDS or 1))
         banner = (
-            f"Round {rnd}/{self.DRAFT_ROUNDS} — Pick {idx+1} of {teams_count} — "
+            f"Round {disp_round}/{self.DRAFT_ROUNDS} — Pick {idx+1} of {teams_count} — "
             f"On the clock: {team_name}"
         )
         self.status.setText(banner)
@@ -513,12 +522,47 @@ class DraftConsole(QDialog):
         if not self._is_complete():
             self._update_status_round()
             self._rebuild_board()
+        else:
+            # Reflect completion immediately in the UI
+            self._update_status_round()
 
     def _is_complete(self) -> bool:
         if not self.state.get("order"):
             return False
         total_picks = self.DRAFT_ROUNDS * len(self.state["order"])
         return int(self.state.get("overall_pick", 1)) > total_picks
+
+    def _repair_state_to_config(self) -> None:
+        """Ensure loaded state is consistent with current config.
+
+        Handles cases where a saved draft_state has an ``overall_pick`` or
+        selection list that extends beyond the configured number of rounds, or
+        where the team count has changed since the state was created. The goal
+        is to avoid showing nonsensical banners like "Round 4/3" by clamping
+        to the configured bounds and treating overflow as draft complete.
+        """
+        order = list(self.state.get("order", []))
+        if not order:
+            return
+        teams_count = len(order)
+        max_overall = max(int(self.DRAFT_ROUNDS or 0), 0) * teams_count
+        overall = int(self.state.get("overall_pick", 1))
+        if overall < 1:
+            overall = 1
+        # Clamp overall to "complete" if it exceeds configured rounds
+        if overall > max_overall + 1:
+            overall = max_overall + 1
+        # Optionally trim saved selections beyond configured limit (non-destructive to CSV)
+        sel = list(self.state.get("selected", []))
+        if sel and len(sel) > max_overall:
+            sel = sel[:max_overall]
+            self.state["selected"] = sel
+        self.state["overall_pick"] = overall
+        # Persist the repaired state so subsequent opens are sane
+        try:
+            save_state(self.year, self.state)
+        except Exception:
+            pass
 
     def _close_if_complete(self) -> None:
         if not self._is_complete():

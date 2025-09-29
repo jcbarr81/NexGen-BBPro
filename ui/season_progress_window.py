@@ -120,10 +120,21 @@ class SeasonProgressWindow(QDialog):
             self._pb_cfg = None
             self._pb_benchmarks = {}
 
+        # Validate schedule team IDs against known teams; offer to regenerate
+        try:
+            self._ensure_valid_schedule_teams()
+        except Exception:
+            # Best-effort validation; proceed if any issues in headless envs
+            pass
+
         layout = QVBoxLayout(self)
 
         self.phase_label = QLabel()
         layout.addWidget(self.phase_label)
+
+        # Always-visible indicator of the current simulation date
+        self.date_label = QLabel()
+        layout.addWidget(self.date_label)
 
         self.notes_label = QLabel()
         self.notes_label.setWordWrap(True)
@@ -223,6 +234,23 @@ class SeasonProgressWindow(QDialog):
         """
         phase_name = self.manager.phase.name.replace("_", " ").title()
         self.phase_label.setText(f"Current Phase: {phase_name}")
+        # Update current date indicator from simulator schedule
+        try:
+            if self.simulator and getattr(self.simulator, "dates", None):
+                if self.simulator._index < len(self.simulator.dates):
+                    current_date = str(self.simulator.dates[self.simulator._index])
+                elif self.simulator.dates:
+                    current_date = str(self.simulator.dates[-1]) + " (complete)"
+                else:
+                    current_date = "N/A"
+            else:
+                current_date = "N/A"
+        except Exception:
+            current_date = "N/A"
+        try:
+            self.date_label.setText(f"Current Date: {current_date}")
+        except Exception:
+            pass
         if note is None:
             note = self.manager.handle_phase()
         self.notes_label.setText(note)
@@ -397,6 +425,9 @@ class SeasonProgressWindow(QDialog):
         """Trigger simulation for a single schedule day."""
         if self.simulator.remaining_schedule_days() <= 0:
             return
+        # Ensure schedule uses valid team IDs before simulating
+        if not self._ensure_valid_schedule_teams():
+            return
         try:
             self.simulator.simulate_next_day()
         except (FileNotFoundError, ValueError) as e:
@@ -438,6 +469,9 @@ class SeasonProgressWindow(QDialog):
     def _simulate_span(self, days: int, label: str) -> None:
         """Simulate multiple days with a progress dialog."""
         if self.simulator.remaining_schedule_days() <= 0:
+            return
+        # Ensure schedule uses valid team IDs before simulating
+        if not self._ensure_valid_schedule_teams():
             return
 
         # Determine how many individual games will be played in the span so
@@ -545,7 +579,9 @@ class SeasonProgressWindow(QDialog):
         else:
             self.remaining_label.setText("Regular season complete.")
             remaining_msg = "regular season complete"
-        was_cancelled = self._cancel_requested
+        # Treat as "cancelled" only if the user requested cancel and
+        # we actually stopped before completing the requested span.
+        was_cancelled = bool(self._cancel_requested) and (simulated_days < days)
         self._cancel_requested = False
         if was_cancelled:
             if simulated_days <= 0:
@@ -679,6 +715,87 @@ class SeasonProgressWindow(QDialog):
         with (DATA_DIR / "standings.json").open("w", encoding="utf-8") as fh:
             json.dump(self._standings, fh, indent=2)
 
+    # ------------------------------------------------------------------
+    # Validation helpers
+    # ------------------------------------------------------------------
+    def _schedule_unknown_team_ids(self) -> list[str]:
+        """Return schedule team IDs not present in teams.csv.
+
+        Compares the set of IDs appearing in the current schedule's "home" and
+        "away" fields against the loaded teams list. Team IDs are expected to
+        match the "team_id" in teams.csv (usually the abbreviation).
+        """
+        sched_ids: set[str] = set()
+        for g in self.simulator.schedule:
+            home = str(g.get("home", "")).strip()
+            away = str(g.get("away", "")).strip()
+            if home:
+                sched_ids.add(home)
+            if away:
+                sched_ids.add(away)
+        known_ids = set(self._team_divisions.keys())
+        return sorted([tid for tid in sched_ids if tid and tid not in known_ids])
+
+    def _ensure_valid_schedule_teams(self) -> bool:
+        """Prompt to regenerate schedule if it references unknown teams.
+
+        Returns True if the schedule is valid or was regenerated; False if the
+        user declined regeneration (so callers should abort simulation).
+        """
+        unknown = self._schedule_unknown_team_ids()
+        if not unknown:
+            return True
+        # Do not overwrite an in-progress season. If any games are already
+        # complete (by index or inferred from schedule flags), keep the
+        # existing schedule and simply inform the user.
+        progressed = False
+        try:
+            progressed = int(self.simulator._index or 0) > 0
+        except Exception:
+            progressed = False
+        if not progressed:
+            try:
+                inferred = self._infer_sim_index_from_schedule()
+                progressed = inferred > 0
+            except Exception:
+                progressed = False
+        if progressed:
+            try:
+                QMessageBox.information(
+                    self,
+                    "Schedule Contains Unknown Teams",
+                    (
+                        "Some team IDs in the schedule are not present in teams.csv, "
+                        "but the season has already progressed. Keeping existing schedule."
+                    ),
+                )
+            except Exception:
+                pass
+            return True
+        try:
+            reply = QMessageBox.question(
+                self,
+                "Invalid Schedule",
+                (
+                    "Schedule references unknown team IDs: "
+                    + ", ".join(unknown)
+                    + "\nRegenerate schedule now?"
+                ),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+        except Exception:
+            # In headless contexts, default to regenerating
+            reply = QMessageBox.StandardButton.Yes  # type: ignore[attr-defined]
+        if reply == QMessageBox.StandardButton.Yes:
+            self._generate_schedule()
+            return True
+        # Leave a helpful note if the user declines
+        self._update_ui(
+            "Schedule contains unknown teams; please regenerate the schedule."
+        )
+        return False
+
     def _load_progress(self) -> None:
         """Load preseason and simulation progress from disk."""
         saved_index: int | None = None
@@ -709,9 +826,18 @@ class SeasonProgressWindow(QDialog):
             new_index = 0
 
         self.simulator._index = new_index
-        # Persist a repaired/initialized progress file for future runs
+        # Persist a repaired/initialized progress file for future runs only
+        # when it changes, to avoid clobbering progress in transient error cases.
         try:
-            self._save_progress()
+            cur_idx = None
+            try:
+                with PROGRESS_FILE.open("r", encoding="utf-8") as fh:
+                    cur = json.load(fh)
+                cur_idx = int(cur.get("sim_index", 0) or 0)
+            except Exception:
+                cur_idx = None
+            if cur_idx is None or int(new_index) != int(cur_idx):
+                self._save_progress()
         except Exception:
             pass
 
