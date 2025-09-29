@@ -20,6 +20,8 @@ from typing import Dict, Iterable, List, Tuple, Set
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
+from utils.user_manager import load_users
+from utils.lineup_autofill import auto_fill_lineup_for_team
 from utils.roster_loader import load_roster, save_roster
 from utils.pitcher_role import get_role
 
@@ -272,9 +274,19 @@ def auto_assign_team(team_id: str, *, players_file: str = "data/players.csv", ro
 
 def auto_assign_all_teams(*, players_file: str = "data/players.csv", roster_dir: str = "data/rosters", teams_file: str = "data/teams.csv") -> None:
     teams = load_teams(teams_file)
+    users = load_users("data/users.txt")
+    owned: set[str] = {u.get("team_id", "") for u in users if u.get("role") == "owner" and u.get("team_id")}
     for team in teams:
         try:
             auto_assign_team(team.team_id, players_file=players_file, roster_dir=roster_dir)
+            # For unmanaged teams, auto-generate lineups to keep sims valid
+            if team.team_id not in owned:
+                auto_fill_lineup_for_team(
+                    team.team_id,
+                    players_file=players_file,
+                    roster_dir=roster_dir,
+                    lineup_dir="data/lineups",
+                )
         except Exception:
             # Continue with other teams; admin can fix any outliers manually
             continue

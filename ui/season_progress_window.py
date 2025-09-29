@@ -39,6 +39,9 @@ from playbalance.orchestrator import (
     simulate_week as pb_simulate_week,
     simulate_month as pb_simulate_month,
 )
+from utils.team_loader import load_teams
+from utils.roster_loader import load_roster
+from utils.lineup_loader import load_lineup
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -169,6 +172,11 @@ class SeasonProgressWindow(QDialog):
         self.simulate_month_button.clicked.connect(self._simulate_month)
         layout.addWidget(self.simulate_month_button)
 
+        # Maintenance tool: repair/auto-fill lineups
+        self.repair_lineups_button = QPushButton("Repair Lineups")
+        self.repair_lineups_button.clicked.connect(self._repair_lineups)
+        layout.addWidget(self.repair_lineups_button)
+
         self.simulate_phase_button = QPushButton("Simulate to Next Phase")
         self.simulate_phase_button.clicked.connect(self._simulate_to_next_phase)
         layout.addWidget(self.simulate_phase_button)
@@ -266,6 +274,7 @@ class SeasonProgressWindow(QDialog):
         self.simulate_week_button.setVisible(is_regular)
         self.simulate_month_button.setVisible(is_regular)
         self.simulate_phase_button.setVisible(is_regular or is_playoffs)
+        self.repair_lineups_button.setVisible(is_regular)
         if is_regular:
             mid_remaining = self.simulator.remaining_days()
             total_remaining = self.simulator.remaining_schedule_days()
@@ -428,6 +437,11 @@ class SeasonProgressWindow(QDialog):
         # Ensure schedule uses valid team IDs before simulating
         if not self._ensure_valid_schedule_teams():
             return
+        # Validate lineups for all teams; stop if any are invalid
+        issues = self._validate_all_team_lineups()
+        if issues:
+            QMessageBox.warning(self, "Missing Lineup or Pitching", "\n".join(issues))
+            return
         try:
             self.simulator.simulate_next_day()
         except (FileNotFoundError, ValueError) as e:
@@ -472,6 +486,11 @@ class SeasonProgressWindow(QDialog):
             return
         # Ensure schedule uses valid team IDs before simulating
         if not self._ensure_valid_schedule_teams():
+            return
+        # Validate lineups before running a long span
+        issues = self._validate_all_team_lineups()
+        if issues:
+            QMessageBox.warning(self, "Missing Lineup or Pitching", "\n".join(issues))
             return
 
         # Determine how many individual games will be played in the span so
@@ -714,6 +733,93 @@ class SeasonProgressWindow(QDialog):
 
         with (DATA_DIR / "standings.json").open("w", encoding="utf-8") as fh:
             json.dump(self._standings, fh, indent=2)
+
+    # ------------------------------------------------------------------
+    # Lineup validation/repair helpers
+    def _team_lineup_is_valid(self, team_id: str) -> bool:
+        try:
+            roster = load_roster(team_id)
+        except Exception:
+            return False
+        act = set(roster.act)
+        for vs in ("lhp", "rhp"):
+            try:
+                lineup = load_lineup(team_id, vs=vs, lineup_dir=DATA_DIR / "lineups")
+            except Exception:
+                return False
+            ids = [pid for pid, _ in lineup]
+            if len(set(ids)) != 9 or len(ids) != 9:
+                return False
+            if any(pid not in act for pid in ids):
+                return False
+        return True
+
+    def _repair_lineups(self) -> None:
+        from utils.lineup_autofill import auto_fill_lineup_for_team
+        fixed = 0
+        failed: list[str] = []
+        try:
+            teams = load_teams(DATA_DIR / "teams.csv")
+        except Exception as exc:
+            QMessageBox.warning(self, "Repair Lineups", f"Failed to load teams: {exc}")
+            return
+        for team in teams:
+            try:
+                if not self._team_lineup_is_valid(team.team_id):
+                    auto_fill_lineup_for_team(team.team_id)
+                    if self._team_lineup_is_valid(team.team_id):
+                        fixed += 1
+                    else:
+                        failed.append(team.team_id)
+            except Exception:
+                failed.append(team.team_id)
+        if failed:
+            QMessageBox.warning(
+                self,
+                "Repair Lineups",
+                f"Repaired {fixed} teams, but these still need attention: {', '.join(failed)}",
+            )
+        else:
+            QMessageBox.information(self, "Repair Lineups", f"Repaired {fixed} team lineups.")
+
+    # ------------------------------------------------------------------
+    # Lineup validation helpers
+    def _validate_all_team_lineups(self) -> list[str]:
+        """Return a list of issues if any team lacks valid 9-man lineups.
+
+        A lineup is considered valid if both ``vs_lhp`` and ``vs_rhp`` files
+        exist for the team, contain 9 unique player_ids, and every player is on
+        the team's ACT roster. The message is concise to guide correction.
+        """
+        issues: list[str] = []
+        try:
+            teams = load_teams(DATA_DIR / "teams.csv")
+        except Exception:
+            return issues
+        for team in teams:
+            try:
+                roster = load_roster(team.team_id)
+            except Exception:
+                issues.append(f"{team.team_id}: missing roster file")
+                continue
+            act = set(roster.act)
+            for vs in ("lhp", "rhp"):
+                try:
+                    lineup = load_lineup(team.team_id, vs=vs, lineup_dir=DATA_DIR / "lineups")
+                except FileNotFoundError:
+                    issues.append(f"{team.team_id}: missing lineup vs_{vs}")
+                    continue
+                except ValueError:
+                    issues.append(f"{team.team_id}: invalid lineup vs_{vs}")
+                    continue
+                ids = [pid for pid, _ in lineup]
+                if len(set(ids)) != 9 or len(ids) != 9:
+                    issues.append(f"{team.team_id}: vs_{vs} must list 9 unique players")
+                    continue
+                missing = [pid for pid in ids if pid not in act]
+                if missing:
+                    issues.append(f"{team.team_id}: vs_{vs} includes non-ACT players: {', '.join(missing)}")
+        return issues
 
     # ------------------------------------------------------------------
     # Validation helpers
