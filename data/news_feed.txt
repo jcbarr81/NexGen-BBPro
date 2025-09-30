@@ -261,3 +261,12 @@
 [2025-09-29 12:48:24] No unsigned players available
 [2025-09-29 13:14:53] Generated regular season schedule with 972 games
 [2025-09-29 13:15:44] Simulated month; 51 days until Midseason
+[2025-09-29 19:56:58] League reset to Opening Day
+[2025-09-29 19:56:58] Purged saved season boxscores
+[2025-09-29 19:58:51] Simulated month; 51 days until Midseason
+[2025-09-29 20:01:28] League reset to Opening Day
+[2025-09-29 20:01:28] Purged saved season boxscores
+[2025-09-29 20:02:29] Simulated month; 51 days until Midseason
+[2025-09-29 20:24:12] League reset to Opening Day
+[2025-09-29 20:24:12] Purged saved season boxscores
+[2025-09-29 20:25:21] Simulated month; 51 days until Midseason

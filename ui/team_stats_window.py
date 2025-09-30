@@ -309,10 +309,15 @@ class TeamStatsWindow(QDialog):
             self.roster = roster
 
         hist_games = _games_from_history()
-        for pid, entry in self.players.items():
-            g = int(entry.season_stats.get("g", 0) or 0)
-            entry.season_stats["g"] = max(g, int(hist_games.get(pid, 0)))
         team.season_stats = _normalize_team_stats(team_stats.get(team.team_id))
+        team_games = int(team.season_stats.get("g", 0) or 0)
+        for pid, entry in self.players.items():
+            g_saved = int(entry.season_stats.get("g", 0) or 0)
+            g_hist = int(hist_games.get(pid, 0) or 0)
+            value = max(g_saved, g_hist)
+            if team_games:
+                value = min(value, team_games)
+            entry.season_stats["g"] = value
 
         self.setWindowTitle("Team Stats")
         if callable(getattr(self, "resize", None)):

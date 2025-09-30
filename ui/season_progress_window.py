@@ -42,6 +42,8 @@ from playbalance.orchestrator import (
 from utils.team_loader import load_teams
 from utils.roster_loader import load_roster
 from utils.lineup_loader import load_lineup
+from utils.player_loader import load_players_from_csv
+from utils.pitcher_role import get_role
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -803,6 +805,11 @@ class SeasonProgressWindow(QDialog):
                 issues.append(f"{team.team_id}: missing roster file")
                 continue
             act = set(roster.act)
+            # Build quick lookup for pitcher classification
+            try:
+                meta = {p.player_id: p for p in load_players_from_csv(DATA_DIR / "players.csv")}
+            except Exception:
+                meta = {}
             for vs in ("lhp", "rhp"):
                 try:
                     lineup = load_lineup(team.team_id, vs=vs, lineup_dir=DATA_DIR / "lineups")
@@ -819,6 +826,17 @@ class SeasonProgressWindow(QDialog):
                 missing = [pid for pid in ids if pid not in act]
                 if missing:
                     issues.append(f"{team.team_id}: vs_{vs} includes non-ACT players: {', '.join(missing)}")
+                    continue
+                # Ensure all lineup players are non-pitchers (eligible hitters)
+                bad_roles = []
+                for pid in ids:
+                    p = meta.get(pid)
+                    if p is None:
+                        continue
+                    if getattr(p, "is_pitcher", False) or get_role(p) in {"SP", "RP"}:
+                        bad_roles.append(pid)
+                if bad_roles:
+                    issues.append(f"{team.team_id}: vs_{vs} contains pitchers: {', '.join(bad_roles)}")
         return issues
 
     # ------------------------------------------------------------------

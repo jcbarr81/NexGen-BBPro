@@ -1241,6 +1241,18 @@ class MainWindow(QMainWindow):
         # 3b) Clear season stats (players and teams)
         try:
             stats_file.parent.mkdir(parents=True, exist_ok=True)
+            # Remove existing stats and lock to ensure a clean slate
+            try:
+                lock = stats_file.with_suffix(stats_file.suffix + ".lock")
+                if lock.exists():
+                    lock.unlink()
+            except Exception:
+                pass
+            if stats_file.exists():
+                try:
+                    stats_file.unlink()
+                except Exception:
+                    pass
             stats_file.write_text(
                 "{\n  \"players\": {},\n  \"teams\": {},\n  \"history\": []\n}\n",
                 encoding="utf-8",
@@ -1285,6 +1297,12 @@ class MainWindow(QMainWindow):
             mgr.save()
             try:
                 mgr.finalize_rosters()
+            except Exception:
+                pass
+            # Clear cached players so UI reloads fresh season stats immediately
+            try:
+                from utils.player_loader import load_players_from_csv as _lpf
+                _lpf.cache_clear()  # type: ignore[attr-defined]
             except Exception:
                 pass
         except Exception as exc:

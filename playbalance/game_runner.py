@@ -325,29 +325,9 @@ def run_single_game(
             )
         except ValueError:
             if lineup:
-                # Salvage lineup instead of discarding entirely
-                safe = _sanitize_lineup(
-                    team_id,
-                    lineup,
-                    players_file=players_file,
-                    roster_dir=roster_dir,
-                )
-                try:
-                    return prepare_team_state(
-                        team_id,
-                        lineup=safe,
-                        starter_id=starter_id,
-                        players_file=players_file,
-                        roster_dir=roster_dir,
-                    )
-                except ValueError:
-                    return prepare_team_state(
-                        team_id,
-                        lineup=None,
-                        starter_id=starter_id,
-                        players_file=players_file,
-                        roster_dir=roster_dir,
-                    )
+                # In strict mode, do not silently discard saved lineups —
+                # force a clear error so the UI can prompt for repair.
+                raise
             raise
 
     rng = random.Random(seed)
