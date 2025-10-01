@@ -44,6 +44,7 @@ from .team_schedule_window import TeamScheduleWindow, SCHEDULE_FILE
 from .team_stats_window import TeamStatsWindow
 from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
+from .news_window import NewsWindow
 from .player_browser_dialog import PlayerBrowserDialog
 from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
@@ -210,6 +211,9 @@ class OwnerDashboard(QMainWindow):
         theme_action = QAction("Toggle Dark Mode", self)
         theme_action.triggered.connect(lambda: _toggle_theme(self.statusBar()))
         view_menu.addAction(theme_action)
+        news_action = QAction("News Feed", self)
+        news_action.triggered.connect(self.open_news_window)
+        view_menu.addAction(news_action)
 
     def _go(self, key: str) -> None:
         for btn in self.nav_buttons.values():
@@ -255,7 +259,7 @@ class OwnerDashboard(QMainWindow):
         show_on_top(ReassignPlayersDialog(self.players, self.roster, self))
 
     def open_transactions_page(self) -> None:
-        show_on_top(TransactionsWindow())
+        show_on_top(TransactionsWindow(self.team_id))
 
     def open_trade_dialog(self) -> None:
         show_on_top(TradeDialog(self.team_id, self))
@@ -316,6 +320,12 @@ class OwnerDashboard(QMainWindow):
     def open_league_leaders_window(self) -> None:
         show_on_top(LeagueLeadersWindow(self.players.values(), self))
 
+    def open_news_window(self) -> None:
+        try:
+            show_on_top(NewsWindow(self))
+        except Exception:
+            pass
+
     # ---------- Utilities ----------
     def calculate_age(self, birthdate_str: str):
         try:
@@ -343,7 +353,8 @@ class OwnerDashboard(QMainWindow):
         """Compute lightweight metrics for display on the Home page.
 
         Returns keys: record (e.g., '10-8'), run_diff ('+12'/'-3'/'0'),
-        next_opponent (e.g., 'vs BOS'), next_date (ISO date or '--').
+        next_opponent (e.g., 'vs BOS'), next_date (ISO date or '--'),
+        streak (e.g., 'W3'), last10 (e.g., '7-3'), injuries (int), prob_sp (name/id).
         """
         from utils.path_utils import get_base_dir
         from utils.standings_utils import normalize_record
@@ -353,9 +364,11 @@ class OwnerDashboard(QMainWindow):
         team_id = getattr(self, "team_id", None)
         base = get_base_dir() / "data"
 
-        # Record and run diff from standings.json
+        # Record, run diff, streak and last10 from standings.json
         record_str = "--"
         run_diff_str = "--"
+        streak_str = "--"
+        last10_str = "--"
         standings_path = base / "standings.json"
         try:
             raw = {}
@@ -369,6 +382,18 @@ class OwnerDashboard(QMainWindow):
                 record_str = f"{wins}-{losses}"
                 rd = int(rec.get("runs_for", 0)) - int(rec.get("runs_against", 0))
                 run_diff_str = f"{rd:+d}"
+                # streak
+                st = rec.get("streak", {}) or {}
+                res = st.get("result")
+                length = int(st.get("length", 0) or 0)
+                if res in {"W", "L"} and length > 0:
+                    streak_str = f"{res}{length}"
+                # last10
+                l10 = rec.get("last10", []) or []
+                if isinstance(l10, list) and l10:
+                    w = sum(1 for x in l10 if str(x).upper().startswith("W"))
+                    l = sum(1 for x in l10 if str(x).upper().startswith("L"))
+                    last10_str = f"{w}-{l}"
         except Exception:
             pass
 
@@ -421,11 +446,37 @@ class OwnerDashboard(QMainWindow):
         except Exception:
             pass
 
+        # Injuries from roster DL/IR (best-effort)
+        injuries = 0
+        try:
+            injuries = len(getattr(self.roster, "dl", []) or []) + len(getattr(self.roster, "ir", []) or [])
+        except Exception:
+            injuries = 0
+
+        # Probable starter: highest endurance SP on active roster
+        prob_sp = "--"
+        try:
+            act_ids = set(getattr(self.roster, "act", []) or [])
+            sps = []
+            for pid, p in (self.players or {}).items():
+                if pid in act_ids and (getattr(p, "is_pitcher", False) or str(getattr(p, "primary_position", "")).upper() == "P"):
+                    if (getattr(p, "role", "") or get_role(p)) == "SP":
+                        sps.append(p)
+            if sps:
+                cand = max(sps, key=lambda x: int(getattr(x, "endurance", 0) or 0))
+                prob_sp = f"{getattr(cand,'first_name','')} {getattr(cand,'last_name','')}".strip() or getattr(cand, 'player_id', '--')
+        except Exception:
+            pass
+
         return {
             "record": record_str,
             "run_diff": run_diff_str,
             "next_opponent": next_opp,
             "next_date": next_date,
+            "streak": streak_str,
+            "last10": last10_str,
+            "injuries": injuries,
+            "prob_sp": prob_sp,
         }
 
     def _update_header_context(self) -> None:
@@ -435,7 +486,14 @@ class OwnerDashboard(QMainWindow):
         rd = metrics.get("run_diff", "--")
         opp = metrics.get("next_opponent", "--")
         date = metrics.get("next_date", "--")
-        text = f"Next: {opp} {date} | Record {rec} RD {rd}"
+        streak = metrics.get("streak", "--")
+        last10 = metrics.get("last10", "--")
+        injuries = metrics.get("injuries", 0)
+        prob = metrics.get("prob_sp", "--")
+        text = (
+            f"Next: {opp} {date} | Record {rec} RD {rd} | "
+            f"Stk {streak} L10 {last10} | Inj {injuries} | Prob SP {prob}"
+        )
         try:
             self.scoreboard.setText(text)
         except Exception:

@@ -1,0 +1,140 @@
+timestamp,season_date,team_id,player_id,player_name,action,from_level,to_level,counterparty,details
+2025-09-30 15:34:53,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:34:53,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:35:34,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:35:34,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:36:03,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 15:36:03,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 15:36:03,2025-04-01,BBB,c001,c001,cut,ACT,FA,,Released to free agency
+2025-09-30 15:36:34,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:36:34,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 15:36:34,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 15:57:14,2025-07-15,CIN,D20250008,Kraig Horine,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,MIN,D20250009,Nolan Conti,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,BAL,D20250020,Antonio Garcia,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,ATL,D20250060,Jose Flores,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,PIT,D20250043,Derick Pfnister,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,HOU,D20250045,Terrance Sidi,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,NEW,D20250051,Merle Saetern,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,LOS,D20250001,Brendan Brienen,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,GRE,D20250096,Howard Mangrich,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,WAS,D20250086,Yong Zhang,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,LAS,D20250055,Carlos Perez,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,BUF,D20250065,Miguel Castillo,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,CIN,D20250025,Jose Flores,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,MIN,D20250077,Hector Martinez,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,BAL,D20250054,Blaine Diwan,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,ATL,D20250087,Fernando Gonzalez,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,PIT,D20250047,Xavier Taylor,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,HOU,D20250057,Fred Bagi,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,NEW,D20250012,Abdul Koepf,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,LOS,D20250067,Cruz Coplin,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,GRE,D20250039,Alec Dales,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,WAS,D20250018,Antonio Diaz,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,LAS,D20250058,Luis Vasquez,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,BUF,D20250071,Francisco Guerrero,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,CIN,D20250019,Lindsay Pachlin,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,MIN,D20250080,Hector Vargas,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,BAL,D20250021,Salvatore Jaeschke,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,ATL,D20250049,Moises Schak,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,PIT,D20250033,Hugh Duplessis,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,HOU,D20250090,Alejandro Torres,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 15:57:14,2025-07-15,NEW,D20250072,Bryce Sladky,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,LOS,D20250005,Tyler Rozell,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,GRE,D20250074,Yong Park,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,WAS,D20250035,Jose Gonzalez,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,LAS,D20250053,Eduardo Castillo,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 15:57:14,2025-07-15,BUF,D20250022,Darnell Wright,draft,,LOW,,Drafted in 2025 Amateur Draft (pending roster space)
+2025-09-30 16:03:12,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 16:03:13,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 16:03:13,2025-07-15,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 17:41:07,2025-07-15,CIN,D20250008,Kraig Horine,draft,,LOW,,Drafted in 2025 Amateur Draft (CIN: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,MIN,D20250009,Nolan Conti,draft,,LOW,,Drafted in 2025 Amateur Draft (MIN: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,BAL,D20250020,Antonio Garcia,draft,,LOW,,Drafted in 2025 Amateur Draft (BAL: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,ATL,D20250060,Jose Flores,draft,,LOW,,Drafted in 2025 Amateur Draft (ATL: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,PIT,D20250043,Derick Pfnister,draft,,LOW,,Drafted in 2025 Amateur Draft (PIT: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,HOU,D20250045,Terrance Sidi,draft,,LOW,,Drafted in 2025 Amateur Draft (HOU: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,NEW,D20250051,Merle Saetern,draft,,LOW,,Drafted in 2025 Amateur Draft (NEW: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,LOS,D20250001,Brendan Brienen,draft,,LOW,,Drafted in 2025 Amateur Draft (LOS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,GRE,D20250096,Howard Mangrich,draft,,LOW,,Drafted in 2025 Amateur Draft (GRE: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,WAS,D20250086,Yong Zhang,draft,,LOW,,Drafted in 2025 Amateur Draft (WAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,LAS,D20250055,Carlos Perez,draft,,LOW,,Drafted in 2025 Amateur Draft (LAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,BUF,D20250065,Miguel Castillo,draft,,LOW,,Drafted in 2025 Amateur Draft (BUF: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,CIN,D20250025,Jose Flores,draft,,LOW,,Drafted in 2025 Amateur Draft (CIN: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,MIN,D20250077,Hector Martinez,draft,,LOW,,Drafted in 2025 Amateur Draft (MIN: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,BAL,D20250054,Blaine Diwan,draft,,LOW,,Drafted in 2025 Amateur Draft (BAL: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,ATL,D20250087,Fernando Gonzalez,draft,,LOW,,Drafted in 2025 Amateur Draft (ATL: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,PIT,D20250047,Xavier Taylor,draft,,LOW,,Drafted in 2025 Amateur Draft (PIT: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,HOU,D20250057,Fred Bagi,draft,,LOW,,Drafted in 2025 Amateur Draft (HOU: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,NEW,D20250012,Abdul Koepf,draft,,LOW,,Drafted in 2025 Amateur Draft (NEW: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,LOS,D20250067,Cruz Coplin,draft,,LOW,,Drafted in 2025 Amateur Draft (LOS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,GRE,D20250039,Alec Dales,draft,,LOW,,Drafted in 2025 Amateur Draft (GRE: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,WAS,D20250018,Antonio Diaz,draft,,LOW,,Drafted in 2025 Amateur Draft (WAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,LAS,D20250058,Luis Vasquez,draft,,LOW,,Drafted in 2025 Amateur Draft (LAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,BUF,D20250071,Francisco Guerrero,draft,,LOW,,Drafted in 2025 Amateur Draft (BUF: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,CIN,D20250019,Lindsay Pachlin,draft,,LOW,,Drafted in 2025 Amateur Draft (CIN: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,MIN,D20250080,Hector Vargas,draft,,LOW,,Drafted in 2025 Amateur Draft (MIN: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,BAL,D20250021,Salvatore Jaeschke,draft,,LOW,,Drafted in 2025 Amateur Draft (BAL: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,ATL,D20250049,Moises Schak,draft,,LOW,,Drafted in 2025 Amateur Draft (ATL: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,PIT,D20250033,Hugh Duplessis,draft,,LOW,,Drafted in 2025 Amateur Draft (PIT: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,HOU,D20250090,Alejandro Torres,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 17:41:07,2025-07-15,NEW,D20250072,Bryce Sladky,draft,,LOW,,Drafted in 2025 Amateur Draft (NEW: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,LOS,D20250005,Tyler Rozell,draft,,LOW,,Drafted in 2025 Amateur Draft (LOS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,GRE,D20250074,Yong Park,draft,,LOW,,Drafted in 2025 Amateur Draft (GRE: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,WAS,D20250035,Jose Gonzalez,draft,,LOW,,Drafted in 2025 Amateur Draft (WAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,LAS,D20250053,Eduardo Castillo,draft,,LOW,,Drafted in 2025 Amateur Draft (LAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:07,2025-07-15,BUF,D20250022,Darnell Wright,draft,,LOW,,Drafted in 2025 Amateur Draft (BUF: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:41:37,2025-07-15,MIN,P5882,Alejandro Sanchez,cut,LOW,FA,,Released to free agency
+2025-09-30 17:41:43,2025-07-15,MIN,P2132,Xavier Jefferson,cut,LOW,FA,,Released to free agency
+2025-09-30 17:41:49,2025-07-15,MIN,P8983,Leopoldo Pince,cut,LOW,FA,,Released to free agency
+2025-09-30 17:42:19,2025-07-15,BUF,P7927,Keith Botdorf,cut,LOW,FA,,Released to free agency
+2025-09-30 17:42:23,2025-07-15,BUF,P4279,Leroy Young,cut,LOW,FA,,Released to free agency
+2025-09-30 17:42:26,2025-07-15,BUF,P3631,Fernando Ramirez,cut,LOW,FA,,Released to free agency
+2025-09-30 17:42:58,2025-07-15,GRE,P9327,Antonio Diaz,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:03,2025-07-15,GRE,P7331,Richard Pocius,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:06,2025-07-15,GRE,P5802,Xavier Young,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:18,2025-07-15,PIT,P7380,Rod Molima,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:22,2025-07-15,PIT,P7520,Derick Pfnister,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:25,2025-07-15,PIT,P7799,Ricardo Rodriguez,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:40,2025-07-15,WAS,P3679,Lester Dziedzic,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:43,2025-07-15,WAS,P4402,Ali Buen,cut,LOW,FA,,Released to free agency
+2025-09-30 17:43:45,2025-07-15,WAS,P2626,Leroy Allen,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:00,2025-07-15,BAL,P3424,Miguel Gomez,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:04,2025-07-15,BAL,P8116,Eduardo Rivera,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:06,2025-07-15,BAL,P5082,Ted Ashmead,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:31,2025-07-15,CIN,P5051,Randal Horn,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:34,2025-07-15,CIN,P6270,Jermaine Baker,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:36,2025-07-15,CIN,P1770,Deshawn Robinson,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:52,2025-07-15,LAS,P6033,Antonio Vargas,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:55,2025-07-15,LAS,P8445,Hector Torres,cut,LOW,FA,,Released to free agency
+2025-09-30 17:44:57,2025-07-15,LAS,P2737,Luis Mendoza,cut,LOW,FA,,Released to free agency
+2025-09-30 17:45:13,2025-07-15,LOS,P4070,Dan Ashkettle,cut,LOW,FA,,Released to free agency
+2025-09-30 17:45:16,2025-07-15,LOS,P4827,Antonio Guerrero,cut,LOW,FA,,Released to free agency
+2025-09-30 17:45:20,2025-07-15,LOS,P5580,Blaine Diwan,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:01,2025-07-15,ATL,P5340,Weston Rubens,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:03,2025-07-15,ATL,P7417,Abdul Koepf,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:06,2025-07-15,ATL,P1338,Julian Dayal,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:22,2025-07-15,HOU,P6210,Micheal Kanaris,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:25,2025-07-15,HOU,P2538,Jamal Allen,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:27,2025-07-15,HOU,P1673,Preston Zaragosa,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:43,2025-07-15,NEW,P7894,Fernando Rivera,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:45,2025-07-15,NEW,P4677,Jermaine Washington,cut,LOW,FA,,Released to free agency
+2025-09-30 17:46:47,2025-07-15,NEW,P5995,Rigoberto Athan,cut,LOW,FA,,Released to free agency
+2025-09-30 17:55:31,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 17:55:31,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 17:55:31,2025-07-15,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 21:19:36,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 21:19:36,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 21:19:36,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 21:20:50,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 21:20:50,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 21:20:50,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 21:34:17,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 21:34:17,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 21:34:17,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 22:37:16,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 22:37:16,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 22:37:16,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-09-30 23:13:18,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-09-30 23:13:18,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-09-30 23:13:18,2025-07-25,BBB,c001,c001,cut,AAA,FA,,Released to free agency

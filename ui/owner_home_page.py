@@ -30,6 +30,10 @@ class OwnerHomePage(QWidget):
             "Run Diff": "--",
             "Next Game": "--",
             "Next Date": "--",
+            "Streak": "--",
+            "Last 10": "--",
+            "Injuries": "0",
+            "Prob SP": "--",
         }
         self.metrics_row = build_metric_row(
             [(k, v) for k, v in self._metric_values.items()], columns=4
@@ -57,6 +61,15 @@ class OwnerHomePage(QWidget):
         actions.layout().addStretch()
         layout.addWidget(actions)
 
+        # Recent News card ----------------------------------------------
+        self.news_card = Card()
+        self.news_card.layout().addWidget(section_title("Recent News"))
+        self.news_label = QLabel("No recent items.")
+        self.news_label.setWordWrap(True)
+        self.news_card.layout().addWidget(self.news_label)
+        self.news_card.layout().addStretch()
+        layout.addWidget(self.news_card)
+
         layout.addStretch()
 
     # ------------------------------------------------------------------
@@ -75,6 +88,10 @@ class OwnerHomePage(QWidget):
             "Run Diff": m.get("run_diff", "--") if m else "--",
             "Next Game": m.get("next_opponent", "--") if m else "--",
             "Next Date": m.get("next_date", "--") if m else "--",
+            "Streak": m.get("streak", "--") if m else "--",
+            "Last 10": m.get("last10", "--") if m else "--",
+            "Injuries": str(m.get("injuries", 0) if m else 0),
+            "Prob SP": m.get("prob_sp", "--") if m else "--",
         }
 
         # Rebuild metric row content in-place
@@ -87,3 +104,16 @@ class OwnerHomePage(QWidget):
         )
         self.metrics_card.layout().insertWidget(1, self.metrics_row)
 
+        # Update recent news
+        try:
+            from utils.news_logger import NEWS_FILE
+            from pathlib import Path
+            p = Path(NEWS_FILE)
+            if p.exists():
+                lines = p.read_text(encoding="utf-8").splitlines()
+                tail = lines[-5:] if len(lines) > 5 else lines
+                self.news_label.setText("\n".join(tail) if tail else "No recent items.")
+            else:
+                self.news_label.setText("No recent items.")
+        except Exception:
+            self.news_label.setText("No recent items.")

@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
+from services.transaction_log import record_transaction, reset_player_cache
+from utils.exceptions import DraftRosterError
 from utils.path_utils import get_base_dir
 from utils.roster_loader import load_roster, save_roster
+
+LOW_MAX = 10
 
 
 BASE = get_base_dir()
@@ -159,31 +163,73 @@ def _append_players(rows: list[Dict[str, Any]]) -> None:
             # Ensure all columns exist
             payload = {k: row.get(k, "") for k in header}
             writer.writerow(payload)
+    reset_player_cache()
 
 
-def _assign_to_low(team_id: str, player_id: str) -> None:
+def _assign_to_low(team_id: str, player_id: str) -> tuple[bool, str | None, bool]:
     try:
         roster = load_roster(team_id)
     except FileNotFoundError:
-        return
+        return False, f"{team_id}: roster file not found", False
+    except Exception as exc:
+        return False, f"{team_id}: {exc}", False
+
     if player_id in roster.act or player_id in roster.aaa or player_id in roster.low:
-        return
-    roster.low.append(player_id)
-    save_roster(team_id, roster)
+        return True, None, False
+
+    compliance_note = None
+    appended = False
+    try:
+        roster.low.append(player_id)
+        appended = True
+        if len(roster.low) > LOW_MAX:
+            compliance_note = f"{team_id}: LOW roster exceeds {LOW_MAX} players (fix before resuming)."
+        save_roster(team_id, roster)
+        try:
+            load_roster.cache_clear()
+        except Exception:
+            pass
+    except PermissionError:
+        if appended and player_id in roster.low:
+            roster.low.remove(player_id)
+        return False, f"{team_id}: roster file is read-only (unlock data/rosters/{team_id}.csv)", False
+    except Exception as exc:
+        if appended and player_id in roster.low:
+            roster.low.remove(player_id)
+        return False, f"{team_id}: {exc}", False
+    return True, compliance_note, bool(compliance_note)
 
 
-def commit_draft_results(year: int) -> Dict[str, int]:
-    """Append drafted players to players.csv and place them on LOW rosters.
+def _prospect_name(pool_row: Dict[str, Any], players_index: Dict[str, Dict[str, Any]], pid: str) -> str:
+    first = str(pool_row.get("first_name", "")).strip()
+    last = str(pool_row.get("last_name", "")).strip()
+    if first or last:
+        return f"{first} {last}".strip()
+    existing = players_index.get(pid, {})
+    first = str(existing.get("first_name", "")).strip()
+    last = str(existing.get("last_name", "")).strip()
+    if first or last:
+        return f"{first} {last}".strip()
+    return pid
 
-    Returns a summary dict {"players_added": n, "roster_assigned": m}.
-    """
+
+def commit_draft_results(
+    year: int,
+    *,
+    season_date: str | None = None,
+) -> dict[str, object]:
+    """Append drafted players to players.csv and place them on LOW rosters."""
+
     res_path = _results_path(year)
     if not res_path.exists():
-        return {"players_added": 0, "roster_assigned": 0}
+        return {"players_added": 0, "roster_assigned": 0, "failures": []}
     pool_map = _load_pool_map(year)
     players_index = _players_index()
     to_append: list[Dict[str, Any]] = []
     assigned = 0
+    failures: list[str] = []
+    compliance_issues: list[str] = []
+
     with res_path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
         for row in reader:
@@ -191,14 +237,46 @@ def commit_draft_results(year: int) -> Dict[str, int]:
             tid = row.get("team_id", "")
             if not pid or not tid:
                 continue
+            pool_row = pool_map.get(pid, {})
             if pid not in players_index:
-                pool_row = pool_map.get(pid, {})
                 to_append.append(_default_row_from_pool(pool_row | {"player_id": pid}))
-            _assign_to_low(tid, pid)
-            assigned += 1
+            ok, note, compliance = _assign_to_low(tid, pid)
+            if ok:
+                assigned += 1
+                if compliance and note:
+                    compliance_issues.append(note)
+            else:
+                failures.append(note or f"{tid}: unable to assign {pid}")
+            detail = f"Drafted in {year} Amateur Draft"
+            if compliance and note:
+                detail += f" ({note})"
+            elif not ok:
+                detail += " (pending roster space)"
+            try:
+                record_transaction(
+                    action="draft",
+                    team_id=tid,
+                    player_id=pid,
+                    player_name=_prospect_name(pool_row, players_index, pid),
+                    to_level="LOW",
+                    details=detail,
+                    season_date=season_date,
+                )
+            except Exception:
+                pass
+
     _append_players(to_append)
-    return {"players_added": len(to_append), "roster_assigned": assigned}
+
+    summary: dict[str, object] = {
+        "players_added": len(to_append),
+        "roster_assigned": assigned,
+        "failures": [msg for msg in failures if msg],
+        "compliance_issues": [msg for msg in compliance_issues if msg],
+    }
+    issues = summary["failures"] or summary["compliance_issues"]
+    if issues:
+        raise DraftRosterError(issues, summary)
+    return summary
 
 
 __all__ = ["commit_draft_results"]
-

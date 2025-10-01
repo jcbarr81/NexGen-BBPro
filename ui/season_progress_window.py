@@ -28,6 +28,7 @@ from services.free_agency import list_unsigned_players
 from playbalance.season_simulator import SeasonSimulator
 from ui.draft_console import DraftConsole
 from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
+from utils.exceptions import DraftRosterError
 from playbalance.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
 from utils.team_loader import load_teams
@@ -222,12 +223,22 @@ class SeasonProgressWindow(QDialog):
                 return
             dlg = DraftConsole(date_str, self)
             dlg.exec()
+            summary = dict(getattr(dlg, "assignment_summary", {}) or {})
+            failures = list(summary.get("failures") or [])
+            compliance = list(summary.get("compliance_issues") or [])
+            if not summary:
+                failures = ["Draft results must be committed before resuming the season."]
+            issues = failures + [msg for msg in compliance if msg not in failures]
+            if issues:
+                raise DraftRosterError(issues, summary)
             completed.add(year)
             progress["draft_completed_years"] = sorted(completed)
             try:
                 PROGRESS_FILE.write_text(_json.dumps(progress, indent=2), encoding="utf-8")
             except Exception:
                 pass
+        except DraftRosterError:
+            raise
         except Exception:
             pass
 
@@ -446,6 +457,13 @@ class SeasonProgressWindow(QDialog):
             return
         try:
             self.simulator.simulate_next_day()
+        except DraftRosterError as exc:
+            message = str(exc) or "Draft assignments remain incomplete."
+            failures = getattr(exc, 'failures', None)
+            if failures:
+                message += "\n\n" + "\n".join(failures)
+            QMessageBox.warning(self, "Draft Assignments Incomplete", message)
+            return
         except (FileNotFoundError, ValueError) as e:
             QMessageBox.warning(
                 self, "Missing Lineup or Pitching", str(e)
@@ -478,7 +496,14 @@ class SeasonProgressWindow(QDialog):
             except Exception:  # pragma: no cover - best effort
                 pass
         self.notes_label.setText(message)
-        log_news_event(message)
+        # Log daily recap for the date just simulated
+        try:
+            if self.simulator._index > 0 and self.simulator._index - 1 < len(self.simulator.dates):
+                date_just_played = str(self.simulator.dates[self.simulator._index - 1])
+                self._log_daily_recap_for_date(date_just_played)
+        except Exception:
+            pass
+        log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
 
@@ -569,6 +594,13 @@ class SeasonProgressWindow(QDialog):
             ):
                 try:
                     self.simulator.simulate_next_day()
+                except DraftRosterError as exc:
+                    message = str(exc) or "Draft assignments remain incomplete."
+                    failures = getattr(exc, 'failures', None)
+                    if failures:
+                        message += "\n\n" + "\n".join(failures)
+                    QMessageBox.warning(self, "Draft Assignments Incomplete", message)
+                    break
                 except (FileNotFoundError, ValueError) as e:
                     QMessageBox.warning(
                         self, "Missing Lineup or Pitching", str(e)
@@ -632,9 +664,54 @@ class SeasonProgressWindow(QDialog):
             except Exception:  # pragma: no cover - best effort
                 pass
         self.notes_label.setText(message)
-        log_news_event(message)
+        # Log recaps for each simulated day
+        try:
+            dates_covered = [str(d) for d in upcoming[:simulated_days]]
+            for d in dates_covered:
+                self._log_daily_recap_for_date(d)
+        except Exception:
+            pass
+        log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
+
+    def _log_daily_recap_for_date(self, date_str: str) -> None:
+        """Compose and append a daily recap for games on ``date_str``."""
+        try:
+            games = [g for g in self.simulator.schedule if str(g.get("date", "")) == str(date_str)]
+        except Exception:
+            games = []
+        if not games:
+            return
+        played = [g for g in games if g.get("result")]
+        if not played:
+            return
+        # Compute one-run and extras counts and build short examples
+        one_run = 0
+        extras = 0
+        examples: list[str] = []
+        for g in played:
+            res = str(g.get("result") or "")
+            if "-" in res:
+                try:
+                    hs, as_ = res.split("-", 1)
+                    hs_i, as_i = int(hs), int(as_)
+                    if abs(hs_i - as_i) == 1:
+                        one_run += 1
+                except Exception:
+                    pass
+            meta = g.get("extra") or {}
+            if isinstance(meta, dict) and meta.get("extra_innings"):
+                extras += 1
+            # Add up to 3 examples
+            if len(examples) < 3:
+                examples.append(f"{g.get('away','')} at {g.get('home','')} — {res}")
+        msg = (
+            f"Daily Recap {date_str}: {len(played)} games; "
+            f"{one_run} one-run; {extras} extras. "
+            + "; ".join(examples)
+        )
+        log_news_event(msg, category="game_recap")
 
     def _simulate_to_next_phase(self) -> None:
         """Simulate games until the current phase can advance."""
@@ -659,14 +736,119 @@ class SeasonProgressWindow(QDialog):
         self._simulate_span(30, "Month")
 
     def _simulate_playoffs(self) -> None:
-        """Simulate the postseason series and unlock the offseason."""
+        """Simulate the postseason bracket and unlock the offseason when done."""
         if self._playoffs_done:
             return
-        message = "Simulated playoffs; championship decided."
-        self._playoffs_done = True
-        self._save_progress()
-        log_news_event(message)
-        self._update_ui(message)
+        from playbalance.playoffs_config import load_playoffs_config
+        from playbalance.playoffs import (
+            load_bracket,
+            save_bracket,
+            generate_bracket,
+            simulate_playoffs as run_playoffs,
+        )
+        from utils.team_loader import load_teams
+
+        # Load or generate bracket from current standings/teams
+        bracket = load_bracket()
+        if bracket is None:
+            try:
+                teams = load_teams()
+            except Exception:
+                teams = []
+            cfg = load_playoffs_config()
+            try:
+                bracket = generate_bracket(self._standings, teams, cfg)
+            except NotImplementedError:
+                # Fallback to simple completion if engine not available
+                self._playoffs_done = True
+                self._save_progress()
+                message = "Playoffs placeholder reached; mark as complete."
+                log_news_event(message)
+                self._update_ui(message)
+                return
+            save_bracket(bracket)
+
+        # Simulate to completion (persist after each game)
+        def _persist(b):
+            try:
+                save_bracket(b)
+            except Exception:
+                pass
+
+        try:
+            bracket = run_playoffs(bracket, persist_cb=_persist)
+        except NotImplementedError:
+            # If engine stubbed, exit gracefully
+            message = "Playoffs engine not available; cannot simulate."
+            log_news_event(message)
+            self._update_ui(message)
+            return
+        except Exception:
+            message = "Playoffs simulation encountered an error."
+            log_news_event(message)
+            self._update_ui(message)
+            return
+
+        # If a champion exists, mark playoffs done and write champions.csv with WS result
+        if getattr(bracket, "champion", None):
+            # Compute WS series result if available
+            series_result = ""
+            try:
+                ws_round = next((r for r in bracket.rounds if r.name in {"WS", "Final"}), None)
+                if ws_round and ws_round.matchups:
+                    m = ws_round.matchups[0]
+                    champ = bracket.champion
+                    wins_c = 0
+                    wins_o = 0
+                    for g in m.games:
+                        res = str(g.result or "")
+                        if "-" in res:
+                            h, a = res.split("-", 1)
+                            try:
+                                h = int(h)
+                                a = int(a)
+                            except Exception:
+                                continue
+                            # Determine winner for each game
+                            if h > a:
+                                winner = g.home
+                            elif a > h:
+                                winner = g.away
+                            else:
+                                continue
+                            if winner == champ:
+                                wins_c += 1
+                            else:
+                                wins_o += 1
+                    if wins_c or wins_o:
+                        series_result = f"{wins_c}-{wins_o}"
+            except Exception:
+                series_result = ""
+
+            message = f"Simulated playoffs; champion: {bracket.champion}"
+            self._playoffs_done = True
+            self._save_progress()
+            # Append to champions.csv (best-effort)
+            try:
+                import csv
+                champions = (DATA_DIR / "champions.csv")
+                champions.parent.mkdir(parents=True, exist_ok=True)
+                hdr = ["year", "champion", "runner_up", "series_result"]
+                write_header = not champions.exists()
+                with champions.open("a", encoding="utf-8", newline="") as fh:
+                    w = csv.writer(fh)
+                    if write_header:
+                        w.writerow(hdr)
+                    w.writerow([
+                        getattr(bracket, "year", ""),
+                        bracket.champion or "",
+                        getattr(bracket, "runner_up", "") or "",
+                        series_result,
+                    ])
+            except Exception:
+                pass
+            log_news_event(message)
+            self._update_ui(message)
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -798,6 +980,10 @@ class SeasonProgressWindow(QDialog):
             teams = load_teams(DATA_DIR / "teams.csv")
         except Exception:
             return issues
+        try:
+            players_meta = {p.player_id: p for p in load_players_from_csv(DATA_DIR / "players.csv")}
+        except Exception:
+            players_meta = {}
         for team in teams:
             try:
                 roster = load_roster(team.team_id)
@@ -805,11 +991,6 @@ class SeasonProgressWindow(QDialog):
                 issues.append(f"{team.team_id}: missing roster file")
                 continue
             act = set(roster.act)
-            # Build quick lookup for pitcher classification
-            try:
-                meta = {p.player_id: p for p in load_players_from_csv(DATA_DIR / "players.csv")}
-            except Exception:
-                meta = {}
             for vs in ("lhp", "rhp"):
                 try:
                     lineup = load_lineup(team.team_id, vs=vs, lineup_dir=DATA_DIR / "lineups")
@@ -830,7 +1011,7 @@ class SeasonProgressWindow(QDialog):
                 # Ensure all lineup players are non-pitchers (eligible hitters)
                 bad_roles = []
                 for pid in ids:
-                    p = meta.get(pid)
+                    p = players_meta.get(pid)
                     if p is None:
                         continue
                     if getattr(p, "is_pitcher", False) or get_role(p) in {"SP", "RP"}:

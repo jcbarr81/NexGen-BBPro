@@ -23,6 +23,7 @@ from utils.player_loader import load_players_from_csv
 from utils.roster_loader import load_roster, save_roster
 from utils.team_loader import load_teams
 from utils.trade_utils import get_pending_trades, save_trade
+from services.transaction_log import record_transaction
 
 import uuid
 
@@ -172,3 +173,44 @@ class TradeDialog(QDialog):
             from_roster.act.append(pid)
         save_roster(trade.from_team, from_roster)
         save_roster(trade.to_team, to_roster)
+        try:
+            for pid in trade.give_player_ids:
+                record_transaction(
+                    action="trade_out",
+                    team_id=trade.from_team,
+                    player_id=pid,
+                    from_level="ACT",
+                    to_level="ACT",
+                    counterparty=trade.to_team,
+                    details=f"Trade {trade.trade_id} sent to {trade.to_team}",
+                )
+                record_transaction(
+                    action="trade_in",
+                    team_id=trade.to_team,
+                    player_id=pid,
+                    from_level="ACT",
+                    to_level="ACT",
+                    counterparty=trade.from_team,
+                    details=f"Trade {trade.trade_id} acquired from {trade.from_team}",
+                )
+            for pid in trade.receive_player_ids:
+                record_transaction(
+                    action="trade_out",
+                    team_id=trade.to_team,
+                    player_id=pid,
+                    from_level="ACT",
+                    to_level="ACT",
+                    counterparty=trade.from_team,
+                    details=f"Trade {trade.trade_id} sent to {trade.from_team}",
+                )
+                record_transaction(
+                    action="trade_in",
+                    team_id=trade.from_team,
+                    player_id=pid,
+                    from_level="ACT",
+                    to_level="ACT",
+                    counterparty=trade.to_team,
+                    details=f"Trade {trade.trade_id} acquired from {trade.to_team}",
+                )
+        except Exception:
+            pass

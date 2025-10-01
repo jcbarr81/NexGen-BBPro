@@ -204,6 +204,7 @@ from services.draft_state import (
 )
 from utils.news_logger import log_news_event
 from utils.team_loader import load_teams
+from utils.exceptions import DraftRosterError
 
 
 class DraftConsole(QDialog):
@@ -222,6 +223,10 @@ class DraftConsole(QDialog):
 
         year = int(draft_date.split("-")[0]) if draft_date else 0
         self.year = year
+        self.draft_date = draft_date
+        self.assignment_failures: list[str] = []
+        self.assignment_summary: dict[str, object] = {}
+        self.last_assignment_error: DraftRosterError | None = None
         self.banner = QLabel(f"Draft Day: {draft_date}")
         bfont = self.banner.font()
         bfont.setPointSize(max(bfont.pointSize() + 2, 12))
@@ -581,35 +586,76 @@ class DraftConsole(QDialog):
     def _commit_to_rosters(self) -> None:
         try:
             from services.draft_assignment import commit_draft_results
-            summary = commit_draft_results(self.year)
-            # Log a league news entry
-            try:
-                log_news_event(
-                    f"Amateur Draft {self.year} committed: "
-                    f"{summary.get('players_added',0)} players added; "
-                    f"{summary.get('roster_assigned',0)} roster assignments",
+        except Exception as exc:
+            QMessageBox.warning(self, "Commit Failed", str(exc))
+            return
+
+        summary: dict[str, object] = {}
+        failures: list[str] = []
+        compliance: list[str] = []
+        try:
+            summary = commit_draft_results(self.year, season_date=getattr(self, "draft_date", None))
+            failures = list(summary.get("failures") or [])
+            compliance = list(summary.get("compliance_issues") or [])
+            self.last_assignment_error = None
+        except DraftRosterError as exc:
+            summary = dict(exc.summary or {})
+            summary.setdefault("players_added", 0)
+            summary.setdefault("roster_assigned", 0)
+            failures = list(summary.get("failures") or [])
+            compliance = list(summary.get("compliance_issues") or [])
+            if not failures and exc.failures:
+                failures = list(exc.failures)
+            summary["failures"] = failures
+            summary.setdefault("compliance_issues", compliance)
+            self.last_assignment_error = exc
+        except Exception as exc:
+            QMessageBox.warning(self, "Commit Failed", str(exc))
+            return
+
+        self.assignment_summary = summary
+        combined_issues = [*failures, *[msg for msg in compliance if msg not in failures]]
+        self.assignment_failures = combined_issues
+
+        try:
+            log_news_event(
+                f"Amateur Draft {self.year} committed: "
+                f"{int(summary.get('players_added', 0))} players added; "
+                f"{int(summary.get('roster_assigned', 0))} roster assignments",
+            )
+        except Exception:
+            pass
+        try:
+            parent = self.parent()
+            if parent is not None and hasattr(parent, "notes_label"):
+                parent.notes_label.setText(
+                    f"Draft {self.year} committed - players added: "
+                    f"{int(summary.get('players_added', 0))}, roster assignments: "
+                    f"{int(summary.get('roster_assigned', 0))}",
                 )
-            except Exception:
-                pass
-            # Update parent SeasonProgress notes (toast-like)
-            try:
-                parent = self.parent()
-                if parent is not None and hasattr(parent, "notes_label"):
-                    parent.notes_label.setText(
-                        f"Draft {self.year} committed — players added: "
-                        f"{summary.get('players_added',0)}, roster assignments: "
-                        f"{summary.get('roster_assigned',0)}",
-                    )
-            except Exception:
-                pass
+        except Exception:
+            pass
+
+        base_msg = (
+            f"Players added: {int(summary.get('players_added', 0))}\n"
+            f"Roster assignments: {int(summary.get('roster_assigned', 0))}"
+        )
+        if combined_issues:
+            detail_lines = "\n".join(combined_issues)
+            QMessageBox.warning(
+                self,
+                "Draft Assignments",
+                base_msg
+                + "\n\n"
+                + detail_lines
+                + "\nResolve roster compliance before resuming the season.",
+            )
+        else:
             QMessageBox.information(
                 self,
                 "Draft Assignments",
-                f"Players added: {summary.get('players_added',0)}\n"
-                f"Roster assignments: {summary.get('roster_assigned',0)}",
+                base_msg,
             )
-        except Exception as exc:
-            QMessageBox.warning(self, "Commit Failed", str(exc))
 
     # Board and preview helpers
     def _rebuild_board(self) -> None:

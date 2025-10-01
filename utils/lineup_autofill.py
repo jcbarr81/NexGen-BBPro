@@ -15,7 +15,7 @@ def auto_fill_lineup_for_team(
     players_file: str | Path = "data/players.csv",
     roster_dir: str | Path = "data/rosters",
     lineup_dir: str | Path = "data/lineups",
-) -> Path:
+) -> list[tuple[str, str]]:
     """Create sound, coverage-first lineups for ``team_id`` from ACT.
 
     Strategy:
@@ -25,7 +25,7 @@ def auto_fill_lineup_for_team(
       C, SS, CF, 3B, 2B, 1B, LF, RF, then DH as the best remaining bat.
     - Enforce 9 unique players, never selecting pitchers for the lineup.
     - Write both ``vs_lhp`` and ``vs_rhp`` (same order for now).
-    - Return the output directory path.
+    - Return the 9-player lineup used.
     """
 
     base = get_base_dir()
@@ -102,11 +102,12 @@ def auto_fill_lineup_for_team(
             used.add(pid)
 
     lineup_root.mkdir(parents=True, exist_ok=True)
+    result = lineup[:9]
     for vs in ("vs_lhp", "vs_rhp"):
         path = lineup_root / f"{team_id}_{vs}.csv"
         with path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["order", "player_id", "position"])
-            for i, (pid, pos) in enumerate(lineup[:9], start=1):
+            for i, (pid, pos) in enumerate(result, start=1):
                 writer.writerow([i, pid, pos])
-    return lineup_root
+    return result

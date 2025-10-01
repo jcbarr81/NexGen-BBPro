@@ -8,6 +8,7 @@ UBL (Ultimate Baseball League) Simulation is a Python project that models a smal
 - **Game simulation:** `playbalance/simulation.py` provides a minimal engine for at-bats, pitching changes and base running.
 - **Data files:** example data lives in the `data/` directory including rosters, lineups and configuration values.
 - **AI-generated logos:** `utils.logo_generator` can create team logos using OpenAI's image API.
+- **Postseason:** MLB-style playoffs with flexible league sizes, round-by-round simulation, bracket viewer, and champions log.
 
 ## OpenAI setup
 
@@ -127,5 +128,30 @@ credentials to log in after a reset:
 ```
 username: admin
 password: pass
+```
+
+### Postseason
+
+The postseason supports MLB-style seeding and variable league sizes (4, 6, or 8 teams per league).
+
+- Seeding: division winners are prioritized (by default) above wildcards, then ordered by wins and run differential. Leagues are inferred from the first token of a team's `division` (e.g., `AL East` → `AL`); override via `data/playoffs_config.json`.
+- Rounds: depending on configured size, the bracket includes Wild Card (BO3), Division Series (BO5), League Championship Series (BO7), and World Series (BO7) with 1‑1‑1, 2‑2‑1, and 2‑3‑2 home/away patterns respectively.
+- Running: open Admin → League → Season Progress and click “Simulate Playoffs” to generate and complete the bracket. Progress persists after each game.
+- Viewing: open Admin → League → “Open Playoffs Viewer” to see the current bracket and per‑game results. The viewer also offers “Simulate Round” and “Simulate Remaining”.
+- Outputs:
+  - Bracket: `data/playoffs.json` (atomic writes, `.bak` backup)
+  - Box scores: `data/playoff_boxscores/<ROUND>/<SERIES>/<GAME>.html`
+  - Champions: `data/champions.csv` with `year,champion,runner_up,series_result`
+
+Configuration file (optional): `data/playoffs_config.json`
+
+```
+{
+  "num_playoff_teams_per_league": 6,
+  "series_lengths": {"wildcard": 3, "ds": 5, "cs": 7, "ws": 7},
+  "home_away_patterns": {"3": [1,1,1], "5": [2,2,1], "7": [2,3,2]},
+  "division_winners_priority": true,
+  "division_to_league": {"AL East": "AL", "NL West": "NL"}
+}
 ```
 

@@ -23,6 +23,7 @@ from models.roster import Roster
 from ui.player_profile_dialog import PlayerProfileDialog
 from utils.roster_loader import save_roster
 from utils.roster_validation import missing_positions
+from services.roster_moves import cut_player as cut_player_service
 
 
 class RosterListWidget(QListWidget):
@@ -33,7 +34,7 @@ class RosterListWidget(QListWidget):
         self.level = level
         self.dialog = dialog
         self.setObjectName(level)
-        self.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
         self.setDropIndicatorShown(True)
@@ -89,19 +90,22 @@ class ReassignPlayersDialog(QDialog):
 
         move_btn = QPushButton("Reassign")
         move_btn.clicked.connect(self._apply_moves)
+        cut_btn = QPushButton("Cut Selected Player(s)")
+        cut_btn.clicked.connect(self._cut_selected_player)
 
         save_btn = QPushButton("Save Roster", objectName="Primary")
         save_btn.clicked.connect(self._save_roster)
 
         layout = QVBoxLayout(self)
         info = QLabel(
-            "Drag and drop players between lists or select a player and "
+            "Drag players between lists or multi-select (Ctrl/Shift) and "
             "click Reassign."
         )
         info.setWordWrap(True)
         layout.addWidget(info)
         layout.addLayout(columns)
         layout.addWidget(move_btn)
+        layout.addWidget(cut_btn)
 
         note = QLabel(
             "Changes will not be saved until you click 'Save Roster'."
@@ -136,60 +140,173 @@ class ReassignPlayersDialog(QDialog):
             return
         PlayerProfileDialog(player, self).exec()
 
-    def _apply_moves(self) -> None:
-        selected_item = None
-        from_level = None
-        for level, lw in self.lists.items():
-            items = lw.selectedItems()
-            if items:
-                selected_item = items[0]
-                from_level = level
-                break
+    def _resolve_selection(
+        self, dialog_title: str
+    ) -> tuple[str, List[QListWidgetItem]] | None:
+        """Return selected items grouped by roster level or warn if invalid."""
+        selected = [
+            (level, lw.selectedItems())
+            for level, lw in self.lists.items()
+            if lw.selectedItems()
+        ]
+        if not selected:
+            QMessageBox.warning(
+                self,
+                dialog_title,
+                "Select at least one player first.",
+            )
+            return None
+        if len(selected) > 1:
+            QMessageBox.warning(
+                self,
+                dialog_title,
+                "Select players from only one roster column.",
+            )
+            return None
+        level, items = selected[0]
+        return level, list(items)
 
-        if not selected_item or not from_level:
-            QMessageBox.warning(self, "Reassign Player", "Select a player first.")
+    def _apply_moves(self) -> None:
+        selection = self._resolve_selection("Reassign Players")
+        if not selection:
+            return
+        from_level, items = selection
+        if not items:
             return
 
-        pid = selected_item.data(Qt.ItemDataRole.UserRole)
+        selected = []
+        for item in items:
+            pid = item.data(Qt.ItemDataRole.UserRole)
+            player = self.players.get(pid)
+            age = self._calculate_age(player.birthdate) if player else None
+            selected.append((item, pid, player, age))
 
-        player = self.players.get(pid)
-        age = self._calculate_age(player.birthdate) if player else None
-
-        options = []
+        options: List[str] = []
         for level in self.levels:
             if level == from_level:
                 continue
-            if level == "low" and isinstance(age, int) and age >= 27:
-                continue
+            if level == "low":
+                if any(isinstance(age, int) and age >= 27 for _, _, _, age in selected):
+                    continue
             options.append(level.upper())
 
         if not options:
-            QMessageBox.warning(self, "Reassign Player", "No valid destination rosters.")
+            QMessageBox.warning(
+                self, "Reassign Players", "No valid destination rosters."
+            )
             return
 
         choice, ok = QInputDialog.getItem(
-            self, "Reassign Player", "Move to:", options, 0, False
+            self, "Reassign Players", "Move to:", options, 0, False
         )
         if not ok:
             return
         to_level = choice.lower()
 
-        try:
-            self.roster.move_player(pid, from_level, to_level)
-        except ValueError:
-            QMessageBox.critical(
-                self, "Error", f"Failed to move player {pid} from {from_level}"
-            )
+        source_list = self.lists[from_level]
+        target_list = self.lists[to_level]
+        moved: List[str] = []
+
+        for item, pid, _player, _age in selected:
+            try:
+                self.roster.move_player(pid, from_level, to_level)
+            except ValueError:
+                QMessageBox.critical(
+                    self,
+                    "Reassign Players",
+                    f"Failed to move player {pid} from {from_level.upper()}.",
+                )
+                continue
+
+            row = source_list.row(item)
+            moved_item = source_list.takeItem(row)
+            target_list.addItem(moved_item)
+            moved.append(pid)
+
+        if not moved:
             return
 
-        self.lists[from_level].takeItem(self.lists[from_level].row(selected_item))
-        self.lists[to_level].addItem(selected_item)
-
-        self.lists[from_level].update()
-        self.lists[to_level].update()
+        source_list.update()
+        target_list.update()
         self._sync_roster_from_lists()
         self._update_counts()
         self.update()
+
+    def _cut_selected_player(self) -> None:
+        selection = self._resolve_selection("Cut Players")
+        if not selection:
+            return
+        from_level, items = selection
+        if not items:
+            return
+
+        selected = []
+        for item in items:
+            pid = item.data(Qt.ItemDataRole.UserRole)
+            player = self.players.get(pid)
+            name = f"{player.first_name} {player.last_name}" if player else pid
+            selected.append((item, pid, name))
+
+        if len(selected) == 1:
+            prompt = f"Release {selected[0][2]} from the organization?"
+        else:
+            names = "\n".join(f"- {name}" for _, _, name in selected)
+            prompt = (
+                "Release the following players from the organization?\n\n"
+                f"{names}"
+            )
+
+        reply = QMessageBox.question(
+            self,
+            "Cut Players",
+            prompt,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        self._sync_roster_from_lists()
+        source_list = self.lists[from_level]
+        successful: List[str] = []
+        errors: List[str] = []
+
+        for item, pid, name in selected:
+            try:
+                updated_roster, _removed_level = cut_player_service(
+                    self.roster.team_id, pid, self.roster
+                )
+                self.roster = updated_roster
+            except ValueError as exc:
+                errors.append(str(exc))
+                continue
+            except Exception as exc:
+                errors.append(f"Failed to cut {name}: {exc}")
+                continue
+
+            row = source_list.row(item)
+            source_list.takeItem(row)
+            successful.append(name)
+
+        if successful:
+            self._sync_roster_from_lists()
+            self._update_counts()
+            self.update()
+            if len(successful) == 1:
+                QMessageBox.information(
+                    self, "Cut Players", f"{successful[0]} was released."
+                )
+            else:
+                released = ", ".join(successful)
+                QMessageBox.information(
+                    self,
+                    "Cut Players",
+                    f"Released {len(successful)} players: {released}.",
+                )
+
+        if errors:
+            QMessageBox.warning(self, "Cut Players", "\n".join(errors))
+
 
     def _sync_roster_from_lists(self) -> None:
         """Sync internal roster lists with the GUI widgets."""

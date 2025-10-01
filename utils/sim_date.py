@@ -32,11 +32,21 @@ def get_current_sim_date(base_dir: Path | None = None) -> str | None:
         return None
     if not rows:
         return None
+    # Build ordered list of unique dates as SeasonSimulator does
+    unique_dates: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        date_val = str(row.get("date") or "").strip()
+        if not date_val:
+            continue
+        if date_val not in seen:
+            unique_dates.append(date_val)
+            seen.add(date_val)
+    if not unique_dates:
+        return None
     try:
         sim_index = int(progress.get("sim_index", 0) or 0)
     except Exception:
         sim_index = 0
-    sim_index = max(0, min(sim_index, len(rows) - 1))
-    date_val = rows[sim_index].get("date")
-    return str(date_val) if date_val else None
-
+    sim_index = max(0, min(sim_index, len(unique_dates) - 1))
+    return unique_dates[sim_index]

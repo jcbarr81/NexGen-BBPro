@@ -6,6 +6,7 @@ import random
 
 from playbalance.game_runner import simulate_game_scores
 from utils.pitcher_recovery import PitcherRecoveryTracker
+from utils.exceptions import DraftRosterError
 
 
 class SeasonSimulator:
@@ -23,7 +24,6 @@ class SeasonSimulator:
     ) -> None:
         self.schedule = list(schedule)
         self.dates: List[str] = sorted({g["date"] for g in self.schedule})
-        self._mid = len(self.dates) // 2
         self._index = 0
         self.simulate_game = simulate_game or self._default_simulate_game
         self.on_all_star_break = on_all_star_break
@@ -34,6 +34,16 @@ class SeasonSimulator:
         self.draft_date: str | None = str(draft_date) if draft_date else None
         self._draft_triggered: bool = False
         self.on_draft_day = on_draft_day
+
+        # Ensure Draft Day exists in the date sequence even if no games are scheduled
+        # that day (e.g., an off day). This guarantees the simulator pauses to run the
+        # draft rather than skipping past it when advancing to the next scheduled date.
+        if self.draft_date and self.draft_date not in self.dates:
+            self.dates.append(self.draft_date)
+            self.dates.sort()
+
+        # Compute midpoint after potential draft insertion
+        self._mid = len(self.dates) // 2
 
         self._seed_positional = False
         self._seed_keyword = False
@@ -110,8 +120,12 @@ class SeasonSimulator:
             if self.on_draft_day is not None:
                 try:
                     self.on_draft_day(current_date)
-                finally:
-                    # Ensure we only trigger once even if callback errors
+                except DraftRosterError:
+                    raise
+                except Exception:
+                    self._draft_triggered = True
+                    raise
+                else:
                     self._draft_triggered = True
             else:
                 self._draft_triggered = True

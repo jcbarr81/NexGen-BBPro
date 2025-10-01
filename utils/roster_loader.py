@@ -44,6 +44,11 @@ def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
 
 def save_roster(team_id, roster: Roster):
     filepath = get_base_dir() / "data" / "rosters" / f"{team_id}.csv"
+    try:
+        if filepath.exists():
+            filepath.chmod(0o644)
+    except Exception:
+        pass
     with filepath.open(mode="w", newline="") as f:
         writer = csv.writer(f)
         for level, group in [

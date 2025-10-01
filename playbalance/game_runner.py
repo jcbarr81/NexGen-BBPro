@@ -16,6 +16,8 @@ from playbalance.simulation import (
     render_boxscore_html,
 )
 from utils.lineup_loader import build_default_game_state, load_lineup
+from utils.lineup_autofill import auto_fill_lineup_for_team
+from utils.roster_loader import load_roster
 from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
@@ -217,34 +219,25 @@ def _sanitize_lineup(
     *,
     players_file: str = "data/players.csv",
     roster_dir: str = "data/rosters",
+    lineup_dir: str | Path = "data/lineups",
 ) -> Sequence[LineupEntry]:
-    """Return a valid 9-player lineup using ``desired`` as a hint.
+    """Return a valid 9-player lineup and persist it to disk.
 
-    Drops entries not on the active roster or duplicates and tops up from the
-    default selection until nine players are present.
+    Ignores ``desired`` when regenerating to ensure the final lineup reflects
+    the current active roster.
     """
-    base = build_default_game_state(team_id, players_file=players_file, roster_dir=roster_dir)
-    default_ids = [p.player_id for p in base.lineup]
-    allowed = set(default_ids + [p.player_id for p in base.bench])
-
-    seen: set[str] = set()
-    cleaned: list[LineupEntry] = []
-    for pid, pos in desired:
-        pid = str(pid).strip()
-        if not pid or pid in seen or pid not in allowed:
-            continue
-        cleaned.append((pid, pos))
-        seen.add(pid)
-        if len(cleaned) >= 9:
-            break
-    for pid in default_ids:
-        if len(cleaned) >= 9:
-            break
-        if pid in seen:
-            continue
-        cleaned.append((pid, getattr(base.lineup[default_ids.index(pid)], "position", "")))
-        seen.add(pid)
-    return cleaned[:9]
+    try:
+        load_roster.cache_clear()
+    except Exception:
+        pass
+    lineup = auto_fill_lineup_for_team(
+        team_id,
+        players_file=players_file,
+        roster_dir=roster_dir,
+        lineup_dir=lineup_dir,
+    )
+    # Provide as sequence of (pid, position)
+    return list(lineup)
 
 
 def run_single_game(
@@ -325,9 +318,22 @@ def run_single_game(
             )
         except ValueError:
             if lineup:
-                # In strict mode, do not silently discard saved lineups —
-                # force a clear error so the UI can prompt for repair.
-                raise
+                # Salvage by sanitizing against ACT and persist the fix so
+                # subsequent games use the corrected lineup.
+                safe = _sanitize_lineup(
+                    team_id,
+                    lineup,
+                    players_file=players_file,
+                    roster_dir=roster_dir,
+                    lineup_dir=lineup_dir,
+                )
+                return prepare_team_state(
+                    team_id,
+                    lineup=safe,
+                    starter_id=starter_id,
+                    players_file=players_file,
+                    roster_dir=roster_dir,
+                )
             raise
 
     rng = random.Random(seed)

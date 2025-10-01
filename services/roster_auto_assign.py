@@ -273,12 +273,14 @@ def auto_assign_team(team_id: str, *, players_file: str = "data/players.csv", ro
 
 
 def auto_assign_all_teams(*, players_file: str = "data/players.csv", roster_dir: str = "data/rosters", teams_file: str = "data/teams.csv") -> None:
+    load_roster.cache_clear()
     teams = load_teams(teams_file)
     users = load_users("data/users.txt")
     owned: set[str] = {u.get("team_id", "") for u in users if u.get("role") == "owner" and u.get("team_id")}
     for team in teams:
         try:
             auto_assign_team(team.team_id, players_file=players_file, roster_dir=roster_dir)
+            load_roster.cache_clear()
             # For unmanaged teams, auto-generate lineups to keep sims valid
             if team.team_id not in owned:
                 auto_fill_lineup_for_team(

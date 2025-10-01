@@ -48,10 +48,14 @@ from .exhibition_game_dialog import ExhibitionGameDialog
 from .playbalance_editor import PlayBalanceEditor
 from playbalance.draft_config import load_draft_config, save_draft_config
 from .season_progress_window import SeasonProgressWindow
+from .playoffs_window import PlayoffsWindow
+from .free_agency_window import FreeAgencyWindow
+from .news_window import NewsWindow
 from .owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades, save_trade
 from utils.news_logger import log_news_event
 from utils.roster_loader import load_roster
+from services.transaction_log import record_transaction
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.user_manager import add_user, load_users, update_user
@@ -93,6 +97,10 @@ class LeaguePage(QWidget):
         self.exhibition_button = QPushButton("Simulate Exhibition Game")
         self.exhibition_button.setToolTip("Run a quick exhibition between two teams")
         control.layout().addWidget(self.exhibition_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.playoffs_view_button = QPushButton("Open Playoffs Viewer")
+        self.playoffs_view_button.setToolTip("View current playoff bracket and results")
+        control.layout().addWidget(self.playoffs_view_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         control.layout().addStretch()
 
         # Operations ------------------------------------------------------
@@ -110,6 +118,14 @@ class LeaguePage(QWidget):
         self.playbalance_button = QPushButton("Edit Play Balance")
         self.playbalance_button.setToolTip("Tune game balance parameters")
         ops.layout().addWidget(self.playbalance_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.free_agency_hub_button = QPushButton("Open Free Agency Hub")
+        self.free_agency_hub_button.setToolTip("Browse unsigned players and simulate AI bids")
+        ops.layout().addWidget(self.free_agency_hub_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.injury_center_button = QPushButton("Open Injury Center")
+        self.injury_center_button.setToolTip("View league-wide injuries (read-only)")
+        ops.layout().addWidget(self.injury_center_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         ops.layout().addStretch()
 
         layout.addWidget(control)
@@ -409,7 +425,10 @@ class MainWindow(QMainWindow):
         lp.create_league_button.clicked.connect(self.open_create_league)
         lp.exhibition_button.clicked.connect(self.open_exhibition_dialog)
         lp.playbalance_button.clicked.connect(self.open_playbalance_editor)
+        lp.injury_center_button.clicked.connect(self.open_injury_center)
+        lp.free_agency_hub_button.clicked.connect(self.open_free_agency)
         lp.season_progress_button.clicked.connect(self.open_season_progress)
+        lp.playoffs_view_button.clicked.connect(self.open_playoffs_window)
         lp.reset_opening_day_button.clicked.connect(self.reset_to_opening_day)
         dp = self.pages["draft"]
         dp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
@@ -449,6 +468,9 @@ class MainWindow(QMainWindow):
         theme_action = QAction("Toggle Dark Mode", self)
         theme_action.triggered.connect(lambda: _toggle_theme(self.statusBar()))
         view_menu.addAction(theme_action)
+        news_action = QAction("News Feed", self)
+        news_action.triggered.connect(self.open_news_window)
+        view_menu.addAction(news_action)
 
     def _status_with_date(self, base: str) -> str:
         date_str = get_current_sim_date()
@@ -569,39 +591,92 @@ class MainWindow(QMainWindow):
             summary = selected.text()
             trade = trade_map[summary]
 
-            from_roster = load_roster(trade.from_team)
-            to_roster = load_roster(trade.to_team)
+            outgoing_from: list[tuple[str, str]] = []
+            incoming_to: list[tuple[str, str]] = []
+            outgoing_to: list[tuple[str, str]] = []
+            incoming_from: list[tuple[str, str]] = []
 
-            for pid in trade.give_player_ids:
-                for level in ["act", "aaa", "low"]:
-                    lst = getattr(from_roster, level)
-                    if pid in lst:
-                        lst.remove(pid)
-                        getattr(to_roster, level).append(pid)
-                        break
+            if accept:
+                from_roster = load_roster(trade.from_team)
+                to_roster = load_roster(trade.to_team)
 
-            for pid in trade.receive_player_ids:
-                for level in ["act", "aaa", "low"]:
-                    lst = getattr(to_roster, level)
-                    if pid in lst:
-                        lst.remove(pid)
-                        getattr(from_roster, level).append(pid)
-                        break
+                for pid in trade.give_player_ids:
+                    for level in ("act", "aaa", "low"):
+                        lst = getattr(from_roster, level)
+                        if pid in lst:
+                            lst.remove(pid)
+                            getattr(to_roster, level).append(pid)
+                            outgoing_from.append((pid, level))
+                            incoming_to.append((pid, level))
+                            break
 
-            def save_roster(roster):
-                path = get_base_dir() / "data" / "rosters" / f"{roster.team_id}.csv"
-                with path.open("w", newline="") as f:
-                    writer = csv.DictWriter(f, fieldnames=["player_id", "level"])
-                    writer.writeheader()
-                    for lvl in ["act", "aaa", "low"]:
-                        for pid in getattr(roster, lvl):
-                            writer.writerow({"player_id": pid, "level": lvl.upper()})
+                for pid in trade.receive_player_ids:
+                    for level in ("act", "aaa", "low"):
+                        lst = getattr(to_roster, level)
+                        if pid in lst:
+                            lst.remove(pid)
+                            getattr(from_roster, level).append(pid)
+                            outgoing_to.append((pid, level))
+                            incoming_from.append((pid, level))
+                            break
 
-            save_roster(from_roster)
-            save_roster(to_roster)
+                def save_roster(roster):
+                    path = get_base_dir() / "data" / "rosters" / f"{roster.team_id}.csv"
+                    with path.open("w", newline="") as f:
+                        writer = csv.DictWriter(f, fieldnames=["player_id", "level"])
+                        writer.writeheader()
+                        for lvl in ("act", "aaa", "low"):
+                            for pid in getattr(roster, lvl):
+                                writer.writerow({"player_id": pid, "level": lvl.upper()})
+
+                save_roster(from_roster)
+                save_roster(to_roster)
 
             trade.status = "accepted" if accept else "rejected"
             save_trade(trade)
+
+            if accept:
+                try:
+                    for pid, level in outgoing_from:
+                        record_transaction(
+                            action="trade_out",
+                            team_id=trade.from_team,
+                            player_id=pid,
+                            from_level=level.upper(),
+                            to_level=level.upper(),
+                            counterparty=trade.to_team,
+                            details=f"Trade {trade.trade_id} sent to {trade.to_team}",
+                        )
+                        record_transaction(
+                            action="trade_in",
+                            team_id=trade.to_team,
+                            player_id=pid,
+                            from_level=level.upper(),
+                            to_level=level.upper(),
+                            counterparty=trade.from_team,
+                            details=f"Trade {trade.trade_id} acquired from {trade.from_team}",
+                        )
+                    for pid, level in outgoing_to:
+                        record_transaction(
+                            action="trade_out",
+                            team_id=trade.to_team,
+                            player_id=pid,
+                            from_level=level.upper(),
+                            to_level=level.upper(),
+                            counterparty=trade.from_team,
+                            details=f"Trade {trade.trade_id} sent to {trade.from_team}",
+                        )
+                        record_transaction(
+                            action="trade_in",
+                            team_id=trade.from_team,
+                            player_id=pid,
+                            from_level=level.upper(),
+                            to_level=level.upper(),
+                            counterparty=trade.to_team,
+                            details=f"Trade {trade.trade_id} acquired from {trade.to_team}",
+                        )
+                except Exception:
+                    pass
 
             log_news_event(
                 f"TRADE {'ACCEPTED' if accept else 'REJECTED'}: {summary}"
@@ -1342,6 +1417,35 @@ class MainWindow(QMainWindow):
         win = SeasonProgressWindow(self)
         win.show()
 
+    def open_injury_center(self) -> None:
+        try:
+            win = InjuryCenterWindow(self)
+            win.show()
+        except Exception:
+            pass
+
+    def open_news_window(self) -> None:
+        try:
+            win = NewsWindow(self)
+            win.show()
+        except Exception:
+            pass
+
+    def open_free_agency(self) -> None:
+        try:
+            win = FreeAgencyWindow(self)
+            win.show()
+        except Exception:
+            pass
+
+    def open_playoffs_window(self) -> None:
+        try:
+            self._playoffs_win = PlayoffsWindow(self)
+            self._playoffs_win.show()
+        except Exception:
+            # Headless environments may lack full Qt stack
+            pass
+
     # ------------------------------------------------------------------
     # Amateur Draft helpers
     # ------------------------------------------------------------------
@@ -1576,19 +1680,23 @@ class MainWindow(QMainWindow):
             with prog.open("r", encoding="utf-8") as fh:
                 progress = _json.load(fh)
         except Exception:
-            return (False, None, None, False)
-        with sched.open(newline="") as fh:
-            rows = list(_csv.DictReader(fh))
-        if not rows:
-            return (False, None, None, False)
-        sim_index = int(progress.get("sim_index", 0) or 0)
-        sim_index = max(0, min(sim_index, len(rows) - 1))
-        cur_date = str(rows[sim_index].get("date") or "")
+            progress = {}
+
+        cur_date = get_current_sim_date()
+        if not cur_date:
+            try:
+                with sched.open(newline="") as fh:
+                    rows = list(_csv.DictReader(fh))
+                first = next((r for r in rows if r.get("date")), None)
+                cur_date = str(first.get("date")) if first else ""
+            except Exception:
+                cur_date = ""
         if not cur_date:
             return (False, None, None, False)
+
         year = int(cur_date.split("-")[0])
         draft_date = self._compute_draft_date_for_year(year)
-        done = set(progress.get("draft_completed_years", []))
+        done = set(progress.get("draft_completed_years", [])) if isinstance(progress, dict) else set()
         completed = year in done
         try:
             y1, m1, d1 = [int(x) for x in cur_date.split("-")]
