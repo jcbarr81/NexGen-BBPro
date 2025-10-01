@@ -7,6 +7,7 @@ def test_cycle_phases(tmp_path):
     manager = SeasonManager(path)
     assert manager.phase == SeasonPhase.PRESEASON
     assert manager.advance_phase() == SeasonPhase.REGULAR_SEASON
+    assert manager.advance_phase() == SeasonPhase.AMATEUR_DRAFT
     assert manager.advance_phase() == SeasonPhase.PLAYOFFS
     assert manager.advance_phase() == SeasonPhase.OFFSEASON
     assert manager.advance_phase() == SeasonPhase.PRESEASON
@@ -30,6 +31,8 @@ def test_phase_handlers(tmp_path):
     assert "Preseason" in manager.handle_phase()
     manager.advance_phase()
     assert "Regular Season" in manager.handle_phase()
+    manager.advance_phase()
+    assert "Amateur Draft" in manager.handle_phase()
     manager.advance_phase()
     assert "Playoffs" in manager.handle_phase()
     manager.advance_phase()

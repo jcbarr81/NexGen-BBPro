@@ -118,6 +118,11 @@ existing visual style and theme.
   Season Progress, Exhibition Game, Create League.
 - League page grouped into:
   - Season Control: Season Progress, Reset to Opening Day, Exhibition Game.
+    - Season Progress: supports milestone actions - Simulate to Midseason,
+      Simulate to Draft, and Simulate to Playoffs. On Draft Day the
+      application switches to the Amateur Draft phase and pauses to conduct
+      the draft via the Draft Console. After committing results, the season
+      resumes in the Regular Season phase. See also: `docs/season_progress.md`.
   - Operations: Review Trades, Create League, Edit Play Balance.
 - Teams page grouped into:
   - Team Access: searchable team selector + Open Team Dashboard.

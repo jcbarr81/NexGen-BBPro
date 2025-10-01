@@ -18,6 +18,7 @@ class SeasonPhase(Enum):
 
     PRESEASON = "PRESEASON"
     REGULAR_SEASON = "REGULAR_SEASON"
+    AMATEUR_DRAFT = "AMATEUR_DRAFT"
     PLAYOFFS = "PLAYOFFS"
     OFFSEASON = "OFFSEASON"
 
@@ -127,6 +128,10 @@ class SeasonManager:
         """Handle tasks specific to the regular season."""
         return "Regular Season: games are underway."
 
+    def handle_amateur_draft(self) -> str:
+        """Handle tasks specific to the amateur draft phase."""
+        return "Amateur Draft: manage draft pool, order, and selections."
+
     def handle_playoffs(self) -> str:
         """Handle tasks specific to the playoffs."""
         return "Playoffs: the top teams compete for the championship."
@@ -144,6 +149,7 @@ class SeasonManager:
         handlers = {
             SeasonPhase.PRESEASON: self.handle_preseason,
             SeasonPhase.REGULAR_SEASON: self.handle_regular_season,
+            SeasonPhase.AMATEUR_DRAFT: self.handle_amateur_draft,
             SeasonPhase.PLAYOFFS: self.handle_playoffs,
             SeasonPhase.OFFSEASON: self.handle_offseason,
         }

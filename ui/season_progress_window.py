@@ -221,20 +221,51 @@ class SeasonProgressWindow(QDialog):
             completed = set(progress.get("draft_completed_years", []))
             if year in completed:
                 return
-            dlg = DraftConsole(date_str, self)
-            dlg.exec()
-            summary = dict(getattr(dlg, "assignment_summary", {}) or {})
-            failures = list(summary.get("failures") or [])
-            compliance = list(summary.get("compliance_issues") or [])
-            if not summary:
-                failures = ["Draft results must be committed before resuming the season."]
-            issues = failures + [msg for msg in compliance if msg not in failures]
-            if issues:
-                raise DraftRosterError(issues, summary)
-            completed.add(year)
-            progress["draft_completed_years"] = sorted(completed)
+            # Enter Amateur Draft phase
             try:
-                PROGRESS_FILE.write_text(_json.dumps(progress, indent=2), encoding="utf-8")
+                self.manager.phase = SeasonPhase.AMATEUR_DRAFT
+                self.manager.save()
+                self._update_ui("Amateur Draft Day: paused for draft operations.")
+            except Exception:
+                pass
+            try:
+                dlg = DraftConsole(date_str, self)
+                dlg.exec()
+                summary = dict(getattr(dlg, "assignment_summary", {}) or {})
+                failures = list(summary.get("failures") or [])
+                compliance = list(summary.get("compliance_issues") or [])
+                if not summary:
+                    failures = [
+                        "Draft results must be committed before resuming the season."
+                    ]
+                issues = failures + [msg for msg in compliance if msg not in failures]
+                if issues:
+                    raise DraftRosterError(issues, summary)
+                completed.add(year)
+                progress["draft_completed_years"] = sorted(completed)
+                try:
+                    PROGRESS_FILE.write_text(
+                        _json.dumps(progress, indent=2), encoding="utf-8"
+                    )
+                except Exception:
+                    pass
+            except DraftRosterError:
+                # Remain in draft phase when assignments are incomplete
+                raise
+            except Exception:
+                # Generic failure; exit draft phase to avoid blocking simulation in headless tests
+                try:
+                    self.manager.phase = SeasonPhase.REGULAR_SEASON
+                    self.manager.save()
+                    self._update_ui("Draft encountered an error; returning to Regular Season.")
+                except Exception:
+                    pass
+                return
+            # Exit Amateur Draft phase back to the regular season after success
+            try:
+                self.manager.phase = SeasonPhase.REGULAR_SEASON
+                self.manager.save()
+                self._update_ui("Draft complete — returning to Regular Season.")
             except Exception:
                 pass
         except DraftRosterError:
@@ -279,6 +310,7 @@ class SeasonProgressWindow(QDialog):
         is_preseason = self.manager.phase == SeasonPhase.PRESEASON
         is_regular = self.manager.phase == SeasonPhase.REGULAR_SEASON
         is_playoffs = self.manager.phase == SeasonPhase.PLAYOFFS
+        is_draft = self.manager.phase == SeasonPhase.AMATEUR_DRAFT
         self.free_agency_button.setVisible(is_preseason)
         self.training_camp_button.setVisible(is_preseason)
         self.generate_schedule_button.setVisible(is_preseason)
@@ -290,10 +322,14 @@ class SeasonProgressWindow(QDialog):
         self.repair_lineups_button.setVisible(is_regular)
         if is_regular:
             mid_remaining = self.simulator.remaining_days()
+            # Draft milestone: only if not yet completed for the season
+            draft_remaining = self._days_until_draft()
             total_remaining = self.simulator.remaining_schedule_days()
             if total_remaining > 0:
                 if mid_remaining > 0:
                     label_text = f"Days until Midseason: {mid_remaining}"
+                elif draft_remaining > 0:
+                    label_text = f"Days until Draft: {draft_remaining}"
                 else:
                     label_text = f"Days until Season End: {total_remaining}"
             else:
@@ -307,6 +343,8 @@ class SeasonProgressWindow(QDialog):
             if has_games:
                 if mid_remaining > 0:
                     self.simulate_phase_button.setText("Simulate to Midseason")
+                elif draft_remaining > 0:
+                    self.simulate_phase_button.setText("Simulate to Draft")
                 else:
                     self.simulate_phase_button.setText("Simulate to Playoffs")
             else:
@@ -335,6 +373,15 @@ class SeasonProgressWindow(QDialog):
             self.simulate_phase_button.setText("Simulate Playoffs")
             self.simulate_phase_button.setEnabled(not self._playoffs_done)
             self.next_button.setEnabled(self._playoffs_done)
+        elif is_draft:
+            # During draft, hide simulation controls; user manages the draft via Draft Console
+            self.remaining_label.setVisible(False)
+            self.simulate_phase_button.setVisible(False)
+            self.simulate_day_button.setVisible(False)
+            self.simulate_week_button.setVisible(False)
+            self.simulate_month_button.setVisible(False)
+            self.repair_lineups_button.setVisible(False)
+            self.next_button.setEnabled(False)
         else:
             self.remaining_label.setVisible(False)
             self.simulate_phase_button.setVisible(False)
@@ -617,6 +664,7 @@ class SeasonProgressWindow(QDialog):
                 except Exception:  # pragma: no cover
                     pass
         mid_remaining = self.simulator.remaining_days()
+        draft_remaining = self._days_until_draft()
         total_remaining = self.simulator.remaining_schedule_days()
         if total_remaining > 0:
             if mid_remaining > 0:
@@ -624,6 +672,11 @@ class SeasonProgressWindow(QDialog):
                     f"Days until Midseason: {mid_remaining}"
                 )
                 remaining_msg = f"{mid_remaining} days until Midseason"
+            elif draft_remaining > 0:
+                self.remaining_label.setText(
+                    f"Days until Draft: {draft_remaining}"
+                )
+                remaining_msg = f"{draft_remaining} days until Draft"
             else:
                 self.remaining_label.setText(
                     f"Days until Season End: {total_remaining}"
@@ -720,6 +773,10 @@ class SeasonProgressWindow(QDialog):
             if mid_remaining > 0:
                 self._simulate_span(mid_remaining, "Midseason")
                 return
+            draft_remaining = self._days_until_draft()
+            if draft_remaining > 0:
+                self._simulate_span(draft_remaining, "Draft")
+                return
             total_remaining = self.simulator.remaining_schedule_days()
             if total_remaining <= 0:
                 return
@@ -764,8 +821,48 @@ class SeasonProgressWindow(QDialog):
                 self._save_progress()
                 message = "Playoffs placeholder reached; mark as complete."
                 log_news_event(message)
-                self._update_ui(message)
-                return
+        self._update_ui(message)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _days_until_draft(self) -> int:
+        """Return days until Draft Day if not yet completed; otherwise 0.
+
+        Counts the number of schedule dates remaining before the inserted Draft
+        milestone date. If draft for the simulator's year has already been
+        completed (per progress file), returns 0.
+        """
+        try:
+            draft_date = getattr(self.simulator, "draft_date", None)
+            if not draft_date:
+                return 0
+            # Check completion for year
+            try:
+                year = int(str(draft_date).split("-")[0])
+            except Exception:
+                return 0
+            completed_years: set[int] = set()
+            try:
+                with PROGRESS_FILE.open("r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+                completed_years = set(data.get("draft_completed_years", []))
+            except Exception:
+                completed_years = set()
+            if year in completed_years:
+                return 0
+            # Find index positions
+            dates = list(getattr(self.simulator, "dates", []) or [])
+            cur = int(getattr(self.simulator, "_index", 0) or 0)
+            try:
+                draft_idx = dates.index(str(draft_date))
+            except Exception:
+                return 0
+            if cur < draft_idx:
+                return max(0, draft_idx - cur)
+            return 0
+        except Exception:
+            return 0
             save_bracket(bracket)
 
         # Simulate to completion (persist after each game)

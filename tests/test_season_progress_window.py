@@ -79,6 +79,13 @@ class QLabel(Dummy):
 class QPushButton(Dummy):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._text = args[0] if args else ""
+
+    def setText(self, text):
+        self._text = text
+
+    def text(self):
+        return self._text
 
 
 class QDialog(Dummy):
@@ -94,6 +101,20 @@ class QMessageBox:
 
     @staticmethod
     def warning(parent, title, message):
+        QMessageBox.last = (title, message)
+
+    class StandardButton:
+        Yes = 1
+        No = 2
+
+    @staticmethod
+    def question(parent, title, message, buttons=None, default=None):
+        # Default to "Yes" in headless tests
+        return QMessageBox.StandardButton.Yes
+
+    @staticmethod
+    def information(parent, title, message):
+        # Record the last info message in the same way as warning if needed
         QMessageBox.last = (title, message)
 
 
@@ -263,11 +284,19 @@ def test_simulate_to_next_phase(tmp_path, monkeypatch):
 
     win.simulate_phase_button.clicked.emit()
     assert len(games) == 5
-    assert win.remaining_label.text() == "Days until Season End: 5"
+    assert win.remaining_label.text() == "Days until Draft: 5"
+    assert win.simulate_phase_button.isEnabled()
+    assert win.simulate_phase_button.text() == "Simulate to Draft"
+    assert not win.next_button.isEnabled()
+
+    win.simulate_phase_button.clicked.emit()
+    assert len(games) == 10
+    assert win.remaining_label.text() == "Days until Season End: 1"
     assert win.simulate_phase_button.isEnabled()
     assert win.simulate_phase_button.text() == "Simulate to Playoffs"
     assert not win.next_button.isEnabled()
 
+    # Final advance to trigger Draft Day and complete remaining date
     win.simulate_phase_button.clicked.emit()
     assert len(games) == 10
     assert win.remaining_label.text() == "Regular season complete."

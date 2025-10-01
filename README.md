@@ -9,6 +9,7 @@ UBL (Ultimate Baseball League) Simulation is a Python project that models a smal
 - **Data files:** example data lives in the `data/` directory including rosters, lineups and configuration values.
 - **AI-generated logos:** `utils.logo_generator` can create team logos using OpenAI's image API.
 - **Postseason:** MLB-style playoffs with flexible league sizes, round-by-round simulation, bracket viewer, and champions log.
+- **Season phases & progress:** dedicated Amateur Draft phase with automatic pause on Draft Day and a "Simulate to Draft" action in the Season Progress window. See `docs/season_progress.md`.
 
 ## OpenAI setup
 
