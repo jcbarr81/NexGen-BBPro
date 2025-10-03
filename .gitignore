@@ -106,6 +106,9 @@ images/avatars/*
 data/lineups/
 data/rosters/
 
+# Iron8 project data
+Iron8/data/
+
 # Logs and temp files
 *.log
 *.tmp
