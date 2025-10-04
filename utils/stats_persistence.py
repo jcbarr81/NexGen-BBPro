@@ -16,6 +16,8 @@ import contextlib
 import errno
 import os
 import time
+from datetime import date as _date
+from datetime import datetime as _dt
 
 if os.name == "nt":  # pragma: no cover - Windows specific
     import msvcrt
@@ -68,6 +70,7 @@ else:  # Unix
             fcntl.flock(file, fcntl.LOCK_UN)
 
 from utils.path_utils import get_base_dir
+from utils.sim_date import get_current_sim_date
 
 
 def _resolve_path(path: str | Path) -> Path:
@@ -76,6 +79,140 @@ def _resolve_path(path: str | Path) -> Path:
     if not p.is_absolute():
         p = base_dir / p
     return p
+
+
+def _truthy_env(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return str(val).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _season_history_dir(base_dir: Path | None = None) -> Path:
+    base = base_dir or get_base_dir()
+    d = base / "data" / "season_history"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _current_sim_date_str() -> str:
+    # Prefer the simulator's current date; fall back to today.
+    sim = get_current_sim_date()
+    if sim:
+        return str(sim)
+    return _dt.utcnow().date().isoformat()
+
+
+def write_daily_snapshot(
+    players: Iterable[Any],
+    teams: Iterable[Any],
+    *,
+    date_str: str | None = None,
+    shards_dir: str | Path | None = None,
+) -> Path:
+    """Write a per-day snapshot of season stats and return its path.
+
+    The snapshot contains the same structure as a single entry in
+    ``history``: a dict with ``players`` and ``teams`` mappings. Writing
+    a daily snapshot avoids unbounded growth of the canonical history file
+    and keeps per-game I/O bounded.
+    """
+
+    base_dir = get_base_dir()
+    out_dir = _season_history_dir(base_dir) if shards_dir is None else _resolve_path(shards_dir)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    d = str(date_str or _current_sim_date_str())
+    # Use ISO date as filename; if multiple leagues or runs need separation
+    # later, we can include a league token.
+    path = out_dir / f"{d}.json"
+    snapshot = {
+        "players": {p.player_id: getattr(p, "season_stats", {}) for p in players},
+        "teams": {t.team_id: getattr(t, "season_stats", {}) for t in teams},
+        "date": d,
+    }
+    # Best-effort write; if interrupted mid-day, later calls overwrite.
+    try:
+        with path.open("w", encoding="utf-8") as fh:
+            json.dump(snapshot, fh, indent=2)
+    except Exception:
+        pass
+    return path
+
+
+def merge_daily_history(
+    *,
+    path: str | Path = "data/season_stats.json",
+    shards_dir: str | Path = "data/season_history",
+) -> Path:
+    """Incrementally merge per-day snapshots into the canonical history.
+
+    - Appends only new shards beyond the last merged date to the ``history``
+      list to keep merges O(1) per day.
+    - Keeps ``players``/``teams`` equal to the latest snapshot values.
+    """
+
+    file_path = _resolve_path(path)
+    shards_path = _resolve_path(shards_dir)
+    # Load current canonical to preserve any existing content.
+    stats = load_stats(file_path)
+    players = stats.get("players", {})
+    teams = stats.get("teams", {})
+    history: list[dict[str, Any]] = list(stats.get("history", []) or [])
+
+    # Determine last merged date if present
+    last_date = None
+    if history:
+        try:
+            last_date_val = history[-1].get("date")
+            if last_date_val:
+                last_date = str(last_date_val)
+        except Exception:
+            last_date = None
+
+    # Build a set of already merged dates to guard against duplicates
+    merged_dates = set()
+    for entry in history:
+        try:
+            d = entry.get("date")
+            if d:
+                merged_dates.add(str(d))
+        except Exception:
+            continue
+
+    shard_files = sorted([p for p in shards_path.glob("*.json") if p.is_file()])
+    for sf in shard_files:
+        date_token = sf.stem  # YYYY-MM-DD
+        if last_date and date_token <= last_date:
+            # Skip shards up to and including last merged date
+            continue
+        if date_token in merged_dates:
+            continue
+        try:
+            with sf.open("r", encoding="utf-8") as fh:
+                snap = json.load(fh)
+            if not isinstance(snap, dict):
+                continue
+            h_entry = {
+                "players": snap.get("players", {}),
+                "teams": snap.get("teams", {}),
+                "date": str(snap.get("date") or date_token),
+            }
+            history.append(h_entry)
+            merged_dates.add(h_entry["date"])  # keep set in sync
+            # Update latest players/teams view
+            players = h_entry["players"] or players
+            teams = h_entry["teams"] or teams
+        except Exception:
+            continue
+
+    # Persist merged canonical file
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open("w", encoding="utf-8") as f:
+        json.dump({"players": players, "teams": teams, "history": history}, f, indent=2)
+    return file_path
 
 
 def load_stats(path: str | Path = "data/season_stats.json") -> Dict[str, Any]:
@@ -122,14 +259,45 @@ def save_stats(
                 if season:
                     team_stats[team.team_id] = season
             history = stats.get("history", [])
-            history.append(
-                {
-                    "players": {
-                        p.player_id: getattr(p, "season_stats", {}) for p in players
-                    },
-                    "teams": {t.team_id: getattr(t, "season_stats", {}) for t in teams},
-                }
-            )
+
+            # If sharding is enabled, write a bounded per-day snapshot instead of
+            # appending to the canonical history list. This keeps per-game writes
+            # small while preserving the ability to merge a full history later.
+            # Daily sharding is enabled by default to keep writes bounded.
+            if _truthy_env("PB_SHARD_HISTORY", True):
+                try:
+                    write_daily_snapshot(players, teams)
+                except Exception:
+                    # Best effort: even if sharded write fails, continue to update
+                    # canonical players/teams below to avoid losing state.
+                    pass
+            else:
+                # Optional: disable or cap history growth to avoid ever-growing writes.
+                disable_history = _truthy_env("PB_DISABLE_HISTORY", False)
+                if not disable_history:
+                    history.append(
+                        {
+                            "players": {
+                                p.player_id: getattr(p, "season_stats", {}) for p in players
+                            },
+                            "teams": {
+                                t.team_id: getattr(t, "season_stats", {}) for t in teams
+                            },
+                            "date": _current_sim_date_str(),
+                        }
+                    )
+                    # Cap history length if PB_HISTORY_MAX is set (non-negative int).
+                    max_hist_raw = os.getenv("PB_HISTORY_MAX") or os.getenv(
+                        "SEASON_HISTORY_MAX"
+                    )
+                    if max_hist_raw is not None:
+                        try:
+                            max_hist = int(str(max_hist_raw).strip())
+                            if max_hist >= 0:
+                                history = history[-max_hist:] if max_hist > 0 else []
+                        except ValueError:
+                            # Ignore invalid values
+                            pass
             with file_path.open("w", encoding="utf-8") as f:
                 json.dump(
                     {

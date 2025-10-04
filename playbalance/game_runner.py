@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import os
 import random
 from datetime import date
 from functools import lru_cache
@@ -342,7 +343,17 @@ def run_single_game(
 
     cfg, _ = load_tuned_playbalance_config()
     sim = GameSimulation(home_state, away_state, cfg, rng)
-    sim.simulate_game()
+
+    # Allow heavy simulation runs to disable per-game persistence via env var.
+    # PB_PERSIST_STATS: "1"/"true"/"yes" to persist; "0"/"false"/"no" to skip.
+    def _env_flag(name: str, default: bool) -> bool:
+        val = os.getenv(name)
+        if val is None:
+            return default
+        return str(val).strip().lower() in {"1", "true", "yes", "on"}
+
+    persist_stats = _env_flag("PB_PERSIST_STATS", True)
+    sim.simulate_game(persist_stats=persist_stats)
 
     box = generate_boxscore(home_state, away_state)
     home_name = home_state.team.name if home_state.team else home_id

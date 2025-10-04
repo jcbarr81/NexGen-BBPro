@@ -449,6 +449,12 @@ class SeasonProgressWindow(QDialog):
                 self.manager.phase = SeasonPhase.PLAYOFFS
                 self.manager.save()
                 self._playoffs_done = False
+                # Merge daily shards now that regular season is complete.
+                try:  # pragma: no cover - best effort merge
+                    from utils.stats_persistence import merge_daily_history as _merge
+                    _merge()
+                except Exception:
+                    pass
                 note = None
             else:
                 self.manager.advance_phase()
@@ -601,6 +607,12 @@ class SeasonProgressWindow(QDialog):
         log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
+        # Always merge daily shards into canonical history after any simulation.
+        try:  # pragma: no cover - best effort merge
+            from utils.stats_persistence import merge_daily_history as _merge
+            _merge()
+        except Exception:
+            pass
 
     def _simulate_span(self, days: int, label: str) -> None:
         """Simulate multiple days with a progress dialog."""
@@ -775,6 +787,12 @@ class SeasonProgressWindow(QDialog):
         log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
+        # Always merge daily shards into canonical history after any simulation span.
+        try:  # pragma: no cover - best effort merge
+            from utils.stats_persistence import merge_daily_history as _merge
+            _merge()
+        except Exception:
+            pass
 
     def _log_daily_recap_for_date(self, date_str: str) -> None:
         """Compose and append a daily recap for games on ``date_str``."""
