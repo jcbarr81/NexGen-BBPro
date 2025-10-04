@@ -1,0 +1,48 @@
+{
+  "year": 2025,
+  "round": 3,
+  "overall_pick": 7,
+  "order": [
+    "GRE",
+    "PIT"
+  ],
+  "selected": [
+    {
+      "round": 1,
+      "overall_pick": 1,
+      "team_id": "GRE",
+      "player_id": "D20250015"
+    },
+    {
+      "round": 1,
+      "overall_pick": 2,
+      "team_id": "PIT",
+      "player_id": "D20250054"
+    },
+    {
+      "round": 2,
+      "overall_pick": 3,
+      "team_id": "GRE",
+      "player_id": "D20250006"
+    },
+    {
+      "round": 2,
+      "overall_pick": 4,
+      "team_id": "PIT",
+      "player_id": "D20250025"
+    },
+    {
+      "round": 3,
+      "overall_pick": 5,
+      "team_id": "GRE",
+      "player_id": "D20250014"
+    },
+    {
+      "round": 3,
+      "overall_pick": 6,
+      "team_id": "PIT",
+      "player_id": "D20250063"
+    }
+  ],
+  "seed": 2025
+}
