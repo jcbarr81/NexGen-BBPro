@@ -273,9 +273,9 @@ def commit_draft_results(
         "failures": [msg for msg in failures if msg],
         "compliance_issues": [msg for msg in compliance_issues if msg],
     }
-    issues = summary["failures"] or summary["compliance_issues"]
-    if issues:
-        raise DraftRosterError(issues, summary)
+    # Only hard failures should block progression; compliance issues are warnings
+    if summary["failures"]:
+        raise DraftRosterError(summary["failures"], summary)
     return summary
 
 

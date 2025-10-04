@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PyQt6.QtWidgets import (
     QDialog,
@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
+from PyQt6.QtCore import pyqtSignal
 try:  # pragma: no cover - fallback for environments without PyQt6
     from PyQt6.QtWidgets import QApplication
 except ImportError:  # pragma: no cover - simple stub for tests
@@ -45,6 +46,7 @@ from utils.roster_loader import load_roster
 from utils.lineup_loader import load_lineup
 from utils.player_loader import load_players_from_csv
 from utils.pitcher_role import get_role
+from utils.sim_date import get_current_sim_date
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -55,6 +57,10 @@ PROGRESS_FILE = DATA_DIR / "season_progress.json"
 
 class SeasonProgressWindow(QDialog):
     """Dialog displaying the current season phase and progress notes."""
+
+    # Emitted whenever season progress persists a new date, or when closing
+    # the window. Carries the latest current sim date string.
+    progressUpdated = pyqtSignal(str)
 
     def __init__(
         self,
@@ -234,18 +240,30 @@ class SeasonProgressWindow(QDialog):
                 summary = dict(getattr(dlg, "assignment_summary", {}) or {})
                 failures = list(summary.get("failures") or [])
                 compliance = list(summary.get("compliance_issues") or [])
+                # If no commit occurred, require it before resuming
                 if not summary:
                     failures = [
                         "Draft results must be committed before resuming the season."
                     ]
-                issues = failures + [msg for msg in compliance if msg not in failures]
-                if issues:
-                    raise DraftRosterError(issues, summary)
+                # Only hard failures block the season. Compliance issues are surfaced
+                # as warnings but do not prevent marking the draft complete.
+                if failures:
+                    raise DraftRosterError(failures, summary)
                 completed.add(year)
                 progress["draft_completed_years"] = sorted(completed)
                 try:
                     PROGRESS_FILE.write_text(
                         _json.dumps(progress, indent=2), encoding="utf-8"
+                    )
+                except Exception:
+                    pass
+                # Return to regular season now that the draft has been
+                # committed for this year.
+                try:
+                    self.manager.phase = SeasonPhase.REGULAR_SEASON
+                    self.manager.save()
+                    self._update_ui(
+                        "Draft committed. Returning to Regular Season."
                     )
                 except Exception:
                     pass
@@ -260,18 +278,20 @@ class SeasonProgressWindow(QDialog):
                     self._update_ui("Draft encountered an error; returning to Regular Season.")
                 except Exception:
                     pass
-                return
-            # Exit Amateur Draft phase back to the regular season after success
-            try:
-                self.manager.phase = SeasonPhase.REGULAR_SEASON
-                self.manager.save()
-                self._update_ui("Draft complete — returning to Regular Season.")
-            except Exception:
-                pass
-        except DraftRosterError:
-            raise
+        except Exception:
+            # Best-effort outer guard: in headless or non-interactive
+            # contexts, failures here should not crash the UI.
+            pass
+
+    # ------------------------------------------------------------------
+    # UI lifecycle
+    def closeEvent(self, event) -> None:  # noqa: N802 - Qt signature
+        try:
+            cur = get_current_sim_date()
+            self.progressUpdated.emit(cur or "")
         except Exception:
             pass
+        super().closeEvent(event)
 
     # ------------------------------------------------------------------
     # UI helpers
@@ -758,7 +778,7 @@ class SeasonProgressWindow(QDialog):
                 extras += 1
             # Add up to 3 examples
             if len(examples) < 3:
-                examples.append(f"{g.get('away','')} at {g.get('home','')} — {res}")
+                examples.append(f"{g.get('away','')} at {g.get('home','')} â€” {res}")
         msg = (
             f"Daily Recap {date_str}: {len(played)} games; "
             f"{one_run} one-run; {extras} extras. "
@@ -1247,7 +1267,7 @@ class SeasonProgressWindow(QDialog):
                 saved_index = raw
             self._playoffs_done = data.get("playoffs_done", self._playoffs_done)
         except (OSError, json.JSONDecodeError):
-            # No saved file or invalid JSON — fall back to inference
+            # No saved file or invalid JSON â€” fall back to inference
             pass
 
         inferred_index = self._infer_sim_index_from_schedule()
@@ -1313,11 +1333,27 @@ class SeasonProgressWindow(QDialog):
     def _save_progress(self) -> None:
         """Persist preseason and simulation progress to disk."""
         PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        data = {
-            "preseason_done": self._preseason_done,
-            "sim_index": self.simulator._index,
-            "playoffs_done": self._playoffs_done,
-        }
+        # Merge with existing progress so we don't drop fields like
+        # "draft_completed_years" that may be written elsewhere (e.g., on
+        # Draft Day completion). This avoids re-triggering the draft.
+        existing: dict[str, object] = {}
+        try:
+            if PROGRESS_FILE.exists():
+                with PROGRESS_FILE.open("r", encoding="utf-8") as fh:
+                    existing = json.load(fh) or {}
+        except Exception:
+            existing = {}
+
+        existing["preseason_done"] = self._preseason_done
+        existing["sim_index"] = self.simulator._index
+        existing["playoffs_done"] = self._playoffs_done
+
         with PROGRESS_FILE.open("w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2)
+            json.dump(existing, fh, indent=2)
+        # Notify listeners that the date may have advanced
+        try:
+            cur = get_current_sim_date()
+            self.progressUpdated.emit(cur or "")
+        except Exception:
+            pass
 

@@ -385,7 +385,8 @@ class DraftConsole(QDialog):
         while not self._is_complete():
             self._auto_pick_current()
         QMessageBox.information(self, "Draft Complete", "Auto-draft of all rounds complete.")
-        self.accept()
+        # Keep the console open so the commissioner can review and commit
+        # results; do not close the dialog automatically here.
 
     # UI helpers
     def _populate_table(self, rows: list[dict]) -> None:

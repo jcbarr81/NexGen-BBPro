@@ -1415,7 +1415,28 @@ class MainWindow(QMainWindow):
 
     def open_season_progress(self) -> None:
         win = SeasonProgressWindow(self)
+        try:
+            # Refresh status/date while sim is running and on close
+            win.progressUpdated.connect(lambda *_: self._refresh_date_status())
+            win.destroyed.connect(lambda *_: self._refresh_date_status())
+        except Exception:
+            pass
         win.show()
+
+    def _refresh_date_status(self) -> None:
+        try:
+            # Update status bar and refresh current page if it supports refresh()
+            # Determine current page key
+            keys = list(self.pages.keys())
+            idx = self.stack.currentIndex()
+            key = keys[idx] if 0 <= idx < len(keys) else "home"
+            self.statusBar().showMessage(self._status_with_date(f"Ready - {key.capitalize()}"))
+            page = self.pages.get(key)
+            if page is not None and hasattr(page, "refresh"):
+                page.refresh()  # type: ignore[attr-defined]
+        except Exception:
+            # Best effort only
+            pass
 
     def open_injury_center(self) -> None:
         try:
