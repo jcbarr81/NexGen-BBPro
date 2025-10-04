@@ -307,13 +307,17 @@ class LineupEditor(QDialog):
 
     def update_bench_display(self):
         used_ids = {self.player_dropdowns[i].currentData() for i in range(9)}
+        # Show only position players on the ACT roster who are not in the
+        # current batting order. Rely on the explicit is_pitcher flag rather
+        # than derived role to avoid misclassifying pitchers with missing
+        # endurance/role fields.
         bench_players = sorted(
             [
                 pdata["name"]
                 for pid, pdata in self.players_dict.items()
                 if pid in self.act_level_ids
                 and pid not in used_ids
-                and not get_role(pdata)
+                and not pdata.get("is_pitcher", False)
             ]
         )
 

@@ -55,6 +55,7 @@ from .owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades, save_trade
 from utils.news_logger import log_news_event
 from utils.roster_loader import load_roster
+from utils.lineup_autofill import auto_fill_lineup_for_team
 from services.transaction_log import record_transaction
 from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
@@ -987,55 +988,26 @@ class MainWindow(QMainWindow):
 
     def set_all_lineups(self) -> None:
         data_dir = get_base_dir() / "data"
-        players_file = data_dir / "players.csv"
-        if not players_file.exists():
-            QMessageBox.warning(self, "Error", "Players file not found.")
-            return
-        players = {}
-        with players_file.open("r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                pid = row.get("player_id", "").strip()
-                players[pid] = {
-                    "primary": row.get("primary_position", "").strip(),
-                    "others": row.get("other_positions", "").split("|")
-                    if row.get("other_positions")
-                    else [],
-                    "is_pitcher": row.get("is_pitcher") == "1",
-                }
-
         teams = load_teams(data_dir / "teams.csv")
+        errors: list[str] = []
         for team in teams:
             try:
-                roster = load_roster(team.team_id)
-            except FileNotFoundError:
-                continue
-            act_ids = roster.act
-            lineup: list[tuple[str, str]] = []
-            used = set()
-            for pos in ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]:
-                for pid in players:
-                    if pid not in act_ids or pid in used:
-                        continue
-                    pdata = players[pid]
-                    if pos == "DH":
-                        if pdata["is_pitcher"]:
-                            continue
-                    else:
-                        if pos != pdata["primary"] and pos not in pdata["others"]:
-                            continue
-                    lineup.append((pid, pos))
-                    used.add(pid)
-                    break
-            lineup_dir = data_dir / "lineups"
-            lineup_dir.mkdir(parents=True, exist_ok=True)
-            for vs in ("vs_lhp", "vs_rhp"):
-                path = lineup_dir / f"{team.team_id}_{vs}.csv"
-                with path.open("w", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(["order", "player_id", "position"])
-                    for i, (pid, pos) in enumerate(lineup, start=1):
-                        writer.writerow([i, pid, pos])
+                auto_fill_lineup_for_team(
+                    team.team_id,
+                    players_file=data_dir / "players.csv",
+                    roster_dir=data_dir / "rosters",
+                    lineup_dir=data_dir / "lineups",
+                )
+            except Exception as exc:
+                errors.append(f"{team.team_id}: {exc}")
+        if errors:
+            QMessageBox.warning(
+                self,
+                "Lineups Set (with issues)",
+                "Some lineups could not be auto-filled:\n" + "\n".join(errors),
+            )
+        else:
+            QMessageBox.information(self, "Lineups Set", "Lineups auto-filled for all teams.")
         QMessageBox.information(self, "Lineups Set", "Lineups auto-filled for all teams.")
 
     def set_all_pitching_roles(self) -> None:

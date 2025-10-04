@@ -24,7 +24,8 @@ def auto_fill_lineup_for_team(
     - Fill positions in a scarcity-aware order to ensure coverage:
       C, SS, CF, 3B, 2B, 1B, LF, RF, then DH as the best remaining bat.
     - Enforce 9 unique players, never selecting pitchers for the lineup.
-    - Write both ``vs_lhp`` and ``vs_rhp`` (same order for now).
+    - Batting order is sorted by an overall hitter score (contact/power/speed/defense proxy).
+    - Write both ``vs_lhp`` and ``vs_rhp`` using the same order for now.
     - Return the 9-player lineup used.
     """
 
@@ -102,7 +103,8 @@ def auto_fill_lineup_for_team(
             used.add(pid)
 
     lineup_root.mkdir(parents=True, exist_ok=True)
-    result = lineup[:9]
+    # Order batting by hitter_score (best bats earlier)
+    result = sorted(lineup[:9], key=lambda pair: hitter_score(pair[0]), reverse=True)
     for vs in ("vs_lhp", "vs_rhp"):
         path = lineup_root / f"{team_id}_{vs}.csv"
         with path.open("w", newline="", encoding="utf-8") as f:

@@ -102,7 +102,7 @@ class SplashScreen(QWidget):
         # Slightly smaller footprint for better fit
         candidates = [
             (base / "assets" / "iron8.png", 160),
-            (base / "assets" / "mindweaver.png", 120),
+            # MindWeaver image removed per request
         ]
         max_h = 56
         for path, width in candidates:

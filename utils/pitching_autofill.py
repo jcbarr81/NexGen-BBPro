@@ -54,31 +54,52 @@ def autofill_pitching_staff(players: Iterable[PlayerEntry]) -> Assignments:
     sps.sort(key=lambda x: x[1], reverse=True)
     rps.sort(key=lambda x: x[1], reverse=True)
 
+    # Ensure the same pitcher cannot be assigned to multiple roles, even if
+    # duplicated in the input (e.g., bad roster data).
+    assigned: set[str] = set()
+
+    def pop_next(seq: list[tuple[str, int]]) -> str | None:
+        while seq:
+            pid, _ = seq.pop(0)
+            if pid in assigned:
+                continue
+            assigned.add(pid)
+            return pid
+        return None
+
+    def pop_next_low(seq: list[tuple[str, int]]) -> str | None:
+        while seq:
+            pid, _ = seq.pop(-1)
+            if pid in assigned:
+                continue
+            assigned.add(pid)
+            return pid
+        return None
+
     assignment: Assignments = {}
 
     # Fill the starting rotation (SP1-SP5)
     for i in range(5):
-        if sps:
-            pid, _ = sps.pop(0)
-        elif rps:
+        pid = pop_next(sps)
+        if pid is None:
             # Fall back to highest-endurance reliever if short on starters
-            pid, _ = rps.pop(0)
-        else:
+            pid = pop_next(rps)
+        if pid is None:
             break
         assignment[f"SP{i + 1}"] = pid
 
-    # Bullpen roles use remaining relievers.
-    if rps:
-        pid, _ = rps.pop(0)
+    # Bullpen roles use remaining relievers (unique by pid).
+    pid = pop_next(rps)
+    if pid is not None:
         assignment["LR"] = pid  # Long reliever prefers high endurance
-    if rps:
-        pid, _ = rps.pop(0)
+    pid = pop_next(rps)
+    if pid is not None:
         assignment["MR"] = pid  # Middle reliever
-    if rps:
-        pid, _ = rps.pop(0)
+    pid = pop_next(rps)
+    if pid is not None:
         assignment["SU"] = pid  # Setup
-    if rps:
-        pid, _ = rps.pop(-1)
+    pid = pop_next_low(rps)
+    if pid is not None:
         assignment["CL"] = pid  # Closer prefers low endurance
 
     return assignment
