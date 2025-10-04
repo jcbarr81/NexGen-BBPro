@@ -455,16 +455,30 @@ class SeasonProgressWindow(QDialog):
                     _merge()
                 except Exception:
                     pass
+                # Ensure a playoff bracket exists when entering playoffs
+                try:
+                    self._ensure_playoff_bracket()
+                except Exception:
+                    pass
                 note = None
             else:
                 self.manager.advance_phase()
                 if self.manager.phase == SeasonPhase.PLAYOFFS:
                     self._playoffs_done = False
+                    # If transitioning into playoffs, ensure a bracket exists
+                    try:
+                        self._ensure_playoff_bracket()
+                    except Exception:
+                        pass
                 note = None
         else:
             self.manager.advance_phase()
             if self.manager.phase == SeasonPhase.PLAYOFFS:
                 self._playoffs_done = False
+                try:
+                    self._ensure_playoff_bracket()
+                except Exception:
+                    pass
             note = None
         log_news_event(
             f"Season advanced to {self.manager.phase.name.replace('_', ' ').title()}"
@@ -888,6 +902,32 @@ class SeasonProgressWindow(QDialog):
                 message = "Playoffs placeholder reached; mark as complete."
                 log_news_event(message)
         self._update_ui(message)
+
+    def _ensure_playoff_bracket(self) -> None:
+        """Create and persist a playoffs bracket if one does not exist."""
+        try:
+            from playbalance.playoffs import load_bracket, generate_bracket, save_bracket
+            from playbalance.playoffs_config import load_playoffs_config
+            from utils.team_loader import load_teams
+        except Exception:
+            return
+        b = load_bracket()
+        if b is not None:
+            return
+        try:
+            teams = load_teams()
+        except Exception:
+            teams = []
+        cfg = load_playoffs_config()
+        try:
+            bracket = generate_bracket(self._standings, teams, cfg)
+        except Exception:
+            return
+        try:
+            save_bracket(bracket)
+            log_news_event("Generated initial playoffs bracket from final standings")
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Internal helpers

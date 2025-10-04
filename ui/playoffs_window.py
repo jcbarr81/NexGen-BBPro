@@ -120,6 +120,37 @@ class PlayoffsWindow(QDialog):
                 except Exception:
                     pass
         if not self._bracket:
+            # Lazy-generate a bracket if we're in playoffs and none exists yet.
+            try:
+                from utils.path_utils import get_base_dir
+                from playbalance.playoffs import generate_bracket, save_bracket
+                from playbalance.playoffs_config import load_playoffs_config
+                from utils.team_loader import load_teams
+                import json as _json
+                base = get_base_dir()
+                standings_path = base / 'data' / 'standings.json'
+                standings: dict = {}
+                if standings_path.exists():
+                    try:
+                        standings = _json.loads(standings_path.read_text(encoding='utf-8'))
+                    except Exception:
+                        standings = {}
+                teams = []
+                try:
+                    teams = load_teams()
+                except Exception:
+                    pass
+                cfg = load_playoffs_config()
+                if standings and teams:
+                    b = generate_bracket(standings, teams, cfg)
+                    try:
+                        save_bracket(b)
+                        self._bracket = b
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        if not self._bracket:
             self.cv.addWidget(QLabel("No playoffs bracket found."))
             try:
                 self.sim_round_btn.setEnabled(False)

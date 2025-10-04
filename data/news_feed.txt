@@ -533,3 +533,16 @@
 [2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-21: 6 games; 2 one-run; 4 extras. BUF at BAL â€” 2-4; GRE at CIN â€” 0-1; WAS at PIT â€” 2-0
 [2025-10-04 11:56:58] [progress] Simulated regular season; regular season complete
 [2025-10-04 11:57:16] Season advanced to Playoffs
+[2025-10-04 12:25:28] Generated regular season schedule with 972 games
+[2025-10-04 12:25:28] Generated regular season schedule with 972 games
+[2025-10-04 12:25:28] Generated regular season schedule with 972 games
+[2025-10-04 12:25:28] Generated regular season schedule with 972 games
+[2025-10-04 12:25:28] Generated regular season schedule with 972 games
+[2025-10-04 12:25:28] Season advanced to Preseason
+[2025-10-04 12:25:28] No unsigned players available
+[2025-10-04 12:25:28] Training camp completed; players marked ready
+[2025-10-04 12:25:28] Generated regular season schedule with 162 games
+[2025-10-04 12:25:28] Generated regular season schedule with 162 games
+[2025-10-04 12:25:28] Generated regular season schedule with 162 games
+[2025-10-04 12:25:28] No unsigned players available
+[2025-10-04 12:25:28] Generated regular season schedule with 162 games

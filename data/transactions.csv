@@ -101,3 +101,6 @@ timestamp,season_date,team_id,player_id,player_name,action,from_level,to_level,c
 2025-10-04 11:55:00,2025-07-15,PIT,D20250025,Hector Diaz,draft,,LOW,,Drafted in 2025 Amateur Draft (PIT: LOW roster exceeds 10 players (fix before resuming).)
 2025-10-04 11:55:00,2025-07-15,GRE,D20250014,Jorge Flores,draft,,LOW,,Drafted in 2025 Amateur Draft (GRE: LOW roster exceeds 10 players (fix before resuming).)
 2025-10-04 11:55:00,2025-07-15,PIT,D20250063,Carlos Guerrero,draft,,LOW,,Drafted in 2025 Amateur Draft (PIT: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-04 12:25:26,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-04 12:25:26,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-04 12:25:26,2025-10-21,BBB,c001,c001,cut,AAA,FA,,Released to free agency
