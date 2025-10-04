@@ -148,7 +148,8 @@ def draw_diagram(
     margin: int = 50,
 ) -> None:
     width, height = size
-    img = Image.new("RGB", size, (242, 242, 242))
+    # Grass background for better contrast
+    img = Image.new("RGB", size, (88, 136, 88))
     draw = ImageDraw.Draw(img)
 
     pts_field = points_for_row(row)
@@ -160,16 +161,25 @@ def draw_diagram(
 
     scale = _compute_scale(pts_field, width, height, margin)
 
-    # Draw infield diamond for context (90ft square rotated 45°)
+    # Draw infield dirt (home -> 1B -> 2B -> 3B)
     base = 90.0
-    diamond = [
+    infield = [
         (0.0, 0.0),  # Home
         (base, 0.0),  # First
         (base, base),  # Second
         (0.0, base),  # Third
     ]
-    diamond_img = [_to_img_coords(p, scale, height, margin) for p in diamond]
-    draw.polygon(diamond_img, outline=(160, 120, 60), fill=(205, 173, 125))
+    infield_img = [_to_img_coords(p, scale, height, margin) for p in infield]
+    draw.polygon(infield_img, outline=(160, 120, 60), fill=(205, 173, 125))
+
+    # Bases as white diamonds (increase size and thicker outline for visibility)
+    _draw_bases(draw, scale, height, margin, size_ft=4.0)
+
+    # Proper home plate shape at (0,0)
+    _draw_home_plate(draw, scale, height, margin)
+
+    # Pitcher's mound (brown circle) and rubber (small white rectangle)
+    _draw_mound(draw, scale, height, margin)
 
     # Foul lines to RF and LF corners
     rf = next(((x, 0.0) for x in [row.dims.get("RF_Dim") or 0.0] if x), (0.0, 0.0))
@@ -177,12 +187,15 @@ def draw_diagram(
     home_img = _to_img_coords((0.0, 0.0), scale, height, margin)
     rf_img = _to_img_coords(rf, scale, height, margin)
     lf_img = _to_img_coords(lf, scale, height, margin)
-    draw.line([home_img, rf_img], fill=(80, 80, 80), width=2)
-    draw.line([home_img, lf_img], fill=(80, 80, 80), width=2)
+    draw.line([home_img, rf_img], fill=(245, 245, 245), width=3)
+    draw.line([home_img, lf_img], fill=(245, 245, 245), width=3)
 
     # Outfield wall polyline from RF -> ... -> LF
     wall = [_to_img_coords(p, scale, height, margin) for p in pts_field]
-    draw.line(wall, fill=(20, 110, 20), width=4, joint="curve")
+    draw.line(wall, fill=(20, 90, 20), width=5, joint="curve")
+
+    # Dimension labels along the wall
+    _draw_dimension_labels(draw, row, scale, height, margin)
 
     # Center field guide
     if "CF_Dim" in row.dims:
@@ -243,6 +256,186 @@ def _subtitle_from_dims(dims: Dict[str, float]) -> str:
     return " | ".join(parts)
 
 
+def _draw_bases(
+    draw: ImageDraw.ImageDraw, scale: float, height: int, margin: int, size_ft: float = 4.0
+) -> None:
+    # Diamond vertices offsets along axes for a square of side L rotated 45°: a = L/sqrt(2)
+    a = size_ft / math.sqrt(2.0)
+
+    def diamond(cx: float, cy: float) -> List[Tuple[int, int]]:
+        pts = [
+            (cx, cy + a),
+            (cx + a, cy),
+            (cx, cy - a),
+            (cx - a, cy),
+        ]
+        return [_to_img_coords(p, scale, height, margin) for p in pts]
+
+    # First, second, third base centers
+    first = (90.0, 0.0)
+    second = (90.0, 90.0)
+    third = (0.0, 90.0)
+
+    for cx, cy in (first, second, third):
+        pts = diamond(cx, cy)
+        # Fill
+        draw.polygon(pts, fill=(255, 255, 255))
+        # Thicker outline for clarity
+        draw.line(pts + [pts[0]], fill=(0, 0, 0), width=4)
+
+
+def _draw_home_plate(
+    draw: ImageDraw.ImageDraw, scale: float, height: int, margin: int
+) -> None:
+    """Draw a properly shaped home plate at the origin.
+
+    Approximate standard dimensions:
+    - Front (flat) width ~ 17 in (1.4167 ft)
+    - Side along baselines ~ 12 in (1.0 ft)
+    - Slanted edges ~ 8.5 in (0.7083 ft) at 45°
+
+    Coordinates constructed in field feet units with apex at (0,0),
+    first base toward +x and third base toward +y.
+    Polygon order: apex -> third-side -> front-left -> front-right -> first-side -> apex
+    """
+    # Distances in feet
+    side = 1.0  # 12 inches
+    diag = 0.7083333333  # 8.5 inches
+    # From apex to corners using 45° step (diag / sqrt(2) per axis = ~0.5)
+    step = diag / math.sqrt(2.0)
+
+    apex = (0.0, 0.0)
+    third_side = (0.0, side)
+    front_left = (step, side + step)
+    front_right = (side + step, step)
+    first_side = (side, 0.0)
+
+    pts = [apex, third_side, front_left, front_right, first_side]
+    pts_img = [_to_img_coords(p, scale, height, margin) for p in pts]
+    # Fill and outline
+    draw.polygon(pts_img, fill=(255, 255, 255))
+    draw.line(pts_img + [pts_img[0]], fill=(0, 0, 0), width=4)
+
+
+def _draw_mound(
+    draw: ImageDraw.ImageDraw, scale: float, height: int, margin: int
+) -> None:
+    # Mound center and radius (approximate). MLB mound radius is 9ft.
+    cx, cy = (60.5 / math.sqrt(2.0), 60.5 / math.sqrt(2.0))
+    r = 9.0
+    p1 = _to_img_coords((cx - r, cy - r), scale, height, margin)
+    p2 = _to_img_coords((cx + r, cy + r), scale, height, margin)
+    bbox = (min(p1[0], p2[0]), min(p1[1], p2[1]), max(p1[0], p2[0]), max(p1[1], p2[1]))
+    draw.ellipse(bbox, outline=(120, 80, 40), fill=(180, 130, 90))
+
+    # Pitching rubber: approx 24" x 6" (2ft x 0.5ft)
+    rw = 2.0
+    rh = 0.5
+    # Simplify: axis-aligned small rectangle around the pitcher for readability.
+    p1 = _to_img_coords((cx - rw / 2, cy + rh / 2), scale, height, margin)
+    p2 = _to_img_coords((cx + rw / 2, cy - rh / 2), scale, height, margin)
+    bbox = (min(p1[0], p2[0]), min(p1[1], p2[1]), max(p1[0], p2[0]), max(p1[1], p2[1]))
+    draw.rectangle(bbox, outline=(0, 0, 0), fill=(250, 250, 250))
+
+
+def _draw_dimension_labels(
+    draw: ImageDraw.ImageDraw,
+    row: ParkRow,
+    scale: float,
+    height: int,
+    margin: int,
+    offset_ft: float = 20.0,
+) -> None:
+    for key, deg in ANGLE_MAP:
+        r = row.dims.get(key)
+        if r is None:
+            continue
+        rad = math.radians(deg)
+        # Wall point in field coords
+        x = r * math.cos(rad)
+        y = r * math.sin(rad)
+        # Offset outward along radial by offset_ft
+        ox = (r + offset_ft) * math.cos(rad)
+        oy = (r + offset_ft) * math.sin(rad)
+        p_wall = _to_img_coords((x, y), scale, height, margin)
+        p_label = _to_img_coords((ox, oy), scale, height, margin)
+
+        # Leader line
+        draw.line([p_wall, p_label], fill=(60, 60, 60), width=1)
+
+        # Text label with background box for contrast
+        txt = f"{int(round(r))}"
+        _draw_text_box(draw, p_label, txt, size=20)
+
+
+def _draw_text_with_stroke(
+    draw: ImageDraw.ImageDraw,
+    pos: Tuple[int, int],
+    text: str,
+    fill: Tuple[int, int, int] = (255, 255, 255),
+    stroke: Tuple[int, int, int] = (0, 0, 0),
+    size: int = 14,
+) -> None:
+    try:
+        font = ImageFont.truetype("arial.ttf", size)
+    except Exception:
+        font = ImageFont.load_default()
+    x, y = pos
+    # Use stroke if available; otherwise, fake it with shadows
+    try:
+        draw.text((x, y), text, font=font, fill=fill, stroke_width=2, stroke_fill=stroke, anchor="mm")
+    except TypeError:
+        # Fallback without stroke and anchor support
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+                draw.text((x + dx, y + dy), text, font=font, fill=stroke)
+        draw.text((x, y), text, font=font, fill=fill)
+
+
+def _draw_text_box(
+    draw: ImageDraw.ImageDraw,
+    center: Tuple[int, int],
+    text: str,
+    size: int = 18,
+    text_color: Tuple[int, int, int] = (255, 255, 255),
+    box_color: Tuple[int, int, int] = (0, 0, 0),
+    pad: int = 4,
+    radius: int = 4,
+) -> None:
+    try:
+        font = ImageFont.truetype("arial.ttf", size)
+    except Exception:
+        font = ImageFont.load_default()
+
+    x, y = center
+    # Compute text box size
+    try:
+        bbox = draw.textbbox((x, y), text, font=font, anchor="mm")
+        w = bbox[2] - bbox[0]
+        h = bbox[3] - bbox[1]
+    except Exception:
+        try:
+            w, h = draw.textsize(text, font=font)
+        except Exception:
+            w = len(text) * size // 2
+            h = size
+    rect = (int(x - w / 2 - pad), int(y - h / 2 - pad), int(x + w / 2 + pad), int(y + h / 2 + pad))
+
+    # Background rectangle (rounded if available)
+    try:
+        draw.rounded_rectangle(rect, radius=radius, fill=box_color)
+    except Exception:
+        draw.rectangle(rect, fill=box_color)
+
+    # Centered text
+    try:
+        draw.text((x, y), text, font=font, fill=text_color, anchor="mm")
+    except Exception:
+        draw.text((rect[0] + pad, rect[1] + pad), text, font=font, fill=text_color)
+
+
 def _resolve_paths(csv_arg: Optional[str], outdir_arg: Optional[str]) -> Tuple[Path, Path]:
     root = Path(__file__).resolve().parents[1]
     csv_path = Path(csv_arg) if csv_arg else root / "data" / "parks" / "ParkConfig.csv"
@@ -285,4 +478,3 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

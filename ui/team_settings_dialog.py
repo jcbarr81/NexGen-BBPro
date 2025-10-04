@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 )
 
 from data.ballparks import BALLPARKS
+from .park_selector_dialog import ParkSelectorDialog
 
 
 class TeamSettingsDialog(QDialog):
@@ -51,10 +52,15 @@ class TeamSettingsDialog(QDialog):
         stadium_row = QHBoxLayout()
         stadium_row.addWidget(QLabel("Stadium:"))
         self.stadium_combo = QComboBox()
+        self.stadium_combo.setEditable(True)
         self.stadium_combo.addItems(sorted(BALLPARKS))
-        if team.stadium in BALLPARKS:
+        if team.stadium:
             self.stadium_combo.setCurrentText(team.stadium)
         stadium_row.addWidget(self.stadium_combo)
+
+        browse_btn = QPushButton("Browse MLB Parks…")
+        browse_btn.clicked.connect(self._open_park_selector)
+        stadium_row.addWidget(browse_btn)
         layout.addLayout(stadium_row)
 
         # Action buttons
@@ -87,4 +93,10 @@ class TeamSettingsDialog(QDialog):
             "secondary_color": secondary if self.secondary_edit.hasAcceptableInput() else "",
             "stadium": self.stadium_combo.currentText(),
         }
+
+    def _open_park_selector(self):
+        dlg = ParkSelectorDialog(self)
+        if dlg.exec() == dlg.DialogCode.Accepted and dlg.selected_name:
+            # Set the chosen park NAME as the stadium string
+            self.stadium_combo.setCurrentText(dlg.selected_name)
 

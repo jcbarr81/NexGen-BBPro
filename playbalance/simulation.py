@@ -18,6 +18,7 @@ from playbalance.batter_ai import BatterAI
 from playbalance.bullpen import WarmupTracker
 from playbalance.fielding_ai import FieldingAI
 from playbalance.field_geometry import DEFAULT_POSITIONS, Stadium, FIRST_BASE, SECOND_BASE
+from utils.park_utils import stadium_from_name, park_factor_for_name
 from playbalance.state import PitcherState
 from utils.path_utils import get_base_dir
 from utils.putout_probabilities import load_putout_probabilities
@@ -201,7 +202,23 @@ class GameSimulation:
         self.temperature = temperature
         self.altitude = altitude
         self.wind_speed = wind_speed
-        self.stadium = stadium or Stadium()
+        # Stadium and park factor: use provided stadium; otherwise, derive from home team's selection
+        if stadium is not None:
+            self.stadium = stadium
+            self.park_factor = 1.0
+        else:
+            derived: Stadium | None = None
+            pf = 1.0
+            if self.home and getattr(self.home, "team", None) is not None:
+                try:
+                    park_name = getattr(self.home.team, "stadium", "")
+                except Exception:
+                    park_name = ""
+                if park_name:
+                    derived = stadium_from_name(park_name)
+                    pf = park_factor_for_name(park_name)
+            self.stadium = derived or Stadium()
+            self.park_factor = pf or 1.0
         self.last_batted_ball_angles: tuple[float, float] | None = None
         # Debug counters for double play diagnosis
         self.dp_candidates: int = 0
@@ -2106,11 +2123,22 @@ class GameSimulation:
         total_dist = landing_dist + bounce_horiz + roll_dist
         self._last_hit_distance = total_dist
         wall = self.stadium.wall_distance(angle)
-        if total_dist >= wall:
+        # Apply park factor by scaling effective thresholds (pf>1 means easier to reach wall)
+        pf = getattr(self, "park_factor", 1.0) or 1.0
+        if pf != 1.0:
+            wall_eff = wall / pf
+            triple_eff = self.stadium.triple_distance(angle) / pf
+            double_eff = self.stadium.double_distance(angle) / pf
+        else:
+            wall_eff = wall
+            triple_eff = self.stadium.triple_distance(angle)
+            double_eff = self.stadium.double_distance(angle)
+
+        if total_dist >= wall_eff:
             distance_base = 4
-        elif total_dist >= self.stadium.triple_distance(angle):
+        elif total_dist >= triple_eff:
             distance_base = 3
-        elif total_dist >= self.stadium.double_distance(angle):
+        elif total_dist >= double_eff:
             distance_base = 2
         else:
             distance_base = 1
