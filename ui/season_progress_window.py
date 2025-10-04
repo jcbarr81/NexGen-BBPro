@@ -8,7 +8,19 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
-from PyQt6.QtCore import pyqtSignal
+try:
+    from PyQt6.QtCore import pyqtSignal
+except Exception:  # pragma: no cover - fallback for headless tests
+    class _DummySignal:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def emit(self, *args, **kwargs):
+            pass
+
+    def pyqtSignal(*args, **kwargs):  # type: ignore
+        return _DummySignal()
+
 try:  # pragma: no cover - fallback for environments without PyQt6
     from PyQt6.QtWidgets import QApplication
 except ImportError:  # pragma: no cover - simple stub for tests
@@ -427,6 +439,22 @@ class SeasonProgressWindow(QDialog):
             else:
                 self.simulator = SeasonSimulator([])
             note = f"Retired Players: {len(retired)}"
+        elif self.manager.phase == SeasonPhase.REGULAR_SEASON:
+            # If the regular season is complete, skip the Amateur Draft phase
+            # and proceed directly to the Playoffs. The draft is handled as an
+            # in-season milestone (Draft Day). If it was missed or already
+            # completed, it should not block postseason advancement here.
+            season_done = self.simulator._index >= len(self.simulator.dates)
+            if season_done:
+                self.manager.phase = SeasonPhase.PLAYOFFS
+                self.manager.save()
+                self._playoffs_done = False
+                note = None
+            else:
+                self.manager.advance_phase()
+                if self.manager.phase == SeasonPhase.PLAYOFFS:
+                    self._playoffs_done = False
+                note = None
         else:
             self.manager.advance_phase()
             if self.manager.phase == SeasonPhase.PLAYOFFS:

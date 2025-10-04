@@ -1417,8 +1417,9 @@ class MainWindow(QMainWindow):
         win = SeasonProgressWindow(self)
         try:
             # Refresh status/date while sim is running and on close
-            win.progressUpdated.connect(lambda *_: self._refresh_date_status())
-            win.destroyed.connect(lambda *_: self._refresh_date_status())
+            # Bind self as a default to avoid free-var scope issues in lambdas
+            win.progressUpdated.connect(lambda *_, s=self: s._refresh_date_status())
+            win.destroyed.connect(lambda *_, s=self: s._refresh_date_status())
         except Exception:
             pass
         win.show()

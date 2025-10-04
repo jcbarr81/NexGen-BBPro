@@ -205,6 +205,7 @@ from services.draft_state import (
 from utils.news_logger import log_news_event
 from utils.team_loader import load_teams
 from utils.exceptions import DraftRosterError
+from datetime import datetime
 
 
 class DraftConsole(QDialog):
@@ -258,10 +259,26 @@ class DraftConsole(QDialog):
 
         # Left: pool table + search
         left = QVBoxLayout()
-        self.table = QTableWidget(0, 7)
-        self.table.setHorizontalHeaderLabels(["ID", "Name", "Pos", "B/T", "CH/PH/SP", "ARM/FA", "EN/CO/MV"])
+        # Columns: [hidden ID], Name, Age, Pos, OVR, B/T, CH/PH/SP, ARM/FA, EN/CO/MV
+        self.table = QTableWidget(0, 9)
+        self.table.setHorizontalHeaderLabels([
+            "ID",
+            "Name",
+            "Age",
+            "Pos",
+            "OVR",
+            "B/T",
+            "CH/PH/SP",
+            "ARM/FA",
+            "EN/CO/MV",
+        ])
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        # Hide the ID column from view
+        try:
+            self.table.setColumnHidden(0, True)
+        except Exception:
+            pass
         try:
             self.table.itemDoubleClicked.connect(self._open_profile_from_selection)
         except Exception:
@@ -293,21 +310,24 @@ class DraftConsole(QDialog):
         self._pv_labels = {
             "id": QLabel("ID:"),
             "name": QLabel("Name:"),
+            "age": QLabel("Age:"),
             "pos": QLabel("Pos:"),
+            "ovr": QLabel("OVR:"),
             "bt": QLabel("B/T:"),
             "hit": QLabel("CH/PH/SP:"),
             "def": QLabel("ARM/FA:"),
             "pit": QLabel("EN/CO/MV:"),
         }
         self._pv_values = {k: QLabel("") for k in self._pv_labels}
-        for row, key in enumerate(["id", "name", "pos", "bt", "hit", "def", "pit"]):
+        for row, key in enumerate(["id", "name", "age", "pos", "ovr", "bt", "hit", "def", "pit"]):
             grid.addWidget(self._pv_labels[key], row, 0)
             grid.addWidget(self._pv_values[key], row, 1)
         right.addWidget(self.preview)
 
         # Recent picks board (top 10)
-        self.board = QTableWidget(0, 3)
-        self.board.setHorizontalHeaderLabels(["Pick", "Team", "Player"])
+        # Columns: Pick, Team, Player (POS + Name), Age, OVR
+        self.board = QTableWidget(0, 5)
+        self.board.setHorizontalHeaderLabels(["Pick", "Team", "Player", "Age", "OVR"])
         self.board.verticalHeader().setVisible(False)
         self.board.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         right.addWidget(QLabel("Recent Picks:"))
@@ -336,6 +356,8 @@ class DraftConsole(QDialog):
         self.pool = load_draft_pool(self.year)
         if self.pool:
             self.status.setText(f"Draft pool loaded ({len(self.pool)} players).")
+            # Build an index for lookup by ID
+            self._pool_index = {str(p.get("player_id", "")): p for p in self.pool}
             self._populate_table(self.pool)
         self.state = load_state(self.year) or {}
         self._order_names = {t.team_id: f"{t.city} {t.name}" for t in load_teams()}
@@ -360,6 +382,7 @@ class DraftConsole(QDialog):
         pool = generate_draft_pool(self.year, size=size, seed=seed)
         save_draft_pool(self.year, pool)
         self.pool = [p.__dict__ for p in pool]
+        self._pool_index = {str(p.get("player_id", "")): p for p in self.pool}
         self.status.setText(f"Draft pool generated ({len(pool)} players).")
         self._populate_table(self.pool)
 
@@ -389,6 +412,30 @@ class DraftConsole(QDialog):
         # results; do not close the dialog automatically here.
 
     # UI helpers
+    def _age_from_birthdate(self, birthdate: str | None) -> str:
+        if not birthdate or not self.draft_date:
+            return ""
+        try:
+            b = datetime.strptime(str(birthdate), "%Y-%m-%d").date()
+            d = datetime.strptime(str(self.draft_date), "%Y-%m-%d").date()
+            years = d.year - b.year - ((d.month, d.day) < (b.month, b.day))
+            return str(max(0, years))
+        except Exception:
+            return ""
+
+    def _overall_rating(self, p: dict) -> int:
+        try:
+            is_pitcher = bool(p.get("is_pitcher")) or str(p.get("primary_position", "")).upper() == "P"
+            if is_pitcher:
+                core = [int(p.get("endurance", 0) or 0), int(p.get("control", 0) or 0), int(p.get("movement", 0) or 0)]
+            else:
+                core = [int(p.get("ch", 0) or 0), int(p.get("ph", 0) or 0), int(p.get("sp", 0) or 0)]
+            avg = sum(core) / max(1, len(core))
+            ovr = int(round(20 + 0.6 * avg))  # map 0-100 -> 20-80
+            return max(20, min(80, ovr))
+        except Exception:
+            return 20
+
     def _populate_table(self, rows: list[dict]) -> None:
         self.table.setRowCount(len(rows))
         for r, p in enumerate(rows):
@@ -397,17 +444,21 @@ class DraftConsole(QDialog):
             pos = p.get("primary_position", "?")
             chphsp = f"{p.get('ch',0)}/{p.get('ph',0)}/{p.get('sp',0)}"
             armfa = f"{p.get('arm',0)}/{p.get('fa',0)}"
+            age = self._age_from_birthdate(str(p.get("birthdate", "")))
+            ovr = str(self._overall_rating(p))
             self.table.setItem(r, 0, QTableWidgetItem(p.get("player_id", "")))
             self.table.setItem(r, 1, QTableWidgetItem(name))
-            self.table.setItem(r, 2, QTableWidgetItem(pos))
-            self.table.setItem(r, 3, QTableWidgetItem(bt))
-            self.table.setItem(r, 4, QTableWidgetItem(chphsp))
-            self.table.setItem(r, 5, QTableWidgetItem(armfa))
+            self.table.setItem(r, 2, QTableWidgetItem(age))
+            self.table.setItem(r, 3, QTableWidgetItem(pos))
+            self.table.setItem(r, 4, QTableWidgetItem(ovr))
+            self.table.setItem(r, 5, QTableWidgetItem(bt))
+            self.table.setItem(r, 6, QTableWidgetItem(chphsp))
+            self.table.setItem(r, 7, QTableWidgetItem(armfa))
             encomo = (
                 f"{p.get('endurance',0)}/{p.get('control',0)}/{p.get('movement',0)}"
                 if p.get('is_pitcher') else ""
             )
-            self.table.setItem(r, 6, QTableWidgetItem(encomo))
+            self.table.setItem(r, 8, QTableWidgetItem(encomo))
         self.table.resizeColumnsToContents()
         # Maintain preview after refresh
         self._update_preview_from_selection()
@@ -618,6 +669,42 @@ class DraftConsole(QDialog):
         combined_issues = [*failures, *[msg for msg in compliance if msg not in failures]]
         self.assignment_failures = combined_issues
 
+        # If there are no hard failures, mark the draft completed for this year
+        # so season simulation does not pause again on Draft Day when started
+        # from the Admin page (outside of SeasonProgressWindow's hook).
+        if not failures:
+            try:
+                import json as _json
+                from utils.path_utils import get_base_dir as _gb
+                from playbalance.season_manager import SeasonManager, SeasonPhase
+
+                base = _gb() / "data"
+                prog = base / "season_progress.json"
+                progress = {}
+                if prog.exists():
+                    try:
+                        progress = _json.loads(prog.read_text(encoding="utf-8"))
+                    except Exception:
+                        progress = {}
+                completed = set(progress.get("draft_completed_years", []))
+                completed.add(int(self.year))
+                progress["draft_completed_years"] = sorted(completed)
+                try:
+                    prog.write_text(_json.dumps(progress, indent=2), encoding="utf-8")
+                except Exception:
+                    pass
+
+                # Also ensure the season phase returns to Regular Season
+                try:
+                    mgr = SeasonManager()
+                    mgr.phase = SeasonPhase.REGULAR_SEASON
+                    mgr.save()
+                except Exception:
+                    pass
+            except Exception:
+                # Best-effort only; do not block the UI on progress writes
+                pass
+
         try:
             log_news_event(
                 f"Amateur Draft {self.year} committed: "
@@ -667,10 +754,28 @@ class DraftConsole(QDialog):
         for i, sel in enumerate(tail):
             pick_no = sel.get("overall_pick", 0)
             team = self._order_names.get(sel.get("team_id", ""), sel.get("team_id", ""))
-            player = sel.get("player_id", "")
+            # Replace player ID with POS and Name where possible
+            pid = str(sel.get("player_id", ""))
+            pr = None
+            try:
+                pr = getattr(self, "_pool_index", {}).get(pid)
+            except Exception:
+                pr = None
+            if pr:
+                pos = str(pr.get("primary_position", "")) or "?"
+                pname = f"{pr.get('first_name','')} {pr.get('last_name','')}".strip()
+                player = f"{pos} {pname}".strip()
+                age = self._age_from_birthdate(str(pr.get("birthdate", "")))
+                ovr = str(self._overall_rating(pr))
+            else:
+                player = pid
+                age = ""
+                ovr = ""
             self.board.setItem(i, 0, QTableWidgetItem(str(pick_no)))
             self.board.setItem(i, 1, QTableWidgetItem(team))
             self.board.setItem(i, 2, QTableWidgetItem(player))
+            self.board.setItem(i, 3, QTableWidgetItem(age))
+            self.board.setItem(i, 4, QTableWidgetItem(ovr))
         self.board.resizeColumnsToContents()
 
     def _update_preview_from_selection(self) -> None:
@@ -681,14 +786,18 @@ class DraftConsole(QDialog):
             return
         pid = self.table.item(row, 0).text() if self.table.item(row, 0) else ""
         name = self.table.item(row, 1).text() if self.table.item(row, 1) else ""
-        pos = self.table.item(row, 2).text() if self.table.item(row, 2) else ""
-        bt = self.table.item(row, 3).text() if self.table.item(row, 3) else ""
-        hit = self.table.item(row, 4).text() if self.table.item(row, 4) else ""
-        df = self.table.item(row, 5).text() if self.table.item(row, 5) else ""
-        pit = self.table.item(row, 6).text() if self.table.item(row, 6) else ""
+        age = self.table.item(row, 2).text() if self.table.item(row, 2) else ""
+        pos = self.table.item(row, 3).text() if self.table.item(row, 3) else ""
+        ovr = self.table.item(row, 4).text() if self.table.item(row, 4) else ""
+        bt = self.table.item(row, 5).text() if self.table.item(row, 5) else ""
+        hit = self.table.item(row, 6).text() if self.table.item(row, 6) else ""
+        df = self.table.item(row, 7).text() if self.table.item(row, 7) else ""
+        pit = self.table.item(row, 8).text() if self.table.item(row, 8) else ""
         self._pv_values["id"].setText(pid)
         self._pv_values["name"].setText(name)
+        self._pv_values["age"].setText(age)
         self._pv_values["pos"].setText(pos)
+        self._pv_values["ovr"].setText(ovr)
         self._pv_values["bt"].setText(bt)
         self._pv_values["hit"].setText(hit)
         self._pv_values["def"].setText(df)
