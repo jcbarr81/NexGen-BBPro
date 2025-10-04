@@ -50,7 +50,7 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.free_agent_finder import find_free_agents
 from utils.pitcher_role import get_role
-from utils.team_loader import load_teams
+from utils.team_loader import load_teams, save_team_settings
 from utils.path_utils import get_base_dir
 from utils.sim_date import get_current_sim_date
 from utils.roster_validation import missing_positions
@@ -214,6 +214,12 @@ class OwnerDashboard(QMainWindow):
         news_action = QAction("News Feed", self)
         news_action.triggered.connect(self.open_news_window)
         view_menu.addAction(news_action)
+        try:
+            settings_action = QAction("Team Settings", self)
+            settings_action.triggered.connect(self.open_team_settings_dialog)
+            view_menu.addAction(settings_action)
+        except Exception:
+            pass
 
     def _go(self, key: str) -> None:
         for btn in self.nav_buttons.values():
@@ -325,6 +331,32 @@ class OwnerDashboard(QMainWindow):
             show_on_top(NewsWindow(self))
         except Exception:
             pass
+
+    def open_team_settings_dialog(self) -> None:
+        """Open the Team Settings dialog for the current team and persist changes."""
+        try:
+            if not getattr(self, "team", None):
+                QMessageBox.warning(self, "Team Settings", "No team loaded for this owner.")
+                return
+            from ui.team_settings_dialog import TeamSettingsDialog
+            dlg = TeamSettingsDialog(self.team, self)
+            if dlg.exec():
+                data = dlg.get_settings()
+                # Update the in-memory team and persist to CSV
+                self.team.primary_color = data.get("primary_color", self.team.primary_color) or self.team.primary_color
+                self.team.secondary_color = data.get("secondary_color", self.team.secondary_color) or self.team.secondary_color
+                self.team.stadium = data.get("stadium", self.team.stadium) or self.team.stadium
+                save_team_settings(self.team)
+                QMessageBox.information(self, "Team Settings", "Team settings saved.")
+                # Notify pages to refresh if they implement refresh()
+                try:
+                    for p in self.pages.values():
+                        if hasattr(p, "refresh"):
+                            p.refresh()  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+        except Exception as e:
+            QMessageBox.critical(self, "Team Settings", f"Failed to update settings: {e}")
 
     # ---------- Utilities ----------
     def calculate_age(self, birthdate_str: str):

@@ -58,6 +58,10 @@ class OwnerHomePage(QWidget):
         btn_tx.clicked.connect(self._dashboard.open_transactions_page)
         actions.layout().addWidget(btn_tx)
 
+        btn_settings = QPushButton("Team Settings", objectName="Primary")
+        btn_settings.clicked.connect(self._dashboard.open_team_settings_dialog)
+        actions.layout().addWidget(btn_settings)
+
         actions.layout().addStretch()
         layout.addWidget(actions)
 

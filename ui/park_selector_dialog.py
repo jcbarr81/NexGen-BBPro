@@ -32,6 +32,13 @@ def _project_root() -> Path:
 
 
 def _load_latest_parks(csv_path: Optional[Path] = None) -> List[Park]:
+    """Return latest-year parks that have at least one dimension recorded.
+
+    A park is included only if at least one ``*_Dim`` field can be parsed as
+    a float for that park in any year. Among the qualifying rows for each
+    park, the most recent year is selected.
+    """
+
     root = _project_root()
     path = csv_path or (root / "data" / "parks" / "ParkConfig.csv")
     latest: Dict[str, Park] = {}
@@ -46,7 +53,24 @@ def _load_latest_parks(csv_path: Optional[Path] = None) -> List[Park]:
                 continue
             if not park_id or not name:
                 continue
+
+            # Count any numeric dimension fields in this row (e.g., LF_Dim, CF_Dim, etc.)
+            has_dim = False
+            for k, v in row.items():
+                if not k or not k.endswith("_Dim"):
+                    continue
+                try:
+                    if v is not None and str(v).strip() != "" and float(str(v)):
+                        has_dim = True
+                        break
+                except Exception:
+                    continue
+            if not has_dim:
+                # Skip rows without any dimension data
+                continue
+
             p = Park(park_id=park_id, name=name, year=year)
+            # Keep the most recent qualifying row per park
             if park_id not in latest or year > latest[park_id].year:
                 latest[park_id] = p
     return sorted(latest.values(), key=lambda p: p.name)
@@ -157,4 +181,3 @@ class ParkSelectorDialog(QDialog):
     def _accept(self) -> None:
         if self.selected_name:
             self.accept()
-

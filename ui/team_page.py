@@ -21,6 +21,10 @@ class TeamPage(QWidget):
         btn_stats.clicked.connect(dashboard.open_team_stats_window)
         card.layout().addWidget(btn_stats)
 
+        btn_settings = QPushButton("Team Settings", objectName="Primary")
+        btn_settings.clicked.connect(dashboard.open_team_settings_dialog)
+        card.layout().addWidget(btn_settings)
+
         card.layout().addStretch()
         layout.addWidget(card)
         layout.addStretch()

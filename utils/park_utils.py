@@ -98,11 +98,14 @@ def stadium_from_name(name: str) -> Stadium | None:
                 break
     if info is None:
         return None
-    # Compose Stadium; fall back to defaults when any is missing
+    # Require at least one dimension to be present; otherwise return None
+    if info.lf is None and info.cf is None and info.rf is None:
+        return None
+    # Compose Stadium; use defaults for any missing single fields
     return Stadium(
-        left=info.lf or Stadium.left,
-        center=info.cf or Stadium.center,
-        right=info.rf or Stadium.right,
+        left=info.lf if info.lf is not None else Stadium.left,
+        center=info.cf if info.cf is not None else Stadium.center,
+        right=info.rf if info.rf is not None else Stadium.right,
     )
 
 
@@ -145,4 +148,3 @@ def park_factor_for_name(name: str) -> float:
 
 
 __all__ = ["stadium_from_name", "park_factor_for_name", "ParkInfo"]
-
