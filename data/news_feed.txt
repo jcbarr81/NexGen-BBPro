@@ -2,3 +2,127 @@
 [2025-10-01 08:05:28] Training camp completed; players marked ready
 [2025-10-01 08:05:31] Generated regular season schedule with 1215 games
 [2025-10-01 08:05:33] Season advanced to Regular Season
+[2025-10-03 11:05:30] Generated regular season schedule with 1215 games
+[2025-10-03 11:05:49] Generated regular season schedule with 1215 games
+[2025-10-03 11:05:55] Generated regular season schedule with 1215 games
+[2025-10-03 11:06:02] Generated regular season schedule with 1215 games
+[2025-10-03 11:06:07] Generated regular season schedule with 1215 games
+[2025-10-03 11:09:07] Generated regular season schedule with 1215 games
+[2025-10-03 11:09:07] Generated regular season schedule with 1215 games
+[2025-10-03 11:09:07] Generated regular season schedule with 1215 games
+[2025-10-03 11:09:07] Generated regular season schedule with 1215 games
+[2025-10-03 11:09:07] Generated regular season schedule with 1215 games
+[2025-10-03 11:09:07] Season advanced to Preseason
+[2025-10-03 11:09:07] No unsigned players available
+[2025-10-03 11:09:07] Training camp completed; players marked ready
+[2025-10-03 11:09:07] Generated regular season schedule with 162 games
+[2025-10-03 11:09:07] Generated regular season schedule with 162 games
+[2025-10-03 11:09:07] Generated regular season schedule with 162 games
+[2025-10-03 11:09:07] No unsigned players available
+[2025-10-03 11:09:07] Generated regular season schedule with 162 games
+[2025-10-03 12:45:55] Generated regular season schedule with 1215 games
+[2025-10-03 12:54:10] [game_recap] Daily Recap 2025-04-01: 7 games; 5 one-run; 2 extras. SAN at EL  — 2-1; LAS at SAN1 — 2-3; IND at NAS — 3-0
+[2025-10-03 12:54:10] [progress] Simulated a regular season day; 86 days until Midseason
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-02: 7 games; 3 one-run; 1 extras. WAS at EL  — 3-0; SAN at NAS — 1-2; BOS at SAN1 — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-03: 7 games; 3 one-run; 0 extras. LAS at WAS — 8-0; EL  at NAS — 1-0; SAN at LOS — 6-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-04: 7 games; 1 one-run; 1 extras. WAS at NAS — 1-3; BOS at LAS — 3-1; EL  at LOS — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-05: 7 games; 4 one-run; 0 extras. BOS at WAS — 0-7; NAS at LOS — 3-2; MIL at LAS — 2-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-06: 7 games; 5 one-run; 2 extras. WAS at LOS — 0-1; MIL at BOS — 3-2; NAS at CHA — 6-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-07: 7 games; 3 one-run; 1 extras. MIL at WAS — 0-8; LOS at CHA — 2-1; OKL at BOS — 0-5
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-08: 7 games; 4 one-run; 2 extras. WAS at CHA — 3-1; OKL at MIL — 3-4; LOS at PHI — 3-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-09: 7 games; 5 one-run; 1 extras. OKL at WAS — 1-2; CHA at PHI — 1-2; DEN at MIL — 2-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-10: 7 games; 2 one-run; 3 extras. WAS at PHI — 7-1; DEN at OKL — 0-1; CHA at ALB — 0-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-11: 7 games; 2 one-run; 1 extras. DEN at WAS — 1-5; PHI at ALB — 1-6; IND at OKL — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-12: 7 games; 2 one-run; 1 extras. WAS at ALB — 5-2; IND at DEN — 3-2; PHI at SAN1 — 4-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-13: 7 games; 2 one-run; 0 extras. IND at WAS — 1-4; ALB at SAN1 — 3-0; SAN at DEN — 0-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-14: 7 games; 5 one-run; 3 extras. WAS at SAN1 — 0-1; SAN at IND — 2-1; EL  at DEN — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-15: 7 games; 4 one-run; 5 extras. SAN at WAS — 3-2; EL  at IND — 2-4; ALB at LAS — 2-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-22: 7 games; 2 one-run; 2 extras. EL  at SAN — 0-2; SAN1 at LAS — 2-5; NAS at IND — 2-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-23: 7 games; 2 one-run; 0 extras. EL  at WAS — 5-1; NAS at SAN — 1-5; SAN1 at BOS — 0-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-24: 7 games; 3 one-run; 3 extras. WAS at LAS — 2-1; NAS at EL  — 1-2; LOS at SAN — 5-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-25: 7 games; 2 one-run; 1 extras. NAS at WAS — 3-1; LAS at BOS — 3-0; LOS at EL  — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-26: 7 games; 2 one-run; 0 extras. WAS at BOS — 3-2; LOS at NAS — 1-0; LAS at MIL — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-27: 7 games; 4 one-run; 2 extras. LOS at WAS — 2-1; BOS at MIL — 0-1; CHA at NAS — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-28: 7 games; 2 one-run; 1 extras. WAS at MIL — 6-2; CHA at LOS — 1-2; BOS at OKL — 0-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-29: 7 games; 3 one-run; 1 extras. CHA at WAS — 3-0; MIL at OKL — 0-2; PHI at LOS — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-04-30: 7 games; 2 one-run; 1 extras. WAS at OKL — 2-4; PHI at CHA — 0-1; MIL at DEN — 1-7
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-01: 7 games; 2 one-run; 2 extras. PHI at WAS — 2-0; OKL at DEN — 1-4; ALB at CHA — 6-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-02: 7 games; 5 one-run; 4 extras. WAS at DEN — 1-2; ALB at PHI — 2-1; OKL at IND — 5-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-03: 7 games; 2 one-run; 0 extras. ALB at WAS — 4-5; DEN at IND — 5-0; SAN1 at PHI — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-04: 7 games; 5 one-run; 0 extras. WAS at IND — 3-0; SAN1 at ALB — 0-3; DEN at SAN — 2-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-05: 7 games; 2 one-run; 2 extras. SAN1 at WAS — 3-0; IND at SAN — 5-0; DEN at EL  — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-06: 7 games; 3 one-run; 2 extras. WAS at SAN — 3-2; IND at EL  — 0-2; LAS at ALB — 2-5
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-07: 7 games; 3 one-run; 1 extras. SAN at EL  — 3-0; LAS at SAN1 — 2-3; IND at NAS — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-08: 7 games; 0 one-run; 1 extras. WAS at EL  — 3-5; SAN at NAS — 1-5; BOS at SAN1 — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-09: 7 games; 2 one-run; 0 extras. LAS at WAS — 2-3; EL  at NAS — 0-2; SAN at LOS — 1-5
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-10: 7 games; 4 one-run; 0 extras. WAS at NAS — 2-1; BOS at LAS — 1-0; EL  at LOS — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-11: 7 games; 4 one-run; 1 extras. BOS at WAS — 0-1; NAS at LOS — 3-4; MIL at LAS — 0-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-12: 7 games; 3 one-run; 2 extras. WAS at LOS — 2-3; MIL at BOS — 4-3; NAS at CHA — 0-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-13: 7 games; 5 one-run; 3 extras. MIL at WAS — 2-5; LOS at CHA — 1-2; OKL at BOS — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-14: 7 games; 4 one-run; 0 extras. WAS at CHA — 1-0; OKL at MIL — 4-0; LOS at PHI — 5-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-15: 7 games; 4 one-run; 3 extras. OKL at WAS — 4-2; CHA at PHI — 4-0; DEN at MIL — 2-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-16: 7 games; 6 one-run; 2 extras. WAS at PHI — 2-1; DEN at OKL — 2-3; CHA at ALB — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-17: 7 games; 1 one-run; 0 extras. DEN at WAS — 3-1; PHI at ALB — 3-1; IND at OKL — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-18: 7 games; 4 one-run; 1 extras. WAS at ALB — 1-2; IND at DEN — 3-1; PHI at SAN1 — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-19: 7 games; 1 one-run; 2 extras. IND at WAS — 0-2; ALB at SAN1 — 1-3; SAN at DEN — 1-6
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-20: 7 games; 5 one-run; 1 extras. WAS at SAN1 — 2-1; SAN at IND — 2-1; EL  at DEN — 0-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-21: 7 games; 2 one-run; 0 extras. SAN at WAS — 0-4; EL  at IND — 3-6; ALB at LAS — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-28: 7 games; 3 one-run; 0 extras. EL  at SAN — 3-2; SAN1 at LAS — 3-1; NAS at IND — 0-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-29: 7 games; 4 one-run; 3 extras. EL  at WAS — 2-3; NAS at SAN — 0-1; SAN1 at BOS — 1-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-30: 7 games; 1 one-run; 1 extras. WAS at LAS — 1-0; NAS at EL  — 2-0; LOS at SAN — 1-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-05-31: 7 games; 1 one-run; 2 extras. NAS at WAS — 2-6; LAS at BOS — 0-3; LOS at EL  — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-01: 7 games; 1 one-run; 0 extras. WAS at BOS — 0-1; LOS at NAS — 2-5; LAS at MIL — 0-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-02: 7 games; 4 one-run; 1 extras. LOS at WAS — 0-1; BOS at MIL — 6-2; CHA at NAS — 0-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-03: 7 games; 3 one-run; 1 extras. WAS at MIL — 1-2; CHA at LOS — 0-5; BOS at OKL — 0-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-04: 7 games; 4 one-run; 1 extras. CHA at WAS — 0-5; MIL at OKL — 4-5; PHI at LOS — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-05: 7 games; 4 one-run; 3 extras. WAS at OKL — 9-8; PHI at CHA — 0-2; MIL at DEN — 2-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-06: 7 games; 3 one-run; 1 extras. PHI at WAS — 4-1; OKL at DEN — 5-1; ALB at CHA — 5-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-07: 7 games; 4 one-run; 0 extras. WAS at DEN — 3-0; ALB at PHI — 1-0; OKL at IND — 3-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-08: 7 games; 2 one-run; 2 extras. ALB at WAS — 1-3; DEN at IND — 5-0; SAN1 at PHI — 3-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-09: 7 games; 4 one-run; 1 extras. WAS at IND — 3-2; SAN1 at ALB — 0-3; DEN at SAN — 4-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-10: 7 games; 3 one-run; 1 extras. SAN1 at WAS — 0-2; IND at SAN — 2-0; DEN at EL  — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-11: 7 games; 1 one-run; 1 extras. WAS at SAN — 4-1; IND at EL  — 2-1; LAS at ALB — 3-7
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-12: 7 games; 3 one-run; 0 extras. SAN at EL  — 1-2; LAS at SAN1 — 2-1; IND at NAS — 5-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-13: 7 games; 2 one-run; 1 extras. WAS at EL  — 4-0; SAN at NAS — 0-7; BOS at SAN1 — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-14: 7 games; 4 one-run; 0 extras. LAS at WAS — 3-2; EL  at NAS — 2-4; SAN at LOS — 2-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-15: 7 games; 4 one-run; 2 extras. WAS at NAS — 3-2; BOS at LAS — 3-1; EL  at LOS — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-16: 7 games; 2 one-run; 0 extras. BOS at WAS — 3-1; NAS at LOS — 0-4; MIL at LAS — 1-5
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-17: 7 games; 3 one-run; 1 extras. WAS at LOS — 2-1; MIL at BOS — 4-2; NAS at CHA — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-18: 7 games; 4 one-run; 3 extras. MIL at WAS — 5-4; LOS at CHA — 0-1; OKL at BOS — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-19: 7 games; 4 one-run; 3 extras. WAS at CHA — 4-0; OKL at MIL — 5-0; LOS at PHI — 0-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-20: 7 games; 3 one-run; 1 extras. OKL at WAS — 5-2; CHA at PHI — 0-3; DEN at MIL — 3-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-21: 7 games; 5 one-run; 0 extras. WAS at PHI — 5-4; DEN at OKL — 1-0; CHA at ALB — 2-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-22: 7 games; 3 one-run; 0 extras. DEN at WAS — 3-0; PHI at ALB — 3-4; IND at OKL — 3-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-23: 7 games; 4 one-run; 0 extras. WAS at ALB — 2-5; IND at DEN — 6-3; PHI at SAN1 — 1-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-24: 7 games; 4 one-run; 1 extras. IND at WAS — 3-1; ALB at SAN1 — 1-2; SAN at DEN — 4-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-25: 7 games; 2 one-run; 0 extras. WAS at SAN1 — 2-1; SAN at IND — 1-2; EL  at DEN — 0-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-06-26: 7 games; 3 one-run; 0 extras. SAN at WAS — 5-2; EL  at IND — 0-1; ALB at LAS — 2-3
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-03: 7 games; 4 one-run; 3 extras. EL  at SAN — 1-2; SAN1 at LAS — 1-0; NAS at IND — 2-0
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-04: 7 games; 5 one-run; 3 extras. EL  at WAS — 4-1; NAS at SAN — 3-4; SAN1 at BOS — 0-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-05: 7 games; 3 one-run; 1 extras. WAS at LAS — 3-4; NAS at EL  — 0-5; LOS at SAN — 0-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-06: 7 games; 2 one-run; 0 extras. NAS at WAS — 1-3; LAS at BOS — 1-0; LOS at EL  — 0-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-07: 7 games; 3 one-run; 0 extras. WAS at BOS — 2-0; LOS at NAS — 2-3; LAS at MIL — 0-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-08: 7 games; 6 one-run; 3 extras. LOS at WAS — 4-3; BOS at MIL — 2-3; CHA at NAS — 2-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-09: 7 games; 3 one-run; 2 extras. WAS at MIL — 2-0; CHA at LOS — 1-2; BOS at OKL — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-10: 7 games; 4 one-run; 1 extras. CHA at WAS — 2-0; MIL at OKL — 2-0; PHI at LOS — 2-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-11: 7 games; 3 one-run; 2 extras. WAS at OKL — 0-3; PHI at CHA — 0-3; MIL at DEN — 1-2
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-12: 7 games; 3 one-run; 1 extras. PHI at WAS — 2-0; OKL at DEN — 1-2; ALB at CHA — 3-1
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-13: 7 games; 3 one-run; 2 extras. WAS at DEN — 0-3; ALB at PHI — 2-1; OKL at IND — 1-4
+[2025-10-03 13:01:08] [game_recap] Daily Recap 2025-07-14: 7 games; 2 one-run; 0 extras. ALB at WAS — 4-3; DEN at IND — 3-1; SAN1 at PHI — 0-5
+[2025-10-03 13:01:08] [progress] Simulated midseason; 87 days until Season End
+[2025-10-03 13:05:06] Amateur Draft 2025 committed: 150 players added; 150 roster assignments
+[2025-10-03 22:50:09] League reset to Opening Day
+[2025-10-03 22:50:09] Purged saved season boxscores
+[2025-10-03 23:00:20] Generated regular season schedule with 1215 games
+[2025-10-03 23:00:20] Generated regular season schedule with 1215 games
+[2025-10-03 23:00:20] Generated regular season schedule with 1215 games
+[2025-10-03 23:00:20] Generated regular season schedule with 1215 games
+[2025-10-03 23:00:20] Generated regular season schedule with 1215 games
+[2025-10-03 23:00:20] Season advanced to Preseason
+[2025-10-03 23:00:20] No unsigned players available
+[2025-10-03 23:00:20] Training camp completed; players marked ready
+[2025-10-03 23:00:20] Generated regular season schedule with 162 games
+[2025-10-03 23:00:20] Generated regular season schedule with 162 games
+[2025-10-03 23:00:20] Generated regular season schedule with 162 games
+[2025-10-03 23:00:20] No unsigned players available
+[2025-10-03 23:00:20] Generated regular season schedule with 162 games

@@ -1018,11 +1018,23 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     # Lineup validation/repair helpers
     def _team_lineup_is_valid(self, team_id: str) -> bool:
+        """Return True if both vs_lhp and vs_rhp are valid 9-hitter lineups.
+
+        Valid means: file exists, 9 unique players, all on ACT roster, and no
+        pitchers included. Pitchers are detected using player metadata and
+        ``get_role`` ("SP"/"RP" count as pitchers).
+        """
         try:
             roster = load_roster(team_id)
         except Exception:
             return False
         act = set(roster.act)
+        try:
+            players_meta = {
+                p.player_id: p for p in load_players_from_csv(DATA_DIR / "players.csv")
+            }
+        except Exception:
+            players_meta = {}
         for vs in ("lhp", "rhp"):
             try:
                 lineup = load_lineup(team_id, vs=vs, lineup_dir=DATA_DIR / "lineups")
@@ -1033,6 +1045,16 @@ class SeasonProgressWindow(QDialog):
                 return False
             if any(pid not in act for pid in ids):
                 return False
+            # Ensure no pitchers included
+            for pid in ids:
+                p = players_meta.get(pid)
+                if p is None:
+                    # If we cannot resolve metadata, fall back to allowing
+                    # this player to avoid false negatives.
+                    continue
+                role = get_role(p)
+                if getattr(p, "is_pitcher", False) or role in {"SP", "RP"}:
+                    return False
         return True
 
     def _repair_lineups(self) -> None:
@@ -1124,19 +1146,33 @@ class SeasonProgressWindow(QDialog):
         """Return schedule team IDs not present in teams.csv.
 
         Compares the set of IDs appearing in the current schedule's "home" and
-        "away" fields against the loaded teams list. Team IDs are expected to
-        match the "team_id" in teams.csv (usually the abbreviation).
+        "away" fields against the loaded teams list. The comparison is
+        normalization-insensitive: IDs are compared after ``strip()`` and
+        ``upper()`` to avoid false positives from stray whitespace or case
+        differences in CSVs.
         """
-        sched_ids: set[str] = set()
+        # Collect raw IDs as they appear in the schedule so any message can
+        # show the exact values found, but compare using normalized forms.
+        sched_ids_raw: list[str] = []
         for g in self.simulator.schedule:
-            home = str(g.get("home", "")).strip()
-            away = str(g.get("away", "")).strip()
-            if home:
-                sched_ids.add(home)
-            if away:
-                sched_ids.add(away)
-        known_ids = set(self._team_divisions.keys())
-        return sorted([tid for tid in sched_ids if tid and tid not in known_ids])
+            home_raw = str(g.get("home", ""))
+            away_raw = str(g.get("away", ""))
+            if home_raw:
+                sched_ids_raw.append(home_raw)
+            if away_raw:
+                sched_ids_raw.append(away_raw)
+
+        def _norm(s: str) -> str:
+            return str(s).strip().upper()
+
+        known_norm = { _norm(k) for k in self._team_divisions.keys() }
+        unknown: set[str] = set()
+        for tid in sched_ids_raw:
+            if _norm(tid) and _norm(tid) not in known_norm:
+                # Preserve original token to aid user diagnosis, but ensure
+                # uniqueness via set semantics.
+                unknown.add(tid)
+        return sorted(unknown)
 
     def _ensure_valid_schedule_teams(self) -> bool:
         """Prompt to regenerate schedule if it references unknown teams.

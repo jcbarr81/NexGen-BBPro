@@ -102,6 +102,9 @@ images/avatars/*
 !images/avatars/Template/
 !images/avatars/default.png
 
+# Generated park diagrams (do not commit)
+images/parks/
+
 # Local lineups and roster CSVs
 data/lineups/
 data/rosters/
