@@ -8,22 +8,22 @@
         "P9823",
         "P2551"
       ],
-      "next_index": 4,
+      "next_index": 0,
       "pitchers": {
         "P3379": {
           "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 4
+          "last_pitches": 15
         },
         "P1236": {
-          "available_on": "2025-10-29",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 42
+          "last_pitches": 79
         },
         "P9941": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 29
+          "last_pitches": 4
         },
         "P9934": {
           "available_on": "2025-10-27",
@@ -31,29 +31,29 @@
           "last_pitches": 4
         },
         "P2551": {
-          "available_on": "2025-10-26",
-          "last_used": "2025-10-23",
-          "last_pitches": 56
-        },
-        "P6848": {
-          "available_on": "2025-10-24",
-          "last_used": "2025-10-23",
-          "last_pitches": 12
-        },
-        "P9823": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 60
+          "last_pitches": 55
+        },
+        "P6848": {
+          "available_on": "2025-10-12",
+          "last_used": "2025-10-11",
+          "last_pitches": 7
+        },
+        "P9823": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-25",
+          "last_pitches": 23
         },
         "P4486": {
-          "available_on": "2025-10-25",
-          "last_used": "2025-10-23",
-          "last_pitches": 26
+          "available_on": "2025-09-16",
+          "last_used": "2025-09-15",
+          "last_pitches": 14
         },
         "P5850": {
-          "available_on": "2025-10-24",
-          "last_used": "2025-10-23",
-          "last_pitches": 12
+          "available_on": "2025-08-01",
+          "last_used": "2025-07-30",
+          "last_pitches": 21
         },
         "P2797": {
           "available_on": "2025-09-15",
@@ -85,52 +85,52 @@
         "P8451",
         "P8531"
       ],
-      "next_index": 2,
+      "next_index": 1,
       "pitchers": {
         "P2603": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-27",
-          "last_pitches": 37
-        },
-        "P8451": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-27",
-          "last_pitches": 3
-        },
-        "P3473": {
           "available_on": "2025-10-31",
           "last_used": "2025-10-27",
           "last_pitches": 83
         },
-        "P9872": {
+        "P8451": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-27",
           "last_pitches": 41
         },
+        "P3473": {
+          "available_on": "2025-10-29",
+          "last_used": "2025-10-27",
+          "last_pitches": 36
+        },
+        "P9872": {
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-24",
+          "last_pitches": 82
+        },
         "P6747": {
           "available_on": "2025-10-25",
-          "last_used": "2025-10-24",
-          "last_pitches": 15
+          "last_used": "2025-10-23",
+          "last_pitches": 25
         },
         "P8531": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-25",
-          "last_pitches": 79
+          "last_pitches": 80
         },
         "P5452": {
-          "available_on": "2025-10-12",
-          "last_used": "2025-10-11",
-          "last_pitches": 6
+          "available_on": "2025-09-24",
+          "last_used": "2025-09-22",
+          "last_pitches": 30
         },
         "P5182": {
-          "available_on": "2025-10-12",
-          "last_used": "2025-10-11",
-          "last_pitches": 11
+          "available_on": "2025-09-20",
+          "last_used": "2025-09-19",
+          "last_pitches": 10
         },
         "P9421": {
-          "available_on": "2025-08-30",
-          "last_used": "2025-08-29",
-          "last_pitches": 16
+          "available_on": "2025-09-20",
+          "last_used": "2025-09-19",
+          "last_pitches": 4
         },
         "P7761": {
           "available_on": "2025-06-16",
@@ -162,57 +162,57 @@
         "P6495",
         "P7581"
       ],
-      "next_index": 3,
+      "next_index": 1,
       "pitchers": {
         "P3838": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-26",
+          "last_pitches": 16
+        },
+        "P6756": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-26",
           "last_pitches": 79
         },
-        "P6756": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 6
-        },
         "P6495": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 30
+          "last_pitches": 59
         },
         "P7581": {
           "available_on": "2025-10-28",
           "last_used": "2025-10-25",
-          "last_pitches": 41
+          "last_pitches": 44
         },
         "P5376": {
-          "available_on": "2025-10-25",
-          "last_used": "2025-10-23",
-          "last_pitches": 32
+          "available_on": "2025-10-22",
+          "last_used": "2025-10-21",
+          "last_pitches": 13
         },
         "P5871": {
-          "available_on": "2025-10-25",
-          "last_used": "2025-10-23",
-          "last_pitches": 29
+          "available_on": "2025-10-09",
+          "last_used": "2025-10-08",
+          "last_pitches": 19
         },
         "P3819": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-26",
-          "last_pitches": 39
+          "available_on": "2025-10-25",
+          "last_used": "2025-10-24",
+          "last_pitches": 10
         },
         "P4921": {
-          "available_on": "2025-10-24",
-          "last_used": "2025-10-23",
-          "last_pitches": 20
+          "available_on": "2025-09-21",
+          "last_used": "2025-09-19",
+          "last_pitches": 22
         },
         "P6908": {
-          "available_on": "2025-06-26",
-          "last_used": "2025-06-25",
-          "last_pitches": 4
+          "available_on": "2025-05-29",
+          "last_used": "2025-05-28",
+          "last_pitches": 6
         },
         "P7295": {
-          "available_on": "2025-06-27",
-          "last_used": "2025-06-25",
-          "last_pitches": 40
+          "available_on": "2025-05-29",
+          "last_used": "2025-05-28",
+          "last_pitches": 5
         },
         "P4488": {
           "available_on": "2025-06-26",
@@ -239,47 +239,47 @@
         "P3931",
         "P9489"
       ],
-      "next_index": 3,
+      "next_index": 0,
       "pitchers": {
         "P7678": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 6
+          "last_pitches": 32
         },
         "P8061": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-26",
-          "last_pitches": 45
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-27",
+          "last_pitches": 11
         },
         "P3931": {
-          "available_on": "2025-10-27",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-25",
-          "last_pitches": 30
+          "last_pitches": 71
         },
         "P3182": {
-          "available_on": "2025-10-24",
-          "last_used": "2025-10-23",
-          "last_pitches": 18
+          "available_on": "2025-10-26",
+          "last_used": "2025-10-25",
+          "last_pitches": 20
         },
         "P2133": {
-          "available_on": "2025-10-31",
-          "last_used": "2025-10-27",
-          "last_pitches": 72
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-26",
+          "last_pitches": 27
         },
         "P2907": {
-          "available_on": "2025-10-24",
-          "last_used": "2025-10-23",
-          "last_pitches": 8
+          "available_on": "2025-10-13",
+          "last_used": "2025-10-11",
+          "last_pitches": 27
         },
         "P9489": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-25",
-          "last_pitches": 56
+          "available_on": "2025-10-30",
+          "last_used": "2025-10-27",
+          "last_pitches": 58
         },
         "P2304": {
           "available_on": "2025-10-31",
           "last_used": "2025-10-27",
-          "last_pitches": 82
+          "last_pitches": 81
         },
         "P3018": {
           "available_on": "2025-04-09",
@@ -316,52 +316,52 @@
         "P5126",
         "P4312"
       ],
-      "next_index": 4,
+      "next_index": 3,
       "pitchers": {
         "P4362": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 38
+          "last_pitches": 82
         },
         "P3288": {
           "available_on": "2025-10-28",
           "last_used": "2025-10-26",
-          "last_pitches": 28
+          "last_pitches": 38
         },
         "P3106": {
-          "available_on": "2025-10-27",
+          "available_on": "2025-10-28",
           "last_used": "2025-10-26",
-          "last_pitches": 18
+          "last_pitches": 22
         },
         "P5126": {
-          "available_on": "2025-10-29",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 44
+          "last_pitches": 20
         },
         "P6373": {
-          "available_on": "2025-10-29",
+          "available_on": "2025-10-28",
           "last_used": "2025-10-26",
-          "last_pitches": 55
+          "last_pitches": 37
         },
         "P2416": {
           "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 5
+          "last_pitches": 3
         },
         "P4312": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 21
+          "last_pitches": 6
         },
         "P5770": {
-          "available_on": "2025-10-02",
-          "last_used": "2025-10-01",
-          "last_pitches": 11
+          "available_on": "2025-08-27",
+          "last_used": "2025-08-26",
+          "last_pitches": 9
         },
         "P1646": {
           "available_on": "2025-10-29",
-          "last_used": "2025-10-25",
-          "last_pitches": 79
+          "last_used": "2025-10-26",
+          "last_pitches": 50
         },
         "P4098": {
           "available_on": null,
@@ -393,52 +393,52 @@
         "P1843",
         "P4427"
       ],
-      "next_index": 0,
+      "next_index": 3,
       "pitchers": {
         "P3024": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-27",
-          "last_pitches": 38
-        },
-        "P4415": {
           "available_on": "2025-10-28",
           "last_used": "2025-10-27",
-          "last_pitches": 15
+          "last_pitches": 17
+        },
+        "P4415": {
+          "available_on": "2025-10-30",
+          "last_used": "2025-10-27",
+          "last_pitches": 53
         },
         "P4334": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 26
+          "last_pitches": 25
         },
         "P1728": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-27",
-          "last_pitches": 55
+          "last_pitches": 47
         },
         "P4427": {
-          "available_on": "2025-10-30",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 62
+          "last_pitches": 37
         },
         "P8582": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-23",
-          "last_pitches": 83
-        },
-        "P1843": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 76
+          "last_pitches": 82
+        },
+        "P1843": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-23",
+          "last_pitches": 78
         },
         "P8171": {
           "available_on": "2025-10-28",
-          "last_used": "2025-10-24",
-          "last_pitches": 78
+          "last_used": "2025-10-27",
+          "last_pitches": 9
         },
         "P7121": {
-          "available_on": "2025-08-23",
-          "last_used": "2025-08-22",
-          "last_pitches": 10
+          "available_on": "2025-09-04",
+          "last_used": "2025-09-03",
+          "last_pitches": 4
         },
         "P3902": {
           "available_on": "2025-08-23",
@@ -446,9 +446,9 @@
           "last_pitches": 10
         },
         "P3855": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2025-06-05",
+          "last_used": "2025-06-04",
+          "last_pitches": 4
         },
         "P8965": {
           "available_on": null,
@@ -470,62 +470,62 @@
         "P1042",
         "P2610"
       ],
-      "next_index": 3,
+      "next_index": 4,
       "pitchers": {
         "P6902": {
-          "available_on": "2025-10-27",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 11
+          "last_pitches": 43
         },
         "P5282": {
-          "available_on": "2025-10-27",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 9
+          "last_pitches": 65
         },
         "P2610": {
-          "available_on": "2025-10-30",
+          "available_on": "2025-10-28",
           "last_used": "2025-10-26",
-          "last_pitches": 72
+          "last_pitches": 34
         },
         "P4666": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 79
+          "last_pitches": 80
         },
         "P1042": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 23
+          "last_pitches": 12
         },
         "P5794": {
-          "available_on": "2025-10-23",
-          "last_used": "2025-10-22",
-          "last_pitches": 19
+          "available_on": "2025-10-06",
+          "last_used": "2025-10-05",
+          "last_pitches": 4
         },
         "P5220": {
-          "available_on": "2025-10-02",
-          "last_used": "2025-10-01",
+          "available_on": "2025-09-29",
+          "last_used": "2025-09-28",
           "last_pitches": 5
         },
         "P4755": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-25",
-          "last_pitches": 80
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-23",
+          "last_pitches": 81
         },
         "P7713": {
-          "available_on": "2025-06-10",
-          "last_used": "2025-06-09",
-          "last_pitches": 9
+          "available_on": "2025-06-13",
+          "last_used": "2025-06-11",
+          "last_pitches": 21
         },
         "P6473": {
-          "available_on": "2025-06-24",
-          "last_used": "2025-06-23",
-          "last_pitches": 10
+          "available_on": "2025-05-08",
+          "last_used": "2025-05-07",
+          "last_pitches": 16
         },
         "P2102": {
-          "available_on": "2025-06-24",
-          "last_used": "2025-06-23",
-          "last_pitches": 6
+          "available_on": "2025-05-09",
+          "last_used": "2025-05-07",
+          "last_pitches": 24
         },
         "P1471": {
           "available_on": null,
@@ -533,9 +533,9 @@
           "last_pitches": 0
         },
         "P8763": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2025-05-08",
+          "last_used": "2025-05-07",
+          "last_pitches": 3
         }
       }
     },
@@ -547,47 +547,47 @@
         "P4468",
         "P3205"
       ],
-      "next_index": 0,
+      "next_index": 2,
       "pitchers": {
         "P4468": {
-          "available_on": "2025-10-31",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-27",
-          "last_pitches": 71
+          "last_pitches": 58
         },
         "P8231": {
-          "available_on": "2025-10-31",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 80
+          "last_pitches": 28
         },
         "P6309": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 18
+          "available_on": "2025-10-30",
+          "last_used": "2025-10-27",
+          "last_pitches": 45
         },
         "P3249": {
-          "available_on": "2025-10-12",
-          "last_used": "2025-10-10",
-          "last_pitches": 30
+          "available_on": "2025-10-30",
+          "last_used": "2025-10-27",
+          "last_pitches": 45
         },
         "P1495": {
           "available_on": "2025-10-28",
-          "last_used": "2025-10-24",
-          "last_pitches": 80
+          "last_used": "2025-10-27",
+          "last_pitches": 15
         },
         "P7523": {
-          "available_on": "2025-10-07",
-          "last_used": "2025-10-05",
-          "last_pitches": 28
+          "available_on": "2025-10-25",
+          "last_used": "2025-10-23",
+          "last_pitches": 35
         },
         "P5805": {
-          "available_on": "2025-08-29",
-          "last_used": "2025-08-28",
-          "last_pitches": 10
+          "available_on": "2025-10-13",
+          "last_used": "2025-10-12",
+          "last_pitches": 8
         },
         "P9412": {
-          "available_on": "2025-09-27",
-          "last_used": "2025-09-26",
-          "last_pitches": 6
+          "available_on": "2025-09-07",
+          "last_used": "2025-09-05",
+          "last_pitches": 22
         },
         "P8528": {
           "available_on": "2025-05-10",
@@ -624,47 +624,47 @@
         "P1769",
         "P6059"
       ],
-      "next_index": 0,
+      "next_index": 3,
       "pitchers": {
         "P2654": {
-          "available_on": "2025-10-29",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 57
+          "last_pitches": 79
         },
         "P1769": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 17
-        },
-        "P7896": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 54
+          "last_pitches": 58
+        },
+        "P7896": {
+          "available_on": "2025-10-30",
+          "last_used": "2025-10-26",
+          "last_pitches": 73
         },
         "P9725": {
           "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 18
+          "last_used": "2025-10-25",
+          "last_pitches": 24
         },
         "P2233": {
-          "available_on": "2025-10-27",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 15
+          "last_pitches": 83
         },
         "P6059": {
           "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 14
+          "last_used": "2025-10-25",
+          "last_pitches": 25
         },
         "P7395": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 9
+          "available_on": "2025-10-21",
+          "last_used": "2025-10-20",
+          "last_pitches": 6
         },
         "P7178": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 10
+          "available_on": "2025-10-21",
+          "last_used": "2025-10-20",
+          "last_pitches": 17
         },
         "P4327": {
           "available_on": "2025-10-06",
@@ -704,54 +704,54 @@
       "next_index": 4,
       "pitchers": {
         "P2827": {
-          "available_on": "2025-10-31",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-27",
-          "last_pitches": 82
+          "last_pitches": 54
         },
         "P2987": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 3
+          "last_pitches": 24
         },
         "P6734": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 10
-        },
-        "P4735": {
-          "available_on": "2025-10-30",
-          "last_used": "2025-10-26",
-          "last_pitches": 78
-        },
-        "P6158": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-26",
           "last_pitches": 41
         },
+        "P4735": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-25",
+          "last_pitches": 40
+        },
+        "P6158": {
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-25",
+          "last_pitches": 63
+        },
         "P8989": {
           "available_on": "2025-10-31",
           "last_used": "2025-10-27",
-          "last_pitches": 80
+          "last_pitches": 82
         },
         "P1681": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 3
+          "available_on": "2025-10-08",
+          "last_used": "2025-10-07",
+          "last_pitches": 5
         },
         "P9169": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-26",
-          "last_pitches": 25
+          "available_on": "2025-10-08",
+          "last_used": "2025-10-07",
+          "last_pitches": 5
         },
         "P8666": {
-          "available_on": "2025-05-01",
-          "last_used": "2025-04-29",
-          "last_pitches": 26
+          "available_on": "2025-10-08",
+          "last_used": "2025-10-07",
+          "last_pitches": 17
         },
         "P3863": {
-          "available_on": "2025-04-30",
-          "last_used": "2025-04-29",
-          "last_pitches": 5
+          "available_on": "2025-10-08",
+          "last_used": "2025-10-07",
+          "last_pitches": 6
         },
         "P3449": {
           "available_on": "2025-06-01",
@@ -778,52 +778,52 @@
         "P2965",
         "P6411"
       ],
-      "next_index": 0,
+      "next_index": 3,
       "pitchers": {
         "P9744": {
-          "available_on": "2025-10-29",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 56
+          "last_pitches": 18
         },
         "P9578": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 46
+          "last_pitches": 43
         },
         "P2977": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-25",
-          "last_pitches": 33
+          "available_on": "2025-10-30",
+          "last_used": "2025-10-26",
+          "last_pitches": 81
         },
         "P2965": {
-          "available_on": "2025-10-26",
-          "last_used": "2025-10-25",
-          "last_pitches": 19
-        },
-        "P8221": {
-          "available_on": "2025-10-22",
-          "last_used": "2025-10-21",
-          "last_pitches": 20
-        },
-        "P4940": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-23",
-          "last_pitches": 80
-        },
-        "P6411": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-26",
-          "last_pitches": 57
+          "last_pitches": 58
+        },
+        "P8221": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-26",
+          "last_pitches": 11
+        },
+        "P4940": {
+          "available_on": "2025-10-29",
+          "last_used": "2025-10-26",
+          "last_pitches": 44
+        },
+        "P6411": {
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-26",
+          "last_pitches": 24
         },
         "P5381": {
-          "available_on": "2025-10-01",
-          "last_used": "2025-09-30",
-          "last_pitches": 14
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-26",
+          "last_pitches": 8
         },
         "P4726": {
-          "available_on": "2025-06-09",
-          "last_used": "2025-06-08",
-          "last_pitches": 10
+          "available_on": "2025-09-29",
+          "last_used": "2025-09-28",
+          "last_pitches": 4
         },
         "P4414": {
           "available_on": "2025-04-25",
@@ -858,39 +858,39 @@
       "next_index": 3,
       "pitchers": {
         "P9683": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-27",
-          "last_pitches": 26
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-26",
+          "last_pitches": 5
         },
         "P6788": {
-          "available_on": "2025-10-30",
+          "available_on": "2025-10-31",
           "last_used": "2025-10-27",
-          "last_pitches": 42
+          "last_pitches": 77
         },
         "P4532": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-24",
-          "last_pitches": 67
+          "available_on": "2025-10-26",
+          "last_used": "2025-10-23",
+          "last_pitches": 70
         },
         "P4963": {
-          "available_on": "2025-10-30",
-          "last_used": "2025-10-26",
-          "last_pitches": 75
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-24",
+          "last_pitches": 74
         },
         "P4479": {
-          "available_on": "2025-10-24",
+          "available_on": "2025-10-25",
           "last_used": "2025-10-23",
-          "last_pitches": 18
+          "last_pitches": 34
         },
         "P7386": {
           "available_on": "2025-10-31",
           "last_used": "2025-10-27",
-          "last_pitches": 80
+          "last_pitches": 81
         },
         "P6873": {
-          "available_on": "2025-09-28",
-          "last_used": "2025-09-27",
-          "last_pitches": 12
+          "available_on": "2025-09-16",
+          "last_used": "2025-09-15",
+          "last_pitches": 18
         },
         "P6357": {
           "available_on": "2025-07-04",
@@ -899,8 +899,8 @@
         },
         "P3298": {
           "available_on": "2025-10-29",
-          "last_used": "2025-10-25",
-          "last_pitches": 83
+          "last_used": "2025-10-26",
+          "last_pitches": 49
         },
         "P1734": {
           "available_on": null,
@@ -937,52 +937,52 @@
         "P6018": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 81
+          "last_pitches": 80
         },
         "P5401": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 28
+          "last_pitches": 12
         },
         "P1857": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-27",
           "last_used": "2025-10-26",
-          "last_pitches": 27
+          "last_pitches": 4
         },
         "P2730": {
           "available_on": "2025-10-30",
           "last_used": "2025-10-26",
-          "last_pitches": 79
+          "last_pitches": 77
         },
         "P6970": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 9
+          "available_on": "2025-10-29",
+          "last_used": "2025-10-25",
+          "last_pitches": 81
         },
         "P2009": {
-          "available_on": "2025-10-12",
-          "last_used": "2025-10-11",
-          "last_pitches": 4
+          "available_on": "2025-10-25",
+          "last_used": "2025-10-24",
+          "last_pitches": 6
         },
         "P7440": {
-          "available_on": "2025-10-02",
-          "last_used": "2025-10-01",
+          "available_on": "2025-10-04",
+          "last_used": "2025-10-03",
           "last_pitches": 6
         },
         "P3442": {
-          "available_on": "2025-08-31",
-          "last_used": "2025-08-30",
+          "available_on": "2025-10-04",
+          "last_used": "2025-10-03",
           "last_pitches": 6
         },
         "P4173": {
-          "available_on": "2025-09-01",
-          "last_used": "2025-08-30",
-          "last_pitches": 26
+          "available_on": "2025-07-23",
+          "last_used": "2025-07-22",
+          "last_pitches": 5
         },
         "P4177": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2025-07-23",
+          "last_used": "2025-07-22",
+          "last_pitches": 6
         },
         "P4270": {
           "available_on": null,
@@ -1009,47 +1009,47 @@
         "P5741",
         "P6163"
       ],
-      "next_index": 3,
+      "next_index": 4,
       "pitchers": {
         "P6409": {
-          "available_on": "2025-10-30",
+          "available_on": "2025-10-28",
           "last_used": "2025-10-27",
-          "last_pitches": 61
+          "last_pitches": 4
         },
         "P4631": {
-          "available_on": "2025-10-30",
-          "last_used": "2025-10-27",
-          "last_pitches": 53
+          "available_on": "2025-10-29",
+          "last_used": "2025-10-25",
+          "last_pitches": 77
         },
         "P5800": {
-          "available_on": "2025-10-28",
+          "available_on": "2025-10-30",
           "last_used": "2025-10-27",
-          "last_pitches": 16
+          "last_pitches": 66
         },
         "P4016": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-27",
-          "last_pitches": 22
+          "available_on": "2025-10-28",
+          "last_used": "2025-10-25",
+          "last_pitches": 66
         },
         "P8086": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-27",
-          "last_pitches": 18
+          "available_on": "2025-10-29",
+          "last_used": "2025-10-26",
+          "last_pitches": 50
         },
         "P7598": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-27",
-          "last_pitches": 9
+          "available_on": "2025-10-26",
+          "last_used": "2025-10-25",
+          "last_pitches": 6
         },
         "P6163": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-27",
-          "last_pitches": 12
+          "available_on": "2025-10-25",
+          "last_used": "2025-10-24",
+          "last_pitches": 9
         },
         "P5741": {
-          "available_on": "2025-10-29",
+          "available_on": "2025-10-31",
           "last_used": "2025-10-27",
-          "last_pitches": 30
+          "last_pitches": 77
         },
         "P4168": {
           "available_on": "2025-07-20",
@@ -1086,52 +1086,52 @@
         "P8774",
         "P8741"
       ],
-      "next_index": 0,
+      "next_index": 3,
       "pitchers": {
         "P3261": {
           "available_on": "2025-10-31",
           "last_used": "2025-10-27",
-          "last_pitches": 79
+          "last_pitches": 82
         },
         "P4624": {
-          "available_on": "2025-10-30",
+          "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 45
+          "last_pitches": 40
         },
         "P5762": {
-          "available_on": "2025-10-28",
-          "last_used": "2025-10-26",
-          "last_pitches": 32
-        },
-        "P9680": {
-          "available_on": "2025-10-27",
-          "last_used": "2025-10-26",
-          "last_pitches": 19
-        },
-        "P8774": {
-          "available_on": "2025-10-29",
-          "last_used": "2025-10-26",
-          "last_pitches": 69
-        },
-        "P8741": {
           "available_on": "2025-10-29",
           "last_used": "2025-10-27",
-          "last_pitches": 32
+          "last_pitches": 30
         },
-        "P2877": {
-          "available_on": "2025-09-22",
-          "last_used": "2025-09-21",
+        "P9680": {
+          "available_on": "2025-10-29",
+          "last_used": "2025-10-26",
+          "last_pitches": 59
+        },
+        "P8774": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-26",
+          "last_pitches": 8
+        },
+        "P8741": {
+          "available_on": "2025-10-27",
+          "last_used": "2025-10-26",
           "last_pitches": 11
         },
+        "P2877": {
+          "available_on": "2025-10-12",
+          "last_used": "2025-10-11",
+          "last_pitches": 9
+        },
         "P1616": {
-          "available_on": "2025-09-22",
-          "last_used": "2025-09-21",
+          "available_on": "2025-08-28",
+          "last_used": "2025-08-27",
           "last_pitches": 4
         },
         "P3514": {
-          "available_on": "2025-07-15",
-          "last_used": "2025-07-14",
-          "last_pitches": 9
+          "available_on": "2025-08-28",
+          "last_used": "2025-08-27",
+          "last_pitches": 4
         },
         "P1010": {
           "available_on": "2025-04-27",
