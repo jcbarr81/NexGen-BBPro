@@ -59,6 +59,30 @@ except Exception:  # pragma: no cover - headless stubs for tests
 
 from playbalance.playoffs import load_bracket
 
+ROUND_STAGE_ALIASES = {
+    "WC": "Play-In",
+    "DS": "Round 1",
+    "CS": "Round 2",
+    "WS": "Championship",
+    "FINAL": "Championship",
+    "FINALS": "Championship",
+}
+
+
+def _friendly_round_title(raw_name: str) -> str:
+    name = str(raw_name or "").strip()
+    if not name:
+        return "Round"
+    parts = name.split()
+    if len(parts) == 1:
+        return ROUND_STAGE_ALIASES.get(parts[0].upper(), name)
+    stage_code = parts[-1].upper()
+    label = ROUND_STAGE_ALIASES.get(stage_code)
+    if not label:
+        return name
+    league = " ".join(parts[:-1]).strip()
+    return f"{label} - {league}" if league else label
+
 
 class PlayoffsWindow(QDialog):
     def __init__(self, parent=None):
@@ -172,7 +196,14 @@ class PlayoffsWindow(QDialog):
             bv = QVBoxLayout(box)
             bv.setContentsMargins(8, 8, 8, 8)
             bv.setSpacing(6)
-            lbl = QLabel(rnd.name)
+            raw_name = str(rnd.name)
+            title = _friendly_round_title(raw_name)
+            lbl = QLabel(title)
+            if title != raw_name and hasattr(lbl, "setToolTip"):
+                try:
+                    lbl.setToolTip(raw_name)
+                except Exception:
+                    pass
             bv.addWidget(lbl)
             if not rnd.matchups:
                 bv.addWidget(QLabel("(awaiting participants)"))
@@ -232,7 +263,12 @@ class PlayoffsWindow(QDialog):
     # Simulation helpers
     def _simulate_round(self) -> None:
         from playbalance.playoffs import load_bracket, save_bracket, simulate_next_round
-        b = load_bracket()
+        year = getattr(self._bracket, "year", None)
+        b = self._bracket
+        if b is None and year is not None:
+            b = load_bracket(year=year)
+        if b is None:
+            b = load_bracket()
         if not b:
             return
         try:
@@ -241,13 +277,19 @@ class PlayoffsWindow(QDialog):
             return
         try:
             save_bracket(b)
+            self._bracket = b
         except Exception:
             pass
         self.refresh()
 
     def _simulate_all(self) -> None:
         from playbalance.playoffs import load_bracket, save_bracket, simulate_playoffs
-        b = load_bracket()
+        year = getattr(self._bracket, "year", None)
+        b = self._bracket
+        if b is None and year is not None:
+            b = load_bracket(year=year)
+        if b is None:
+            b = load_bracket()
         if not b:
             return
         try:
@@ -256,6 +298,7 @@ class PlayoffsWindow(QDialog):
             return
         try:
             save_bracket(b)
+            self._bracket = b
         except Exception:
             pass
         self.refresh()
@@ -277,7 +320,7 @@ class PlayoffsWindow(QDialog):
         lines.append("")
         try:
             for rnd in getattr(b, 'rounds', []) or []:
-                lines.append(f"## {rnd.name}")
+                lines.append(f"## {_friendly_round_title(rnd.name)}")
                 for m in rnd.matchups or []:
                     wins_high = 0
                     wins_low = 0

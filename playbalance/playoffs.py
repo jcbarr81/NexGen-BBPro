@@ -285,19 +285,56 @@ def save_bracket(bracket: PlayoffBracket, path: Optional[Path] = None) -> Path:
 
 
 def load_bracket(path: Optional[Path] = None, *, year: Optional[int] = None) -> Optional[PlayoffBracket]:
-    """Load a bracket if present, else return ``None``."""
+    """Load the most relevant bracket if present, otherwise return ``None``."""
 
-    p = path or _bracket_path(year)
-    try:
-        if not p.exists():
-            return None
-        data = json.loads(p.read_text(encoding="utf-8"))
-        # Schema/version guard
-        if int(data.get("schema_version", SCHEMA_VERSION)) != SCHEMA_VERSION:
-            return None
-        return PlayoffBracket.from_dict(data)
-    except Exception:
-        return None
+    candidates: List[Path] = []
+    if path is not None:
+        candidates.append(Path(path))
+    else:
+        matches: List[Path] = []
+        if year is not None:
+            candidates.append(_bracket_path(year))
+            candidates.append(_bracket_path())
+        else:
+            candidates.append(_bracket_path())
+            try:
+                inferred_year = _get_year_from_schedule()
+            except Exception:
+                inferred_year = None
+            if inferred_year:
+                candidates.append(_bracket_path(inferred_year))
+        base = get_base_dir() / "data"
+        try:
+            matches = list(base.glob("playoffs_*.json"))
+        except Exception:
+            matches = []
+        if year is None and matches:
+            def _year_key(p: Path) -> int:
+                stem = p.stem
+                try:
+                    return int(stem.split("_", 1)[1])
+                except Exception:
+                    return 0
+            matches = sorted(matches, key=_year_key, reverse=True)
+        else:
+            matches = sorted(matches, reverse=True)
+        candidates.extend(matches)
+    seen: set[Path] = set()
+    for candidate in candidates:
+        p = Path(candidate)
+        if p in seen:
+            continue
+        seen.add(p)
+        try:
+            if not p.exists():
+                continue
+            data = json.loads(p.read_text(encoding="utf-8"))
+            if int(data.get("schema_version", SCHEMA_VERSION)) != SCHEMA_VERSION:
+                continue
+            return PlayoffBracket.from_dict(data)
+        except Exception:
+            continue
+    return None
 
 
 # --- Seeding engine (Ticket 2) ---------------------------------------------------------

@@ -105,6 +105,9 @@ images/avatars/*
 # Generated park diagrams (do not commit)
 images/parks/
 
+# Simulated boxscores
+data/boxscores/
+
 # Local lineups and roster CSVs
 data/lineups/
 data/rosters/
