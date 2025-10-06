@@ -28,3 +28,6 @@ timestamp,season_date,team_id,player_id,player_name,action,from_level,to_level,c
 2025-10-04 15:11:08,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
 2025-10-04 15:11:08,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
 2025-10-04 15:11:08,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-10-06 11:03:25,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-06 11:03:25,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-06 11:03:25,2025-07-15,BBB,c001,c001,cut,AAA,FA,,Released to free agency

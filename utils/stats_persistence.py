@@ -227,9 +227,9 @@ def merge_daily_history(
             }
             history.append(h_entry)
             merged_dates.add(h_entry["date"])  # keep set in sync
-            # Update latest players/teams view
-            players = h_entry["players"] or players
-            teams = h_entry["teams"] or teams
+            # Do not overwrite canonical players/teams with a single shard's
+            # snapshot. The canonical file already accumulates per-game
+            # updates via save_stats(); keep those intact here.
         except Exception:
             continue
 

@@ -347,3 +347,16 @@
 [2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-13: 7 games; 2 one-run; 0 extras. NAS at SAN2 â€” 1-4; ALB at PHO â€” 4-0; CHI at SAN1 â€” 2-1
 [2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-14: 7 games; 7 one-run; 0 extras. ALB at NAS â€” 0-1; SAN2 at SAN1 â€” 2-3; SAN at PHO â€” 1-2
 [2025-10-06 10:52:40] [progress] Simulated midseason; 87 days until Season End
+[2025-10-06 11:03:27] Generated regular season schedule with 1215 games
+[2025-10-06 11:03:27] Generated regular season schedule with 1215 games
+[2025-10-06 11:03:27] Generated regular season schedule with 1215 games
+[2025-10-06 11:03:27] Generated regular season schedule with 1215 games
+[2025-10-06 11:03:27] Generated regular season schedule with 1215 games
+[2025-10-06 11:03:27] Season advanced to Preseason
+[2025-10-06 11:03:27] No unsigned players available
+[2025-10-06 11:03:27] Training camp completed; players marked ready
+[2025-10-06 11:03:27] Generated regular season schedule with 162 games
+[2025-10-06 11:03:27] Generated regular season schedule with 162 games
+[2025-10-06 11:03:27] Generated regular season schedule with 162 games
+[2025-10-06 11:03:27] No unsigned players available
+[2025-10-06 11:03:28] Generated regular season schedule with 162 games
