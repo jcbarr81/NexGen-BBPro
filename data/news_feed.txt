@@ -633,3 +633,16 @@
 [2025-10-06 11:14:45] [progress] Simulated regular season; regular season complete
 [2025-10-06 11:15:32] Generated initial playoffs bracket from final standings
 [2025-10-06 11:15:32] Season advanced to Playoffs
+[2025-10-06 12:25:11] Generated regular season schedule with 1215 games
+[2025-10-06 12:25:11] Generated regular season schedule with 1215 games
+[2025-10-06 12:25:11] Generated regular season schedule with 1215 games
+[2025-10-06 12:25:11] Generated regular season schedule with 1215 games
+[2025-10-06 12:25:11] Generated regular season schedule with 1215 games
+[2025-10-06 12:25:12] Season advanced to Preseason
+[2025-10-06 12:25:12] No unsigned players available
+[2025-10-06 12:25:12] Training camp completed; players marked ready
+[2025-10-06 12:25:12] Generated regular season schedule with 162 games
+[2025-10-06 12:25:12] Generated regular season schedule with 162 games
+[2025-10-06 12:25:12] Generated regular season schedule with 162 games
+[2025-10-06 12:25:12] No unsigned players available
+[2025-10-06 12:25:12] Generated regular season schedule with 162 games

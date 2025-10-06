@@ -46,3 +46,41 @@ def test_wc_advances_and_ds_populates_with_placeholders():
     assert len(r_ds_al.matchups) == 2
     seeds = [m.high.seed for m in r_ds_al.matchups]
     assert sorted(seeds) == [1, 2]
+
+def test_generate_bracket_creates_plans_for_wildcard_structure():
+    al = [make_team(f"A{i}", "AL Test") for i in range(1, 7)]
+    nl = [make_team(f"N{i}", "NL Test") for i in range(1, 7)]
+    teams = al + nl
+    standings = {
+        team.team_id: {"wins": 100 - idx, "runs_for": 700 + idx, "runs_against": 650}
+        for idx, team in enumerate(teams)
+    }
+    cfg = PlayoffsConfig(num_playoff_teams_per_league=6)
+    cfg.playoff_slots_by_league_size = {6: 6}
+    bracket = generate_bracket(standings, teams, cfg)
+
+    al_wc = next(r for r in bracket.rounds if r.name == "AL WC")
+    assert len(al_wc.matchups) == 2
+    al_ds = next(r for r in bracket.rounds if r.name == "AL DS")
+    assert not al_ds.matchups
+    assert len(al_ds.plan) == 2
+    # First DS plan entry should seed #1 against a WC winner
+    ref_kinds = [entry.sources[0].kind for entry in al_ds.plan]
+    assert ref_kinds.count("seed") == 2
+    al_cs = next(r for r in bracket.rounds if r.name == "AL CS")
+    assert not al_cs.matchups
+    assert len(al_cs.plan) == 1
+
+
+def test_slots_for_league_defaults_and_overrides():
+    cfg = PlayoffsConfig()
+    assert cfg.slots_for_league(6) == 4
+    assert cfg.slots_for_league(8) == 6
+    assert cfg.slots_for_league(12) == 6
+    assert cfg.slots_for_league(2) == 2
+
+    cfg.playoff_slots_by_league_size = {6: 6, 8: 8}
+    cfg.num_playoff_teams_per_league = 8
+    assert cfg.slots_for_league(6) == 6
+    # Falls back to highest <= num teams
+    assert cfg.slots_for_league(9) == 8

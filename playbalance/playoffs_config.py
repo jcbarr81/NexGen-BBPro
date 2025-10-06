@@ -25,6 +25,21 @@ import json
 from utils.path_utils import get_base_dir
 
 
+DEFAULT_SLOTS_BY_LEAGUE_SIZE = {
+    4: 2,
+    5: 4,
+    6: 4,
+    7: 6,
+    8: 6,
+    9: 6,
+    10: 6,
+    11: 6,
+    12: 6,
+    13: 6,
+    14: 6,
+}
+
+
 @dataclass
 class PlayoffsConfig:
     """Configuration for postseason structure and seeding rules."""
@@ -55,6 +70,9 @@ class PlayoffsConfig:
     # Division winners seeded above wildcards regardless of total wins
     division_winners_priority: bool = True
 
+    # Optional override for how many playoff slots each league gets based on its size
+    playoff_slots_by_league_size: Dict[int, int] = field(default_factory=dict)
+
     # Optional override mapping from division name to league name
     # Example: {"AL East": "AL", "NL Central": "NL"}
     division_to_league: Dict[str, str] = field(default_factory=dict)
@@ -68,8 +86,28 @@ class PlayoffsConfig:
             "series_lengths": dict(self.series_lengths),
             "home_away_patterns": {int(k): list(v) for k, v in self.home_away_patterns.items()},
             "division_winners_priority": bool(self.division_winners_priority),
+            "playoff_slots_by_league_size": {int(k): int(v) for k, v in self.playoff_slots_by_league_size.items()},
             "division_to_league": dict(self.division_to_league),
         }
+
+    def slots_for_league(self, num_teams: int) -> int:
+        """Return the number of playoff slots for a league with ``num_teams`` clubs."""
+
+        if num_teams <= 0:
+            return 0
+
+        source = self.playoff_slots_by_league_size or DEFAULT_SLOTS_BY_LEAGUE_SIZE
+        eligible_keys = [size for size in source if size <= num_teams]
+        if eligible_keys:
+            best_key = max(eligible_keys)
+            slots = int(source.get(best_key, 0))
+        else:
+            slots = num_teams
+
+        slots = min(slots or num_teams, self.num_playoff_teams_per_league, num_teams)
+        if slots < 2 and num_teams >= 2:
+            slots = min(2, num_teams)
+        return slots
 
     @staticmethod
     def from_dict(data: Dict[str, object]) -> "PlayoffsConfig":
@@ -103,6 +141,15 @@ class PlayoffsConfig:
         dwp = data.get("division_winners_priority")
         if isinstance(dwp, bool):
             base.division_winners_priority = dwp
+        slots = data.get("playoff_slots_by_league_size")
+        if isinstance(slots, dict):
+            parsed: Dict[int, int] = {}
+            for k, v in slots.items():
+                try:
+                    parsed[int(k)] = int(v)
+                except Exception:
+                    continue
+            base.playoff_slots_by_league_size = parsed
         d2l = data.get("division_to_league")
         if isinstance(d2l, dict):
             base.division_to_league = {str(k): str(v) for k, v in d2l.items()}

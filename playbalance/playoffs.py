@@ -8,7 +8,7 @@ data-shapes and stable JSON schema to support resume and UI rendering.
 """
 
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 import json
 
@@ -18,6 +18,32 @@ from datetime import date as _date
 
 
 SCHEMA_VERSION = 1
+
+_DEFAULT_SERIES_LENGTHS = {"wildcard": 3, "ds": 5, "cs": 7, "ws": 7}
+
+
+def _extract_series_settings(cfg_like: Any) -> Tuple[Dict[str, Any], Dict[int, List[int]]]:
+    if isinstance(cfg_like, dict):
+        lengths = dict((cfg_like.get("series_lengths") or {}))
+        patterns_raw = cfg_like.get("home_away_patterns") or {}
+    else:
+        lengths = dict(getattr(cfg_like, "series_lengths", {}) or {})
+        patterns_raw = getattr(cfg_like, "home_away_patterns", {}) or {}
+
+    patterns: Dict[int, List[int]] = {}
+    for key, value in patterns_raw.items():
+        try:
+            patterns[int(key)] = [int(x) for x in (value or [])]
+        except Exception:
+            continue
+    return lengths, patterns
+
+
+def _series_config_from_settings(cfg_like: Any, key: str) -> SeriesConfig:
+    lengths, patterns = _extract_series_settings(cfg_like)
+    length = int(lengths.get(key, _DEFAULT_SERIES_LENGTHS.get(key, 7)))
+    pattern = list(patterns.get(length, []))
+    return SeriesConfig(length=length, pattern=pattern)
 
 
 @dataclass
@@ -56,9 +82,61 @@ class Matchup:
 
 
 @dataclass
+class ParticipantRef:
+    """Reference to a future matchup participant."""
+
+    kind: str  # 'seed' or 'winner'
+    league: Optional[str] = None
+    seed: Optional[int] = None
+    source_round: Optional[str] = None
+    slot: int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "league": self.league,
+            "seed": self.seed,
+            "source_round": self.source_round,
+            "slot": self.slot,
+        }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "ParticipantRef":
+        return ParticipantRef(
+            kind=str(data.get("kind", "seed")),
+            league=data.get("league"),
+            seed=data.get("seed"),
+            source_round=data.get("source_round"),
+            slot=int(data.get("slot", 0)),
+        )
+
+
+@dataclass
+class RoundPlanEntry:
+    """Plan for creating a matchup once prerequisite winners are known."""
+
+    series_key: str
+    sources: List[ParticipantRef] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "series_key": self.series_key,
+            "sources": [ref.to_dict() for ref in self.sources],
+        }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "RoundPlanEntry":
+        return RoundPlanEntry(
+            series_key=str(data.get("series_key", "cs")),
+            sources=[ParticipantRef.from_dict(ref) for ref in (data.get("sources") or [])],
+        )
+
+
+@dataclass
 class Round:
     name: str  # e.g. "WC", "DS", "CS", "WS"
     matchups: List[Matchup] = field(default_factory=list)
+    plan: List[RoundPlanEntry] = field(default_factory=list)
 
 
 @dataclass
@@ -68,6 +146,7 @@ class PlayoffBracket:
     champion: Optional[str] = None
     runner_up: Optional[str] = None
     schema_version: int = SCHEMA_VERSION
+    seeds_by_league: Dict[str, List[PlayoffTeam]] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         def team_to_dict(t: PlayoffTeam) -> Dict[str, Any]:
@@ -106,10 +185,12 @@ class PlayoffBracket:
             "year": self.year,
             "champion": self.champion,
             "runner_up": self.runner_up,
+            "seeds": {lg: [team_to_dict(t) for t in (teams or [])] for lg, teams in (self.seeds_by_league or {}).items()},
             "rounds": [
                 {
                     "name": r.name,
                     "matchups": [matchup_to_dict(m) for m in r.matchups],
+                    "plan": [entry.to_dict() for entry in getattr(r, "plan", [])],
                 }
                 for r in self.rounds
             ],
@@ -150,15 +231,26 @@ class PlayoffBracket:
             )
 
         rounds = [
-            Round(name=str(r.get("name", "")), matchups=[matchup_from_dict(m) for m in (r.get("matchups") or [])])
+            Round(
+                name=str(r.get("name", "")),
+                matchups=[matchup_from_dict(m) for m in (r.get("matchups") or [])],
+                plan=[RoundPlanEntry.from_dict(p) for p in (r.get("plan") or [])],
+            )
             for r in (data.get("rounds") or [])
         ]
+        seeds_raw = data.get("seeds") or {}
+        seeds_by_league: Dict[str, List[PlayoffTeam]] = {}
+        for lg, teams in seeds_raw.items():
+            if isinstance(teams, list):
+                seeds_by_league[str(lg)] = [team_from_dict(t) for t in teams]
+
         br = PlayoffBracket(
             year=int(data.get("year", 0)),
             rounds=rounds,
             champion=data.get("champion"),
             runner_up=data.get("runner_up"),
             schema_version=int(data.get("schema_version", SCHEMA_VERSION)),
+            seeds_by_league=seeds_by_league,
         )
         return br
 
@@ -313,73 +405,213 @@ def _seed_league(league_name: str, league_teams: List[Any], standings: Dict[str,
     return seeded
 
 
+def _build_league_rounds(league: str, seeds: List[PlayoffTeam], cfg: Any) -> Tuple[List[Round], Optional[str]]:
+    rounds: List[Round] = []
+    final_round_name: Optional[str] = None
+
+    if len(seeds) < 2:
+        return rounds, final_round_name
+
+    seed_lookup = {team.seed: team for team in seeds}
+
+    def team_for(seed_number: int) -> Optional[PlayoffTeam]:
+        return seed_lookup.get(seed_number)
+
+    def add_match(round_obj: Round, high_seed: int, low_seed: int, series_key: str) -> None:
+        high = team_for(high_seed)
+        low = team_for(low_seed)
+        if high is None or low is None:
+            return
+        round_obj.matchups.append(
+            Matchup(high=high, low=low, config=_series_config_from_settings(cfg, series_key))
+        )
+
+    n = len(seeds)
+
+    if n == 2:
+        cs = Round(name=f"{league} CS")
+        add_match(cs, 1, 2, "cs")
+        rounds.append(cs)
+        final_round_name = cs.name
+        return rounds, final_round_name
+
+    if n == 3:
+        wc = Round(name=f"{league} WC")
+        add_match(wc, 2, 3, "wildcard")
+        rounds.append(wc)
+
+        cs = Round(name=f"{league} CS")
+        cs.plan.append(
+            RoundPlanEntry(
+                series_key="cs",
+                sources=[
+                    ParticipantRef(kind="seed", league=league, seed=1),
+                    ParticipantRef(kind="winner", source_round=wc.name, slot=0),
+                ],
+            )
+        )
+        rounds.append(cs)
+        final_round_name = cs.name
+        return rounds, final_round_name
+
+    if n == 4:
+        ds = Round(name=f"{league} DS")
+        add_match(ds, 1, 4, "ds")
+        add_match(ds, 2, 3, "ds")
+        rounds.append(ds)
+
+        cs = Round(name=f"{league} CS")
+        cs.plan.append(
+            RoundPlanEntry(
+                series_key="cs",
+                sources=[
+                    ParticipantRef(kind="winner", source_round=ds.name, slot=0),
+                    ParticipantRef(kind="winner", source_round=ds.name, slot=1),
+                ],
+            )
+        )
+        rounds.append(cs)
+        final_round_name = cs.name
+        return rounds, final_round_name
+
+    if n == 5:
+        wc = Round(name=f"{league} WC")
+        add_match(wc, 4, 5, "wildcard")
+        rounds.append(wc)
+
+        ds = Round(name=f"{league} DS")
+        add_match(ds, 2, 3, "ds")
+        ds.plan.append(
+            RoundPlanEntry(
+                series_key="ds",
+                sources=[
+                    ParticipantRef(kind="seed", league=league, seed=1),
+                    ParticipantRef(kind="winner", source_round=wc.name, slot=0),
+                ],
+            )
+        )
+        rounds.append(ds)
+
+        cs = Round(name=f"{league} CS")
+        cs.plan.append(
+            RoundPlanEntry(
+                series_key="cs",
+                sources=[
+                    ParticipantRef(kind="winner", source_round=ds.name, slot=0),
+                    ParticipantRef(kind="winner", source_round=ds.name, slot=1),
+                ],
+            )
+        )
+        rounds.append(cs)
+        final_round_name = cs.name
+        return rounds, final_round_name
+
+    # n >= 6 -> treat as 6 with wildcards
+    wc = Round(name=f"{league} WC")
+    add_match(wc, 3, 6, "wildcard")
+    add_match(wc, 4, 5, "wildcard")
+    rounds.append(wc)
+
+    ds = Round(name=f"{league} DS")
+    ds.plan.append(
+        RoundPlanEntry(
+            series_key="ds",
+            sources=[
+                ParticipantRef(kind="seed", league=league, seed=1),
+                ParticipantRef(kind="winner", source_round=wc.name, slot=0),
+            ],
+        )
+    )
+    ds.plan.append(
+        RoundPlanEntry(
+            series_key="ds",
+            sources=[
+                ParticipantRef(kind="seed", league=league, seed=2),
+                ParticipantRef(kind="winner", source_round=wc.name, slot=1),
+            ],
+        )
+    )
+    rounds.append(ds)
+
+    cs = Round(name=f"{league} CS")
+    cs.plan.append(
+        RoundPlanEntry(
+            series_key="cs",
+            sources=[
+                ParticipantRef(kind="winner", source_round=ds.name, slot=0),
+                ParticipantRef(kind="winner", source_round=ds.name, slot=1),
+            ],
+        )
+    )
+    rounds.append(cs)
+    final_round_name = cs.name
+    return rounds, final_round_name
+
+
+
+
 def generate_bracket(standings: Dict[str, Dict[str, Any]], teams: List[Any], cfg: Any) -> PlayoffBracket:
-    """Generate an initial bracket based on final standings and config.
+    """Generate an initial bracket based on final standings and configuration."""
 
-    The bracket includes explicit first-round pairings per league (WC or DS
-    depending on size). Later rounds are created with empty matchups and will
-    be populated after previous rounds complete.
-    """
-
-    # Infer leagues from team divisions (or config override)
     div_map: Dict[str, str] = dict(getattr(cfg, "division_to_league", {}) or {})
     by_league: Dict[str, List[Any]] = {}
-    for t in teams:
-        league = _infer_league(getattr(t, "division", ""), div_map) or ""
-        by_league.setdefault(league or "LEAGUE", []).append(t)
+    for team in teams:
+        league = _infer_league(getattr(team, "division", ""), div_map) or ""
+        by_league.setdefault(league or "LEAGUE", []).append(team)
 
-    # Produce seeds per league
     leagues = sorted(by_league.keys())
     seeds_by_league: Dict[str, List[PlayoffTeam]] = {}
-    for lg in leagues:
-        seeds_by_league[lg] = _seed_league(lg, by_league[lg], standings, cfg)
-
-    # Build rounds per league
     rounds: List[Round] = []
-    num = int(getattr(cfg, "num_playoff_teams_per_league", 6) or 6)
+    league_finals: Dict[str, str] = {}
 
-    def cfg_for(length: int) -> SeriesConfig:
-        pats = dict(getattr(cfg, "home_away_patterns", {}) or {3: [1, 1, 1], 5: [2, 2, 1], 7: [2, 3, 2]})
-        return SeriesConfig(length=length, pattern=list(pats.get(length, [])))
-
-    for lg in leagues:
-        seeds = seeds_by_league.get(lg, [])
-        if num == 4:
-            # Division Series (2 matchups)
-            r_ds = Round(name=f"{lg} DS")
-            if len(seeds) >= 4:
-                r_ds.matchups.append(Matchup(high=seeds[0], low=seeds[3], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("ds", 5)))))
-                r_ds.matchups.append(Matchup(high=seeds[1], low=seeds[2], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("ds", 5)))))
-            rounds.append(r_ds)
-            rounds.append(Round(name=f"{lg} CS"))
-        elif num == 6:
-            # Wildcard (2 matchups), byes for seeds 1 and 2
-            r_wc = Round(name=f"{lg} WC")
-            if len(seeds) >= 6:
-                r_wc.matchups.append(Matchup(high=seeds[2], low=seeds[5], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("wildcard", 3)))))
-                r_wc.matchups.append(Matchup(high=seeds[3], low=seeds[4], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("wildcard", 3)))))
-            rounds.append(r_wc)
-            rounds.append(Round(name=f"{lg} DS"))
-            rounds.append(Round(name=f"{lg} CS"))
+    for league in leagues:
+        seeded = _seed_league(league, by_league[league], standings, cfg)
+        default_slots = int(getattr(cfg, "num_playoff_teams_per_league", 6) or 6)
+        slot_fn = getattr(cfg, "slots_for_league", None)
+        if callable(slot_fn):
+            try:
+                slots = int(slot_fn(len(by_league[league])))
+            except Exception:
+                slots = default_slots
         else:
-            # 8 teams -> Division Series (4 matchups)
-            r_ds = Round(name=f"{lg} DS")
-            if len(seeds) >= 8:
-                r_ds.matchups.append(Matchup(high=seeds[0], low=seeds[7], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("ds", 5)))))
-                r_ds.matchups.append(Matchup(high=seeds[1], low=seeds[6], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("ds", 5)))))
-                r_ds.matchups.append(Matchup(high=seeds[2], low=seeds[5], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("ds", 5)))))
-                r_ds.matchups.append(Matchup(high=seeds[3], low=seeds[4], config=cfg_for(int(getattr(cfg, "series_lengths", {}).get("ds", 5)))))
-            rounds.append(r_ds)
-            rounds.append(Round(name=f"{lg} CS"))
+            slots = default_slots
 
-    # Final
-    if len(leagues) >= 2:
-        rounds.append(Round(name="WS"))
-    else:
-        rounds.append(Round(name="Final"))
+        slots = min(slots, len(seeded))
+        if slots < 2:
+            continue
+
+        seeds = seeded[:slots]
+        seeds_by_league[league] = seeds
+
+        league_rounds, final_round_name = _build_league_rounds(league, seeds, cfg)
+        rounds.extend(league_rounds)
+        if final_round_name:
+            league_finals[league] = final_round_name
+
+    if len(league_finals) >= 2:
+        contenders = sorted(league_finals.keys())[:2]
+        ws = Round(name="WS")
+        ws.plan.append(
+            RoundPlanEntry(
+                series_key="ws",
+                sources=[
+                    ParticipantRef(kind="winner", source_round=league_finals[contenders[0]], slot=0),
+                    ParticipantRef(kind="winner", source_round=league_finals[contenders[1]], slot=0),
+                ],
+            )
+        )
+        rounds.append(ws)
+    elif len(league_finals) == 1:
+        # Single-league setup: rename the league final so champion resolution works.
+        (_, final_name), = league_finals.items()
+        for rnd in rounds:
+            if rnd.name == final_name:
+                rnd.name = "Final"
+                break
 
     year = _get_year_from_schedule()
-    return PlayoffBracket(year=year, rounds=rounds)
+    return PlayoffBracket(year=year, rounds=rounds, seeds_by_league=seeds_by_league)
+
 
 
 # --- Series simulation (Ticket 3) ------------------------------------------------------
@@ -473,101 +705,73 @@ def _league_from_round_name(name: str) -> Optional[str]:
 
 
 def _populate_next_round(bracket: PlayoffBracket, cfg: Any) -> None:
-    """Populate the next round's matchups if the previous round has winners."""
+    """Populate planned matchups when prerequisites are met."""
 
-    # Handle per-league transitions WC->DS and DS->CS
+    if not bracket.rounds:
+        return
+
     by_name: Dict[str, Round] = {r.name: r for r in bracket.rounds}
-    # For each league we find rounds
-    leagues = set()
-    for r in bracket.rounds:
-        lg = _league_from_round_name(r.name)
-        if lg:
-            leagues.add(lg)
+    lengths, patterns = _extract_series_settings(cfg)
+    seeds_map = getattr(bracket, "seeds_by_league", {}) or {}
 
     def make_cfg(key: str) -> SeriesConfig:
-        length = int(getattr(cfg, "series_lengths", {}).get(key, 7))
-        pats = dict(getattr(cfg, "home_away_patterns", {}) or {3: [1, 1, 1], 5: [2, 2, 1], 7: [2, 3, 2]})
-        return SeriesConfig(length=length, pattern=list(pats.get(length, [])))
+        length = int(lengths.get(key, _DEFAULT_SERIES_LENGTHS.get(key, 7)))
+        pattern = list(patterns.get(length, []))
+        return SeriesConfig(length=length, pattern=pattern)
 
-    for lg in leagues:
-        r_wc = by_name.get(f"{lg} WC")
-        r_ds = by_name.get(f"{lg} DS")
-        r_cs = by_name.get(f"{lg} CS")
-        # WC complete -> create DS matchups: #1 vs lower winner, #2 vs other
-        if r_wc and r_ds and not r_ds.matchups:
-            winners = [m.winner for m in r_wc.matchups if m.winner]
-            if len(winners) == len(r_wc.matchups) and len(r_wc.matchups) > 0:
-                # Determine seeds for winners
-                def seed_of(team_id: str) -> int:
-                    # Look in a WC matchup participant
-                    for m in r_wc.matchups:
-                        if m.high.team_id == team_id:
-                            return m.high.seed
-                        if m.low.team_id == team_id:
-                            return m.low.seed
-                    return 99
+    def seed_team(ref: ParticipantRef) -> Optional[PlayoffTeam]:
+        league = ref.league or ""
+        seed_no = ref.seed
+        if seed_no is None:
+            return None
+        for team in seeds_map.get(league, []):
+            if team.seed == seed_no:
+                return team
+        return None
 
-                winners_sorted = sorted(winners, key=seed_of)
-                # Find top seeds (1 and 2) from any prior seeding (from WC matchups' opponents)
-                top1 = None
-                top2 = None
-                # Scan all teams seen in WC to get league seeds 1 and 2 via minimal seed numbers
-                seen = []
-                for m in r_wc.matchups:
-                    seen.extend([m.high, m.low])
-                if seen:
-                    seen_sorted = sorted(seen, key=lambda t: t.seed)
-                    # Note: 1 and 2 might not be in WC if they had byes; create phantom entries
-                    # We synthesize placeholders for seeds 1 and 2 using league name
-                    seeds_present = {t.seed for t in seen_sorted}
-                    # Default placeholders
-                    top1 = next((t for t in seen_sorted if t.seed == 1), None) or PlayoffTeam(team_id=f"{lg}#1", seed=1, league=lg, wins=0)
-                    top2 = next((t for t in seen_sorted if t.seed == 2), None) or PlayoffTeam(team_id=f"{lg}#2", seed=2, league=lg, wins=0)
-                if winners_sorted:
-                    # Lowest seed winner faces #1
-                    low_w = winners_sorted[0]
-                    hi_w = winners_sorted[1] if len(winners_sorted) > 1 else winners_sorted[0]
-                    r_ds.matchups.append(Matchup(high=top1, low=next((t for t in seen if t.team_id == low_w), PlayoffTeam(team_id=low_w, seed=99, league=lg, wins=0)), config=make_cfg("ds")))
-                    r_ds.matchups.append(Matchup(high=top2, low=next((t for t in seen if t.team_id == hi_w), PlayoffTeam(team_id=hi_w, seed=99, league=lg, wins=0)), config=make_cfg("ds")))
+    def round_winner(ref: ParticipantRef) -> Optional[PlayoffTeam]:
+        source_round = by_name.get(ref.source_round or "")
+        if not source_round or ref.slot >= len(source_round.matchups):
+            return None
+        matchup = source_round.matchups[ref.slot]
+        win_id = matchup.winner
+        if not win_id:
+            return None
+        if matchup.high.team_id == win_id:
+            return matchup.high
+        if matchup.low.team_id == win_id:
+            return matchup.low
+        return None
 
-        # DS complete -> create CS matchup
-        if r_ds and r_cs and not r_cs.matchups:
-            winners = [m.winner for m in r_ds.matchups if m.winner]
-            if len(winners) == len(r_ds.matchups) and len(winners) >= 2:
-                # Home field to lower numerical seed if we carried them through
-                participants: List[PlayoffTeam] = []
-                for team_id in winners[:2]:
-                    # Find seed from DS matchups
-                    for m in r_ds.matchups:
-                        if m.high.team_id == team_id:
-                            participants.append(m.high)
-                            break
-                        if m.low.team_id == team_id:
-                            participants.append(m.low)
-                            break
-                if len(participants) == 2:
-                    participants.sort(key=lambda t: t.seed)
-                    r_cs.matchups.append(Matchup(high=participants[0], low=participants[1], config=make_cfg("cs")))
+    for rnd in bracket.rounds:
+        if not rnd.plan:
+            continue
+        existing_pairs = {tuple(sorted((m.high.team_id, m.low.team_id))) for m in rnd.matchups}
+        for entry in rnd.plan:
+            participants: List[PlayoffTeam] = []
+            for ref in entry.sources:
+                team: Optional[PlayoffTeam] = None
+                if ref.kind == "seed":
+                    team = seed_team(ref)
+                elif ref.kind == "winner":
+                    team = round_winner(ref)
+                if team is None:
+                    participants = []
+                    break
+                participants.append(team)
 
-    # CS complete in two leagues -> WS matchup
-    r_ws = by_name.get("WS") or by_name.get("Final")
-    if r_ws and not r_ws.matchups:
-        # Collect league CS winners by league key
-        winners_by_lg: Dict[str, PlayoffTeam] = {}
-        for r in bracket.rounds:
-            if r.name.endswith(" CS") and r.matchups and all(m.winner for m in r.matchups):
-                lg = r.name.split()[0]
-                # Winner is team_id; locate its seeded object from the CS matchup
-                win_id = r.matchups[0].winner
-                for side in (r.matchups[0].high, r.matchups[0].low):
-                    if side.team_id == win_id:
-                        winners_by_lg[lg] = side
-                        break
-        if len(winners_by_lg) >= 2:
-            lgs = sorted(winners_by_lg.keys())
-            a, b = winners_by_lg[lgs[0]], winners_by_lg[lgs[1]]
-            home, away = (a, b) if a.seed < b.seed else (b, a)
-            r_ws.matchups.append(Matchup(high=home, low=away, config=make_cfg("ws")))
+            if len(participants) != 2:
+                continue
+
+            pair_key = tuple(sorted((participants[0].team_id, participants[1].team_id)))
+            if pair_key in existing_pairs:
+                continue
+
+            participants.sort(key=lambda t: (t.seed, -t.wins, -t.run_diff, t.team_id))
+            high, low = participants[0], participants[1]
+            rnd.matchups.append(Matchup(high=high, low=low, config=make_cfg(entry.series_key)))
+            existing_pairs.add(pair_key)
+
 
 
 def simulate_playoffs(bracket: PlayoffBracket, *, simulate_game=None, persist_cb=None) -> PlayoffBracket:
@@ -670,6 +874,8 @@ __all__ = [
     "GameResult",
     "SeriesConfig",
     "Matchup",
+    "ParticipantRef",
+    "RoundPlanEntry",
     "Round",
     "PlayoffBracket",
     "save_bracket",
