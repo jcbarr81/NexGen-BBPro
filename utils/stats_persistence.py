@@ -182,9 +182,34 @@ def merge_daily_history(
         except Exception:
             continue
 
+    # Limit merges to shard dates within the current schedule window when
+    # a schedule is present. This prevents stale shards from previous seasons
+    # re-populating the canonical history after a reset.
+    season_start: str | None = None
+    season_end: str | None = None
+    try:
+        import csv as _csv
+        sched_path = get_base_dir() / "data" / "schedule.csv"
+        if sched_path.exists():
+            with sched_path.open("r", encoding="utf-8", newline="") as _fh:
+                rows = list(_csv.DictReader(_fh))
+            if rows:
+                dates = [str(r.get("date") or "").strip() for r in rows]
+                dates = [d for d in dates if d]
+                if dates:
+                    season_start = min(dates)
+                    season_end = max(dates)
+    except Exception:
+        # Best effort only
+        season_start = season_start or None
+        season_end = season_end or None
+
     shard_files = sorted([p for p in shards_path.glob("*.json") if p.is_file()])
     for sf in shard_files:
         date_token = sf.stem  # YYYY-MM-DD
+        if season_start and season_end and not (season_start <= date_token <= season_end):
+            # Outside active schedule window; skip
+            continue
         if last_date and date_token <= last_date:
             # Skip shards up to and including last merged date
             continue

@@ -627,6 +627,17 @@ class SeasonProgressWindow(QDialog):
             _merge()
         except Exception:
             pass
+        # Clear loader caches so other windows see fresh stats immediately
+        try:
+            from utils.player_loader import load_players_from_csv as _lp
+            _lp.cache_clear()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            from utils.roster_loader import load_roster as _lr
+            _lr.cache_clear()  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
     def _simulate_span(self, days: int, label: str) -> None:
         """Simulate multiple days with a progress dialog."""
@@ -805,6 +816,17 @@ class SeasonProgressWindow(QDialog):
         try:  # pragma: no cover - best effort merge
             from utils.stats_persistence import merge_daily_history as _merge
             _merge()
+        except Exception:
+            pass
+        # Clear loader caches so other windows see fresh stats immediately
+        try:
+            from utils.player_loader import load_players_from_csv as _lp
+            _lp.cache_clear()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            from utils.roster_loader import load_roster as _lr
+            _lr.cache_clear()  # type: ignore[attr-defined]
         except Exception:
             pass
 

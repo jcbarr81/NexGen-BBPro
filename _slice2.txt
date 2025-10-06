@@ -1,0 +1,166 @@
+def merge_daily_history(
+    *,
+    path: str | Path = "data/season_stats.json",
+    shards_dir: str | Path = "data/season_history",
+) -> Path:
+    """Incrementally merge per-day snapshots into the canonical history.
+
+    - Appends only new shards beyond the last merged date to the ``history``
+      list to keep merges O(1) per day.
+    - Keeps ``players``/``teams`` equal to the latest snapshot values.
+    """
+
+    file_path = _resolve_path(path)
+    shards_path = _resolve_path(shards_dir)
+    # Load current canonical to preserve any existing content.
+    stats = load_stats(file_path)
+    players = stats.get("players", {})
+    teams = stats.get("teams", {})
+    history: list[dict[str, Any]] = list(stats.get("history", []) or [])
+
+    # Determine last merged date if present
+    last_date = None
+    if history:
+        try:
+            last_date_val = history[-1].get("date")
+            if last_date_val:
+                last_date = str(last_date_val)
+        except Exception:
+            last_date = None
+
+    # Build a set of already merged dates to guard against duplicates
+    merged_dates = set()
+    for entry in history:
+        try:
+            d = entry.get("date")
+            if d:
+                merged_dates.add(str(d))
+        except Exception:
+            continue
+
+    shard_files = sorted([p for p in shards_path.glob("*.json") if p.is_file()])
+    for sf in shard_files:
+        date_token = sf.stem  # YYYY-MM-DD
+        if last_date and date_token <= last_date:
+            # Skip shards up to and including last merged date
+            continue
+        if date_token in merged_dates:
+            continue
+        try:
+            with sf.open("r", encoding="utf-8") as fh:
+                snap = json.load(fh)
+            if not isinstance(snap, dict):
+                continue
+            h_entry = {
+                "players": snap.get("players", {}),
+                "teams": snap.get("teams", {}),
+                "date": str(snap.get("date") or date_token),
+            }
+            history.append(h_entry)
+            merged_dates.add(h_entry["date"])  # keep set in sync
+            # Update latest players/teams view
+            players = h_entry["players"] or players
+            teams = h_entry["teams"] or teams
+        except Exception:
+            continue
+
+    # Persist merged canonical file
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open("w", encoding="utf-8") as f:
+        json.dump({"players": players, "teams": teams, "history": history}, f, indent=2)
+    return file_path
+
+
+def load_stats(path: str | Path = "data/season_stats.json") -> Dict[str, Any]:
+    file_path = _resolve_path(path)
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    return {
+        "players": data.get("players", {}),
+        "teams": data.get("teams", {}),
+        "history": data.get("history", []),
+    }
+
+
+def save_stats(
+    players: Iterable[Any],
+    teams: Iterable[Any],
+    path: str | Path = "data/season_stats.json",
+) -> None:
+    """Persist season statistics with an inter-process file lock."""
+
+    file_path = _resolve_path(path)
+    lock_path = file_path.with_suffix(file_path.suffix + ".lock")
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # ``"w"`` would truncate the file and prevent other processes from
+    # opening it on Windows, leading to ``PermissionError`` when multiple
+    # simulations attempt to write stats concurrently.  Using ``"a+"`` keeps
+    # the file length intact and allows concurrent opens while the explicit
+    # lock below serializes writes.
+    with lock_path.open("a+") as lock_file:
+        with _locked(lock_file):
+            stats = load_stats(file_path)
+            player_stats = stats.get("players", {})
+            for player in players:
+                season = getattr(player, "season_stats", None)
+                if season:
+                    player_stats[player.player_id] = season
+            team_stats = stats.get("teams", {})
+            for team in teams:
+                season = getattr(team, "season_stats", None)
+                if season:
+                    team_stats[team.team_id] = season
+            history = stats.get("history", [])
+
+            # If sharding is enabled, write a bounded per-day snapshot instead of
+            # appending to the canonical history list. This keeps per-game writes
+            # small while preserving the ability to merge a full history later.
+            # Daily sharding is enabled by default to keep writes bounded.
+            if _truthy_env("PB_SHARD_HISTORY", True):
+                try:
+                    write_daily_snapshot(players, teams)
+                except Exception:
+                    # Best effort: even if sharded write fails, continue to update
+                    # canonical players/teams below to avoid losing state.
+                    pass
+            else:
+                # Optional: disable or cap history growth to avoid ever-growing writes.
+                disable_history = _truthy_env("PB_DISABLE_HISTORY", False)
+                if not disable_history:
+                    history.append(
+                        {
+                            "players": {
+                                p.player_id: getattr(p, "season_stats", {}) for p in players
+                            },
+                            "teams": {
+                                t.team_id: getattr(t, "season_stats", {}) for t in teams
+                            },
+                            "date": _current_sim_date_str(),
+                        }
+                    )
+                    # Cap history length if PB_HISTORY_MAX is set (non-negative int).
+                    max_hist_raw = os.getenv("PB_HISTORY_MAX") or os.getenv(
+                        "SEASON_HISTORY_MAX"
+                    )
+                    if max_hist_raw is not None:
+                        try:
+                            max_hist = int(str(max_hist_raw).strip())
+                            if max_hist >= 0:
+                                history = history[-max_hist:] if max_hist > 0 else []
+                        except ValueError:
+                            # Ignore invalid values
+                            pass
+            with file_path.open("w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "players": player_stats,
+                        "teams": team_stats,
+                        "history": history,
+                    },
+                    f,
+                    indent=2,
+                )

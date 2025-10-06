@@ -66,12 +66,20 @@ STATS_FILE = DATA_DIR / "season_stats.json"
 
 
 def _games_from_history() -> Dict[str, int]:
-    """Return max games played per player from history snapshots."""
+    """Return inferred games played per player from history snapshots.
+
+    Uses day-to-day plate-appearance deltas to avoid trusting any pre-existing
+    ``g`` values embedded in snapshots, which can carry over from previous
+    seasons. If a player's PA increases on a snapshot day, we count that as a
+    game appearance. This mirrors the heuristic used by the Team Stats view and
+    is robust even when fielding appearances aren't recorded for pinch hitters.
+    """
     try:
         stats = _load_season_stats()
     except Exception:
         return {}
     history = stats.get('history', [])
+    last_pa: Dict[str, int] = {}
     games: Dict[str, int] = {}
     for snapshot in history:
         players = snapshot.get('players', {}) if isinstance(snapshot, dict) else {}
@@ -80,15 +88,18 @@ def _games_from_history() -> Dict[str, int]:
         for player_id, data in players.items():
             if not isinstance(data, dict):
                 continue
-            value = data.get('g', data.get('games'))
-            if value is None:
-                continue
             try:
-                games_played = int(float(value))
-            except (TypeError, ValueError):
-                continue
-            if games_played > games.get(player_id, 0):
-                games[player_id] = games_played
+                pa = int(data.get('pa', 0) or 0)
+            except Exception:
+                pa = 0
+            prev = last_pa.get(player_id)
+            if prev is None:
+                if pa > 0:
+                    games[player_id] = games.get(player_id, 0) + 1
+            else:
+                if pa > prev:
+                    games[player_id] = games.get(player_id, 0) + 1
+            last_pa[player_id] = pa
     return games
 
 
@@ -175,10 +186,21 @@ class LeagueStatsWindow(QDialog):
         teams = list(teams)
         player_entries, team_stats = _load_players_with_stats()
 
+        # Determine a reasonable upper bound on games from team totals so
+        # individual players never exceed the number of games any team has
+        # actually played.
+        try:
+            games_list = [int(v.get("g", v.get("games", 0)) or 0) for v in team_stats.values()]
+            max_team_games = max(games_list) if games_list else 0
+        except Exception:
+            max_team_games = 0
+
         hist_games = _games_from_history()
         for e in player_entries:
             g = int(e.season_stats.get('g', 0) or 0)
             g = max(g, int(hist_games.get(e.player_id, 0)))
+            if max_team_games:
+                g = min(g, max_team_games)
             e.season_stats['g'] = g
 
 

@@ -86,6 +86,11 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.path_utils import get_base_dir
 from utils.stats_persistence import load_stats as _load_season_stats
+try:
+    # Best-effort import; not critical for headless tests
+    from utils.stats_persistence import merge_daily_history as _merge_daily_history  # type: ignore
+except Exception:  # pragma: no cover - optional import
+    _merge_daily_history = None  # type: ignore
 from .stat_helpers import (
     format_number,
     format_ip,
@@ -176,6 +181,12 @@ def _normalize_team_stats(data: Dict[str, Any] | None) -> Dict[str, Any]:
 def _games_from_history() -> dict[str, int]:
     # Load via stats_persistence to ensure identical resolution as the simulator
     try:
+        # Ensure canonical history is up to date with daily shards
+        if _merge_daily_history is not None:
+            try:
+                _merge_daily_history()
+            except Exception:
+                pass
         data = _load_season_stats()
     except Exception:
         return {}
@@ -337,14 +348,19 @@ class TeamStatsWindow(QDialog):
         _call_if_exists(self.tabs, "setMovable", False)
         layout.addWidget(self.tabs, 1)
 
+        # Guard: if the active roster is empty or unresolved, fall back to all players
+        act_ids = list(self.roster.act)
+        if not act_ids:
+            act_ids = list(self.players.keys())
+
         batter_ids = [
             pid
-            for pid in self.roster.act
+            for pid in act_ids
             if pid in self.players and not getattr(self.players[pid], "is_pitcher", False)
         ]
         pitcher_ids = [
             pid
-            for pid in self.roster.act
+            for pid in act_ids
             if pid in self.players and getattr(self.players[pid], "is_pitcher", False)
         ]
 

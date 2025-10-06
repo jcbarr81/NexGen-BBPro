@@ -1,548 +1,349 @@
-[2025-10-04 09:04:26] No unsigned players available
-[2025-10-04 09:04:27] Training camp completed; players marked ready
-[2025-10-04 09:04:28] Generated regular season schedule with 972 games
-[2025-10-04 09:04:28] Season advanced to Regular Season
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-01: 6 games; 4 one-run; 1 extras. NEW at BUF â€” 3-2; MIN at LOS â€” 1-3; HOU at PIT â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-02: 6 games; 2 one-run; 0 extras. BUF at LOS â€” 1-3; HOU at NEW â€” 1-6; MIN at ATL â€” 1-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-03: 6 games; 0 one-run; 1 extras. HOU at BUF â€” 3-0; LOS at ATL â€” 3-0; LAS at NEW â€” 5-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-04: 6 games; 2 one-run; 1 extras. BUF at ATL â€” 2-1; LAS at HOU â€” 1-4; LOS at WAS â€” 0-4
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-05: 6 games; 2 one-run; 0 extras. LAS at BUF â€” 1-0; ATL at WAS â€” 2-0; CIN at HOU â€” 0-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-06: 6 games; 5 one-run; 2 extras. BUF at WAS â€” 2-3; CIN at LAS â€” 1-2; ATL at BAL â€” 3-7
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-07: 6 games; 1 one-run; 1 extras. CIN at BUF â€” 0-2; WAS at BAL â€” 2-4; GRE at LAS â€” 3-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-08: 6 games; 3 one-run; 3 extras. BUF at BAL â€” 1-6; GRE at CIN â€” 0-2; WAS at PIT â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-09: 6 games; 2 one-run; 2 extras. GRE at BUF â€” 0-4; BAL at PIT â€” 1-0; MIN at CIN â€” 1-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-10: 6 games; 1 one-run; 0 extras. BUF at PIT â€” 0-2; MIN at GRE â€” 0-2; BAL at NEW â€” 1-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-11: 6 games; 2 one-run; 1 extras. MIN at BUF â€” 3-0; PIT at NEW â€” 0-3; LOS at GRE â€” 6-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-18: 6 games; 2 one-run; 2 extras. BUF at NEW â€” 2-4; LOS at MIN â€” 0-2; PIT at HOU â€” 1-4
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-19: 6 games; 3 one-run; 1 extras. LOS at BUF â€” 2-3; NEW at HOU â€” 2-3; ATL at MIN â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-20: 6 games; 3 one-run; 1 extras. BUF at HOU â€” 1-2; ATL at LOS â€” 0-5; NEW at LAS â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-21: 6 games; 2 one-run; 2 extras. ATL at BUF â€” 0-2; HOU at LAS â€” 5-3; WAS at LOS â€” 1-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-22: 6 games; 3 one-run; 2 extras. BUF at LAS â€” 2-0; WAS at ATL â€” 0-1; HOU at CIN â€” 2-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-23: 6 games; 0 one-run; 1 extras. WAS at BUF â€” 2-4; LAS at CIN â€” 0-3; BAL at ATL â€” 5-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-24: 6 games; 3 one-run; 2 extras. BUF at CIN â€” 0-1; BAL at WAS â€” 1-2; LAS at GRE â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-25: 6 games; 6 one-run; 2 extras. BAL at BUF â€” 2-1; CIN at GRE â€” 3-2; PIT at WAS â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-26: 6 games; 2 one-run; 1 extras. BUF at GRE â€” 4-3; PIT at BAL â€” 1-3; CIN at MIN â€” 1-4
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-27: 6 games; 3 one-run; 0 extras. PIT at BUF â€” 6-3; GRE at MIN â€” 2-3; NEW at BAL â€” 3-5
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-28: 6 games; 2 one-run; 2 extras. BUF at MIN â€” 2-3; NEW at PIT â€” 2-0; GRE at LOS â€” 3-5
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-29: 6 games; 1 one-run; 2 extras. NEW at BUF â€” 0-2; MIN at LOS â€” 3-0; HOU at PIT â€” 4-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-04-30: 6 games; 3 one-run; 1 extras. BUF at LOS â€” 0-1; HOU at NEW â€” 0-1; MIN at ATL â€” 0-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-01: 6 games; 2 one-run; 0 extras. HOU at BUF â€” 1-4; LOS at ATL â€” 4-2; LAS at NEW â€” 2-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-02: 6 games; 2 one-run; 1 extras. BUF at ATL â€” 2-0; LAS at HOU â€” 0-2; LOS at WAS â€” 0-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-03: 6 games; 4 one-run; 0 extras. LAS at BUF â€” 2-1; ATL at WAS â€” 0-1; CIN at HOU â€” 2-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-04: 6 games; 4 one-run; 1 extras. BUF at WAS â€” 1-9; CIN at LAS â€” 4-3; ATL at BAL â€” 2-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-05: 6 games; 4 one-run; 0 extras. CIN at BUF â€” 2-1; WAS at BAL â€” 2-5; GRE at LAS â€” 2-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-06: 6 games; 5 one-run; 3 extras. BUF at BAL â€” 1-7; GRE at CIN â€” 0-1; WAS at PIT â€” 3-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-07: 6 games; 3 one-run; 1 extras. GRE at BUF â€” 3-2; BAL at PIT â€” 3-6; MIN at CIN â€” 0-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-08: 6 games; 2 one-run; 0 extras. BUF at PIT â€” 0-1; MIN at GRE â€” 1-2; BAL at NEW â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-09: 6 games; 3 one-run; 1 extras. MIN at BUF â€” 5-3; PIT at NEW â€” 1-0; LOS at GRE â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-16: 6 games; 2 one-run; 1 extras. BUF at NEW â€” 0-1; LOS at MIN â€” 2-0; PIT at HOU â€” 4-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-17: 6 games; 4 one-run; 3 extras. LOS at BUF â€” 4-0; NEW at HOU â€” 4-3; ATL at MIN â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-18: 6 games; 1 one-run; 0 extras. BUF at HOU â€” 1-8; ATL at LOS â€” 2-1; NEW at LAS â€” 0-5
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-19: 6 games; 4 one-run; 0 extras. ATL at BUF â€” 1-0; HOU at LAS â€” 0-2; WAS at LOS â€” 1-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-20: 6 games; 3 one-run; 1 extras. BUF at LAS â€” 2-1; WAS at ATL â€” 2-1; HOU at CIN â€” 0-4
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-21: 6 games; 1 one-run; 2 extras. WAS at BUF â€” 5-1; LAS at CIN â€” 2-0; BAL at ATL â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-22: 6 games; 3 one-run; 2 extras. BUF at CIN â€” 2-1; BAL at WAS â€” 4-0; LAS at GRE â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-23: 6 games; 2 one-run; 1 extras. BAL at BUF â€” 4-1; CIN at GRE â€” 5-1; PIT at WAS â€” 1-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-24: 6 games; 1 one-run; 0 extras. BUF at GRE â€” 4-5; PIT at BAL â€” 0-3; CIN at MIN â€” 3-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-25: 6 games; 3 one-run; 0 extras. PIT at BUF â€” 1-2; GRE at MIN â€” 3-1; NEW at BAL â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-26: 6 games; 5 one-run; 2 extras. BUF at MIN â€” 2-1; NEW at PIT â€” 1-2; GRE at LOS â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-27: 6 games; 4 one-run; 2 extras. NEW at BUF â€” 2-1; MIN at LOS â€” 5-3; HOU at PIT â€” 3-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-28: 6 games; 0 one-run; 0 extras. BUF at LOS â€” 5-1; HOU at NEW â€” 2-5; MIN at ATL â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-29: 6 games; 3 one-run; 2 extras. HOU at BUF â€” 1-0; LOS at ATL â€” 4-1; LAS at NEW â€” 2-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-30: 6 games; 1 one-run; 2 extras. BUF at ATL â€” 2-0; LAS at HOU â€” 0-3; LOS at WAS â€” 3-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-05-31: 6 games; 1 one-run; 1 extras. LAS at BUF â€” 0-2; ATL at WAS â€” 2-8; CIN at HOU â€” 0-5
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-01: 6 games; 0 one-run; 1 extras. BUF at WAS â€” 1-8; CIN at LAS â€” 6-3; ATL at BAL â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-02: 6 games; 3 one-run; 2 extras. CIN at BUF â€” 2-3; WAS at BAL â€” 3-2; GRE at LAS â€” 0-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-03: 6 games; 4 one-run; 1 extras. BUF at BAL â€” 5-4; GRE at CIN â€” 0-2; WAS at PIT â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-04: 6 games; 3 one-run; 1 extras. GRE at BUF â€” 1-2; BAL at PIT â€” 7-2; MIN at CIN â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-05: 6 games; 4 one-run; 0 extras. BUF at PIT â€” 1-2; MIN at GRE â€” 0-3; BAL at NEW â€” 1-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-06: 6 games; 4 one-run; 3 extras. MIN at BUF â€” 1-2; PIT at NEW â€” 2-4; LOS at GRE â€” 1-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-13: 6 games; 1 one-run; 1 extras. BUF at NEW â€” 5-0; LOS at MIN â€” 6-8; PIT at HOU â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-14: 6 games; 2 one-run; 0 extras. LOS at BUF â€” 6-3; NEW at HOU â€” 0-1; ATL at MIN â€” 0-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-15: 6 games; 1 one-run; 1 extras. BUF at HOU â€” 0-8; ATL at LOS â€” 1-3; NEW at LAS â€” 2-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-16: 6 games; 5 one-run; 0 extras. ATL at BUF â€” 2-1; HOU at LAS â€” 1-2; WAS at LOS â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-17: 6 games; 1 one-run; 2 extras. BUF at LAS â€” 3-0; WAS at ATL â€” 3-0; HOU at CIN â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-18: 6 games; 3 one-run; 2 extras. WAS at BUF â€” 7-3; LAS at CIN â€” 0-3; BAL at ATL â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-19: 6 games; 5 one-run; 0 extras. BUF at CIN â€” 2-1; BAL at WAS â€” 0-4; LAS at GRE â€” 2-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-20: 6 games; 2 one-run; 0 extras. BAL at BUF â€” 4-1; CIN at GRE â€” 1-0; PIT at WAS â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-21: 6 games; 5 one-run; 1 extras. BUF at GRE â€” 2-1; PIT at BAL â€” 2-1; CIN at MIN â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-22: 6 games; 4 one-run; 0 extras. PIT at BUF â€” 1-0; GRE at MIN â€” 1-3; NEW at BAL â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-23: 6 games; 3 one-run; 1 extras. BUF at MIN â€” 2-3; NEW at PIT â€” 1-2; GRE at LOS â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-24: 6 games; 3 one-run; 0 extras. NEW at BUF â€” 0-3; MIN at LOS â€” 3-2; HOU at PIT â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-25: 6 games; 3 one-run; 0 extras. BUF at LOS â€” 6-1; HOU at NEW â€” 5-6; MIN at ATL â€” 4-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-26: 6 games; 2 one-run; 2 extras. HOU at BUF â€” 3-0; LOS at ATL â€” 5-1; LAS at NEW â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-27: 6 games; 4 one-run; 3 extras. BUF at ATL â€” 3-0; LAS at HOU â€” 4-3; LOS at WAS â€” 1-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-28: 6 games; 3 one-run; 0 extras. LAS at BUF â€” 1-0; ATL at WAS â€” 4-2; CIN at HOU â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-29: 6 games; 1 one-run; 1 extras. BUF at WAS â€” 1-2; CIN at LAS â€” 0-2; ATL at BAL â€” 0-3
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-06-30: 6 games; 5 one-run; 0 extras. CIN at BUF â€” 1-2; WAS at BAL â€” 1-2; GRE at LAS â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-01: 6 games; 4 one-run; 0 extras. BUF at BAL â€” 3-2; GRE at CIN â€” 3-2; WAS at PIT â€” 3-2
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-02: 6 games; 3 one-run; 2 extras. GRE at BUF â€” 5-3; BAL at PIT â€” 1-3; MIN at CIN â€” 0-1
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-03: 6 games; 2 one-run; 1 extras. BUF at PIT â€” 3-5; MIN at GRE â€” 1-3; BAL at NEW â€” 3-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-04: 6 games; 1 one-run; 0 extras. MIN at BUF â€” 4-3; PIT at NEW â€” 0-3; LOS at GRE â€” 2-4
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-11: 6 games; 3 one-run; 2 extras. BUF at NEW â€” 3-6; LOS at MIN â€” 7-6; PIT at HOU â€” 2-0
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-12: 6 games; 3 one-run; 1 extras. LOS at BUF â€” 7-1; NEW at HOU â€” 1-0; ATL at MIN â€” 3-7
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-13: 6 games; 3 one-run; 0 extras. BUF at HOU â€” 1-2; ATL at LOS â€” 1-0; NEW at LAS â€” 1-6
-[2025-10-04 09:22:19] [game_recap] Daily Recap 2025-07-14: 6 games; 3 one-run; 3 extras. ATL at BUF â€” 0-1; HOU at LAS â€” 2-1; WAS at LOS â€” 1-2
-[2025-10-04 09:22:19] [progress] Simulated midseason; 81 days until Season End
-[2025-10-04 09:24:50] Amateur Draft 2025 committed: 36 players added; 36 roster assignments
-[2025-10-04 09:27:29] [game_recap] Daily Recap 2025-07-15: 6 games; 4 one-run; 2 extras. BUF at LAS â€” 2-1; WAS at ATL â€” 0-6; HOU at CIN â€” 0-1
-[2025-10-04 09:27:29] [progress] Simulated a regular season day; 80 days until Season End
-[2025-10-04 09:33:11] Generated regular season schedule with 972 games
-[2025-10-04 09:33:11] Generated regular season schedule with 972 games
-[2025-10-04 09:33:12] Generated regular season schedule with 972 games
-[2025-10-04 09:33:12] Generated regular season schedule with 972 games
-[2025-10-04 09:33:12] Generated regular season schedule with 972 games
-[2025-10-04 09:33:13] Season advanced to Preseason
-[2025-10-04 09:33:13] No unsigned players available
-[2025-10-04 09:33:13] Training camp completed; players marked ready
-[2025-10-04 09:33:13] Generated regular season schedule with 162 games
-[2025-10-04 09:33:13] Generated regular season schedule with 162 games
-[2025-10-04 09:33:14] Generated regular season schedule with 162 games
-[2025-10-04 09:33:14] No unsigned players available
-[2025-10-04 09:33:14] Generated regular season schedule with 162 games
-[2025-10-04 09:35:48] League reset to Opening Day
-[2025-10-04 09:35:48] Purged saved season boxscores
-[2025-10-04 09:36:36] Generated regular season schedule with 972 games
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-01: 6 games; 4 one-run; 1 extras. NEW at BUF â€” 0-1; MIN at LOS â€” 4-2; HOU at PIT â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-02: 6 games; 3 one-run; 0 extras. BUF at LOS â€” 0-1; HOU at NEW â€” 3-0; MIN at ATL â€” 1-7
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-03: 6 games; 3 one-run; 3 extras. HOU at BUF â€” 3-2; LOS at ATL â€” 2-0; LAS at NEW â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-04: 6 games; 4 one-run; 0 extras. BUF at ATL â€” 1-0; LAS at HOU â€” 4-2; LOS at WAS â€” 3-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-05: 6 games; 4 one-run; 1 extras. LAS at BUF â€” 1-5; ATL at WAS â€” 1-3; CIN at HOU â€” 1-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-06: 6 games; 3 one-run; 1 extras. BUF at WAS â€” 1-3; CIN at LAS â€” 2-1; ATL at BAL â€” 2-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-07: 6 games; 2 one-run; 1 extras. CIN at BUF â€” 7-2; WAS at BAL â€” 3-1; GRE at LAS â€” 1-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-08: 6 games; 3 one-run; 1 extras. BUF at BAL â€” 2-1; GRE at CIN â€” 0-1; WAS at PIT â€” 2-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-09: 6 games; 0 one-run; 0 extras. GRE at BUF â€” 1-4; BAL at PIT â€” 3-0; MIN at CIN â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-10: 6 games; 2 one-run; 1 extras. BUF at PIT â€” 2-1; MIN at GRE â€” 4-1; BAL at NEW â€” 3-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-11: 6 games; 2 one-run; 0 extras. MIN at BUF â€” 3-0; PIT at NEW â€” 1-2; LOS at GRE â€” 5-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-18: 6 games; 2 one-run; 0 extras. BUF at NEW â€” 0-3; LOS at MIN â€” 1-3; PIT at HOU â€” 3-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-19: 6 games; 2 one-run; 3 extras. LOS at BUF â€” 1-0; NEW at HOU â€” 2-1; ATL at MIN â€” 1-5
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-20: 6 games; 3 one-run; 0 extras. BUF at HOU â€” 2-1; ATL at LOS â€” 1-0; NEW at LAS â€” 3-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-21: 6 games; 0 one-run; 5 extras. ATL at BUF â€” 3-7; HOU at LAS â€” 5-3; WAS at LOS â€” 2-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-22: 6 games; 1 one-run; 1 extras. BUF at LAS â€” 1-2; WAS at ATL â€” 0-6; HOU at CIN â€” 3-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-23: 6 games; 3 one-run; 1 extras. WAS at BUF â€” 1-0; LAS at CIN â€” 7-3; BAL at ATL â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-24: 6 games; 2 one-run; 0 extras. BUF at CIN â€” 2-5; BAL at WAS â€” 2-1; LAS at GRE â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-25: 6 games; 2 one-run; 0 extras. BAL at BUF â€” 1-3; CIN at GRE â€” 0-3; PIT at WAS â€” 4-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-26: 6 games; 4 one-run; 1 extras. BUF at GRE â€” 4-1; PIT at BAL â€” 1-0; CIN at MIN â€” 4-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-27: 6 games; 1 one-run; 0 extras. PIT at BUF â€” 3-1; GRE at MIN â€” 1-0; NEW at BAL â€” 0-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-28: 6 games; 2 one-run; 2 extras. BUF at MIN â€” 2-6; NEW at PIT â€” 1-0; GRE at LOS â€” 4-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-29: 6 games; 5 one-run; 1 extras. NEW at BUF â€” 1-0; MIN at LOS â€” 0-2; HOU at PIT â€” 2-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-04-30: 6 games; 2 one-run; 1 extras. BUF at LOS â€” 2-5; HOU at NEW â€” 2-1; MIN at ATL â€” 0-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-01: 6 games; 2 one-run; 1 extras. HOU at BUF â€” 1-5; LOS at ATL â€” 3-1; LAS at NEW â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-02: 6 games; 2 one-run; 1 extras. BUF at ATL â€” 2-0; LAS at HOU â€” 2-0; LOS at WAS â€” 2-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-03: 6 games; 3 one-run; 0 extras. LAS at BUF â€” 2-0; ATL at WAS â€” 2-1; CIN at HOU â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-04: 6 games; 2 one-run; 0 extras. BUF at WAS â€” 3-2; CIN at LAS â€” 2-0; ATL at BAL â€” 3-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-05: 6 games; 1 one-run; 1 extras. CIN at BUF â€” 0-2; WAS at BAL â€” 2-0; GRE at LAS â€” 2-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-06: 6 games; 3 one-run; 0 extras. BUF at BAL â€” 2-3; GRE at CIN â€” 2-0; WAS at PIT â€” 4-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-07: 6 games; 2 one-run; 2 extras. GRE at BUF â€” 5-2; BAL at PIT â€” 2-1; MIN at CIN â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-08: 6 games; 3 one-run; 0 extras. BUF at PIT â€” 0-4; MIN at GRE â€” 3-1; BAL at NEW â€” 1-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-09: 6 games; 2 one-run; 1 extras. MIN at BUF â€” 2-0; PIT at NEW â€” 0-1; LOS at GRE â€” 2-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-16: 6 games; 3 one-run; 0 extras. BUF at NEW â€” 5-2; LOS at MIN â€” 1-0; PIT at HOU â€” 5-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-17: 6 games; 1 one-run; 0 extras. LOS at BUF â€” 3-0; NEW at HOU â€” 0-5; ATL at MIN â€” 1-9
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-18: 6 games; 4 one-run; 1 extras. BUF at HOU â€” 2-3; ATL at LOS â€” 5-3; NEW at LAS â€” 2-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-19: 6 games; 3 one-run; 1 extras. ATL at BUF â€” 4-3; HOU at LAS â€” 0-2; WAS at LOS â€” 1-5
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-20: 6 games; 1 one-run; 1 extras. BUF at LAS â€” 0-6; WAS at ATL â€” 3-1; HOU at CIN â€” 3-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-21: 6 games; 4 one-run; 0 extras. WAS at BUF â€” 4-3; LAS at CIN â€” 1-0; BAL at ATL â€” 3-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-22: 6 games; 3 one-run; 0 extras. BUF at CIN â€” 4-1; BAL at WAS â€” 0-4; LAS at GRE â€” 5-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-23: 6 games; 2 one-run; 3 extras. BAL at BUF â€” 3-0; CIN at GRE â€” 3-0; PIT at WAS â€” 0-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-24: 6 games; 2 one-run; 2 extras. BUF at GRE â€” 2-3; PIT at BAL â€” 5-3; CIN at MIN â€” 2-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-25: 6 games; 4 one-run; 1 extras. PIT at BUF â€” 2-0; GRE at MIN â€” 2-3; NEW at BAL â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-26: 6 games; 1 one-run; 1 extras. BUF at MIN â€” 1-2; NEW at PIT â€” 3-0; GRE at LOS â€” 0-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-27: 6 games; 2 one-run; 0 extras. NEW at BUF â€” 5-7; MIN at LOS â€” 1-4; HOU at PIT â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-28: 6 games; 3 one-run; 0 extras. BUF at LOS â€” 0-3; HOU at NEW â€” 2-3; MIN at ATL â€” 4-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-29: 6 games; 2 one-run; 0 extras. HOU at BUF â€” 3-0; LOS at ATL â€” 1-3; LAS at NEW â€” 0-5
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-30: 6 games; 1 one-run; 0 extras. BUF at ATL â€” 1-3; LAS at HOU â€” 4-0; LOS at WAS â€” 4-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-05-31: 6 games; 3 one-run; 1 extras. LAS at BUF â€” 1-5; ATL at WAS â€” 0-2; CIN at HOU â€” 3-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-01: 6 games; 2 one-run; 3 extras. BUF at WAS â€” 4-0; CIN at LAS â€” 4-1; ATL at BAL â€” 6-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-02: 6 games; 2 one-run; 1 extras. CIN at BUF â€” 6-2; WAS at BAL â€” 2-0; GRE at LAS â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-03: 6 games; 0 one-run; 2 extras. BUF at BAL â€” 1-4; GRE at CIN â€” 0-4; WAS at PIT â€” 4-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-04: 6 games; 4 one-run; 2 extras. GRE at BUF â€” 1-2; BAL at PIT â€” 3-0; MIN at CIN â€” 5-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-05: 6 games; 2 one-run; 2 extras. BUF at PIT â€” 1-0; MIN at GRE â€” 6-0; BAL at NEW â€” 0-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-06: 6 games; 2 one-run; 2 extras. MIN at BUF â€” 4-1; PIT at NEW â€” 2-1; LOS at GRE â€” 5-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-13: 6 games; 3 one-run; 1 extras. BUF at NEW â€” 1-2; LOS at MIN â€” 5-1; PIT at HOU â€” 3-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-14: 6 games; 4 one-run; 1 extras. LOS at BUF â€” 2-0; NEW at HOU â€” 0-1; ATL at MIN â€” 1-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-15: 6 games; 2 one-run; 0 extras. BUF at HOU â€” 3-5; ATL at LOS â€” 0-2; NEW at LAS â€” 2-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-16: 6 games; 5 one-run; 3 extras. ATL at BUF â€” 0-1; HOU at LAS â€” 0-1; WAS at LOS â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-17: 6 games; 4 one-run; 0 extras. BUF at LAS â€” 3-2; WAS at ATL â€” 2-0; HOU at CIN â€” 0-6
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-18: 6 games; 2 one-run; 2 extras. WAS at BUF â€” 1-2; LAS at CIN â€” 0-1; BAL at ATL â€” 6-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-19: 6 games; 4 one-run; 0 extras. BUF at CIN â€” 2-1; BAL at WAS â€” 1-2; LAS at GRE â€” 4-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-20: 6 games; 4 one-run; 1 extras. BAL at BUF â€” 1-4; CIN at GRE â€” 0-1; PIT at WAS â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-21: 6 games; 5 one-run; 1 extras. BUF at GRE â€” 0-8; PIT at BAL â€” 2-3; CIN at MIN â€” 3-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-22: 6 games; 5 one-run; 0 extras. PIT at BUF â€” 2-1; GRE at MIN â€” 0-1; NEW at BAL â€” 2-4
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-23: 6 games; 4 one-run; 2 extras. BUF at MIN â€” 2-0; NEW at PIT â€” 1-0; GRE at LOS â€” 0-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-24: 6 games; 2 one-run; 2 extras. NEW at BUF â€” 4-3; MIN at LOS â€” 0-5; HOU at PIT â€” 3-5
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-25: 6 games; 4 one-run; 0 extras. BUF at LOS â€” 0-5; HOU at NEW â€” 2-1; MIN at ATL â€” 0-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-26: 6 games; 1 one-run; 0 extras. HOU at BUF â€” 1-3; LOS at ATL â€” 2-3; LAS at NEW â€” 3-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-27: 6 games; 1 one-run; 1 extras. BUF at ATL â€” 0-4; LAS at HOU â€” 2-4; LOS at WAS â€” 3-5
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-28: 6 games; 3 one-run; 2 extras. LAS at BUF â€” 5-4; ATL at WAS â€” 3-2; CIN at HOU â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-29: 6 games; 3 one-run; 0 extras. BUF at WAS â€” 4-3; CIN at LAS â€” 0-1; ATL at BAL â€” 1-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-06-30: 6 games; 2 one-run; 2 extras. CIN at BUF â€” 2-3; WAS at BAL â€” 2-0; GRE at LAS â€” 1-5
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-01: 6 games; 2 one-run; 2 extras. BUF at BAL â€” 2-0; GRE at CIN â€” 1-2; WAS at PIT â€” 3-0
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-02: 6 games; 2 one-run; 0 extras. GRE at BUF â€” 4-0; BAL at PIT â€” 2-0; MIN at CIN â€” 0-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-03: 6 games; 2 one-run; 0 extras. BUF at PIT â€” 2-0; MIN at GRE â€” 4-2; BAL at NEW â€” 4-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-04: 6 games; 5 one-run; 1 extras. MIN at BUF â€” 1-0; PIT at NEW â€” 0-2; LOS at GRE â€” 2-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-11: 6 games; 2 one-run; 0 extras. BUF at NEW â€” 1-0; LOS at MIN â€” 4-2; PIT at HOU â€” 0-3
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-12: 6 games; 3 one-run; 1 extras. LOS at BUF â€” 5-0; NEW at HOU â€” 1-0; ATL at MIN â€” 0-1
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-13: 6 games; 3 one-run; 3 extras. BUF at HOU â€” 0-1; ATL at LOS â€” 3-9; NEW at LAS â€” 4-2
-[2025-10-04 09:41:17] [game_recap] Daily Recap 2025-07-14: 6 games; 4 one-run; 2 extras. ATL at BUF â€” 1-2; HOU at LAS â€” 1-4; WAS at LOS â€” 0-7
-[2025-10-04 09:41:17] [progress] Simulated midseason; 81 days until Season End
-[2025-10-04 09:54:59] Amateur Draft 2025 committed: 18 players added; 36 roster assignments
-[2025-10-04 09:55:42] [game_recap] Daily Recap 2025-07-15: 6 games; 1 one-run; 0 extras. BUF at LAS â€” 1-4; WAS at ATL â€” 5-0; HOU at CIN â€” 6-1
-[2025-10-04 09:55:42] [progress] Simulated a regular season day; 80 days until Season End
-[2025-10-04 09:55:59] [game_recap] Daily Recap 2025-07-16: 6 games; 4 one-run; 0 extras. WAS at BUF â€” 1-0; LAS at CIN â€” 2-0; BAL at ATL â€” 1-2
-[2025-10-04 09:55:59] [progress] Simulated a regular season day; 79 days until Season End
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-17: 6 games; 5 one-run; 2 extras. BUF at CIN â€” 0-1; BAL at WAS â€” 1-0; LAS at GRE â€” 0-5
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-18: 6 games; 2 one-run; 3 extras. BAL at BUF â€” 5-7; CIN at GRE â€” 2-0; PIT at WAS â€” 0-1
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-19: 6 games; 2 one-run; 2 extras. BUF at GRE â€” 2-1; PIT at BAL â€” 5-2; CIN at MIN â€” 1-0
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-20: 6 games; 2 one-run; 1 extras. PIT at BUF â€” 7-6; GRE at MIN â€” 4-2; NEW at BAL â€” 1-0
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-21: 6 games; 2 one-run; 1 extras. BUF at MIN â€” 2-4; NEW at PIT â€” 0-5; GRE at LOS â€” 1-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-22: 6 games; 2 one-run; 0 extras. NEW at BUF â€” 3-0; MIN at LOS â€” 0-3; HOU at PIT â€” 0-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-23: 6 games; 2 one-run; 1 extras. BUF at LOS â€” 3-2; HOU at NEW â€” 2-0; MIN at ATL â€” 0-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-24: 6 games; 1 one-run; 0 extras. HOU at BUF â€” 4-2; LOS at ATL â€” 1-0; LAS at NEW â€” 1-4
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-25: 6 games; 4 one-run; 3 extras. BUF at ATL â€” 5-2; LAS at HOU â€” 1-2; LOS at WAS â€” 1-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-26: 6 games; 2 one-run; 2 extras. LAS at BUF â€” 2-0; ATL at WAS â€” 1-2; CIN at HOU â€” 1-5
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-27: 6 games; 4 one-run; 0 extras. BUF at WAS â€” 1-0; CIN at LAS â€” 2-0; ATL at BAL â€” 6-4
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-28: 6 games; 3 one-run; 4 extras. CIN at BUF â€” 3-2; WAS at BAL â€” 2-0; GRE at LAS â€” 3-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-29: 6 games; 3 one-run; 2 extras. BUF at BAL â€” 0-2; GRE at CIN â€” 0-1; WAS at PIT â€” 1-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-30: 6 games; 0 one-run; 0 extras. GRE at BUF â€” 0-3; BAL at PIT â€” 6-0; MIN at CIN â€” 1-5
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-07-31: 6 games; 2 one-run; 2 extras. BUF at PIT â€” 1-2; MIN at GRE â€” 0-2; BAL at NEW â€” 2-0
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-01: 6 games; 4 one-run; 1 extras. MIN at BUF â€” 5-1; PIT at NEW â€” 3-2; LOS at GRE â€” 0-1
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-08: 6 games; 2 one-run; 1 extras. BUF at NEW â€” 2-0; LOS at MIN â€” 4-0; PIT at HOU â€” 0-3
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-09: 6 games; 4 one-run; 1 extras. LOS at BUF â€” 1-0; NEW at HOU â€” 7-4; ATL at MIN â€” 1-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-10: 6 games; 4 one-run; 1 extras. BUF at HOU â€” 1-0; ATL at LOS â€” 2-3; NEW at LAS â€” 4-3
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-11: 6 games; 4 one-run; 0 extras. ATL at BUF â€” 0-1; HOU at LAS â€” 2-0; WAS at LOS â€” 1-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-12: 6 games; 0 one-run; 2 extras. BUF at LAS â€” 2-0; WAS at ATL â€” 1-7; HOU at CIN â€” 0-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-13: 6 games; 2 one-run; 3 extras. WAS at BUF â€” 2-5; LAS at CIN â€” 1-3; BAL at ATL â€” 2-1
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-14: 6 games; 4 one-run; 1 extras. BUF at CIN â€” 2-6; BAL at WAS â€” 1-0; LAS at GRE â€” 3-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-15: 6 games; 1 one-run; 1 extras. BAL at BUF â€” 1-0; CIN at GRE â€” 6-1; PIT at WAS â€” 4-1
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-16: 6 games; 3 one-run; 1 extras. BUF at GRE â€” 0-1; PIT at BAL â€” 1-0; CIN at MIN â€” 0-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-17: 6 games; 3 one-run; 0 extras. PIT at BUF â€” 3-2; GRE at MIN â€” 0-5; NEW at BAL â€” 1-5
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-18: 6 games; 1 one-run; 0 extras. BUF at MIN â€” 2-5; NEW at PIT â€” 3-1; GRE at LOS â€” 3-7
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-19: 6 games; 2 one-run; 0 extras. NEW at BUF â€” 1-3; MIN at LOS â€” 3-2; HOU at PIT â€” 4-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-20: 6 games; 4 one-run; 0 extras. BUF at LOS â€” 1-2; HOU at NEW â€” 4-1; MIN at ATL â€” 1-2
-[2025-10-04 09:59:52] [game_recap] Daily Recap 2025-08-21: 6 games; 3 one-run; 0 extras. HOU at BUF â€” 3-1; LOS at ATL â€” 1-3; LAS at NEW â€” 2-1
-[2025-10-04 09:59:52] [progress] Simulated month; 49 days until Season End
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-22: 6 games; 1 one-run; 1 extras. BUF at ATL â€” 1-0; LAS at HOU â€” 0-4; LOS at WAS â€” 5-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-23: 6 games; 3 one-run; 1 extras. LAS at BUF â€” 1-2; ATL at WAS â€” 0-2; CIN at HOU â€” 2-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-24: 6 games; 2 one-run; 2 extras. BUF at WAS â€” 1-2; CIN at LAS â€” 4-1; ATL at BAL â€” 4-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-25: 6 games; 2 one-run; 2 extras. CIN at BUF â€” 3-2; WAS at BAL â€” 3-1; GRE at LAS â€” 0-3
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-26: 6 games; 3 one-run; 1 extras. BUF at BAL â€” 0-1; GRE at CIN â€” 1-4; WAS at PIT â€” 4-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-27: 6 games; 4 one-run; 2 extras. GRE at BUF â€” 3-4; BAL at PIT â€” 0-2; MIN at CIN â€” 0-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-28: 6 games; 3 one-run; 1 extras. BUF at PIT â€” 2-0; MIN at GRE â€” 2-3; BAL at NEW â€” 5-4
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-08-29: 6 games; 3 one-run; 2 extras. MIN at BUF â€” 5-2; PIT at NEW â€” 0-1; LOS at GRE â€” 2-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-05: 6 games; 2 one-run; 0 extras. BUF at NEW â€” 3-1; LOS at MIN â€” 4-0; PIT at HOU â€” 0-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-06: 6 games; 1 one-run; 0 extras. LOS at BUF â€” 5-0; NEW at HOU â€” 0-2; ATL at MIN â€” 1-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-07: 6 games; 4 one-run; 1 extras. BUF at HOU â€” 1-2; ATL at LOS â€” 0-2; NEW at LAS â€” 0-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-08: 6 games; 3 one-run; 1 extras. ATL at BUF â€” 0-2; HOU at LAS â€” 1-2; WAS at LOS â€” 4-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-09: 6 games; 2 one-run; 2 extras. BUF at LAS â€” 4-2; WAS at ATL â€” 0-1; HOU at CIN â€” 4-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-10: 6 games; 5 one-run; 1 extras. WAS at BUF â€” 0-1; LAS at CIN â€” 2-3; BAL at ATL â€” 1-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-11: 6 games; 3 one-run; 1 extras. BUF at CIN â€” 1-0; BAL at WAS â€” 2-1; LAS at GRE â€” 5-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-12: 6 games; 4 one-run; 1 extras. BAL at BUF â€” 2-0; CIN at GRE â€” 2-1; PIT at WAS â€” 3-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-13: 6 games; 2 one-run; 2 extras. BUF at GRE â€” 1-2; PIT at BAL â€” 1-2; CIN at MIN â€” 3-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-14: 6 games; 4 one-run; 0 extras. PIT at BUF â€” 2-1; GRE at MIN â€” 0-6; NEW at BAL â€” 3-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-15: 6 games; 3 one-run; 1 extras. BUF at MIN â€” 0-1; NEW at PIT â€” 2-4; GRE at LOS â€” 0-4
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-16: 6 games; 2 one-run; 0 extras. NEW at BUF â€” 1-2; MIN at LOS â€” 1-0; HOU at PIT â€” 0-6
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-17: 6 games; 5 one-run; 1 extras. BUF at LOS â€” 4-1; HOU at NEW â€” 1-2; MIN at ATL â€” 1-2
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-18: 6 games; 2 one-run; 1 extras. HOU at BUF â€” 1-0; LOS at ATL â€” 0-5; LAS at NEW â€” 3-4
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-19: 6 games; 3 one-run; 0 extras. BUF at ATL â€” 2-1; LAS at HOU â€” 1-5; LOS at WAS â€” 2-9
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-20: 6 games; 3 one-run; 2 extras. LAS at BUF â€” 4-6; ATL at WAS â€” 8-6; CIN at HOU â€” 4-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-21: 6 games; 2 one-run; 0 extras. BUF at WAS â€” 4-2; CIN at LAS â€” 3-0; ATL at BAL â€” 3-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-22: 6 games; 5 one-run; 2 extras. CIN at BUF â€” 2-1; WAS at BAL â€” 0-1; GRE at LAS â€” 6-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-23: 6 games; 1 one-run; 3 extras. BUF at BAL â€” 1-6; GRE at CIN â€” 3-1; WAS at PIT â€” 0-3
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-24: 6 games; 2 one-run; 1 extras. GRE at BUF â€” 7-5; BAL at PIT â€” 0-1; MIN at CIN â€” 1-4
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-25: 6 games; 2 one-run; 0 extras. BUF at PIT â€” 3-1; MIN at GRE â€” 0-1; BAL at NEW â€” 2-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-09-26: 6 games; 1 one-run; 0 extras. MIN at BUF â€” 2-3; PIT at NEW â€” 1-4; LOS at GRE â€” 3-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-03: 6 games; 3 one-run; 1 extras. BUF at NEW â€” 0-2; LOS at MIN â€” 5-6; PIT at HOU â€” 1-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-04: 6 games; 3 one-run; 0 extras. LOS at BUF â€” 3-2; NEW at HOU â€” 1-0; ATL at MIN â€” 0-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-05: 6 games; 3 one-run; 0 extras. BUF at HOU â€” 1-5; ATL at LOS â€” 0-3; NEW at LAS â€” 1-3
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-06: 6 games; 2 one-run; 1 extras. ATL at BUF â€” 4-3; HOU at LAS â€” 0-2; WAS at LOS â€” 1-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-07: 6 games; 3 one-run; 1 extras. BUF at LAS â€” 1-3; WAS at ATL â€” 1-0; HOU at CIN â€” 2-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-08: 6 games; 3 one-run; 0 extras. WAS at BUF â€” 3-7; LAS at CIN â€” 1-2; BAL at ATL â€” 4-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-09: 6 games; 3 one-run; 2 extras. BUF at CIN â€” 1-0; BAL at WAS â€” 1-2; LAS at GRE â€” 1-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-10: 6 games; 3 one-run; 2 extras. BAL at BUF â€” 1-3; CIN at GRE â€” 2-3; PIT at WAS â€” 0-3
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-11: 6 games; 3 one-run; 2 extras. BUF at GRE â€” 0-5; PIT at BAL â€” 0-1; CIN at MIN â€” 2-3
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-12: 6 games; 2 one-run; 0 extras. PIT at BUF â€” 4-1; GRE at MIN â€” 2-3; NEW at BAL â€” 0-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-13: 6 games; 2 one-run; 1 extras. BUF at MIN â€” 3-2; NEW at PIT â€” 5-3; GRE at LOS â€” 0-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-14: 6 games; 3 one-run; 0 extras. NEW at BUF â€” 2-6; MIN at LOS â€” 3-5; HOU at PIT â€” 1-0
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-15: 6 games; 3 one-run; 3 extras. BUF at LOS â€” 1-3; HOU at NEW â€” 3-1; MIN at ATL â€” 4-5
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-16: 6 games; 2 one-run; 1 extras. HOU at BUF â€” 3-5; LOS at ATL â€” 5-0; LAS at NEW â€” 2-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-17: 6 games; 3 one-run; 2 extras. BUF at ATL â€” 0-4; LAS at HOU â€” 1-0; LOS at WAS â€” 2-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-18: 6 games; 3 one-run; 1 extras. LAS at BUF â€” 0-4; ATL at WAS â€” 2-1; CIN at HOU â€” 2-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-19: 6 games; 4 one-run; 1 extras. BUF at WAS â€” 2-1; CIN at LAS â€” 1-0; ATL at BAL â€” 2-1
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-20: 6 games; 3 one-run; 3 extras. CIN at BUF â€” 1-0; WAS at BAL â€” 3-2; GRE at LAS â€” 6-8
-[2025-10-04 10:34:57] [game_recap] Daily Recap 2025-10-21: 6 games; 2 one-run; 1 extras. BUF at BAL â€” 4-5; GRE at CIN â€” 3-0; WAS at PIT â€” 3-1
-[2025-10-04 10:34:57] [progress] Simulated regular season; regular season complete
-[2025-10-04 10:40:43] Season advanced to Amateur Draft
-[2025-10-04 10:44:16] Generated regular season schedule with 972 games
-[2025-10-04 10:44:16] Generated regular season schedule with 972 games
-[2025-10-04 10:44:17] Generated regular season schedule with 972 games
-[2025-10-04 10:44:18] Generated regular season schedule with 972 games
-[2025-10-04 10:44:18] Generated regular season schedule with 972 games
-[2025-10-04 10:44:19] Season advanced to Preseason
-[2025-10-04 10:44:20] No unsigned players available
-[2025-10-04 10:44:20] Training camp completed; players marked ready
-[2025-10-04 10:44:20] Generated regular season schedule with 162 games
-[2025-10-04 10:44:20] Generated regular season schedule with 162 games
-[2025-10-04 10:44:20] Generated regular season schedule with 162 games
-[2025-10-04 10:44:20] No unsigned players available
-[2025-10-04 10:44:21] Generated regular season schedule with 162 games
-[2025-10-04 10:47:48] Generated regular season schedule with 972 games
-[2025-10-04 10:47:49] Generated regular season schedule with 972 games
-[2025-10-04 10:47:50] Generated regular season schedule with 972 games
-[2025-10-04 10:47:50] Generated regular season schedule with 972 games
-[2025-10-04 10:47:50] Generated regular season schedule with 972 games
-[2025-10-04 10:47:51] Season advanced to Preseason
-[2025-10-04 10:47:52] No unsigned players available
-[2025-10-04 10:47:52] Training camp completed; players marked ready
-[2025-10-04 10:47:52] Generated regular season schedule with 162 games
-[2025-10-04 10:47:52] Generated regular season schedule with 162 games
-[2025-10-04 10:47:52] Generated regular season schedule with 162 games
-[2025-10-04 10:47:53] No unsigned players available
-[2025-10-04 10:47:53] Generated regular season schedule with 162 games
-[2025-10-04 11:30:07] League reset to Opening Day
-[2025-10-04 11:30:07] Purged saved season boxscores
-[2025-10-04 11:30:11] Generated regular season schedule with 972 games
-[2025-10-04 11:35:22] Generated regular season schedule with 972 games
-[2025-10-04 11:35:22] Generated regular season schedule with 972 games
-[2025-10-04 11:35:23] Generated regular season schedule with 972 games
-[2025-10-04 11:35:23] Generated regular season schedule with 972 games
-[2025-10-04 11:35:23] Generated regular season schedule with 972 games
-[2025-10-04 11:35:23] Season advanced to Preseason
-[2025-10-04 11:35:23] No unsigned players available
-[2025-10-04 11:35:23] Training camp completed; players marked ready
-[2025-10-04 11:35:23] Generated regular season schedule with 162 games
-[2025-10-04 11:35:23] Generated regular season schedule with 162 games
-[2025-10-04 11:35:23] Generated regular season schedule with 162 games
-[2025-10-04 11:35:23] No unsigned players available
-[2025-10-04 11:35:23] Generated regular season schedule with 162 games
-[2025-10-04 11:42:47] Generated regular season schedule with 972 games
-[2025-10-04 11:42:47] Generated regular season schedule with 972 games
-[2025-10-04 11:42:47] Generated regular season schedule with 972 games
-[2025-10-04 11:42:47] Generated regular season schedule with 972 games
-[2025-10-04 11:42:47] Generated regular season schedule with 972 games
-[2025-10-04 11:42:47] Season advanced to Preseason
-[2025-10-04 11:42:47] No unsigned players available
-[2025-10-04 11:42:47] Training camp completed; players marked ready
-[2025-10-04 11:42:47] Generated regular season schedule with 162 games
-[2025-10-04 11:42:47] Generated regular season schedule with 162 games
-[2025-10-04 11:42:47] Generated regular season schedule with 162 games
-[2025-10-04 11:42:47] No unsigned players available
-[2025-10-04 11:42:47] Generated regular season schedule with 162 games
-[2025-10-04 11:46:17] Generated regular season schedule with 972 games
-[2025-10-04 11:46:17] Generated regular season schedule with 972 games
-[2025-10-04 11:46:17] Generated regular season schedule with 972 games
-[2025-10-04 11:46:17] Generated regular season schedule with 972 games
-[2025-10-04 11:46:17] Generated regular season schedule with 972 games
-[2025-10-04 11:46:17] Season advanced to Preseason
-[2025-10-04 11:46:17] No unsigned players available
-[2025-10-04 11:46:17] Training camp completed; players marked ready
-[2025-10-04 11:46:17] Generated regular season schedule with 162 games
-[2025-10-04 11:46:17] Generated regular season schedule with 162 games
-[2025-10-04 11:46:17] Generated regular season schedule with 162 games
-[2025-10-04 11:46:17] No unsigned players available
-[2025-10-04 11:46:17] Generated regular season schedule with 162 games
-[2025-10-04 11:49:36] Generated regular season schedule with 972 games
-[2025-10-04 11:49:36] Generated regular season schedule with 972 games
-[2025-10-04 11:49:36] Generated regular season schedule with 972 games
-[2025-10-04 11:49:36] Generated regular season schedule with 972 games
-[2025-10-04 11:49:36] Generated regular season schedule with 972 games
-[2025-10-04 11:49:36] Season advanced to Preseason
-[2025-10-04 11:49:36] No unsigned players available
-[2025-10-04 11:49:36] Training camp completed; players marked ready
-[2025-10-04 11:49:36] Generated regular season schedule with 162 games
-[2025-10-04 11:49:36] Generated regular season schedule with 162 games
-[2025-10-04 11:49:36] Generated regular season schedule with 162 games
-[2025-10-04 11:49:36] No unsigned players available
-[2025-10-04 11:49:36] Generated regular season schedule with 162 games
-[2025-10-04 11:51:37] Generated regular season schedule with 972 games
-[2025-10-04 11:51:37] Generated regular season schedule with 972 games
-[2025-10-04 11:51:37] Generated regular season schedule with 972 games
-[2025-10-04 11:51:37] Generated regular season schedule with 972 games
-[2025-10-04 11:51:37] Generated regular season schedule with 972 games
-[2025-10-04 11:51:37] Season advanced to Preseason
-[2025-10-04 11:51:37] No unsigned players available
-[2025-10-04 11:51:37] Training camp completed; players marked ready
-[2025-10-04 11:51:37] Generated regular season schedule with 162 games
-[2025-10-04 11:51:37] Generated regular season schedule with 162 games
-[2025-10-04 11:51:37] Generated regular season schedule with 162 games
-[2025-10-04 11:51:37] No unsigned players available
-[2025-10-04 11:51:37] Generated regular season schedule with 162 games
-[2025-10-04 11:53:46] Generated regular season schedule with 972 games
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-01: 6 games; 3 one-run; 3 extras. NEW at BUF â€” 4-1; MIN at LOS â€” 1-2; HOU at PIT â€” 3-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-02: 6 games; 0 one-run; 0 extras. BUF at LOS â€” 1-4; HOU at NEW â€” 6-1; MIN at ATL â€” 4-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-03: 6 games; 2 one-run; 1 extras. HOU at BUF â€” 2-0; LOS at ATL â€” 1-2; LAS at NEW â€” 3-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-04: 6 games; 3 one-run; 2 extras. BUF at ATL â€” 0-4; LAS at HOU â€” 1-0; LOS at WAS â€” 3-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-05: 6 games; 5 one-run; 2 extras. LAS at BUF â€” 3-4; ATL at WAS â€” 1-0; CIN at HOU â€” 2-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-06: 6 games; 2 one-run; 3 extras. BUF at WAS â€” 3-5; CIN at LAS â€” 2-1; ATL at BAL â€” 4-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-07: 6 games; 3 one-run; 0 extras. CIN at BUF â€” 2-1; WAS at BAL â€” 1-2; GRE at LAS â€” 7-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-08: 6 games; 1 one-run; 0 extras. BUF at BAL â€” 2-6; GRE at CIN â€” 1-0; WAS at PIT â€” 2-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-09: 6 games; 4 one-run; 2 extras. GRE at BUF â€” 1-0; BAL at PIT â€” 3-4; MIN at CIN â€” 0-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-10: 6 games; 4 one-run; 1 extras. BUF at PIT â€” 1-2; MIN at GRE â€” 3-1; BAL at NEW â€” 0-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-11: 6 games; 1 one-run; 0 extras. MIN at BUF â€” 5-0; PIT at NEW â€” 0-2; LOS at GRE â€” 7-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-18: 6 games; 4 one-run; 1 extras. BUF at NEW â€” 2-1; LOS at MIN â€” 11-2; PIT at HOU â€” 2-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-19: 6 games; 3 one-run; 1 extras. LOS at BUF â€” 3-1; NEW at HOU â€” 2-0; ATL at MIN â€” 3-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-20: 6 games; 4 one-run; 0 extras. BUF at HOU â€” 3-1; ATL at LOS â€” 1-2; NEW at LAS â€” 4-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-21: 6 games; 4 one-run; 2 extras. ATL at BUF â€” 0-1; HOU at LAS â€” 1-2; WAS at LOS â€” 1-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-22: 6 games; 3 one-run; 3 extras. BUF at LAS â€” 5-0; WAS at ATL â€” 1-3; HOU at CIN â€” 2-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-23: 6 games; 1 one-run; 0 extras. WAS at BUF â€” 2-9; LAS at CIN â€” 2-4; BAL at ATL â€” 1-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-24: 6 games; 2 one-run; 0 extras. BUF at CIN â€” 0-3; BAL at WAS â€” 2-0; LAS at GRE â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-25: 6 games; 3 one-run; 1 extras. BAL at BUF â€” 3-0; CIN at GRE â€” 2-1; PIT at WAS â€” 3-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-26: 6 games; 2 one-run; 0 extras. BUF at GRE â€” 1-3; PIT at BAL â€” 0-4; CIN at MIN â€” 2-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-27: 6 games; 2 one-run; 0 extras. PIT at BUF â€” 0-2; GRE at MIN â€” 0-2; NEW at BAL â€” 1-6
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-28: 6 games; 4 one-run; 2 extras. BUF at MIN â€” 0-4; NEW at PIT â€” 3-2; GRE at LOS â€” 3-4
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-29: 6 games; 2 one-run; 1 extras. NEW at BUF â€” 4-2; MIN at LOS â€” 2-1; HOU at PIT â€” 2-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-04-30: 6 games; 2 one-run; 1 extras. BUF at LOS â€” 3-2; HOU at NEW â€” 3-4; MIN at ATL â€” 1-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-01: 6 games; 2 one-run; 1 extras. HOU at BUF â€” 1-2; LOS at ATL â€” 2-4; LAS at NEW â€” 4-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-02: 6 games; 3 one-run; 1 extras. BUF at ATL â€” 1-0; LAS at HOU â€” 3-2; LOS at WAS â€” 4-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-03: 6 games; 1 one-run; 0 extras. LAS at BUF â€” 2-0; ATL at WAS â€” 1-2; CIN at HOU â€” 4-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-04: 6 games; 3 one-run; 0 extras. BUF at WAS â€” 2-1; CIN at LAS â€” 1-2; ATL at BAL â€” 1-4
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-05: 6 games; 3 one-run; 0 extras. CIN at BUF â€” 2-0; WAS at BAL â€” 2-3; GRE at LAS â€” 1-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-06: 6 games; 3 one-run; 0 extras. BUF at BAL â€” 3-1; GRE at CIN â€” 0-1; WAS at PIT â€” 0-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-07: 6 games; 1 one-run; 2 extras. GRE at BUF â€” 5-2; BAL at PIT â€” 1-3; MIN at CIN â€” 1-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-08: 6 games; 6 one-run; 1 extras. BUF at PIT â€” 2-3; MIN at GRE â€” 2-1; BAL at NEW â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-09: 6 games; 2 one-run; 0 extras. MIN at BUF â€” 3-2; PIT at NEW â€” 5-3; LOS at GRE â€” 1-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-16: 6 games; 1 one-run; 1 extras. BUF at NEW â€” 3-1; LOS at MIN â€” 1-3; PIT at HOU â€” 0-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-17: 6 games; 3 one-run; 0 extras. LOS at BUF â€” 3-0; NEW at HOU â€” 1-0; ATL at MIN â€” 2-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-18: 6 games; 1 one-run; 1 extras. BUF at HOU â€” 4-0; ATL at LOS â€” 5-3; NEW at LAS â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-19: 6 games; 5 one-run; 0 extras. ATL at BUF â€” 3-2; HOU at LAS â€” 2-1; WAS at LOS â€” 3-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-20: 6 games; 4 one-run; 0 extras. BUF at LAS â€” 0-3; WAS at ATL â€” 2-1; HOU at CIN â€” 3-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-21: 6 games; 1 one-run; 0 extras. WAS at BUF â€” 0-4; LAS at CIN â€” 1-3; BAL at ATL â€” 2-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-22: 6 games; 4 one-run; 1 extras. BUF at CIN â€” 4-0; BAL at WAS â€” 0-1; LAS at GRE â€” 1-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-23: 6 games; 4 one-run; 1 extras. BAL at BUF â€” 0-1; CIN at GRE â€” 5-1; PIT at WAS â€” 3-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-24: 6 games; 3 one-run; 1 extras. BUF at GRE â€” 3-2; PIT at BAL â€” 0-2; CIN at MIN â€” 1-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-25: 6 games; 3 one-run; 3 extras. PIT at BUF â€” 0-2; GRE at MIN â€” 0-1; NEW at BAL â€” 5-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-26: 6 games; 2 one-run; 1 extras. BUF at MIN â€” 3-0; NEW at PIT â€” 0-2; GRE at LOS â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-27: 6 games; 3 one-run; 2 extras. NEW at BUF â€” 0-2; MIN at LOS â€” 1-2; HOU at PIT â€” 1-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-28: 6 games; 4 one-run; 1 extras. BUF at LOS â€” 0-1; HOU at NEW â€” 5-3; MIN at ATL â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-29: 6 games; 3 one-run; 2 extras. HOU at BUF â€” 0-6; LOS at ATL â€” 1-3; LAS at NEW â€” 4-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-30: 6 games; 1 one-run; 1 extras. BUF at ATL â€” 0-5; LAS at HOU â€” 1-0; LOS at WAS â€” 1-6
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-05-31: 6 games; 0 one-run; 1 extras. LAS at BUF â€” 0-2; ATL at WAS â€” 4-2; CIN at HOU â€” 1-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-01: 6 games; 4 one-run; 1 extras. BUF at WAS â€” 1-0; CIN at LAS â€” 1-4; ATL at BAL â€” 3-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-02: 6 games; 1 one-run; 1 extras. CIN at BUF â€” 3-4; WAS at BAL â€” 5-9; GRE at LAS â€” 2-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-03: 6 games; 3 one-run; 0 extras. BUF at BAL â€” 2-1; GRE at CIN â€” 4-5; WAS at PIT â€” 5-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-04: 6 games; 1 one-run; 1 extras. GRE at BUF â€” 1-6; BAL at PIT â€” 5-3; MIN at CIN â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-05: 6 games; 3 one-run; 0 extras. BUF at PIT â€” 3-2; MIN at GRE â€” 1-7; BAL at NEW â€” 5-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-06: 6 games; 2 one-run; 0 extras. MIN at BUF â€” 4-2; PIT at NEW â€” 3-0; LOS at GRE â€” 2-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-13: 6 games; 1 one-run; 0 extras. BUF at NEW â€” 0-4; LOS at MIN â€” 1-2; PIT at HOU â€” 1-4
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-14: 6 games; 2 one-run; 0 extras. LOS at BUF â€” 1-2; NEW at HOU â€” 3-1; ATL at MIN â€” 0-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-15: 6 games; 1 one-run; 1 extras. BUF at HOU â€” 2-9; ATL at LOS â€” 1-2; NEW at LAS â€” 0-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-16: 6 games; 3 one-run; 1 extras. ATL at BUF â€” 5-1; HOU at LAS â€” 3-2; WAS at LOS â€” 5-4
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-17: 6 games; 2 one-run; 1 extras. BUF at LAS â€” 3-0; WAS at ATL â€” 3-2; HOU at CIN â€” 0-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-18: 6 games; 3 one-run; 1 extras. WAS at BUF â€” 4-5; LAS at CIN â€” 0-3; BAL at ATL â€” 9-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-19: 6 games; 3 one-run; 2 extras. BUF at CIN â€” 0-5; BAL at WAS â€” 2-0; LAS at GRE â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-20: 6 games; 2 one-run; 2 extras. BAL at BUF â€” 5-2; CIN at GRE â€” 2-3; PIT at WAS â€” 0-8
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-21: 6 games; 1 one-run; 1 extras. BUF at GRE â€” 1-3; PIT at BAL â€” 4-6; CIN at MIN â€” 1-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-22: 6 games; 2 one-run; 1 extras. PIT at BUF â€” 0-3; GRE at MIN â€” 3-7; NEW at BAL â€” 4-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-23: 6 games; 3 one-run; 2 extras. BUF at MIN â€” 0-4; NEW at PIT â€” 4-5; GRE at LOS â€” 0-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-24: 6 games; 2 one-run; 2 extras. NEW at BUF â€” 4-2; MIN at LOS â€” 3-6; HOU at PIT â€” 3-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-25: 6 games; 4 one-run; 0 extras. BUF at LOS â€” 2-1; HOU at NEW â€” 3-0; MIN at ATL â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-26: 6 games; 0 one-run; 1 extras. HOU at BUF â€” 0-3; LOS at ATL â€” 3-1; LAS at NEW â€” 3-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-27: 6 games; 2 one-run; 4 extras. BUF at ATL â€” 3-2; LAS at HOU â€” 2-0; LOS at WAS â€” 3-7
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-28: 6 games; 1 one-run; 1 extras. LAS at BUF â€” 0-4; ATL at WAS â€” 0-2; CIN at HOU â€” 0-6
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-29: 6 games; 2 one-run; 2 extras. BUF at WAS â€” 1-4; CIN at LAS â€” 1-0; ATL at BAL â€” 3-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-06-30: 6 games; 3 one-run; 0 extras. CIN at BUF â€” 1-0; WAS at BAL â€” 2-0; GRE at LAS â€” 4-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-01: 6 games; 4 one-run; 0 extras. BUF at BAL â€” 2-1; GRE at CIN â€” 0-1; WAS at PIT â€” 1-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-02: 6 games; 5 one-run; 2 extras. GRE at BUF â€” 2-1; BAL at PIT â€” 1-2; MIN at CIN â€” 3-0
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-03: 6 games; 3 one-run; 1 extras. BUF at PIT â€” 3-0; MIN at GRE â€” 2-1; BAL at NEW â€” 4-3
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-04: 6 games; 1 one-run; 2 extras. MIN at BUF â€” 4-1; PIT at NEW â€” 2-3; LOS at GRE â€” 3-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-11: 6 games; 4 one-run; 1 extras. BUF at NEW â€” 5-1; LOS at MIN â€” 2-0; PIT at HOU â€” 1-2
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-12: 6 games; 3 one-run; 3 extras. LOS at BUF â€” 2-4; NEW at HOU â€” 2-3; ATL at MIN â€” 0-1
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-13: 6 games; 2 one-run; 3 extras. BUF at HOU â€” 0-2; ATL at LOS â€” 0-1; NEW at LAS â€” 6-4
-[2025-10-04 11:54:26] [game_recap] Daily Recap 2025-07-14: 6 games; 1 one-run; 1 extras. ATL at BUF â€” 2-0; HOU at LAS â€” 2-4; WAS at LOS â€” 0-3
-[2025-10-04 11:54:26] [progress] Simulated midseason; 81 days until Season End
-[2025-10-04 11:55:00] Amateur Draft 2025 committed: 3 players added; 6 roster assignments
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-15: 6 games; 2 one-run; 3 extras. BUF at LAS â€” 3-1; WAS at ATL â€” 1-3; HOU at CIN â€” 0-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-16: 6 games; 6 one-run; 1 extras. WAS at BUF â€” 0-1; LAS at CIN â€” 0-1; BAL at ATL â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-17: 6 games; 2 one-run; 0 extras. BUF at CIN â€” 0-3; BAL at WAS â€” 0-3; LAS at GRE â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-18: 6 games; 3 one-run; 3 extras. BAL at BUF â€” 2-3; CIN at GRE â€” 2-1; PIT at WAS â€” 5-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-19: 6 games; 2 one-run; 1 extras. BUF at GRE â€” 0-2; PIT at BAL â€” 2-0; CIN at MIN â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-20: 6 games; 3 one-run; 2 extras. PIT at BUF â€” 4-1; GRE at MIN â€” 3-2; NEW at BAL â€” 2-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-21: 6 games; 3 one-run; 1 extras. BUF at MIN â€” 1-0; NEW at PIT â€” 0-1; GRE at LOS â€” 3-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-22: 6 games; 1 one-run; 2 extras. NEW at BUF â€” 0-3; MIN at LOS â€” 1-6; HOU at PIT â€” 2-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-23: 6 games; 2 one-run; 1 extras. BUF at LOS â€” 4-7; HOU at NEW â€” 2-0; MIN at ATL â€” 2-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-24: 6 games; 1 one-run; 1 extras. HOU at BUF â€” 1-5; LOS at ATL â€” 0-4; LAS at NEW â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-25: 6 games; 3 one-run; 3 extras. BUF at ATL â€” 0-1; LAS at HOU â€” 2-0; LOS at WAS â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-26: 6 games; 4 one-run; 0 extras. LAS at BUF â€” 1-2; ATL at WAS â€” 3-2; CIN at HOU â€” 1-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-27: 6 games; 3 one-run; 2 extras. BUF at WAS â€” 4-1; CIN at LAS â€” 3-4; ATL at BAL â€” 1-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-28: 6 games; 3 one-run; 1 extras. CIN at BUF â€” 1-4; WAS at BAL â€” 1-2; GRE at LAS â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-29: 6 games; 1 one-run; 1 extras. BUF at BAL â€” 5-4; GRE at CIN â€” 0-3; WAS at PIT â€” 2-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-30: 6 games; 4 one-run; 1 extras. GRE at BUF â€” 0-1; BAL at PIT â€” 3-4; MIN at CIN â€” 5-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-07-31: 6 games; 3 one-run; 3 extras. BUF at PIT â€” 2-1; MIN at GRE â€” 1-3; BAL at NEW â€” 2-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-01: 6 games; 1 one-run; 1 extras. MIN at BUF â€” 1-4; PIT at NEW â€” 1-2; LOS at GRE â€” 1-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-08: 6 games; 1 one-run; 1 extras. BUF at NEW â€” 1-2; LOS at MIN â€” 2-0; PIT at HOU â€” 3-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-09: 6 games; 3 one-run; 1 extras. LOS at BUF â€” 2-0; NEW at HOU â€” 2-3; ATL at MIN â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-10: 6 games; 5 one-run; 4 extras. BUF at HOU â€” 1-0; ATL at LOS â€” 2-3; NEW at LAS â€” 0-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-11: 6 games; 3 one-run; 2 extras. ATL at BUF â€” 4-0; HOU at LAS â€” 1-2; WAS at LOS â€” 1-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-12: 6 games; 4 one-run; 1 extras. BUF at LAS â€” 1-0; WAS at ATL â€” 0-2; HOU at CIN â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-13: 6 games; 2 one-run; 0 extras. WAS at BUF â€” 4-1; LAS at CIN â€” 1-3; BAL at ATL â€” 6-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-14: 6 games; 3 one-run; 0 extras. BUF at CIN â€” 2-1; BAL at WAS â€” 3-5; LAS at GRE â€” 1-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-15: 6 games; 2 one-run; 0 extras. BAL at BUF â€” 0-3; CIN at GRE â€” 3-0; PIT at WAS â€” 0-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-16: 6 games; 3 one-run; 1 extras. BUF at GRE â€” 4-1; PIT at BAL â€” 1-0; CIN at MIN â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-17: 6 games; 2 one-run; 1 extras. PIT at BUF â€” 0-1; GRE at MIN â€” 1-0; NEW at BAL â€” 7-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-18: 6 games; 3 one-run; 2 extras. BUF at MIN â€” 1-2; NEW at PIT â€” 1-0; GRE at LOS â€” 0-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-19: 6 games; 3 one-run; 0 extras. NEW at BUF â€” 2-1; MIN at LOS â€” 4-1; HOU at PIT â€” 2-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-20: 6 games; 3 one-run; 1 extras. BUF at LOS â€” 3-5; HOU at NEW â€” 3-2; MIN at ATL â€” 0-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-21: 6 games; 4 one-run; 1 extras. HOU at BUF â€” 1-2; LOS at ATL â€” 3-7; LAS at NEW â€” 1-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-22: 6 games; 1 one-run; 2 extras. BUF at ATL â€” 6-1; LAS at HOU â€” 1-2; LOS at WAS â€” 5-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-23: 6 games; 3 one-run; 1 extras. LAS at BUF â€” 2-1; ATL at WAS â€” 3-2; CIN at HOU â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-24: 6 games; 2 one-run; 2 extras. BUF at WAS â€” 3-1; CIN at LAS â€” 3-4; ATL at BAL â€” 3-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-25: 6 games; 4 one-run; 2 extras. CIN at BUF â€” 7-0; WAS at BAL â€” 2-3; GRE at LAS â€” 6-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-26: 6 games; 2 one-run; 0 extras. BUF at BAL â€” 3-0; GRE at CIN â€” 3-2; WAS at PIT â€” 0-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-27: 6 games; 2 one-run; 2 extras. GRE at BUF â€” 2-5; BAL at PIT â€” 3-0; MIN at CIN â€” 1-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-28: 6 games; 2 one-run; 0 extras. BUF at PIT â€” 0-1; MIN at GRE â€” 5-1; BAL at NEW â€” 3-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-08-29: 6 games; 2 one-run; 1 extras. MIN at BUF â€” 2-0; PIT at NEW â€” 0-1; LOS at GRE â€” 3-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-05: 6 games; 3 one-run; 1 extras. BUF at NEW â€” 5-1; LOS at MIN â€” 3-2; PIT at HOU â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-06: 6 games; 2 one-run; 1 extras. LOS at BUF â€” 0-1; NEW at HOU â€” 1-0; ATL at MIN â€” 2-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-07: 6 games; 2 one-run; 2 extras. BUF at HOU â€” 0-1; ATL at LOS â€” 3-5; NEW at LAS â€” 2-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-08: 6 games; 2 one-run; 0 extras. ATL at BUF â€” 8-1; HOU at LAS â€” 1-0; WAS at LOS â€” 5-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-09: 6 games; 1 one-run; 2 extras. BUF at LAS â€” 2-0; WAS at ATL â€” 4-0; HOU at CIN â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-10: 6 games; 3 one-run; 0 extras. WAS at BUF â€” 0-1; LAS at CIN â€” 3-6; BAL at ATL â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-11: 6 games; 2 one-run; 1 extras. BUF at CIN â€” 2-4; BAL at WAS â€” 5-3; LAS at GRE â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-12: 6 games; 2 one-run; 2 extras. BAL at BUF â€” 2-4; CIN at GRE â€” 3-2; PIT at WAS â€” 1-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-13: 6 games; 2 one-run; 1 extras. BUF at GRE â€” 1-0; PIT at BAL â€” 2-4; CIN at MIN â€” 5-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-14: 6 games; 3 one-run; 1 extras. PIT at BUF â€” 4-0; GRE at MIN â€” 1-4; NEW at BAL â€” 2-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-15: 6 games; 6 one-run; 2 extras. BUF at MIN â€” 4-5; NEW at PIT â€” 1-2; GRE at LOS â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-16: 6 games; 3 one-run; 1 extras. NEW at BUF â€” 2-1; MIN at LOS â€” 4-5; HOU at PIT â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-17: 6 games; 4 one-run; 1 extras. BUF at LOS â€” 4-3; HOU at NEW â€” 4-0; MIN at ATL â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-18: 6 games; 4 one-run; 0 extras. HOU at BUF â€” 2-1; LOS at ATL â€” 1-0; LAS at NEW â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-19: 6 games; 4 one-run; 0 extras. BUF at ATL â€” 1-0; LAS at HOU â€” 1-2; LOS at WAS â€” 1-3
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-20: 6 games; 2 one-run; 2 extras. LAS at BUF â€” 1-0; ATL at WAS â€” 1-0; CIN at HOU â€” 1-6
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-21: 6 games; 3 one-run; 4 extras. BUF at WAS â€” 0-1; CIN at LAS â€” 2-1; ATL at BAL â€” 0-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-22: 6 games; 2 one-run; 1 extras. CIN at BUF â€” 1-3; WAS at BAL â€” 1-0; GRE at LAS â€” 2-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-23: 6 games; 3 one-run; 1 extras. BUF at BAL â€” 3-1; GRE at CIN â€” 1-0; WAS at PIT â€” 2-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-24: 6 games; 3 one-run; 2 extras. GRE at BUF â€” 2-3; BAL at PIT â€” 3-0; MIN at CIN â€” 1-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-25: 6 games; 2 one-run; 1 extras. BUF at PIT â€” 1-0; MIN at GRE â€” 3-4; BAL at NEW â€” 2-5
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-09-26: 6 games; 2 one-run; 0 extras. MIN at BUF â€” 4-0; PIT at NEW â€” 2-3; LOS at GRE â€” 4-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-03: 6 games; 4 one-run; 0 extras. BUF at NEW â€” 2-0; LOS at MIN â€” 4-3; PIT at HOU â€” 2-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-04: 6 games; 4 one-run; 0 extras. LOS at BUF â€” 1-2; NEW at HOU â€” 0-1; ATL at MIN â€” 0-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-05: 6 games; 4 one-run; 1 extras. BUF at HOU â€” 0-4; ATL at LOS â€” 1-0; NEW at LAS â€” 2-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-06: 6 games; 3 one-run; 1 extras. ATL at BUF â€” 3-2; HOU at LAS â€” 4-1; WAS at LOS â€” 5-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-07: 6 games; 3 one-run; 2 extras. BUF at LAS â€” 0-3; WAS at ATL â€” 3-1; HOU at CIN â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-08: 6 games; 4 one-run; 3 extras. WAS at BUF â€” 2-0; LAS at CIN â€” 2-4; BAL at ATL â€” 1-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-09: 6 games; 4 one-run; 1 extras. BUF at CIN â€” 1-2; BAL at WAS â€” 2-3; LAS at GRE â€” 1-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-10: 6 games; 3 one-run; 0 extras. BAL at BUF â€” 0-3; CIN at GRE â€” 1-3; PIT at WAS â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-11: 6 games; 1 one-run; 0 extras. BUF at GRE â€” 3-1; PIT at BAL â€” 4-2; CIN at MIN â€” 5-4
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-12: 6 games; 2 one-run; 0 extras. PIT at BUF â€” 0-1; GRE at MIN â€” 2-0; NEW at BAL â€” 3-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-13: 6 games; 3 one-run; 1 extras. BUF at MIN â€” 1-0; NEW at PIT â€” 1-3; GRE at LOS â€” 4-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-14: 6 games; 4 one-run; 1 extras. NEW at BUF â€” 2-4; MIN at LOS â€” 2-3; HOU at PIT â€” 0-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-15: 6 games; 1 one-run; 2 extras. BUF at LOS â€” 1-5; HOU at NEW â€” 1-0; MIN at ATL â€” 2-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-16: 6 games; 1 one-run; 0 extras. HOU at BUF â€” 1-3; LOS at ATL â€” 11-3; LAS at NEW â€” 5-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-17: 6 games; 2 one-run; 0 extras. BUF at ATL â€” 3-5; LAS at HOU â€” 0-1; LOS at WAS â€” 4-2
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-18: 6 games; 2 one-run; 1 extras. LAS at BUF â€” 1-4; ATL at WAS â€” 3-0; CIN at HOU â€” 1-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-19: 6 games; 1 one-run; 0 extras. BUF at WAS â€” 4-2; CIN at LAS â€” 2-0; ATL at BAL â€” 5-1
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-20: 6 games; 3 one-run; 0 extras. CIN at BUF â€” 9-0; WAS at BAL â€” 5-2; GRE at LAS â€” 2-0
-[2025-10-04 11:56:58] [game_recap] Daily Recap 2025-10-21: 6 games; 2 one-run; 4 extras. BUF at BAL â€” 2-4; GRE at CIN â€” 0-1; WAS at PIT â€” 2-0
-[2025-10-04 11:56:58] [progress] Simulated regular season; regular season complete
-[2025-10-04 11:57:16] Season advanced to Playoffs
-[2025-10-04 12:25:28] Generated regular season schedule with 972 games
-[2025-10-04 12:25:28] Generated regular season schedule with 972 games
-[2025-10-04 12:25:28] Generated regular season schedule with 972 games
-[2025-10-04 12:25:28] Generated regular season schedule with 972 games
-[2025-10-04 12:25:28] Generated regular season schedule with 972 games
-[2025-10-04 12:25:28] Season advanced to Preseason
-[2025-10-04 12:25:28] No unsigned players available
-[2025-10-04 12:25:28] Training camp completed; players marked ready
-[2025-10-04 12:25:28] Generated regular season schedule with 162 games
-[2025-10-04 12:25:28] Generated regular season schedule with 162 games
-[2025-10-04 12:25:28] Generated regular season schedule with 162 games
-[2025-10-04 12:25:28] No unsigned players available
-[2025-10-04 12:25:28] Generated regular season schedule with 162 games
+[2025-10-04 12:52:54] No unsigned players available
+[2025-10-04 12:52:56] Training camp completed; players marked ready
+[2025-10-04 12:52:57] Generated regular season schedule with 1215 games
+[2025-10-04 12:53:00] Season advanced to Regular Season
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-01: 7 games; 1 one-run; 0 extras. JAC at BOS â€” 3-1; LOU at SAN â€” 1-4; SAN1 at WAS â€” 0-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-02: 7 games; 1 one-run; 1 extras. NAS at BOS â€” 1-3; JAC at WAS â€” 5-3; MEM at SAN â€” 5-7
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-03: 7 games; 2 one-run; 0 extras. LOU at NAS â€” 3-1; BOS at WAS â€” 3-1; JAC at HOU â€” 2-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-04: 7 games; 2 one-run; 1 extras. NAS at WAS â€” 2-5; MEM at LOU â€” 2-0; BOS at HOU â€” 5-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-05: 7 games; 1 one-run; 0 extras. MEM at NAS â€” 3-1; WAS at HOU â€” 0-2; OKL at LOU â€” 3-6
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-06: 7 games; 4 one-run; 2 extras. NAS at HOU â€” 6-3; OKL at MEM â€” 3-4; WAS at MIL â€” 2-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-07: 7 games; 2 one-run; 2 extras. OKL at NAS â€” 3-2; HOU at MIL â€” 1-7; CHI at MEM â€” 2-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-08: 7 games; 6 one-run; 3 extras. NAS at MIL â€” 1-2; CHI at OKL â€” 1-3; HOU at PHO â€” 2-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-09: 7 games; 3 one-run; 2 extras. CHI at NAS â€” 1-0; MIL at PHO â€” 1-3; SAN2 at OKL â€” 4-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-10: 7 games; 3 one-run; 0 extras. NAS at PHO â€” 3-0; SAN2 at CHI â€” 3-2; MIL at ALB â€” 0-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-11: 7 games; 4 one-run; 1 extras. SAN2 at NAS â€” 1-3; PHO at ALB â€” 3-2; SAN1 at CHI â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-12: 7 games; 5 one-run; 1 extras. NAS at ALB â€” 1-4; SAN1 at SAN2 â€” 4-3; PHO at SAN â€” 2-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-13: 7 games; 1 one-run; 0 extras. SAN1 at NAS â€” 5-7; ALB at SAN â€” 7-3; JAC at SAN2 â€” 2-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-14: 7 games; 4 one-run; 1 extras. NAS at SAN â€” 3-1; JAC at SAN1 â€” 1-6; BOS at SAN2 â€” 3-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-15: 7 games; 3 one-run; 2 extras. JAC at NAS â€” 4-3; BOS at SAN1 â€” 2-1; ALB at LOU â€” 3-5
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-22: 7 games; 4 one-run; 2 extras. BOS at JAC â€” 2-3; SAN at LOU â€” 1-4; WAS at SAN1 â€” 5-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-23: 7 games; 4 one-run; 3 extras. BOS at NAS â€” 3-5; WAS at JAC â€” 1-2; SAN at MEM â€” 4-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-24: 7 games; 2 one-run; 1 extras. NAS at LOU â€” 3-2; WAS at BOS â€” 2-0; HOU at JAC â€” 5-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-25: 7 games; 4 one-run; 1 extras. WAS at NAS â€” 0-1; LOU at MEM â€” 1-0; HOU at BOS â€” 3-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-26: 7 games; 4 one-run; 1 extras. NAS at MEM â€” 2-3; HOU at WAS â€” 6-0; LOU at OKL â€” 3-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-27: 7 games; 1 one-run; 1 extras. HOU at NAS â€” 3-0; MEM at OKL â€” 2-3; MIL at WAS â€” 0-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-28: 7 games; 3 one-run; 0 extras. NAS at OKL â€” 1-2; MIL at HOU â€” 1-4; MEM at CHI â€” 2-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-29: 7 games; 4 one-run; 0 extras. MIL at NAS â€” 3-2; OKL at CHI â€” 2-0; PHO at HOU â€” 4-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-04-30: 7 games; 3 one-run; 0 extras. NAS at CHI â€” 3-1; PHO at MIL â€” 0-3; OKL at SAN2 â€” 1-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-01: 7 games; 3 one-run; 3 extras. PHO at NAS â€” 8-1; CHI at SAN2 â€” 1-3; ALB at MIL â€” 4-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-02: 7 games; 0 one-run; 2 extras. NAS at SAN2 â€” 6-0; ALB at PHO â€” 5-1; CHI at SAN1 â€” 5-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-03: 7 games; 4 one-run; 2 extras. ALB at NAS â€” 1-2; SAN2 at SAN1 â€” 4-0; SAN at PHO â€” 5-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-04: 7 games; 2 one-run; 0 extras. NAS at SAN1 â€” 4-1; SAN at ALB â€” 1-2; SAN2 at JAC â€” 6-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-05: 7 games; 2 one-run; 1 extras. SAN at NAS â€” 4-0; SAN1 at JAC â€” 0-3; SAN2 at BOS â€” 2-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-06: 7 games; 6 one-run; 1 extras. NAS at JAC â€” 8-6; SAN1 at BOS â€” 1-0; LOU at ALB â€” 1-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-07: 7 games; 4 one-run; 1 extras. JAC at BOS â€” 0-1; LOU at SAN â€” 0-3; SAN1 at WAS â€” 2-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-08: 7 games; 4 one-run; 1 extras. NAS at BOS â€” 0-3; JAC at WAS â€” 2-5; MEM at SAN â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-09: 7 games; 4 one-run; 1 extras. LOU at NAS â€” 2-1; BOS at WAS â€” 0-2; JAC at HOU â€” 3-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-10: 7 games; 3 one-run; 0 extras. NAS at WAS â€” 3-5; MEM at LOU â€” 2-6; BOS at HOU â€” 1-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-11: 7 games; 4 one-run; 1 extras. MEM at NAS â€” 4-1; WAS at HOU â€” 2-3; OKL at LOU â€” 1-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-12: 7 games; 3 one-run; 1 extras. NAS at HOU â€” 1-2; OKL at MEM â€” 2-0; WAS at MIL â€” 1-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-13: 7 games; 2 one-run; 2 extras. OKL at NAS â€” 4-2; HOU at MIL â€” 3-0; CHI at MEM â€” 2-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-14: 7 games; 2 one-run; 1 extras. NAS at MIL â€” 4-2; CHI at OKL â€” 2-0; HOU at PHO â€” 1-6
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-15: 7 games; 2 one-run; 0 extras. CHI at NAS â€” 1-0; MIL at PHO â€” 2-3; SAN2 at OKL â€” 0-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-16: 7 games; 3 one-run; 2 extras. NAS at PHO â€” 6-3; SAN2 at CHI â€” 0-1; MIL at ALB â€” 1-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-17: 7 games; 2 one-run; 0 extras. SAN2 at NAS â€” 1-3; PHO at ALB â€” 2-3; SAN1 at CHI â€” 2-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-18: 7 games; 6 one-run; 0 extras. NAS at ALB â€” 2-3; SAN1 at SAN2 â€” 1-0; PHO at SAN â€” 4-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-19: 7 games; 5 one-run; 1 extras. SAN1 at NAS â€” 5-0; ALB at SAN â€” 0-3; JAC at SAN2 â€” 4-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-20: 7 games; 3 one-run; 0 extras. NAS at SAN â€” 2-4; JAC at SAN1 â€” 0-1; BOS at SAN2 â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-21: 7 games; 3 one-run; 2 extras. JAC at NAS â€” 2-5; BOS at SAN1 â€” 0-2; ALB at LOU â€” 1-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-28: 7 games; 5 one-run; 2 extras. BOS at JAC â€” 2-1; SAN at LOU â€” 3-1; WAS at SAN1 â€” 3-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-29: 7 games; 2 one-run; 1 extras. BOS at NAS â€” 0-3; WAS at JAC â€” 1-0; SAN at MEM â€” 6-5
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-30: 7 games; 4 one-run; 1 extras. NAS at LOU â€” 3-4; WAS at BOS â€” 0-2; HOU at JAC â€” 4-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-05-31: 7 games; 4 one-run; 4 extras. WAS at NAS â€” 5-4; LOU at MEM â€” 2-0; HOU at BOS â€” 2-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-01: 7 games; 4 one-run; 1 extras. NAS at MEM â€” 0-3; HOU at WAS â€” 1-0; LOU at OKL â€” 1-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-02: 7 games; 4 one-run; 1 extras. HOU at NAS â€” 3-0; MEM at OKL â€” 2-3; MIL at WAS â€” 2-6
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-03: 7 games; 3 one-run; 2 extras. NAS at OKL â€” 3-1; MIL at HOU â€” 0-7; MEM at CHI â€” 0-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-04: 7 games; 4 one-run; 0 extras. MIL at NAS â€” 0-2; OKL at CHI â€” 1-0; PHO at HOU â€” 3-6
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-05: 7 games; 4 one-run; 0 extras. NAS at CHI â€” 0-3; PHO at MIL â€” 6-5; OKL at SAN2 â€” 2-5
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-06: 7 games; 5 one-run; 2 extras. PHO at NAS â€” 4-5; CHI at SAN2 â€” 1-2; ALB at MIL â€” 1-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-07: 7 games; 4 one-run; 0 extras. NAS at SAN2 â€” 1-2; ALB at PHO â€” 3-2; CHI at SAN1 â€” 1-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-08: 7 games; 1 one-run; 0 extras. ALB at NAS â€” 5-1; SAN2 at SAN1 â€” 5-3; SAN at PHO â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-09: 7 games; 3 one-run; 2 extras. NAS at SAN1 â€” 0-6; SAN at ALB â€” 2-0; SAN2 at JAC â€” 0-7
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-10: 7 games; 5 one-run; 2 extras. SAN at NAS â€” 1-0; SAN1 at JAC â€” 2-1; SAN2 at BOS â€” 1-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-11: 7 games; 3 one-run; 2 extras. NAS at JAC â€” 1-3; SAN1 at BOS â€” 2-1; LOU at ALB â€” 3-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-12: 7 games; 3 one-run; 1 extras. JAC at BOS â€” 1-2; LOU at SAN â€” 1-4; SAN1 at WAS â€” 4-6
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-13: 7 games; 3 one-run; 0 extras. NAS at BOS â€” 1-0; JAC at WAS â€” 4-1; MEM at SAN â€” 3-10
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-14: 7 games; 5 one-run; 0 extras. LOU at NAS â€” 1-0; BOS at WAS â€” 1-0; JAC at HOU â€” 4-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-15: 7 games; 2 one-run; 2 extras. NAS at WAS â€” 0-4; MEM at LOU â€” 4-1; BOS at HOU â€” 2-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-16: 7 games; 3 one-run; 0 extras. MEM at NAS â€” 2-4; WAS at HOU â€” 4-3; OKL at LOU â€” 1-5
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-17: 7 games; 5 one-run; 1 extras. NAS at HOU â€” 5-2; OKL at MEM â€” 1-0; WAS at MIL â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-18: 7 games; 4 one-run; 2 extras. OKL at NAS â€” 1-0; HOU at MIL â€” 5-3; CHI at MEM â€” 2-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-19: 7 games; 3 one-run; 0 extras. NAS at MIL â€” 3-1; CHI at OKL â€” 2-0; HOU at PHO â€” 4-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-20: 7 games; 2 one-run; 1 extras. CHI at NAS â€” 2-3; MIL at PHO â€” 2-0; SAN2 at OKL â€” 0-6
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-21: 7 games; 4 one-run; 0 extras. NAS at PHO â€” 3-2; SAN2 at CHI â€” 0-2; MIL at ALB â€” 1-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-22: 7 games; 4 one-run; 1 extras. SAN2 at NAS â€” 2-1; PHO at ALB â€” 2-1; SAN1 at CHI â€” 4-2
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-23: 7 games; 3 one-run; 2 extras. NAS at ALB â€” 1-6; SAN1 at SAN2 â€” 0-2; PHO at SAN â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-24: 7 games; 2 one-run; 1 extras. SAN1 at NAS â€” 3-1; ALB at SAN â€” 3-1; JAC at SAN2 â€” 0-5
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-25: 7 games; 2 one-run; 1 extras. NAS at SAN â€” 4-2; JAC at SAN1 â€” 3-0; BOS at SAN2 â€” 0-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-06-26: 7 games; 0 one-run; 0 extras. JAC at NAS â€” 5-1; BOS at SAN1 â€” 0-9; ALB at LOU â€” 2-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-03: 7 games; 3 one-run; 1 extras. BOS at JAC â€” 2-0; SAN at LOU â€” 2-1; WAS at SAN1 â€” 1-7
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-04: 7 games; 1 one-run; 2 extras. BOS at NAS â€” 2-0; WAS at JAC â€” 4-5; SAN at MEM â€” 0-3
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-05: 7 games; 4 one-run; 4 extras. NAS at LOU â€” 0-1; WAS at BOS â€” 2-3; HOU at JAC â€” 2-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-06: 7 games; 5 one-run; 0 extras. WAS at NAS â€” 1-0; LOU at MEM â€” 5-4; HOU at BOS â€” 3-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-07: 7 games; 1 one-run; 1 extras. NAS at MEM â€” 2-0; HOU at WAS â€” 4-6; LOU at OKL â€” 4-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-08: 7 games; 4 one-run; 0 extras. HOU at NAS â€” 4-3; MEM at OKL â€” 0-2; MIL at WAS â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-09: 7 games; 4 one-run; 1 extras. NAS at OKL â€” 3-2; MIL at HOU â€” 1-0; MEM at CHI â€” 1-0
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-10: 7 games; 3 one-run; 2 extras. MIL at NAS â€” 1-2; OKL at CHI â€” 1-0; PHO at HOU â€” 8-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-11: 7 games; 2 one-run; 0 extras. NAS at CHI â€” 0-2; PHO at MIL â€” 1-2; OKL at SAN2 â€” 3-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-12: 7 games; 0 one-run; 1 extras. PHO at NAS â€” 0-2; CHI at SAN2 â€” 3-0; ALB at MIL â€” 9-4
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-13: 7 games; 4 one-run; 1 extras. NAS at SAN2 â€” 4-5; ALB at PHO â€” 0-2; CHI at SAN1 â€” 0-1
+[2025-10-04 12:54:19] [game_recap] Daily Recap 2025-07-14: 7 games; 4 one-run; 1 extras. ALB at NAS â€” 2-1; SAN2 at SAN1 â€” 2-5; SAN at PHO â€” 2-3
+[2025-10-04 12:54:19] [progress] Simulated midseason; 87 days until Season End
+[2025-10-04 14:29:34] Amateur Draft 2025 committed: 20 players added; 20 roster assignments
+[2025-10-04 14:29:37] [game_recap] Daily Recap 2025-07-15: 7 games; 3 one-run; 0 extras. NAS at SAN1 â€” 0-6; SAN at ALB â€” 1-3; SAN2 at JAC â€” 3-1
+[2025-10-04 14:29:37] [progress] Simulated a regular season day; 86 days until Season End
+[2025-10-04 14:36:26] Generated regular season schedule with 1215 games
+[2025-10-04 14:36:26] Generated regular season schedule with 1215 games
+[2025-10-04 14:36:26] Generated regular season schedule with 1215 games
+[2025-10-04 14:36:26] Generated regular season schedule with 1215 games
+[2025-10-04 14:36:26] Generated regular season schedule with 1215 games
+[2025-10-04 14:36:26] Season advanced to Preseason
+[2025-10-04 14:36:26] No unsigned players available
+[2025-10-04 14:36:26] Training camp completed; players marked ready
+[2025-10-04 14:36:26] Generated regular season schedule with 162 games
+[2025-10-04 14:36:26] Generated regular season schedule with 162 games
+[2025-10-04 14:36:27] Generated regular season schedule with 162 games
+[2025-10-04 14:36:27] No unsigned players available
+[2025-10-04 14:36:27] Generated regular season schedule with 162 games
+[2025-10-04 15:00:43] Generated regular season schedule with 1215 games
+[2025-10-04 15:00:51] League reset to Opening Day
+[2025-10-04 15:00:51] Purged saved season boxscores
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-01: 7 games; 1 one-run; 2 extras. JAC at BOS â€” 0-7; LOU at SAN â€” 5-2; SAN1 at WAS â€” 3-1
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-02: 7 games; 3 one-run; 1 extras. NAS at BOS â€” 1-2; JAC at WAS â€” 5-2; MEM at SAN â€” 0-5
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-03: 7 games; 4 one-run; 2 extras. LOU at NAS â€” 2-0; BOS at WAS â€” 1-0; JAC at HOU â€” 3-4
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-04: 7 games; 2 one-run; 1 extras. NAS at WAS â€” 1-3; MEM at LOU â€” 5-3; BOS at HOU â€” 8-0
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-05: 7 games; 1 one-run; 0 extras. MEM at NAS â€” 3-0; WAS at HOU â€” 1-3; OKL at LOU â€” 0-4
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-06: 7 games; 5 one-run; 1 extras. NAS at HOU â€” 4-2; OKL at MEM â€” 3-2; WAS at MIL â€” 2-1
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-07: 7 games; 2 one-run; 0 extras. OKL at NAS â€” 3-0; HOU at MIL â€” 2-0; CHI at MEM â€” 3-2
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-08: 7 games; 3 one-run; 2 extras. NAS at MIL â€” 0-3; CHI at OKL â€” 0-1; HOU at PHO â€” 4-0
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-09: 7 games; 2 one-run; 2 extras. CHI at NAS â€” 1-3; MIL at PHO â€” 0-6; SAN2 at OKL â€” 3-2
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-10: 7 games; 3 one-run; 2 extras. NAS at PHO â€” 1-3; SAN2 at CHI â€” 2-1; MIL at ALB â€” 1-2
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-11: 7 games; 0 one-run; 1 extras. SAN2 at NAS â€” 6-4; PHO at ALB â€” 4-1; SAN1 at CHI â€” 2-4
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-12: 7 games; 2 one-run; 2 extras. NAS at ALB â€” 0-2; SAN1 at SAN2 â€” 5-1; PHO at SAN â€” 1-3
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-13: 7 games; 0 one-run; 3 extras. SAN1 at NAS â€” 0-3; ALB at SAN â€” 2-5; JAC at SAN2 â€” 3-6
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-14: 7 games; 4 one-run; 1 extras. NAS at SAN â€” 1-5; JAC at SAN1 â€” 4-6; BOS at SAN2 â€” 5-4
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-15: 7 games; 1 one-run; 0 extras. JAC at NAS â€” 0-2; BOS at SAN1 â€” 2-7; ALB at LOU â€” 9-3
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-22: 7 games; 3 one-run; 0 extras. BOS at JAC â€” 3-0; SAN at LOU â€” 1-2; WAS at SAN1 â€” 3-6
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-23: 7 games; 1 one-run; 3 extras. BOS at NAS â€” 3-2; WAS at JAC â€” 0-2; SAN at MEM â€” 2-4
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-24: 7 games; 2 one-run; 2 extras. NAS at LOU â€” 2-0; WAS at BOS â€” 2-3; HOU at JAC â€” 2-0
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-25: 7 games; 4 one-run; 2 extras. WAS at NAS â€” 2-0; LOU at MEM â€” 3-1; HOU at BOS â€” 1-0
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-26: 7 games; 2 one-run; 0 extras. NAS at MEM â€” 3-5; HOU at WAS â€” 0-3; LOU at OKL â€” 2-3
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-27: 7 games; 3 one-run; 0 extras. HOU at NAS â€” 2-4; MEM at OKL â€” 0-1; MIL at WAS â€” 1-5
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-28: 7 games; 1 one-run; 3 extras. NAS at OKL â€” 5-2; MIL at HOU â€” 1-3; MEM at CHI â€” 1-3
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-29: 7 games; 6 one-run; 2 extras. MIL at NAS â€” 2-3; OKL at CHI â€” 0-1; PHO at HOU â€” 6-5
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-04-30: 7 games; 3 one-run; 1 extras. NAS at CHI â€” 1-2; PHO at MIL â€” 4-2; OKL at SAN2 â€” 1-0
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-05-01: 7 games; 5 one-run; 1 extras. PHO at NAS â€” 2-3; CHI at SAN2 â€” 1-2; ALB at MIL â€” 1-2
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-05-02: 7 games; 0 one-run; 0 extras. NAS at SAN2 â€” 0-4; ALB at PHO â€” 4-7; CHI at SAN1 â€” 6-3
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-05-03: 7 games; 2 one-run; 3 extras. ALB at NAS â€” 4-3; SAN2 at SAN1 â€” 1-2; SAN at PHO â€” 2-0
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-05-04: 7 games; 2 one-run; 2 extras. NAS at SAN1 â€” 1-3; SAN at ALB â€” 1-0; SAN2 at JAC â€” 0-3
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-05-05: 7 games; 2 one-run; 1 extras. SAN at NAS â€” 2-1; SAN1 at JAC â€” 4-3; SAN2 at BOS â€” 0-2
+[2025-10-04 15:01:18] [game_recap] Daily Recap 2025-05-06: 7 games; 2 one-run; 0 extras. NAS at JAC â€” 1-5; SAN1 at BOS â€” 6-3; LOU at ALB â€” 0-4
+[2025-10-04 15:01:18] [progress] Simulated month; 57 days until Midseason
+[2025-10-04 15:08:50] Generated regular season schedule with 1215 games
+[2025-10-04 15:08:50] Generated regular season schedule with 1215 games
+[2025-10-04 15:08:50] Generated regular season schedule with 1215 games
+[2025-10-04 15:08:50] Generated regular season schedule with 1215 games
+[2025-10-04 15:08:50] Generated regular season schedule with 1215 games
+[2025-10-04 15:08:51] Season advanced to Preseason
+[2025-10-04 15:08:51] No unsigned players available
+[2025-10-04 15:08:51] Training camp completed; players marked ready
+[2025-10-04 15:08:51] Generated regular season schedule with 162 games
+[2025-10-04 15:08:51] Generated regular season schedule with 162 games
+[2025-10-04 15:08:51] Generated regular season schedule with 162 games
+[2025-10-04 15:08:51] No unsigned players available
+[2025-10-04 15:08:51] Generated regular season schedule with 162 games
+[2025-10-04 15:11:10] Generated regular season schedule with 1215 games
+[2025-10-04 15:11:10] Generated regular season schedule with 1215 games
+[2025-10-04 15:11:10] Generated regular season schedule with 1215 games
+[2025-10-04 15:11:10] Generated regular season schedule with 1215 games
+[2025-10-04 15:11:10] Generated regular season schedule with 1215 games
+[2025-10-04 15:11:10] Season advanced to Preseason
+[2025-10-04 15:11:11] No unsigned players available
+[2025-10-04 15:11:11] Training camp completed; players marked ready
+[2025-10-04 15:11:11] Generated regular season schedule with 162 games
+[2025-10-04 15:11:11] Generated regular season schedule with 162 games
+[2025-10-04 15:11:11] Generated regular season schedule with 162 games
+[2025-10-04 15:11:11] No unsigned players available
+[2025-10-04 15:11:11] Generated regular season schedule with 162 games
+[2025-10-06 10:40:25] League reset to Opening Day
+[2025-10-06 10:40:25] Purged saved season boxscores
+[2025-10-06 10:41:09] Generated regular season schedule with 1215 games
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-01: 7 games; 2 one-run; 2 extras. JAC at BOS â€” 1-3; LOU at SAN â€” 1-2; SAN1 at WAS â€” 3-6
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-02: 7 games; 3 one-run; 1 extras. NAS at BOS â€” 2-3; JAC at WAS â€” 1-5; MEM at SAN â€” 0-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-03: 7 games; 3 one-run; 0 extras. LOU at NAS â€” 3-1; BOS at WAS â€” 1-0; JAC at HOU â€” 0-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-04: 7 games; 4 one-run; 3 extras. NAS at WAS â€” 3-4; MEM at LOU â€” 1-2; BOS at HOU â€” 4-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-05: 7 games; 4 one-run; 3 extras. MEM at NAS â€” 1-2; WAS at HOU â€” 2-1; OKL at LOU â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-06: 7 games; 4 one-run; 1 extras. NAS at HOU â€” 1-2; OKL at MEM â€” 2-0; WAS at MIL â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-07: 7 games; 2 one-run; 2 extras. OKL at NAS â€” 1-3; HOU at MIL â€” 1-0; CHI at MEM â€” 4-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-08: 7 games; 2 one-run; 3 extras. NAS at MIL â€” 1-2; CHI at OKL â€” 0-4; HOU at PHO â€” 1-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-09: 7 games; 1 one-run; 0 extras. CHI at NAS â€” 1-3; MIL at PHO â€” 0-1; SAN2 at OKL â€” 2-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-10: 7 games; 3 one-run; 0 extras. NAS at PHO â€” 2-1; SAN2 at CHI â€” 2-4; MIL at ALB â€” 3-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-11: 7 games; 4 one-run; 1 extras. SAN2 at NAS â€” 1-2; PHO at ALB â€” 1-0; SAN1 at CHI â€” 0-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-12: 7 games; 1 one-run; 0 extras. NAS at ALB â€” 1-2; SAN1 at SAN2 â€” 4-0; PHO at SAN â€” 4-12
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-13: 7 games; 5 one-run; 1 extras. SAN1 at NAS â€” 0-2; ALB at SAN â€” 0-1; JAC at SAN2 â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-14: 7 games; 3 one-run; 1 extras. NAS at SAN â€” 3-0; JAC at SAN1 â€” 6-8; BOS at SAN2 â€” 0-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-15: 7 games; 3 one-run; 3 extras. JAC at NAS â€” 2-3; BOS at SAN1 â€” 1-2; ALB at LOU â€” 0-6
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-22: 7 games; 2 one-run; 0 extras. BOS at JAC â€” 3-7; SAN at LOU â€” 2-1; WAS at SAN1 â€” 0-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-23: 7 games; 2 one-run; 3 extras. BOS at NAS â€” 10-1; WAS at JAC â€” 2-9; SAN at MEM â€” 5-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-24: 7 games; 2 one-run; 2 extras. NAS at LOU â€” 3-1; WAS at BOS â€” 0-2; HOU at JAC â€” 5-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-25: 7 games; 4 one-run; 1 extras. WAS at NAS â€” 6-5; LOU at MEM â€” 4-3; HOU at BOS â€” 1-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-26: 7 games; 2 one-run; 0 extras. NAS at MEM â€” 3-1; HOU at WAS â€” 5-0; LOU at OKL â€” 0-5
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-27: 7 games; 4 one-run; 3 extras. HOU at NAS â€” 3-2; MEM at OKL â€” 2-0; MIL at WAS â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-28: 7 games; 4 one-run; 0 extras. NAS at OKL â€” 1-2; MIL at HOU â€” 5-4; MEM at CHI â€” 3-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-29: 7 games; 2 one-run; 0 extras. MIL at NAS â€” 2-0; OKL at CHI â€” 4-0; PHO at HOU â€” 2-6
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-04-30: 7 games; 4 one-run; 0 extras. NAS at CHI â€” 1-4; PHO at MIL â€” 6-5; OKL at SAN2 â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-01: 7 games; 3 one-run; 0 extras. PHO at NAS â€” 1-2; CHI at SAN2 â€” 2-0; ALB at MIL â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-02: 7 games; 0 one-run; 2 extras. NAS at SAN2 â€” 4-2; ALB at PHO â€” 1-3; CHI at SAN1 â€” 0-5
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-03: 7 games; 2 one-run; 2 extras. ALB at NAS â€” 2-0; SAN2 at SAN1 â€” 2-1; SAN at PHO â€” 2-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-04: 7 games; 3 one-run; 0 extras. NAS at SAN1 â€” 0-5; SAN at ALB â€” 0-1; SAN2 at JAC â€” 0-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-05: 7 games; 5 one-run; 1 extras. SAN at NAS â€” 3-2; SAN1 at JAC â€” 7-8; SAN2 at BOS â€” 2-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-06: 7 games; 4 one-run; 1 extras. NAS at JAC â€” 1-0; SAN1 at BOS â€” 4-1; LOU at ALB â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-07: 7 games; 2 one-run; 0 extras. JAC at BOS â€” 0-4; LOU at SAN â€” 1-3; SAN1 at WAS â€” 0-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-08: 7 games; 3 one-run; 0 extras. NAS at BOS â€” 1-3; JAC at WAS â€” 3-2; MEM at SAN â€” 1-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-09: 7 games; 3 one-run; 2 extras. LOU at NAS â€” 1-0; BOS at WAS â€” 6-1; JAC at HOU â€” 3-5
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-10: 7 games; 3 one-run; 0 extras. NAS at WAS â€” 2-0; MEM at LOU â€” 2-3; BOS at HOU â€” 2-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-11: 7 games; 1 one-run; 1 extras. MEM at NAS â€” 3-0; WAS at HOU â€” 1-5; OKL at LOU â€” 4-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-12: 7 games; 2 one-run; 0 extras. NAS at HOU â€” 1-0; OKL at MEM â€” 4-5; WAS at MIL â€” 4-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-13: 7 games; 2 one-run; 3 extras. OKL at NAS â€” 2-5; HOU at MIL â€” 4-1; CHI at MEM â€” 0-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-14: 7 games; 5 one-run; 3 extras. NAS at MIL â€” 1-2; CHI at OKL â€” 0-1; HOU at PHO â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-15: 7 games; 5 one-run; 2 extras. CHI at NAS â€” 0-2; MIL at PHO â€” 1-0; SAN2 at OKL â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-16: 7 games; 2 one-run; 1 extras. NAS at PHO â€” 2-0; SAN2 at CHI â€” 2-10; MIL at ALB â€” 0-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-17: 7 games; 3 one-run; 1 extras. SAN2 at NAS â€” 3-1; PHO at ALB â€” 0-5; SAN1 at CHI â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-18: 7 games; 2 one-run; 1 extras. NAS at ALB â€” 1-0; SAN1 at SAN2 â€” 0-4; PHO at SAN â€” 0-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-19: 7 games; 3 one-run; 1 extras. SAN1 at NAS â€” 7-0; ALB at SAN â€” 3-0; JAC at SAN2 â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-20: 7 games; 1 one-run; 1 extras. NAS at SAN â€” 1-0; JAC at SAN1 â€” 0-3; BOS at SAN2 â€” 4-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-21: 7 games; 2 one-run; 0 extras. JAC at NAS â€” 0-2; BOS at SAN1 â€” 0-5; ALB at LOU â€” 2-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-28: 7 games; 2 one-run; 0 extras. BOS at JAC â€” 1-4; SAN at LOU â€” 2-4; WAS at SAN1 â€” 2-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-29: 7 games; 5 one-run; 1 extras. BOS at NAS â€” 1-0; WAS at JAC â€” 4-5; SAN at MEM â€” 2-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-30: 7 games; 4 one-run; 1 extras. NAS at LOU â€” 2-1; WAS at BOS â€” 6-3; HOU at JAC â€” 3-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-05-31: 7 games; 6 one-run; 0 extras. WAS at NAS â€” 1-2; LOU at MEM â€” 1-0; HOU at BOS â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-01: 7 games; 6 one-run; 3 extras. NAS at MEM â€” 2-1; HOU at WAS â€” 2-1; LOU at OKL â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-02: 7 games; 5 one-run; 0 extras. HOU at NAS â€” 3-4; MEM at OKL â€” 3-2; MIL at WAS â€” 2-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-03: 7 games; 2 one-run; 2 extras. NAS at OKL â€” 0-2; MIL at HOU â€” 0-2; MEM at CHI â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-04: 7 games; 3 one-run; 1 extras. MIL at NAS â€” 5-0; OKL at CHI â€” 1-0; PHO at HOU â€” 1-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-05: 7 games; 3 one-run; 2 extras. NAS at CHI â€” 2-4; PHO at MIL â€” 1-2; OKL at SAN2 â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-06: 7 games; 2 one-run; 1 extras. PHO at NAS â€” 4-2; CHI at SAN2 â€” 0-1; ALB at MIL â€” 4-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-07: 7 games; 1 one-run; 0 extras. NAS at SAN2 â€” 0-4; ALB at PHO â€” 0-1; CHI at SAN1 â€” 3-5
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-08: 7 games; 2 one-run; 3 extras. ALB at NAS â€” 0-3; SAN2 at SAN1 â€” 5-3; SAN at PHO â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-09: 7 games; 4 one-run; 0 extras. NAS at SAN1 â€” 1-3; SAN at ALB â€” 0-3; SAN2 at JAC â€” 2-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-10: 7 games; 1 one-run; 3 extras. SAN at NAS â€” 0-2; SAN1 at JAC â€” 0-2; SAN2 at BOS â€” 3-8
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-11: 7 games; 3 one-run; 0 extras. NAS at JAC â€” 0-5; SAN1 at BOS â€” 3-0; LOU at ALB â€” 1-2
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-12: 7 games; 6 one-run; 4 extras. JAC at BOS â€” 1-2; LOU at SAN â€” 3-1; SAN1 at WAS â€” 2-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-13: 7 games; 4 one-run; 0 extras. NAS at BOS â€” 1-2; JAC at WAS â€” 3-1; MEM at SAN â€” 4-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-14: 7 games; 3 one-run; 2 extras. LOU at NAS â€” 0-2; BOS at WAS â€” 4-1; JAC at HOU â€” 2-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-15: 7 games; 4 one-run; 1 extras. NAS at WAS â€” 0-1; MEM at LOU â€” 3-6; BOS at HOU â€” 6-5
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-16: 7 games; 5 one-run; 0 extras. MEM at NAS â€” 5-2; WAS at HOU â€” 2-3; OKL at LOU â€” 6-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-17: 7 games; 4 one-run; 0 extras. NAS at HOU â€” 5-1; OKL at MEM â€” 2-1; WAS at MIL â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-18: 7 games; 4 one-run; 1 extras. OKL at NAS â€” 1-0; HOU at MIL â€” 1-2; CHI at MEM â€” 2-3
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-19: 7 games; 4 one-run; 1 extras. NAS at MIL â€” 0-1; CHI at OKL â€” 1-0; HOU at PHO â€” 3-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-20: 7 games; 5 one-run; 1 extras. CHI at NAS â€” 2-1; MIL at PHO â€” 1-0; SAN2 at OKL â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-21: 7 games; 3 one-run; 1 extras. NAS at PHO â€” 0-4; SAN2 at CHI â€” 8-4; MIL at ALB â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-22: 7 games; 4 one-run; 1 extras. SAN2 at NAS â€” 5-6; PHO at ALB â€” 1-0; SAN1 at CHI â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-23: 7 games; 3 one-run; 0 extras. NAS at ALB â€” 3-4; SAN1 at SAN2 â€” 0-3; PHO at SAN â€” 5-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-24: 7 games; 3 one-run; 2 extras. SAN1 at NAS â€” 4-1; ALB at SAN â€” 2-1; JAC at SAN2 â€” 2-7
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-25: 7 games; 2 one-run; 1 extras. NAS at SAN â€” 0-2; JAC at SAN1 â€” 1-4; BOS at SAN2 â€” 1-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-06-26: 7 games; 3 one-run; 1 extras. JAC at NAS â€” 2-3; BOS at SAN1 â€” 0-2; ALB at LOU â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-03: 7 games; 5 one-run; 1 extras. BOS at JAC â€” 4-3; SAN at LOU â€” 1-9; WAS at SAN1 â€” 2-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-04: 7 games; 4 one-run; 1 extras. BOS at NAS â€” 2-4; WAS at JAC â€” 3-2; SAN at MEM â€” 0-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-05: 7 games; 3 one-run; 1 extras. NAS at LOU â€” 1-2; WAS at BOS â€” 2-0; HOU at JAC â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-06: 7 games; 3 one-run; 1 extras. WAS at NAS â€” 3-2; LOU at MEM â€” 1-0; HOU at BOS â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-07: 7 games; 4 one-run; 0 extras. NAS at MEM â€” 1-2; HOU at WAS â€” 3-0; LOU at OKL â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-08: 7 games; 3 one-run; 1 extras. HOU at NAS â€” 2-3; MEM at OKL â€” 4-1; MIL at WAS â€” 0-15
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-09: 7 games; 3 one-run; 2 extras. NAS at OKL â€” 0-3; MIL at HOU â€” 3-1; MEM at CHI â€” 2-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-10: 7 games; 3 one-run; 0 extras. MIL at NAS â€” 4-2; OKL at CHI â€” 2-3; PHO at HOU â€” 3-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-11: 7 games; 3 one-run; 1 extras. NAS at CHI â€” 3-0; PHO at MIL â€” 3-2; OKL at SAN2 â€” 2-4
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-12: 7 games; 2 one-run; 1 extras. PHO at NAS â€” 0-2; CHI at SAN2 â€” 0-2; ALB at MIL â€” 1-0
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-13: 7 games; 2 one-run; 1 extras. NAS at SAN2 â€” 0-1; ALB at PHO â€” 4-2; CHI at SAN1 â€” 3-1
+[2025-10-06 10:41:57] [game_recap] Daily Recap 2025-07-14: 7 games; 4 one-run; 0 extras. ALB at NAS â€” 4-3; SAN2 at SAN1 â€” 0-3; SAN at PHO â€” 0-2
+[2025-10-06 10:41:57] [progress] Simulated midseason; 87 days until Season End
+[2025-10-06 10:51:49] League reset to Opening Day
+[2025-10-06 10:51:49] Purged saved season boxscores
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-01: 7 games; 2 one-run; 1 extras. JAC at BOS â€” 2-3; LOU at SAN â€” 4-1; SAN1 at WAS â€” 3-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-02: 7 games; 2 one-run; 1 extras. NAS at BOS â€” 2-0; JAC at WAS â€” 0-2; MEM at SAN â€” 0-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-03: 7 games; 2 one-run; 1 extras. LOU at NAS â€” 4-2; BOS at WAS â€” 2-0; JAC at HOU â€” 0-7
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-04: 7 games; 3 one-run; 3 extras. NAS at WAS â€” 2-1; MEM at LOU â€” 0-3; BOS at HOU â€” 1-5
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-05: 7 games; 3 one-run; 2 extras. MEM at NAS â€” 6-5; WAS at HOU â€” 2-3; OKL at LOU â€” 3-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-06: 7 games; 2 one-run; 2 extras. NAS at HOU â€” 1-3; OKL at MEM â€” 0-3; WAS at MIL â€” 6-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-07: 7 games; 4 one-run; 1 extras. OKL at NAS â€” 1-2; HOU at MIL â€” 4-1; CHI at MEM â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-08: 7 games; 4 one-run; 1 extras. NAS at MIL â€” 4-2; CHI at OKL â€” 0-1; HOU at PHO â€” 0-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-09: 7 games; 2 one-run; 1 extras. CHI at NAS â€” 0-4; MIL at PHO â€” 2-1; SAN2 at OKL â€” 3-5
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-10: 7 games; 4 one-run; 0 extras. NAS at PHO â€” 0-1; SAN2 at CHI â€” 0-1; MIL at ALB â€” 2-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-11: 7 games; 3 one-run; 1 extras. SAN2 at NAS â€” 1-8; PHO at ALB â€” 6-2; SAN1 at CHI â€” 3-5
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-12: 7 games; 2 one-run; 1 extras. NAS at ALB â€” 1-0; SAN1 at SAN2 â€” 0-3; PHO at SAN â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-13: 7 games; 2 one-run; 0 extras. SAN1 at NAS â€” 3-0; ALB at SAN â€” 1-3; JAC at SAN2 â€” 6-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-14: 7 games; 3 one-run; 1 extras. NAS at SAN â€” 8-4; JAC at SAN1 â€” 0-1; BOS at SAN2 â€” 3-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-15: 7 games; 1 one-run; 1 extras. JAC at NAS â€” 3-0; BOS at SAN1 â€” 0-5; ALB at LOU â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-22: 7 games; 0 one-run; 0 extras. BOS at JAC â€” 1-3; SAN at LOU â€” 1-3; WAS at SAN1 â€” 0-6
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-23: 7 games; 4 one-run; 2 extras. BOS at NAS â€” 3-1; WAS at JAC â€” 4-0; SAN at MEM â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-24: 7 games; 1 one-run; 1 extras. NAS at LOU â€” 0-2; WAS at BOS â€” 4-2; HOU at JAC â€” 3-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-25: 7 games; 3 one-run; 3 extras. WAS at NAS â€” 2-0; LOU at MEM â€” 0-1; HOU at BOS â€” 4-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-26: 7 games; 2 one-run; 1 extras. NAS at MEM â€” 4-2; HOU at WAS â€” 2-0; LOU at OKL â€” 0-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-27: 7 games; 3 one-run; 2 extras. HOU at NAS â€” 2-1; MEM at OKL â€” 0-3; MIL at WAS â€” 3-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-28: 7 games; 2 one-run; 2 extras. NAS at OKL â€” 2-1; MIL at HOU â€” 2-4; MEM at CHI â€” 6-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-29: 7 games; 4 one-run; 1 extras. MIL at NAS â€” 1-3; OKL at CHI â€” 0-1; PHO at HOU â€” 2-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-04-30: 7 games; 3 one-run; 1 extras. NAS at CHI â€” 0-3; PHO at MIL â€” 7-0; OKL at SAN2 â€” 3-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-01: 7 games; 2 one-run; 1 extras. PHO at NAS â€” 4-3; CHI at SAN2 â€” 0-4; ALB at MIL â€” 4-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-02: 7 games; 1 one-run; 2 extras. NAS at SAN2 â€” 6-0; ALB at PHO â€” 3-1; CHI at SAN1 â€” 0-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-03: 7 games; 2 one-run; 0 extras. ALB at NAS â€” 4-1; SAN2 at SAN1 â€” 4-6; SAN at PHO â€” 5-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-04: 7 games; 2 one-run; 0 extras. NAS at SAN1 â€” 1-3; SAN at ALB â€” 1-2; SAN2 at JAC â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-05: 7 games; 0 one-run; 0 extras. SAN at NAS â€” 1-3; SAN1 at JAC â€” 4-1; SAN2 at BOS â€” 1-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-06: 7 games; 3 one-run; 3 extras. NAS at JAC â€” 6-3; SAN1 at BOS â€” 4-0; LOU at ALB â€” 2-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-07: 7 games; 3 one-run; 2 extras. JAC at BOS â€” 4-5; LOU at SAN â€” 0-3; SAN1 at WAS â€” 4-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-08: 7 games; 4 one-run; 1 extras. NAS at BOS â€” 1-0; JAC at WAS â€” 8-2; MEM at SAN â€” 3-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-09: 7 games; 1 one-run; 0 extras. LOU at NAS â€” 0-3; BOS at WAS â€” 1-8; JAC at HOU â€” 3-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-10: 7 games; 3 one-run; 2 extras. NAS at WAS â€” 3-4; MEM at LOU â€” 2-4; BOS at HOU â€” 5-7
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-11: 7 games; 4 one-run; 2 extras. MEM at NAS â€” 2-7; WAS at HOU â€” 4-5; OKL at LOU â€” 1-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-12: 7 games; 4 one-run; 0 extras. NAS at HOU â€” 5-1; OKL at MEM â€” 4-2; WAS at MIL â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-13: 7 games; 1 one-run; 1 extras. OKL at NAS â€” 3-6; HOU at MIL â€” 1-4; CHI at MEM â€” 2-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-14: 7 games; 3 one-run; 1 extras. NAS at MIL â€” 5-0; CHI at OKL â€” 0-1; HOU at PHO â€” 4-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-15: 7 games; 4 one-run; 0 extras. CHI at NAS â€” 0-8; MIL at PHO â€” 3-2; SAN2 at OKL â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-16: 7 games; 3 one-run; 0 extras. NAS at PHO â€” 3-1; SAN2 at CHI â€” 1-3; MIL at ALB â€” 4-5
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-17: 7 games; 2 one-run; 1 extras. SAN2 at NAS â€” 0-4; PHO at ALB â€” 2-3; SAN1 at CHI â€” 2-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-18: 7 games; 2 one-run; 1 extras. NAS at ALB â€” 6-1; SAN1 at SAN2 â€” 1-2; PHO at SAN â€” 8-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-19: 7 games; 3 one-run; 0 extras. SAN1 at NAS â€” 2-0; ALB at SAN â€” 2-1; JAC at SAN2 â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-20: 7 games; 3 one-run; 1 extras. NAS at SAN â€” 1-2; JAC at SAN1 â€” 5-2; BOS at SAN2 â€” 1-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-21: 7 games; 3 one-run; 3 extras. JAC at NAS â€” 2-1; BOS at SAN1 â€” 5-4; ALB at LOU â€” 3-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-28: 7 games; 3 one-run; 1 extras. BOS at JAC â€” 1-5; SAN at LOU â€” 1-0; WAS at SAN1 â€” 0-5
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-29: 7 games; 3 one-run; 1 extras. BOS at NAS â€” 2-0; WAS at JAC â€” 2-3; SAN at MEM â€” 4-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-30: 7 games; 2 one-run; 3 extras. NAS at LOU â€” 3-1; WAS at BOS â€” 4-1; HOU at JAC â€” 0-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-05-31: 7 games; 3 one-run; 3 extras. WAS at NAS â€” 0-1; LOU at MEM â€” 5-3; HOU at BOS â€” 3-9
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-01: 7 games; 4 one-run; 2 extras. NAS at MEM â€” 3-1; HOU at WAS â€” 1-2; LOU at OKL â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-02: 7 games; 1 one-run; 2 extras. HOU at NAS â€” 4-3; MEM at OKL â€” 2-5; MIL at WAS â€” 1-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-03: 7 games; 4 one-run; 1 extras. NAS at OKL â€” 1-4; MIL at HOU â€” 3-2; MEM at CHI â€” 0-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-04: 7 games; 2 one-run; 1 extras. MIL at NAS â€” 0-3; OKL at CHI â€” 6-5; PHO at HOU â€” 3-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-05: 7 games; 6 one-run; 2 extras. NAS at CHI â€” 2-3; PHO at MIL â€” 0-5; OKL at SAN2 â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-06: 7 games; 2 one-run; 0 extras. PHO at NAS â€” 2-0; CHI at SAN2 â€” 1-4; ALB at MIL â€” 2-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-07: 7 games; 2 one-run; 1 extras. NAS at SAN2 â€” 2-1; ALB at PHO â€” 4-0; CHI at SAN1 â€” 2-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-08: 7 games; 2 one-run; 1 extras. ALB at NAS â€” 5-0; SAN2 at SAN1 â€” 0-4; SAN at PHO â€” 0-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-09: 7 games; 3 one-run; 0 extras. NAS at SAN1 â€” 4-1; SAN at ALB â€” 6-4; SAN2 at JAC â€” 1-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-10: 7 games; 4 one-run; 1 extras. SAN at NAS â€” 1-0; SAN1 at JAC â€” 8-1; SAN2 at BOS â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-11: 7 games; 3 one-run; 0 extras. NAS at JAC â€” 0-1; SAN1 at BOS â€” 1-9; LOU at ALB â€” 0-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-12: 7 games; 0 one-run; 0 extras. JAC at BOS â€” 1-5; LOU at SAN â€” 0-3; SAN1 at WAS â€” 1-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-13: 7 games; 1 one-run; 0 extras. NAS at BOS â€” 0-2; JAC at WAS â€” 2-1; MEM at SAN â€” 2-6
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-14: 7 games; 2 one-run; 2 extras. LOU at NAS â€” 5-7; BOS at WAS â€” 3-0; JAC at HOU â€” 5-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-15: 7 games; 3 one-run; 2 extras. NAS at WAS â€” 0-2; MEM at LOU â€” 3-1; BOS at HOU â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-16: 7 games; 4 one-run; 1 extras. MEM at NAS â€” 1-4; WAS at HOU â€” 3-2; OKL at LOU â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-17: 7 games; 2 one-run; 1 extras. NAS at HOU â€” 3-0; OKL at MEM â€” 0-1; WAS at MIL â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-18: 7 games; 5 one-run; 1 extras. OKL at NAS â€” 1-0; HOU at MIL â€” 0-3; CHI at MEM â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-19: 7 games; 2 one-run; 1 extras. NAS at MIL â€” 0-3; CHI at OKL â€” 0-1; HOU at PHO â€” 2-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-20: 7 games; 4 one-run; 2 extras. CHI at NAS â€” 5-2; MIL at PHO â€” 1-3; SAN2 at OKL â€” 0-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-21: 7 games; 3 one-run; 1 extras. NAS at PHO â€” 2-1; SAN2 at CHI â€” 0-2; MIL at ALB â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-22: 7 games; 3 one-run; 1 extras. SAN2 at NAS â€” 0-2; PHO at ALB â€” 0-1; SAN1 at CHI â€” 0-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-23: 7 games; 2 one-run; 2 extras. NAS at ALB â€” 3-0; SAN1 at SAN2 â€” 2-3; PHO at SAN â€” 5-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-24: 7 games; 4 one-run; 0 extras. SAN1 at NAS â€” 2-8; ALB at SAN â€” 3-0; JAC at SAN2 â€” 3-4
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-25: 7 games; 4 one-run; 1 extras. NAS at SAN â€” 3-2; JAC at SAN1 â€” 7-4; BOS at SAN2 â€” 1-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-06-26: 7 games; 3 one-run; 1 extras. JAC at NAS â€” 1-2; BOS at SAN1 â€” 1-3; ALB at LOU â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-03: 7 games; 4 one-run; 1 extras. BOS at JAC â€” 4-0; SAN at LOU â€” 4-1; WAS at SAN1 â€” 5-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-04: 7 games; 4 one-run; 3 extras. BOS at NAS â€” 2-3; WAS at JAC â€” 2-1; SAN at MEM â€” 2-3
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-05: 7 games; 4 one-run; 1 extras. NAS at LOU â€” 1-0; WAS at BOS â€” 7-1; HOU at JAC â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-06: 7 games; 4 one-run; 0 extras. WAS at NAS â€” 3-2; LOU at MEM â€” 3-0; HOU at BOS â€” 2-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-07: 7 games; 2 one-run; 1 extras. NAS at MEM â€” 3-2; HOU at WAS â€” 2-5; LOU at OKL â€” 2-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-08: 7 games; 3 one-run; 0 extras. HOU at NAS â€” 1-0; MEM at OKL â€” 1-3; MIL at WAS â€” 0-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-09: 7 games; 3 one-run; 1 extras. NAS at OKL â€” 1-0; MIL at HOU â€” 0-3; MEM at CHI â€” 3-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-10: 7 games; 2 one-run; 1 extras. MIL at NAS â€” 1-3; OKL at CHI â€” 4-2; PHO at HOU â€” 4-7
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-11: 7 games; 5 one-run; 1 extras. NAS at CHI â€” 0-1; PHO at MIL â€” 2-3; OKL at SAN2 â€” 1-0
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-12: 7 games; 4 one-run; 1 extras. PHO at NAS â€” 1-2; CHI at SAN2 â€” 3-4; ALB at MIL â€” 1-2
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-13: 7 games; 2 one-run; 0 extras. NAS at SAN2 â€” 1-4; ALB at PHO â€” 4-0; CHI at SAN1 â€” 2-1
+[2025-10-06 10:52:40] [game_recap] Daily Recap 2025-07-14: 7 games; 7 one-run; 0 extras. ALB at NAS â€” 0-1; SAN2 at SAN1 â€” 2-3; SAN at PHO â€” 1-2
+[2025-10-06 10:52:40] [progress] Simulated midseason; 87 days until Season End

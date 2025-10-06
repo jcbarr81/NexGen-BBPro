@@ -231,6 +231,17 @@ class PlayerProfileDialog(QDialog):
     def __init__(self, player: BasePlayer, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.player = player
+        # Ensure the view reflects the latest persisted season stats in case
+        # the passed ``player`` instance is stale in memory while simulations
+        # are running in another window.
+        try:
+            from utils.stats_persistence import load_stats as _load_season
+            data = _load_season()
+            cur = data.get("players", {}).get(player.player_id)
+            if isinstance(cur, dict) and cur:
+                self.player.season_stats = cur
+        except Exception:
+            pass
         self.setWindowTitle(f"{player.first_name} {player.last_name}")
 
         self._is_pitcher = getattr(player, "is_pitcher", False)
@@ -926,7 +937,21 @@ class PlayerProfileDialog(QDialog):
 
         current_year = self._current_season_year()
         season = self._stats_to_dict(getattr(self.player, "season_stats", {}), is_pitcher)
+        # Clamp displayed games to the number already played by teams this
+        # season to avoid showing stale totals when starting a new season.
         if season:
+            try:
+                from utils.stats_persistence import load_stats as _load_season
+                all_stats = _load_season()
+                team_stats = all_stats.get("teams", {}) or {}
+                games_list = [int(v.get("g", v.get("games", 0)) or 0) for v in team_stats.values()]
+                if games_list:
+                    max_team_g = max(games_list)
+                    g_val = int(season.get("g", 0) or 0)
+                    if max_team_g:
+                        season["g"] = min(g_val, max_team_g)
+            except Exception:
+                pass
             rows.append((f"{current_year:04d}", season))
 
         career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)

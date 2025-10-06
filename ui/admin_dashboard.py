@@ -1187,6 +1187,7 @@ class MainWindow(QMainWindow):
         progress = base / "season_progress.json"
         standings = base / "standings.json"
         stats_file = base / "season_stats.json"
+        history_dir = base / "season_history"
         # Ask whether to purge season boxscores as well
         purge_box = (
             QMessageBox.question(
@@ -1289,6 +1290,15 @@ class MainWindow(QMainWindow):
         try:
             stats_file.parent.mkdir(parents=True, exist_ok=True)
             # Remove existing stats and lock to ensure a clean slate
+            # Also purge sharded daily history to prevent stale merges from
+            # repopulating stats after reset.
+            try:
+                if history_dir.exists():
+                    import shutil
+                    shutil.rmtree(history_dir)
+            except Exception:
+                # Best effort only; continue with canonical file reset
+                pass
             try:
                 lock = stats_file.with_suffix(stats_file.suffix + ".lock")
                 if lock.exists():
