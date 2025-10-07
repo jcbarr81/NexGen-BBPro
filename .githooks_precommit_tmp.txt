@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$ROOT_DIR"
+
+run_pytest() {
+  # Try common ways to run pytest
+  if command -v python >/dev/null 2>&1; then
+    python -m pytest -q || return 1
+    return 0
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -m pytest -q || return 1
+    return 0
+  elif command -v pytest >/dev/null 2>&1; then
+    pytest -q || return 1
+    return 0
+  else
+    echo "[pre-commit] pytest not found; skipping tests" >&2
+    return 0
+  fi
+}
+
+echo "[pre-commit] Running tests..."
+if ! run_pytest; then
+  echo "[pre-commit] Tests failed; not blocking commit." >&2
+fi
+
+# Only bump if VERSION is not already staged
+if git diff --cached --name-only --diff-filter=ACM | grep -Fxq "VERSION"; then
+  exit 0
+fi
+
+echo "[pre-commit] Bumping patch version..."
+
+# Run the bump script
+if command -v python >/dev/null 2>&1; then
+  NEW_VERSION=$(python scripts/bump_version.py)
+elif command -v python3 >/dev/null 2>&1; then
+  NEW_VERSION=$(python3 scripts/bump_version.py)
+else
+  echo "[pre-commit] Python not found; cannot bump version." >&2
+  exit 1
+fi
+
+git add VERSION
+
+echo "[pre-commit] Version bumped to ${NEW_VERSION}. Re-run commit to include it."
+exit 1

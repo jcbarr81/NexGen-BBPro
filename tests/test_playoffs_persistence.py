@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from models.team import Team
 from playbalance.playoffs_config import PlayoffsConfig
+import playbalance.playoffs as playoffs_module
 from playbalance.playoffs import (
     generate_bracket,
     save_bracket,
@@ -51,3 +52,19 @@ def test_bracket_save_and_load_round_trip(tmp_path: Path):
     # After DS, CS should exist (may or may not be populated yet)
     assert any(r.name == "AL CS" for r in reloaded.rounds)
 
+
+def test_load_bracket_prefers_latest_year(tmp_path: Path, monkeypatch):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    monkeypatch.setattr("utils.path_utils.get_base_dir", lambda: tmp_path)
+    monkeypatch.setattr(playoffs_module, "get_base_dir", lambda: tmp_path)
+
+    older = playoffs_module.PlayoffBracket(year=2024)
+    newer = playoffs_module.PlayoffBracket(year=2025)
+
+    save_bracket(older, data_dir / "playoffs.json")
+    save_bracket(newer, data_dir / "playoffs_2025.json")
+
+    loaded = load_bracket()
+    assert loaded is not None
+    assert loaded.year == 2025

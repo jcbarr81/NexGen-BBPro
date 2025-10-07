@@ -4,176 +4,125 @@
   "champion": null,
   "runner_up": null,
   "seeds": {
-    "AL": [
+    "LEAGUE": [
       {
-        "team_id": "A1",
+        "team_id": "BOS",
         "seed": 1,
-        "league": "AL",
-        "wins": 98,
-        "run_diff": 148
+        "league": "LEAGUE",
+        "wins": 50,
+        "run_diff": 24
       },
       {
-        "team_id": "A3",
+        "team_id": "JAC",
         "seed": 2,
-        "league": "AL",
-        "wins": 94,
-        "run_diff": 144
-      }
-    ],
-    "NL": [
-      {
-        "team_id": "N1",
-        "seed": 1,
-        "league": "NL",
-        "wins": 97,
-        "run_diff": 147
+        "league": "LEAGUE",
+        "wins": 49,
+        "run_diff": 20
       },
       {
-        "team_id": "N3",
-        "seed": 2,
-        "league": "NL",
-        "wins": 93,
-        "run_diff": 143
+        "team_id": "CHI",
+        "seed": 3,
+        "league": "LEAGUE",
+        "wins": 48,
+        "run_diff": 15
+      },
+      {
+        "team_id": "MEM",
+        "seed": 4,
+        "league": "LEAGUE",
+        "wins": 49,
+        "run_diff": 38
       }
     ]
   },
   "rounds": [
     {
-      "name": "AL CS",
+      "name": "LEAGUE DS",
       "matchups": [
         {
           "high": {
-            "team_id": "A1",
+            "team_id": "BOS",
             "seed": 1,
-            "league": "AL",
-            "wins": 98,
-            "run_diff": 148
+            "league": "LEAGUE",
+            "wins": 50,
+            "run_diff": 24
           },
           "low": {
-            "team_id": "A3",
-            "seed": 2,
-            "league": "AL",
-            "wins": 94,
-            "run_diff": 144
+            "team_id": "MEM",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 49,
+            "run_diff": 38
           },
           "config": {
-            "length": 1,
+            "length": 5,
             "pattern": [
+              2,
+              2,
               1
             ]
           },
-          "games": [
-            {
-              "home": "A1",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G0_A3_at_A1.html",
-              "meta": {}
-            }
-          ],
-          "winner": "A1"
+          "games": [],
+          "winner": null
+        },
+        {
+          "high": {
+            "team_id": "JAC",
+            "seed": 2,
+            "league": "LEAGUE",
+            "wins": 49,
+            "run_diff": 20
+          },
+          "low": {
+            "team_id": "CHI",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 48,
+            "run_diff": 15
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [],
+          "winner": null
         }
       ],
       "plan": []
     },
     {
-      "name": "NL CS",
-      "matchups": [
-        {
-          "high": {
-            "team_id": "N1",
-            "seed": 1,
-            "league": "NL",
-            "wins": 97,
-            "run_diff": 147
-          },
-          "low": {
-            "team_id": "N3",
-            "seed": 2,
-            "league": "NL",
-            "wins": 93,
-            "run_diff": 143
-          },
-          "config": {
-            "length": 1,
-            "pattern": [
-              1
-            ]
-          },
-          "games": [
-            {
-              "home": "N1",
-              "away": "N3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G0_N3_at_N1.html",
-              "meta": {}
-            }
-          ],
-          "winner": "N1"
-        }
-      ],
-      "plan": []
-    },
-    {
-      "name": "WS",
-      "matchups": [
-        {
-          "high": {
-            "team_id": "A1",
-            "seed": 1,
-            "league": "AL",
-            "wins": 98,
-            "run_diff": 148
-          },
-          "low": {
-            "team_id": "N1",
-            "seed": 1,
-            "league": "NL",
-            "wins": 97,
-            "run_diff": 147
-          },
-          "config": {
-            "length": 1,
-            "pattern": [
-              1
-            ]
-          },
-          "games": [
-            {
-              "home": "A1",
-              "away": "N1",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_WS_S0_G0_N1_at_A1.html",
-              "meta": {}
-            }
-          ],
-          "winner": "A1"
-        }
-      ],
+      "name": "LEAGUE CS",
+      "matchups": [],
       "plan": [
         {
-          "series_key": "ws",
+          "series_key": "cs",
           "sources": [
             {
               "kind": "winner",
               "league": null,
               "seed": null,
-              "source_round": "AL CS",
+              "source_round": "LEAGUE DS",
               "slot": 0
             },
             {
               "kind": "winner",
               "league": null,
               "seed": null,
-              "source_round": "NL CS",
-              "slot": 0
+              "source_round": "LEAGUE DS",
+              "slot": 1
             }
           ]
         }
       ]
+    },
+    {
+      "name": "Final",
+      "matchups": [],
+      "plan": []
     }
   ]
 }

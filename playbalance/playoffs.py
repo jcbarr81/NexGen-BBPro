@@ -20,6 +20,7 @@ from datetime import date as _date
 SCHEMA_VERSION = 1
 
 _DEFAULT_SERIES_LENGTHS = {"wildcard": 3, "ds": 5, "cs": 7, "ws": 7}
+_DEFAULT_HOME_AWAY_PATTERNS = {3: [1, 1, 1], 5: [2, 2, 1], 7: [2, 3, 2]}
 
 
 def _extract_series_settings(cfg_like: Any) -> Tuple[Dict[str, Any], Dict[int, List[int]]]:
@@ -39,10 +40,24 @@ def _extract_series_settings(cfg_like: Any) -> Tuple[Dict[str, Any], Dict[int, L
     return lengths, patterns
 
 
+
+
+def _pattern_for_length(length: int, patterns: Dict[int, List[int]]) -> List[int]:
+    pattern = list(patterns.get(length, []))
+    if pattern and sum(pattern) == length:
+        return pattern
+    fallback = _DEFAULT_HOME_AWAY_PATTERNS.get(length)
+    if fallback and sum(fallback) == length:
+        return list(fallback)
+    return [length] if length > 0 else []
+
+
 def _series_config_from_settings(cfg_like: Any, key: str) -> SeriesConfig:
     lengths, patterns = _extract_series_settings(cfg_like)
     length = int(lengths.get(key, _DEFAULT_SERIES_LENGTHS.get(key, 7)))
-    pattern = list(patterns.get(length, []))
+    if length <= 0:
+        length = _DEFAULT_SERIES_LENGTHS.get(key, 7)
+    pattern = _pattern_for_length(length, patterns)
     return SeriesConfig(length=length, pattern=pattern)
 
 
@@ -319,6 +334,9 @@ def load_bracket(path: Optional[Path] = None, *, year: Optional[int] = None) -> 
         else:
             matches = sorted(matches, reverse=True)
         candidates.extend(matches)
+
+    best: Optional[PlayoffBracket] = None
+    best_score: tuple[int, float] = (-1, -1.0)
     seen: set[Path] = set()
     for candidate in candidates:
         p = Path(candidate)
@@ -331,10 +349,32 @@ def load_bracket(path: Optional[Path] = None, *, year: Optional[int] = None) -> 
             data = json.loads(p.read_text(encoding="utf-8"))
             if int(data.get("schema_version", SCHEMA_VERSION)) != SCHEMA_VERSION:
                 continue
-            return PlayoffBracket.from_dict(data)
+            br = PlayoffBracket.from_dict(data)
+            _normalize_series_configs(br)
+            if path is None:
+                br = _refresh_bracket_if_stale(br)
         except Exception:
             continue
-    return None
+
+        br_year = int(getattr(br, "year", 0) or 0)
+        if year is not None and br_year == year:
+            return br
+        try:
+            mtime = p.stat().st_mtime
+        except Exception:
+            mtime = 0.0
+        score = (br_year, mtime)
+        if year is not None and best is None:
+            # With a specific year requested, return the first successfully parsed bracket
+            # if no exact match is found.
+            best = br
+            best_score = score
+        elif score > best_score:
+            best = br
+            best_score = score
+    if best is not None and path is None:
+        best = _refresh_bracket_if_stale(best)
+    return best
 
 
 # --- Seeding engine (Ticket 2) ---------------------------------------------------------
@@ -342,9 +382,12 @@ def load_bracket(path: Optional[Path] = None, *, year: Optional[int] = None) -> 
 def _infer_league(division: str, mapping: Dict[str, str]) -> str:
     if division in mapping:
         return mapping[division]
-    # Best-effort inference: league is first token before space (e.g., "AL East")
     div = str(division).strip()
-    return div.split(" ")[0] if div else ""
+    if not div:
+        return ""
+    if " " in div:
+        return div.split(" ", 1)[0]
+    return ""
 
 
 def _get_year_from_schedule() -> int:
@@ -419,7 +462,29 @@ def _seed_league(league_name: str, league_teams: List[Any], standings: Dict[str,
     winners.sort(key=rank_key, reverse=True)
     wildcards.sort(key=rank_key, reverse=True)
 
-    slots = int(getattr(cfg, "num_playoff_teams_per_league", 6) or 6)
+    named_divisions = [div for div in by_div if str(div).strip()]
+    division_count = len(named_divisions) or (1 if by_div else 0)
+    total_candidates = len(winners) + len(wildcards)
+
+    minimum_winner_slots = min(len(winners), total_candidates)
+
+    if division_count > 0:
+        base_slots = min(division_count, total_candidates)
+    else:
+        base_slots = minimum_winner_slots
+    base_slots = max(base_slots, minimum_winner_slots)
+
+    wildcard_slots = 1 if wildcards else 0
+    desired_slots = min(base_slots + min(wildcard_slots, max(total_candidates - base_slots, 0)), total_candidates)
+
+    configured_slots = int(getattr(cfg, "num_playoff_teams_per_league", desired_slots) or desired_slots)
+    slots_upper_bound = min(configured_slots, total_candidates) if configured_slots > 0 else total_candidates
+    slots = min(desired_slots, slots_upper_bound)
+
+    slots = max(slots, minimum_winner_slots)
+    if slots < 2 and total_candidates >= 2:
+        slots = min(2, total_candidates)
+
     if getattr(cfg, "division_winners_priority", True):
         pool = winners + wildcards
     else:
@@ -605,7 +670,8 @@ def generate_bracket(standings: Dict[str, Dict[str, Any]], teams: List[Any], cfg
         seeded = _seed_league(league, by_league[league], standings, cfg)
         default_slots = int(getattr(cfg, "num_playoff_teams_per_league", 6) or 6)
         slot_fn = getattr(cfg, "slots_for_league", None)
-        if callable(slot_fn):
+        custom_map = getattr(cfg, "playoff_slots_by_league_size", None)
+        if callable(slot_fn) and custom_map:
             try:
                 slots = int(slot_fn(len(by_league[league])))
             except Exception:
@@ -639,12 +705,11 @@ def generate_bracket(standings: Dict[str, Dict[str, Any]], teams: List[Any], cfg
         )
         rounds.append(ws)
     elif len(league_finals) == 1:
-        # Single-league setup: rename the league final so champion resolution works.
+        # Single-league setup: duplicate the league final for display/metadata
         (_, final_name), = league_finals.items()
-        for rnd in rounds:
-            if rnd.name == final_name:
-                rnd.name = "Final"
-                break
+        final_round = next((r for r in rounds if r.name == final_name), None)
+        if final_round is not None:
+            rounds.append(Round(name="Final", matchups=final_round.matchups))
 
     year = _get_year_from_schedule()
     return PlayoffBracket(year=year, rounds=rounds, seeds_by_league=seeds_by_league)
@@ -663,11 +728,200 @@ def _wins_needed(length: int) -> int:
     return (int(length) // 2) + 1
 
 
+
+
+def _stage_key_from_round_name(name: str) -> Optional[str]:
+    tokens = [token.lower() for token in str(name or "").replace("-", " ").replace("_", " ").split() if token]
+    for token in reversed(tokens):
+        if token in {"ws", "world", "worlds", "final", "finals", "championship"}:
+            return "ws"
+        if token in {"cs", "lcs"}:
+            return "cs"
+        if token in {"ds", "division", "divisional"}:
+            return "ds"
+        if token in {"wc", "wildcard", "play-in", "playin"}:
+            return "wildcard"
+    return None
+
+
+def _count_series_wins(matchup: Matchup) -> Tuple[int, int]:
+    high_id = getattr(matchup.high, "team_id", "")
+    low_id = getattr(matchup.low, "team_id", "")
+    wins_high = wins_low = 0
+    for game in getattr(matchup, "games", []) or []:
+        result = str(getattr(game, "result", "") or "")
+        if "-" not in result:
+            continue
+        try:
+            home_runs_str, away_runs_str = result.split("-", 1)
+            home_runs = int(home_runs_str.strip())
+            away_runs = int(away_runs_str.strip())
+        except (TypeError, ValueError):
+            continue
+        if home_runs == away_runs:
+            continue
+        home_team = getattr(game, "home", "")
+        away_team = getattr(game, "away", "")
+        winner = home_team if home_runs > away_runs else away_team
+        if winner == high_id:
+            wins_high += 1
+        elif winner == low_id:
+            wins_low += 1
+    return wins_high, wins_low
+
+
+def _normalize_series_configs(bracket: PlayoffBracket) -> None:
+    try:
+        from playbalance.playoffs_config import load_playoffs_config
+        cfg = load_playoffs_config()
+    except Exception:
+        cfg = None
+    lengths, patterns = _extract_series_settings(cfg)
+    champ_round_names = _championship_round_names(bracket)
+    finals: List[Matchup] = []
+    for rnd in getattr(bracket, "rounds", []) or []:
+        stage_key = _stage_key_from_round_name(rnd.name)
+        if not stage_key:
+            continue
+        expected_length = int(lengths.get(stage_key, _DEFAULT_SERIES_LENGTHS.get(stage_key, 0)) or 0)
+        if expected_length <= 0:
+            expected_length = _DEFAULT_SERIES_LENGTHS.get(stage_key, 0)
+        if expected_length <= 0:
+            continue
+        expected_pattern = _pattern_for_length(expected_length, patterns)
+        wins_needed = _wins_needed(expected_length)
+        for matchup in rnd.matchups:
+            cfg_obj = getattr(matchup, "config", None)
+            if cfg_obj is None:
+                matchup.config = SeriesConfig(length=expected_length, pattern=expected_pattern.copy())
+                cfg_obj = matchup.config
+            current_length = int(getattr(cfg_obj, "length", 0) or 0)
+            current_pattern = list(getattr(cfg_obj, "pattern", []) or [])
+            if current_length != expected_length or sum(current_pattern) != expected_length:
+                cfg_obj.length = expected_length
+                cfg_obj.pattern = expected_pattern.copy()
+            wins_high, wins_low = _count_series_wins(matchup)
+            if wins_high >= wins_needed or wins_low >= wins_needed:
+                matchup.winner = matchup.high.team_id if wins_high >= wins_needed else matchup.low.team_id
+            else:
+                if getattr(matchup, "winner", None):
+                    matchup.winner = None
+            if stage_key in {"ws", "final"} or rnd.name in champ_round_names:
+                finals.append(matchup)
+    if finals:
+        decided = [m for m in finals if getattr(m, "winner", None)]
+        if decided:
+            final_match = decided[0]
+            champ_id = final_match.winner
+            if champ_id:
+                bracket.champion = champ_id
+                bracket.runner_up = final_match.low.team_id if champ_id == final_match.high.team_id else final_match.high.team_id
+        else:
+            bracket.champion = None
+            bracket.runner_up = None
+
+
+def _load_known_teams() -> Tuple[List[Any], set[str]]:
+    try:
+        from utils.team_loader import load_teams
+        teams = load_teams()
+    except Exception:
+        return [], set()
+    known = {
+        getattr(t, "team_id", "")
+        for t in teams
+        if getattr(t, "team_id", "")
+    }
+    return teams, {tid for tid in known if tid}
+
+
+def _load_standings_snapshot() -> Dict[str, Dict[str, Any]]:
+    path = get_base_dir() / "data" / "standings.json"
+    try:
+        if path.exists():
+            with path.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    return {}
+
+
+def _refresh_bracket_if_stale(bracket: PlayoffBracket) -> PlayoffBracket:
+    teams, known_ids = _load_known_teams()
+    if not known_ids:
+        return bracket
+
+    unknown: set[str] = set()
+    for seeds in (bracket.seeds_by_league or {}).values():
+        for team in seeds or []:
+            tid = getattr(team, "team_id", "")
+            if tid and tid not in known_ids:
+                unknown.add(tid)
+            if not tid:
+                unknown.add(tid)
+
+    for rnd in bracket.rounds:
+        for matchup in rnd.matchups:
+            for participant in (getattr(matchup, "high", None), getattr(matchup, "low", None)):
+                tid = getattr(participant, "team_id", "")
+                if tid and tid not in known_ids:
+                    unknown.add(tid)
+                if not tid:
+                    unknown.add(tid)
+
+    if not unknown:
+        return bracket
+
+    standings = _load_standings_snapshot()
+    if not standings:
+        bracket.champion = None
+        bracket.runner_up = None
+        return bracket
+
+    try:
+        from playbalance.playoffs_config import load_playoffs_config
+        cfg = load_playoffs_config()
+    except Exception:
+        bracket.champion = None
+        bracket.runner_up = None
+        return bracket
+
+    try:
+        fresh = generate_bracket(standings, teams, cfg)
+    except Exception:
+        bracket.champion = None
+        bracket.runner_up = None
+        return bracket
+
+    _normalize_series_configs(fresh)
+    try:
+        save_bracket(fresh)
+    except Exception:
+        pass
+    return fresh
+
+
+def _championship_round_names(bracket: PlayoffBracket) -> set[str]:
+    """Return the set of round names that should resolve the champion."""
+
+    explicit = {
+        rnd.name
+        for rnd in getattr(bracket, "rounds", []) or []
+        if _stage_key_from_round_name(rnd.name) in {"ws", "final"}
+    }
+    if explicit:
+        return explicit
+    rounds = getattr(bracket, "rounds", []) or []
+    if rounds:
+        return {rounds[-1].name}
+    return set()
+
+
 def simulate_series(matchup: Matchup, *, year: int, round_name: str, series_index: int, simulate_game=None) -> Matchup:
     """Simulate a single series to completion and return the updated matchup."""
 
-    if matchup.winner:
-        return matchup
     wins_needed = _wins_needed(matchup.config.length)
     high_id = matchup.high.team_id
     low_id = matchup.low.team_id
@@ -679,15 +933,21 @@ def simulate_series(matchup: Matchup, *, year: int, round_name: str, series_inde
         homes.extend([high_id if not flip else low_id] * block)
         flip = not flip
 
-    # Lazy default simulate function
+    existing_high, existing_low = _count_series_wins(matchup)
+    if existing_high >= wins_needed or existing_low >= wins_needed:
+        matchup.winner = high_id if existing_high >= wins_needed else low_id
+        return matchup
+
     if simulate_game is None:
         from playbalance.game_runner import simulate_game_scores as _sim
         simulate_game = _sim
 
-    high_wins = 0
-    low_wins = 0
-    game_no = 0
-    for home in homes:
+    high_wins = existing_high
+    low_wins = existing_low
+    played_games = min(len(matchup.games), len(homes))
+    game_no = played_games
+
+    for home in homes[played_games:]:
         if high_wins >= wins_needed or low_wins >= wins_needed:
             break
         away = low_id if home == high_id else high_id
@@ -712,10 +972,15 @@ def simulate_series(matchup: Matchup, *, year: int, round_name: str, series_inde
         # Winning side
         if isinstance(home_runs, int) and isinstance(away_runs, int):
             if home_runs > away_runs:
-                if home == high_id:
-                    high_wins += 1
-                else:
-                    low_wins += 1
+                winner_team = home
+            elif away_runs > home_runs:
+                winner_team = away
+            else:
+                winner_team = None
+            if winner_team == high_id:
+                high_wins += 1
+            elif winner_team == low_id:
+                low_wins += 1
         # Save boxscore html if provided
         box_path = None
         if html:
@@ -726,12 +991,19 @@ def simulate_series(matchup: Matchup, *, year: int, round_name: str, series_inde
             except Exception:
                 box_path = None
 
+        result_str = None
+        if isinstance(home_runs, int) and isinstance(away_runs, int):
+            result_str = f"{home_runs}-{away_runs}"
+
         matchup.games.append(
-            GameResult(home=home, away=away, date=None, result=(f"{home_runs}-{away_runs}" if home_runs is not None else None), boxscore=box_path, meta=extra)
+            GameResult(home=home, away=away, date=None, result=result_str, boxscore=box_path, meta=extra)
         )
         game_no += 1
 
-    matchup.winner = high_id if high_wins > low_wins else low_id
+    if high_wins >= wins_needed or low_wins >= wins_needed:
+        matchup.winner = high_id if high_wins >= wins_needed else low_id
+    else:
+        matchup.winner = None
     return matchup
 
 
@@ -753,7 +1025,9 @@ def _populate_next_round(bracket: PlayoffBracket, cfg: Any) -> None:
 
     def make_cfg(key: str) -> SeriesConfig:
         length = int(lengths.get(key, _DEFAULT_SERIES_LENGTHS.get(key, 7)))
-        pattern = list(patterns.get(length, []))
+        if length <= 0:
+            length = _DEFAULT_SERIES_LENGTHS.get(key, 7)
+        pattern = _pattern_for_length(length, patterns)
         return SeriesConfig(length=length, pattern=pattern)
 
     def seed_team(ref: ParticipantRef) -> Optional[PlayoffTeam]:
@@ -834,10 +1108,19 @@ def simulate_playoffs(bracket: PlayoffBracket, *, simulate_game=None, persist_cb
     made_progress = True
     while made_progress:
         made_progress = False
+        champ_round_names = _championship_round_names(bracket)
         # Simulate the first round that has pending matchups
         for r_index, rnd in enumerate(bracket.rounds):
             pendings = [i for i, m in enumerate(rnd.matchups) if not m.winner and m.high and m.low and m.high.team_id and m.low.team_id]
             if not pendings:
+                if rnd.name in champ_round_names and rnd.matchups and all(m.winner for m in rnd.matchups):
+                    champ_id = rnd.matchups[0].winner
+                    if champ_id:
+                        bracket.champion = champ_id
+                        m = rnd.matchups[0]
+                        bracket.runner_up = m.low.team_id if champ_id == m.high.team_id else m.high.team_id
+                        persist()
+                        return bracket
                 continue
             for i in pendings:
                 simulate_series(rnd.matchups[i], year=year, round_name=rnd.name, series_index=i, simulate_game=simulate_game)
@@ -846,7 +1129,7 @@ def simulate_playoffs(bracket: PlayoffBracket, *, simulate_game=None, persist_cb
             # After completing this round (all winners set), populate next stage
             if all(m.winner for m in rnd.matchups):
                 # Champion resolution if WS/Final
-                if rnd.name in {"WS", "Final"} and rnd.matchups:
+                if rnd.name in champ_round_names and rnd.matchups:
                     champ_id = rnd.matchups[0].winner
                     if champ_id:
                         bracket.champion = champ_id
@@ -855,10 +1138,10 @@ def simulate_playoffs(bracket: PlayoffBracket, *, simulate_game=None, persist_cb
                         bracket.runner_up = m.low.team_id if champ_id == m.high.team_id else m.high.team_id
                         # Nothing else to populate; playoffs complete
                         persist()
-                        return bracket
+                    return bracket
                 _populate_next_round(bracket, cfg={
                     "series_lengths": getattr(bracket, "series_lengths", {"ds": 5, "cs": 7, "ws": 7, "wildcard": 3}),
-                    "home_away_patterns": {3: [1, 1, 1], 5: [2, 2, 1], 7: [2, 3, 2]},
+                    "home_away_patterns": _DEFAULT_HOME_AWAY_PATTERNS,
                 })
             break  # simulate one round at a time
     return bracket
@@ -882,13 +1165,22 @@ def simulate_next_round(bracket: PlayoffBracket, *, simulate_game=None, persist_
     for r_index, rnd in enumerate(bracket.rounds):
         pendings = [i for i, m in enumerate(rnd.matchups) if not m.winner and m.high and m.low and m.high.team_id and m.low.team_id]
         if not pendings:
+            champ_round_names = _championship_round_names(bracket)
+            if rnd.name in champ_round_names and rnd.matchups and all(m.winner for m in rnd.matchups):
+                champ_id = rnd.matchups[0].winner
+                if champ_id:
+                    bracket.champion = champ_id
+                    m = rnd.matchups[0]
+                    bracket.runner_up = m.low.team_id if champ_id == m.high.team_id else m.high.team_id
+                persist()
             continue
         for i in pendings:
             simulate_series(rnd.matchups[i], year=year, round_name=rnd.name, series_index=i, simulate_game=simulate_game)
             persist()
         # After finishing this round, populate next round matchups
         if all(m.winner for m in rnd.matchups):
-            if rnd.name in {"WS", "Final"} and rnd.matchups:
+            champ_round_names = _championship_round_names(bracket)
+            if rnd.name in champ_round_names and rnd.matchups:
                 # Champion resolved
                 champ_id = rnd.matchups[0].winner
                 if champ_id:
@@ -898,7 +1190,7 @@ def simulate_next_round(bracket: PlayoffBracket, *, simulate_game=None, persist_
             else:
                 _populate_next_round(bracket, cfg={
                     "series_lengths": getattr(bracket, "series_lengths", {"ds": 5, "cs": 7, "ws": 7, "wildcard": 3}),
-                    "home_away_patterns": {3: [1, 1, 1], 5: [2, 2, 1], 7: [2, 3, 2]},
+                    "home_away_patterns": _DEFAULT_HOME_AWAY_PATTERNS,
                 })
             persist()
         break
