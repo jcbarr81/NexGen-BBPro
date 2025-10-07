@@ -742,3 +742,60 @@ timestamp,season_date,team_id,player_id,player_name,action,from_level,to_level,c
 2025-10-07 06:53:13,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
 2025-10-07 06:53:13,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
 2025-10-07 06:53:13,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-10-07 06:53:56,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:53:56,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 06:53:56,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-10-07 06:54:34,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:54:34,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 06:54:34,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-10-07 06:57:07,2025-07-15,WAS,D20250064,Howard Mangrich,draft,,LOW,,Drafted in 2025 Amateur Draft (WAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,ALB,D20250021,Malik Walker,draft,,LOW,,Drafted in 2025 Amateur Draft (ALB: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,MIL,D20250052,Jermaine Jackson,draft,,LOW,,Drafted in 2025 Amateur Draft (MIL: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,HOU,D20250029,Malik Walker,draft,,LOW,,Drafted in 2025 Amateur Draft (HOU: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,LOU,D20250070,Manuel Ramirez,draft,,LOW,,Drafted in 2025 Amateur Draft (LOU: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN1,D20250020,Malik Young,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN1: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN,D20250051,Jorge Vasquez,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,BOS,D20250061,Alexis Gelbart,draft,,LOW,,Drafted in 2025 Amateur Draft (BOS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,MEM,D20250056,Armand Atkisson,draft,,LOW,,Drafted in 2025 Amateur Draft (MEM: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,NAS,D20250040,Roberto Garcia,draft,,LOW,,Drafted in 2025 Amateur Draft (NAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,PHO,D20250015,Manuel Ramirez,draft,,LOW,,Drafted in 2025 Amateur Draft (PHO: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN2,D20250050,Dion Mcclary,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN2: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,OKL,D20250072,Eduardo Gonzalez,draft,,LOW,,Drafted in 2025 Amateur Draft (OKL: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,CHI,D20250046,Percy Allen,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 06:57:07,2025-07-15,JAC,D20250012,Darnell Jackson,draft,,LOW,,Drafted in 2025 Amateur Draft (JAC: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,WAS,D20250023,Anthony Gouthier,draft,,LOW,,Drafted in 2025 Amateur Draft (WAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,ALB,D20250031,Juan Vargas,draft,,LOW,,Drafted in 2025 Amateur Draft (ALB: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,MIL,D20250006,Frances Hasenbeck,draft,,LOW,,Drafted in 2025 Amateur Draft (MIL: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,HOU,D20250022,Miguel Martinez,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 06:57:07,2025-07-15,LOU,D20250014,Anthony Gouthier,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 06:57:07,2025-07-15,SAN1,D20250062,Larry Reibsome,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN1: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN,D20250032,Darnell Young,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,BOS,D20250038,Bo Ota,draft,,LOW,,Drafted in 2025 Amateur Draft (BOS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,MEM,D20250037,Deshawn Walker,draft,,LOW,,Drafted in 2025 Amateur Draft (MEM: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,NAS,D20250058,Antonio Mendoza,draft,,LOW,,Drafted in 2025 Amateur Draft (NAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,PHO,D20250074,Rufus Young,draft,,LOW,,Drafted in 2025 Amateur Draft (PHO: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN2,D20250071,Levi Christman,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN2: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,OKL,D20250036,Malik Walker,draft,,LOW,,Drafted in 2025 Amateur Draft (OKL: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,CHI,D20250013,Antonio Torres,draft,,LOW,,Drafted in 2025 Amateur Draft (CHI: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,JAC,D20250066,Jermaine Jackson,draft,,LOW,,Drafted in 2025 Amateur Draft (JAC: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,WAS,D20250048,Miguel Lopez,draft,,LOW,,Drafted in 2025 Amateur Draft (WAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,ALB,D20250057,Buck Ottilige,draft,,LOW,,Drafted in 2025 Amateur Draft (ALB: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,MIL,D20250033,Carlos Sanchez,draft,,LOW,,Drafted in 2025 Amateur Draft (MIL: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,HOU,D20250045,Luis Gomez,draft,,LOW,,Drafted in 2025 Amateur Draft (HOU: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,LOU,D20250054,Newton Schuetz,draft,,LOW,,Drafted in 2025 Amateur Draft (LOU: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN1,D20250075,Deshawn Green,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN1: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN,D20250035,Eduardo Torres,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,BOS,D20250034,Theodore Matice,draft,,LOW,,Drafted in 2025 Amateur Draft (BOS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,MEM,D20250008,Roberto Rodriguez,draft,,LOW,,Drafted in 2025 Amateur Draft (MEM: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,NAS,D20250004,Percy Wright,draft,,LOW,,Drafted in 2025 Amateur Draft (NAS: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,PHO,D20250009,Newton Schuetz,draft,,LOW,,Drafted in 2025 Amateur Draft (PHO: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,SAN2,D20250018,Hector Reyes,draft,,LOW,,Drafted in 2025 Amateur Draft (SAN2: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,OKL,D20250003,Roland Hinken,draft,,LOW,,Drafted in 2025 Amateur Draft (OKL: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,CHI,D20250025,Rufus Young,draft,,LOW,,Drafted in 2025 Amateur Draft (CHI: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 06:57:07,2025-07-15,JAC,D20250059,Rafael Ramirez,draft,,LOW,,Drafted in 2025 Amateur Draft (JAC: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 07:07:23,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 07:07:23,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 07:07:23,2025-10-27,BBB,c001,c001,cut,AAA,FA,,Released to free agency
+2025-10-07 07:35:26,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-07 07:35:26,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-07 07:35:26,2025-04-01,BBB,c001,c001,cut,AAA,FA,,Released to free agency

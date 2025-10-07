@@ -62,6 +62,8 @@ from playbalance.playoffs import load_bracket
 ROUND_STAGE_ALIASES = {
     "WC": "Play-In",
     "DS": "Round 1",
+    # Note: "CS" label varies by context. For single-league brackets where CS is the last
+    # displayed round, we relabel it as "League Championship" downstream.
     "CS": "Round 2",
     "WS": "Championship",
     "FINAL": "Championship",
@@ -69,15 +71,21 @@ ROUND_STAGE_ALIASES = {
 }
 
 
-def _friendly_round_title(raw_name: str) -> str:
+def _friendly_round_title(raw_name: str, *, single_league: bool = False) -> str:
     name = str(raw_name or "").strip()
     if not name:
         return "Round"
     parts = name.split()
     if len(parts) == 1:
-        return ROUND_STAGE_ALIASES.get(parts[0].upper(), name)
+        code = parts[0].upper()
+        if single_league and code == "CS":
+            return "League Championship"
+        return ROUND_STAGE_ALIASES.get(code, name)
     stage_code = parts[-1].upper()
-    label = ROUND_STAGE_ALIASES.get(stage_code)
+    if single_league and stage_code == "CS":
+        label = "League Championship"
+    else:
+        label = ROUND_STAGE_ALIASES.get(stage_code)
     if not label:
         return name
     league = " ".join(parts[:-1]).strip()
@@ -187,7 +195,23 @@ class PlayoffsWindow(QDialog):
         champ = getattr(self._bracket, 'champion', None) or "(TBD)"
         self.title.setText(f"Playoffs {year} — Champion: {champ}")
 
-        for rnd in getattr(self._bracket, 'rounds', []) or []:
+        # Determine which rounds to show. In single-league formats the bracket
+        # may include a duplicated "Final" entry (same as the league CS) purely
+        # for metadata. Hide it from the viewer to avoid a phantom third round.
+        try:
+            _lg_keys = list((getattr(self._bracket, 'seeds_by_league', {}) or {}).keys())
+        except Exception:
+            _lg_keys = []
+        _all_rounds = list(getattr(self._bracket, 'rounds', []) or [])
+        if len(_lg_keys) <= 1:
+            _rounds_iter = [
+                r for r in _all_rounds
+                if str(getattr(r, 'name', '')).strip().lower() not in {"final", "finals"}
+            ]
+        else:
+            _rounds_iter = _all_rounds
+
+        for rnd in _rounds_iter:
             box = QFrame()
             try:
                 box.setFrameShape(QFrame.Shape.StyledPanel)
@@ -197,7 +221,7 @@ class PlayoffsWindow(QDialog):
             bv.setContentsMargins(8, 8, 8, 8)
             bv.setSpacing(6)
             raw_name = str(rnd.name)
-            title = _friendly_round_title(raw_name)
+            title = _friendly_round_title(raw_name, single_league=(len(_lg_keys) <= 1))
             lbl = QLabel(title)
             if title != raw_name and hasattr(lbl, "setToolTip"):
                 try:
@@ -319,8 +343,22 @@ class PlayoffsWindow(QDialog):
         lines.append(title)
         lines.append("")
         try:
-            for rnd in getattr(b, 'rounds', []) or []:
-                lines.append(f"## {_friendly_round_title(rnd.name)}")
+            # Mirror display logic: suppress duplicated single-league Final
+            try:
+                _lg_keys = list((getattr(b, 'seeds_by_league', {}) or {}).keys())
+            except Exception:
+                _lg_keys = []
+            _all_rounds = list(getattr(b, 'rounds', []) or [])
+            if len(_lg_keys) <= 1:
+                _rounds_iter = [
+                    r for r in _all_rounds
+                    if str(getattr(r, 'name', '')).strip().lower() not in {"final", "finals"}
+                ]
+            else:
+                _rounds_iter = _all_rounds
+
+            for rnd in _rounds_iter:
+                lines.append(f"## {_friendly_round_title(rnd.name, single_league=(len(_lg_keys) <= 1))}")
                 for m in rnd.matchups or []:
                     wins_high = 0
                     wins_low = 0

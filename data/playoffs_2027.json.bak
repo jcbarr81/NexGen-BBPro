@@ -566,7 +566,34 @@
     },
     {
       "name": "WS",
-      "matchups": [],
+      "matchups": [
+        {
+          "high": {
+            "team_id": "A1",
+            "seed": 1,
+            "league": "AL",
+            "wins": 98,
+            "run_diff": 148
+          },
+          "low": {
+            "team_id": "N1",
+            "seed": 1,
+            "league": "NL",
+            "wins": 97,
+            "run_diff": 147
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [],
+          "winner": null
+        }
+      ],
       "plan": [
         {
           "series_key": "ws",

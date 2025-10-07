@@ -6,32 +6,32 @@
   "seeds": {
     "LEAGUE": [
       {
-        "team_id": "BOS",
+        "team_id": "OKL",
         "seed": 1,
         "league": "LEAGUE",
-        "wins": 50,
-        "run_diff": 24
+        "wins": 104,
+        "run_diff": 66
       },
       {
         "team_id": "JAC",
         "seed": 2,
         "league": "LEAGUE",
-        "wins": 49,
-        "run_diff": 20
+        "wins": 101,
+        "run_diff": 76
+      },
+      {
+        "team_id": "BOS",
+        "seed": 3,
+        "league": "LEAGUE",
+        "wins": 92,
+        "run_diff": 24
       },
       {
         "team_id": "CHI",
-        "seed": 3,
-        "league": "LEAGUE",
-        "wins": 48,
-        "run_diff": 15
-      },
-      {
-        "team_id": "MEM",
         "seed": 4,
         "league": "LEAGUE",
-        "wins": 49,
-        "run_diff": 38
+        "wins": 101,
+        "run_diff": 48
       }
     ]
   },
@@ -41,18 +41,18 @@
       "matchups": [
         {
           "high": {
-            "team_id": "BOS",
+            "team_id": "OKL",
             "seed": 1,
             "league": "LEAGUE",
-            "wins": 50,
-            "run_diff": 24
+            "wins": 104,
+            "run_diff": 66
           },
           "low": {
-            "team_id": "MEM",
+            "team_id": "CHI",
             "seed": 4,
             "league": "LEAGUE",
-            "wins": 49,
-            "run_diff": 38
+            "wins": 101,
+            "run_diff": 48
           },
           "config": {
             "length": 5,
@@ -70,15 +70,15 @@
             "team_id": "JAC",
             "seed": 2,
             "league": "LEAGUE",
-            "wins": 49,
-            "run_diff": 20
+            "wins": 101,
+            "run_diff": 76
           },
           "low": {
-            "team_id": "CHI",
+            "team_id": "BOS",
             "seed": 3,
             "league": "LEAGUE",
-            "wins": 48,
-            "run_diff": 15
+            "wins": 92,
+            "run_diff": 24
           },
           "config": {
             "length": 5,
