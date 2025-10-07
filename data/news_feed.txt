@@ -2153,3 +2153,16 @@
 [2025-10-07 06:50:23] Generated regular season schedule with 162 games
 [2025-10-07 06:50:23] No unsigned players available
 [2025-10-07 06:50:23] Generated regular season schedule with 162 games
+[2025-10-07 06:53:16] Generated regular season schedule with 1215 games
+[2025-10-07 06:53:16] Generated regular season schedule with 1215 games
+[2025-10-07 06:53:16] Generated regular season schedule with 1215 games
+[2025-10-07 06:53:17] Generated regular season schedule with 1215 games
+[2025-10-07 06:53:17] Generated regular season schedule with 1215 games
+[2025-10-07 06:53:17] Season advanced to Preseason
+[2025-10-07 06:53:17] No unsigned players available
+[2025-10-07 06:53:17] Training camp completed; players marked ready
+[2025-10-07 06:53:17] Generated regular season schedule with 162 games
+[2025-10-07 06:53:17] Generated regular season schedule with 162 games
+[2025-10-07 06:53:17] Generated regular season schedule with 162 games
+[2025-10-07 06:53:17] No unsigned players available
+[2025-10-07 06:53:17] Generated regular season schedule with 162 games
