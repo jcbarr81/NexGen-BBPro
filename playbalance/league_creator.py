@@ -225,6 +225,17 @@ def _initialize_league_state(base_dir: Path) -> None:
     if schedule_path.exists():
         schedule_path.unlink()
 
+    # Remove any existing playoffs brackets from a prior league to avoid
+    # showing stale postseason results in the new league.
+    try:
+        for p in base_dir.glob("playoffs*.json"):
+            try:
+                p.unlink()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
 def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)

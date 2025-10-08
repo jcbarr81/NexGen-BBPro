@@ -189,6 +189,29 @@ class TeamsPage(QWidget):
         layout.addWidget(bulk)
         layout.addStretch()
 
+    def refresh(self) -> None:
+        """Repopulate the teams dropdown from the current league file.
+
+        This ensures that after creating a new league or otherwise changing
+        `data/teams.csv`, the combo reflects the up-to-date team IDs.
+        """
+        try:
+            teams = load_teams("data/teams.csv")
+        except Exception:
+            teams = []
+        try:
+            self.team_select.blockSignals(True)
+            self.team_select.clear()
+            self.team_select.addItems([t.team_id for t in teams])
+        except Exception:
+            # Best effort; ignore UI update issues
+            pass
+        finally:
+            try:
+                self.team_select.blockSignals(False)
+            except Exception:
+                pass
+
 
 class UsersPage(QWidget):
     """User account management with search and list."""
@@ -1150,6 +1173,19 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to purge existing league: {e}")
             return
         QMessageBox.information(self, "League Created", "New league generated.")
+        # Refresh pages that depend on team list/metrics
+        try:
+            tp = self.pages.get("teams")
+            if tp is not None and hasattr(tp, "refresh"):
+                tp.refresh()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        try:
+            hp = self.pages.get("dashboard")
+            if hp is not None and hasattr(hp, "refresh"):
+                hp.refresh()  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
     def open_exhibition_dialog(self) -> None:
         dlg = ExhibitionGameDialog(self)
@@ -1343,6 +1379,34 @@ class MainWindow(QMainWindow):
                             pass
         except Exception:
             # Draft reset is best-effort; do not block overall reset
+            pass
+
+        # 3d) Clear playoffs bracket files so prior league's results don't appear
+        try:
+            # Remove generic and year-specific playoff brackets
+            playoff_candidates = [base / "playoffs.json"]
+            if first_year is not None:
+                playoff_candidates.append(base / f"playoffs_{first_year}.json")
+            # Also clear any other year-specific brackets defensively
+            try:
+                playoff_candidates.extend(base.glob("playoffs_*.json"))
+            except Exception:
+                pass
+            for p in playoff_candidates:
+                try:
+                    if p.exists():
+                        # Remove backup/lock then primary
+                        bak = p.with_suffix(p.suffix + ".bak")
+                        lock = p.with_suffix(p.suffix + ".lock")
+                        if lock.exists():
+                            lock.unlink()
+                        if bak.exists():
+                            bak.unlink()
+                        p.unlink()
+                except Exception:
+                    pass
+        except Exception:
+            # Non-blocking cleanup
             pass
 
         # 4) Set phase to REGULAR_SEASON and attempt to lock rosters
