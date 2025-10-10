@@ -118,3 +118,4 @@ Iron8/data/
 # Logs and temp files
 *.log
 *.tmp
+data/news_feed.txt
