@@ -1,4 +1,5 @@
 import sys, types
+from concurrent.futures import Future
 
 # ---- Stub PyQt6 modules ----
 class DummySignal:
@@ -68,12 +69,19 @@ class QLabel(Dummy):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._text = ""
+        self._style = ""
 
     def setText(self, text):
         self._text = text
 
     def text(self):
         return self._text
+
+    def setStyleSheet(self, style):
+        self._style = style
+
+    def clear(self):
+        self._text = ""
 
 
 class QPushButton(Dummy):
@@ -86,6 +94,26 @@ class QPushButton(Dummy):
 
     def text(self):
         return self._text
+
+
+class QListWidget(Dummy):
+    class SelectionMode:
+        NoSelection = 0
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._mouse_tracking = False
+        self._selection_mode = self.SelectionMode.NoSelection
+
+    def setMouseTracking(self, enabled):
+        self._mouse_tracking = bool(enabled)
+
+    def setSelectionMode(self, mode):
+        self._selection_mode = mode
+
+
+class QListWidgetItem(Dummy):
+    pass
 
 
 class QDialog(Dummy):
@@ -122,15 +150,29 @@ qtwidgets = types.ModuleType("PyQt6.QtWidgets")
 qtwidgets.QDialog = QDialog
 qtwidgets.QLabel = QLabel
 qtwidgets.QPushButton = QPushButton
+qtwidgets.QListWidget = QListWidget
+qtwidgets.QListWidgetItem = QListWidgetItem
 qtwidgets.QVBoxLayout = QVBoxLayout
 qtwidgets.QMessageBox = QMessageBox
 qtwidgets.QProgressDialog = Dummy
 sys.modules["PyQt6"] = types.ModuleType("PyQt6")
 sys.modules["PyQt6.QtWidgets"] = qtwidgets
+qtgui = types.ModuleType("PyQt6.QtGui")
+qtgui.QColor = Dummy
+sys.modules["PyQt6.QtGui"] = qtgui
 
 # ---- Import window after stubs ----
 from playbalance.season_manager import SeasonPhase
 import ui.season_progress_window as spw
+
+
+def _wait_for_future(win):
+    fut = getattr(win, "_active_future", None)
+    if isinstance(fut, Future):
+        try:
+            fut.result(timeout=1)
+        except Exception:
+            pass
 
 
 class DummyManager:
@@ -146,6 +188,32 @@ class DummyManager:
 
 spw.SeasonManager = DummyManager
 spw.QMessageBox = QMessageBox
+
+def _stub_load_teams(*args, **kwargs):
+    teams = []
+    ids = ["A", "B", "C", "D", "E", "F", "G", "H"]
+    for idx, team_id in enumerate(ids):
+        teams.append(
+            types.SimpleNamespace(
+                team_id=team_id,
+                name=team_id,
+                city=team_id,
+                abbreviation=team_id,
+                division=f"Div{idx % 2}",
+                stadium="",
+                primary_color="#000000",
+                secondary_color="#FFFFFF",
+                owner_id="",
+                act_roster=[],
+                aaa_roster=[],
+                low_roster=[],
+                season_stats={},
+            )
+        )
+    return teams
+
+spw.load_teams = _stub_load_teams
+spw.SeasonProgressWindow._validate_all_team_lineups = lambda self: []
 
 
 def test_simulate_day_until_midseason(tmp_path, monkeypatch):
@@ -166,20 +234,24 @@ def test_simulate_day_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Days until Midseason: 2"
 
     win.simulate_day_button.clicked.emit()
+    _wait_for_future(win)
     assert games == [("A", "B")]
     assert win.remaining_label.text() == "Days until Midseason: 1"
     assert win.simulate_day_button.isEnabled()
 
     win.simulate_day_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 2
-    assert win.remaining_label.text() == "Days until Season End: 2"
+    assert win.remaining_label.text() == "Days until Draft: 2"
     assert win.simulate_day_button.isEnabled()
 
     win.simulate_day_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 3
     assert win.remaining_label.text() == "Days until Season End: 1"
 
     win.simulate_day_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 4
     assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_day_button.isEnabled()
@@ -188,6 +260,29 @@ def test_simulate_day_until_midseason(tmp_path, monkeypatch):
     # Further clicks should not simulate more games
     win.simulate_day_button.clicked.emit()
     assert len(games) == 4
+
+
+def test_simulation_status_tracks_progress(tmp_path, monkeypatch):
+    schedule = [
+        {"date": f"2024-04-{day:02d}", "home": "A", "away": "B"}
+        for day in range(1, 21)
+    ]
+
+    games: list[tuple[str, str]] = []
+
+    def fake_sim(home, away):
+        games.append((home, away))
+
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
+
+    win.simulate_week_button.clicked.emit()
+    _wait_for_future(win)
+    assert len(games) == 7
+    status = win.simulation_status_label.text()
+    assert "Simulation complete" in status
+    assert "7/7 days" in status
+    assert "100% complete" in status
 
 
 def test_simulate_day_warns_when_missing_data(tmp_path, monkeypatch):
@@ -203,6 +298,7 @@ def test_simulate_day_warns_when_missing_data(tmp_path, monkeypatch):
     monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
     win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=bad_sim)
     win.simulate_day_button.clicked.emit()
+    _wait_for_future(win)
     assert QMessageBox.last == (
         "Missing Lineup or Pitching", "Team A lineup missing"
     )
@@ -224,12 +320,14 @@ def test_simulate_week_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Days until Midseason: 5"
 
     win.simulate_week_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 7
     assert win.remaining_label.text() == "Days until Season End: 3"
     assert win.simulate_week_button.isEnabled()
     assert not win.next_button.isEnabled()
 
     win.simulate_week_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 10
     assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_week_button.isEnabled()
@@ -252,12 +350,14 @@ def test_simulate_month_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Days until Midseason: 20"
 
     win.simulate_month_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 30
     assert win.remaining_label.text() == "Days until Season End: 10"
     assert win.simulate_month_button.isEnabled()
     assert not win.next_button.isEnabled()
 
     win.simulate_month_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 40
     assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_month_button.isEnabled()
@@ -283,6 +383,7 @@ def test_simulate_to_next_phase(tmp_path, monkeypatch):
     assert win.simulate_phase_button.text() == "Simulate to Midseason"
 
     win.simulate_phase_button.clicked.emit()
+    _wait_for_future(win)
     assert len(games) == 5
     assert win.remaining_label.text() == "Days until Draft: 5"
     assert win.simulate_phase_button.isEnabled()
@@ -328,6 +429,7 @@ def test_playoffs_require_simulation(tmp_path, monkeypatch):
     assert not win.next_button.isEnabled()
 
     win.simulate_phase_button.clicked.emit()
+    _wait_for_future(win)
     assert not win.simulate_phase_button.isEnabled()
     assert win.next_button.isEnabled()
     assert win.remaining_label.text() == "Playoffs complete."

@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
 from utils.team_loader import load_teams
 from utils.standings_utils import default_record, normalize_record
 from utils.path_utils import get_base_dir
+from utils.sim_date import get_current_sim_date
 
 
 class StandingsWindow(QDialog):
@@ -61,7 +62,15 @@ class StandingsWindow(QDialog):
         }
 
         # Build HTML using the same format as the sample standings page.
-        today = datetime.now().strftime("%A, %B %d, %Y")
+        sim_date = get_current_sim_date()
+        if sim_date:
+            try:
+                date_obj = datetime.strptime(sim_date, "%Y-%m-%d")
+                today = date_obj.strftime("%A, %B %d, %Y")
+            except ValueError:
+                today = sim_date
+        else:
+            today = datetime.now().strftime("%A, %B %d, %Y")
         parts = [
             "<html><head>",
             f"<title>{league_name} Standings</title>",

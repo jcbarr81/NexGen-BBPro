@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Callable, Optional
+
 """Playoffs viewer window.
 
 Displays the current bracket (rounds, series, and game results). This window
@@ -18,7 +21,7 @@ try:
         QWidget,
         QFrame,
     )
-    from PyQt6.QtCore import Qt
+    from PyQt6.QtCore import Qt, QTimer
 except Exception:  # pragma: no cover - headless stubs for tests
     class _Signal:
         def __init__(self):
@@ -56,6 +59,10 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def setWidgetResizable(self, *a, **k): pass
     class Qt:
         class AlignmentFlag: AlignLeft = 0; AlignTop = 0; AlignHCenter = 0
+    class QTimer:
+        @staticmethod
+        def singleShot(ms, func):
+            func()
 
 from playbalance.playoffs import load_bracket
 
@@ -92,14 +99,102 @@ def _friendly_round_title(raw_name: str, *, single_league: bool = False) -> str:
     return f"{label} - {league}" if league else label
 
 
+def _build_bracket_markdown(bracket) -> list[str]:
+    lines: list[str] = []
+    title = f"# Playoffs {getattr(bracket, 'year', '')}"
+    champ = getattr(bracket, "champion", None)
+    if champ:
+        title += f" - Champion: {champ}"
+    lines.append(title)
+    lines.append("")
+    try:
+        try:
+            _lg_keys = list((getattr(bracket, "seeds_by_league", {}) or {}).keys())
+        except Exception:
+            _lg_keys = []
+        _all_rounds = list(getattr(bracket, "rounds", []) or [])
+        if len(_lg_keys) <= 1:
+            _rounds_iter = [
+                r
+                for r in _all_rounds
+                if str(getattr(r, "name", "")).strip().lower() not in {"final", "finals"}
+            ]
+        else:
+            _rounds_iter = _all_rounds
+
+        for rnd in _rounds_iter:
+            lines.append(
+                f"## {_friendly_round_title(rnd.name, single_league=(len(_lg_keys) <= 1))}"
+            )
+            for m in rnd.matchups or []:
+                wins_high = 0
+                wins_low = 0
+                for g in (m.games or []):
+                    res = str(getattr(g, "result", "") or "")
+                    home = getattr(g, "home", "")
+                    away = getattr(g, "away", "")
+                    if "-" in res:
+                        try:
+                            hs, as_ = res.split("-", 1)
+                            hs, as_ = int(hs), int(as_)
+                            if hs > as_:
+                                winner = home
+                            elif as_ > hs:
+                                winner = away
+                            else:
+                                continue
+                            if winner == m.high.team_id:
+                                wins_high += 1
+                            elif winner == m.low.team_id:
+                                wins_low += 1
+                        except Exception:
+                            pass
+                series = f" ({wins_high}-{wins_low})" if (wins_high or wins_low) else ""
+                lines.append(
+                    f"- ({m.high.seed}) {m.high.team_id} vs ({m.low.seed}) {m.low.team_id}{series} - Winner: {m.winner or 'TBD'}"
+                )
+                for gi, g in enumerate(m.games or []):
+                    res = str(getattr(g, "result", "") or "?")
+                    path = getattr(g, "boxscore", "") or ""
+                    lines.append(
+                        f"  - G{gi+1}: {g.away} at {g.home} - {res}  {path}"
+                    )
+            lines.append("")
+    except Exception:
+        pass
+    return lines
+
+
 class PlayoffsWindow(QDialog):
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        parent=None,
+        *,
+        run_async: Optional[Callable[[Callable[[], Any]], Any]] = None,
+        show_toast: Optional[Callable[[str, str], None]] = None,
+        register_cleanup: Optional[Callable[[Callable[[], None]], None]] = None,
+    ):
         super().__init__(parent)
         try:
             self.setWindowTitle("Playoffs")
             self.resize(900, 600)
         except Exception:
             pass
+
+        self._executor: ThreadPoolExecutor | None = None
+        if run_async is None:
+            executor = ThreadPoolExecutor(max_workers=2)
+            self._executor = executor
+            self._run_async = executor.submit
+            if register_cleanup is not None:
+                register_cleanup(lambda ex=executor: ex.shutdown(wait=False))
+        else:
+            self._run_async = run_async
+        self._show_toast = show_toast
+        self._register_cleanup = register_cleanup
+        self._active_future: Any | None = None
+        self._export_future: Any | None = None
+        self._open_future: Any | None = None
 
         root = QVBoxLayout(self)
         root.setContentsMargins(12, 12, 12, 12)
@@ -139,6 +234,24 @@ class PlayoffsWindow(QDialog):
         self._bracket = None
         self._last_summary_path = None
         self.refresh()
+
+    def closeEvent(self, event) -> None:  # noqa: N802 - Qt signature
+        for fut in (self._active_future, self._export_future, self._open_future):
+            try:
+                if fut is not None and hasattr(fut, "cancel"):
+                    fut.cancel()
+            except Exception:
+                pass
+        self._active_future = None
+        self._export_future = None
+        self._open_future = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
+        super().closeEvent(event)
 
     def refresh(self) -> None:
         self._bracket = load_bracket()
@@ -193,7 +306,7 @@ class PlayoffsWindow(QDialog):
         # Header details
         year = getattr(self._bracket, 'year', '')
         champ = getattr(self._bracket, 'champion', None) or "(TBD)"
-        self.title.setText(f"Playoffs {year} — Champion: {champ}")
+        self.title.setText(f"Playoffs {year} - Champion: {champ}")
 
         # Determine which rounds to show. In single-league formats the bracket
         # may include a duplicated "Final" entry (same as the league CS) purely
@@ -257,11 +370,11 @@ class PlayoffsWindow(QDialog):
                                         wins_low += 1
                             except Exception:
                                 pass
-                        game_lines.append(f"G{gi+1}: {away} at {home} — {res}")
+                        game_lines.append(f"G{gi+1}: {away} at {home} - {res}")
                 except Exception:
                     pass
                 series_note = f" (Series {wins_high}-{wins_low})" if (wins_high or wins_low) else ""
-                line = QLabel(f"({m.high.seed}) {m.high.team_id} vs ({m.low.seed}) {m.low.team_id}{series_note} — Winner: {m.winner or 'TBD'}")
+                line = QLabel(f"({m.high.seed}) {m.high.team_id} vs ({m.low.seed}) {m.low.team_id}{series_note} - Winner: {m.winner or 'TBD'}")
                 try:
                     line.setToolTip("\n".join(game_lines) if game_lines else "No games played yet.")
                 except Exception:
@@ -270,7 +383,7 @@ class PlayoffsWindow(QDialog):
                 # List game results succinctly
                 for gi, g in enumerate(m.games):
                     res = g.result or "?"
-                    gl = QLabel(f"  G{gi+1}: {g.away} at {g.home} — {res}")
+                    gl = QLabel(f"  G{gi+1}: {g.away} at {g.home} - {res}")
                     bv.addWidget(gl)
             self.cv.addWidget(box)
         self.cv.addStretch(1)
@@ -286,149 +399,325 @@ class PlayoffsWindow(QDialog):
     # ------------------------------------------------------------------
     # Simulation helpers
     def _simulate_round(self) -> None:
-        from playbalance.playoffs import load_bracket, save_bracket, simulate_next_round
-        year = getattr(self._bracket, "year", None)
-        b = self._bracket
-        if b is None and year is not None:
-            b = load_bracket(year=year)
-        if b is None:
-            b = load_bracket()
-        if not b:
-            return
-        try:
-            b = simulate_next_round(b)
-        except Exception:
-            return
-        try:
-            save_bracket(b)
-            self._bracket = b
-        except Exception:
-            pass
-        self.refresh()
+        self._simulate_round_async()
 
     def _simulate_all(self) -> None:
-        from playbalance.playoffs import load_bracket, save_bracket, simulate_playoffs
-        year = getattr(self._bracket, "year", None)
-        b = self._bracket
-        if b is None and year is not None:
-            b = load_bracket(year=year)
-        if b is None:
-            b = load_bracket()
-        if not b:
+        self._simulate_all_async()
+
+    def _simulate_round_async(self) -> None:
+        if self._active_future is not None:
+            QMessageBox.information(
+                self,
+                "Simulation Running",
+                "Playoff simulation already in progress. Please wait for it to finish.",
+            )
             return
-        try:
-            b = simulate_playoffs(b)
-        except Exception:
+        payload = {
+            "title": "Simulating next round...",
+            "worker": self._simulate_round_work,
+        }
+        self._run_playoff_worker(payload)
+
+    def _simulate_all_async(self) -> None:
+        if self._active_future is not None:
+            QMessageBox.information(
+                self,
+                "Simulation Running",
+                "Playoff simulation already in progress. Please wait for it to finish.",
+            )
             return
+        payload = {
+            "title": "Simulating remaining playoffs...",
+            "worker": self._simulate_all_work,
+        }
+        self._run_playoff_worker(payload)
+
+    def _run_playoff_worker(self, payload: dict[str, Any]) -> None:
+        worker = payload["worker"]
+        self._set_sim_buttons_enabled(False)
+        if self._show_toast:
+            self._show_toast("info", payload["title"])
+        future = self._run_async(worker)
+        self._active_future = future
+
+        def handle_result(fut) -> None:
+            try:
+                result = fut.result()
+            except Exception as exc:
+                result = {"status": "error", "message": str(exc)}
+
+            def finish() -> None:
+                self._active_future = None
+                self._handle_sim_result(result)
+
+            QTimer.singleShot(0, finish)
+
+        if hasattr(future, "add_done_callback"):
+            future.add_done_callback(handle_result)
+            if self._register_cleanup and hasattr(future, "cancel"):
+                self._register_cleanup(lambda fut=future: fut.cancel())
+        else:
+            handle_result(type("_Immediate", (), {"result": lambda self: future})())
+
+    def _simulate_round_work(self) -> dict[str, Any]:
+        from playbalance.playoffs import simulate_next_round, save_bracket
+
+        bracket = self._load_bracket_for_sim()
+        if not bracket:
+            return {"status": "error", "message": "No playoff bracket available."}
         try:
-            save_bracket(b)
-            self._bracket = b
+            bracket = simulate_next_round(bracket)
+        except Exception as exc:
+            return {"status": "error", "message": f"Failed simulating round: {exc}"}
+        try:
+            save_bracket(bracket)
         except Exception:
             pass
+        self._bracket = bracket
+        return {
+            "status": "success",
+            "message": "Simulated playoff round.",
+            "bracket": bracket,
+        }
+
+    def _simulate_all_work(self) -> dict[str, Any]:
+        from playbalance.playoffs import simulate_playoffs, save_bracket
+
+        bracket = self._load_bracket_for_sim()
+        if not bracket:
+            return {"status": "error", "message": "No playoff bracket available."}
+        try:
+            bracket = simulate_playoffs(bracket)
+        except Exception as exc:
+            return {"status": "error", "message": f"Failed simulating playoffs: {exc}"}
+        try:
+            save_bracket(bracket)
+        except Exception:
+            pass
+        self._bracket = bracket
+        return {
+            "status": "success",
+            "message": "Simulated remaining playoffs.",
+            "bracket": bracket,
+        }
+
+    def _load_bracket_for_sim(self):
+        from playbalance.playoffs import load_bracket
+
+        year = getattr(self._bracket, "year", None)
+        bracket = self._bracket
+        if bracket is None and year is not None:
+            bracket = load_bracket(year=year)
+        if bracket is None:
+            bracket = load_bracket()
+        return bracket
+
+    def _handle_sim_result(self, result: dict[str, Any]) -> None:
+        self._set_sim_buttons_enabled(True)
+        status = result.get("status", "error")
+        message = result.get("message", "")
+        if status != "success":
+            if message:
+                QMessageBox.warning(self, "Playoffs Simulation", message)
+            if self._show_toast:
+                self._show_toast("error", message or "Playoff simulation failed.")
+            return
+        if message:
+            if self._show_toast:
+                self._show_toast("success", message)
         self.refresh()
 
+    def _set_sim_buttons_enabled(self, enabled: bool) -> None:
+        for btn in (self.sim_round_btn, self.sim_all_btn):
+            try:
+                btn.setEnabled(enabled)
+            except Exception:
+                pass
+
     def _export_summary(self) -> None:
-        # Export a simple Markdown summary of the current bracket
+        if self._export_future is not None:
+            QMessageBox.information(
+                self,
+                "Export Running",
+                "A summary export is already running. Please wait for it to finish.",
+            )
+            return
+        if self._show_toast:
+            self._show_toast("info", "Exporting playoff summary in background...")
+
+        def worker() -> dict[str, Any]:
+            return self._export_summary_work()
+
+        future = self._run_async(worker)
+        self._export_future = future
+
+        def handle_result(fut) -> None:
+            try:
+                result = fut.result()
+            except Exception as exc:
+                result = {"status": "error", "message": str(exc)}
+
+            def finish() -> None:
+                self._export_future = None
+                self._handle_export_result(result)
+
+            QTimer.singleShot(0, finish)
+
+        if hasattr(future, "add_done_callback"):
+            future.add_done_callback(handle_result)
+            if self._register_cleanup and hasattr(future, "cancel"):
+                self._register_cleanup(lambda fut=future: fut.cancel())
+        else:
+            handle_result(type("_Immediate", (), {"result": lambda self: future})())
+
+    def _export_summary_work(self) -> dict[str, Any]:
         from playbalance.playoffs import load_bracket
         from utils.path_utils import get_base_dir
         from pathlib import Path
-        b = load_bracket()
-        if not b:
-            return
-        lines = []
-        title = f"# Playoffs {getattr(b, 'year', '')}"
-        champ = getattr(b, 'champion', None)
-        if champ:
-            title += f" — Champion: {champ}"
-        lines.append(title)
-        lines.append("")
-        try:
-            # Mirror display logic: suppress duplicated single-league Final
-            try:
-                _lg_keys = list((getattr(b, 'seeds_by_league', {}) or {}).keys())
-            except Exception:
-                _lg_keys = []
-            _all_rounds = list(getattr(b, 'rounds', []) or [])
-            if len(_lg_keys) <= 1:
-                _rounds_iter = [
-                    r for r in _all_rounds
-                    if str(getattr(r, 'name', '')).strip().lower() not in {"final", "finals"}
-                ]
-            else:
-                _rounds_iter = _all_rounds
 
-            for rnd in _rounds_iter:
-                lines.append(f"## {_friendly_round_title(rnd.name, single_league=(len(_lg_keys) <= 1))}")
-                for m in rnd.matchups or []:
-                    wins_high = 0
-                    wins_low = 0
-                    for g in (m.games or []):
-                        res = str(getattr(g, 'result', '') or '')
-                        home = getattr(g, 'home', '')
-                        away = getattr(g, 'away', '')
-                        if '-' in res:
-                            try:
-                                hs, as_ = res.split('-', 1)
-                                hs, as_ = int(hs), int(as_)
-                                if hs > as_:
-                                    if home == m.high.team_id:
-                                        wins_high += 1
-                                    elif home == m.low.team_id:
-                                        wins_low += 1
-                                elif as_ > hs:
-                                    if away == m.high.team_id:
-                                        wins_high += 1
-                                    elif away == m.low.team_id:
-                                        wins_low += 1
-                            except Exception:
-                                pass
-                    series = f" ({wins_high}-{wins_low})" if (wins_high or wins_low) else ""
-                    lines.append(f"- ({m.high.seed}) {m.high.team_id} vs ({m.low.seed}) {m.low.team_id}{series} — Winner: {m.winner or 'TBD'}")
-                    for gi, g in enumerate(m.games or []):
-                        res = str(getattr(g, 'result', '') or '?')
-                        path = getattr(g, 'boxscore', '') or ''
-                        lines.append(f"  - G{gi+1}: {g.away} at {g.home} — {res}  {path}")
-                lines.append("")
-        except Exception:
-            pass
+        bracket = load_bracket()
+        if not bracket:
+            return {"status": "error", "message": "No playoff bracket available to export."}
+        lines = _build_bracket_markdown(bracket)
         try:
-            out = Path(get_base_dir()) / 'data' / f"playoffs_summary_{getattr(b, 'year', '')}.md"
+            out = Path(get_base_dir()) / "data" / f"playoffs_summary_{getattr(bracket, 'year', '')}.md"
             out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text("\n".join(lines), encoding='utf-8')
-            self._last_summary_path = str(out)
-        except Exception:
-            self._last_summary_path = None
+            out.write_text("\n".join(lines), encoding="utf-8")
+            return {"status": "success", "path": str(out)}
+        except Exception as exc:
+            return {"status": "error", "message": f"Failed exporting summary: {exc}"}
+
+    def _handle_export_result(self, result: dict[str, Any]) -> None:
+        status = result.get("status", "error")
+        path = result.get("path")
+        message = result.get("message", "")
+        if status != "success":
+            retry = False
+            try:
+                btn = QMessageBox.question(
+                    self,
+                    "Export Summary",
+                    message or "Export failed. Retry?",
+                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Close,
+                    QMessageBox.StandardButton.Retry,
+                )
+                retry = btn == QMessageBox.StandardButton.Retry
+            except Exception:
+                if message:
+                    QMessageBox.warning(self, "Export Summary", message)
+            if self._show_toast:
+                self._show_toast("error", message or "Export failed.")
+            if retry:
+                self._export_summary()
+            return
+        self._last_summary_path = path
+        if self._show_toast:
+            self._show_toast("success", f"Summary exported to {path}")
+        QMessageBox.information(self, "Export Summary", f"Summary exported to:\n{path}")
 
     def _open_summary(self) -> None:
-        # Attempt to open the last exported summary; if not present, export then open
+        if self._open_future is not None:
+            QMessageBox.information(
+                self,
+                "Open Summary",
+                "Summary is already being opened. Please wait.",
+            )
+            return
+        if self._show_toast:
+            self._show_toast("info", "Opening playoff summary...")
+
+        def worker() -> dict[str, Any]:
+            return self._open_summary_work()
+
+        future = self._run_async(worker)
+        self._open_future = future
+
+        def handle_result(fut) -> None:
+            try:
+                result = fut.result()
+            except Exception as exc:
+                result = {"status": "error", "message": str(exc)}
+
+            def finish() -> None:
+                self._open_future = None
+                self._handle_open_result(result)
+
+            QTimer.singleShot(0, finish)
+
+        if hasattr(future, "add_done_callback"):
+            future.add_done_callback(handle_result)
+            if self._register_cleanup and hasattr(future, "cancel"):
+                self._register_cleanup(lambda fut=future: fut.cancel())
+        else:
+            handle_result(type("_Immediate", (), {"result": lambda self: future})())
+
+    def _open_summary_work(self) -> dict[str, Any]:
         from playbalance.playoffs import load_bracket
         from utils.path_utils import get_base_dir
         from pathlib import Path
-        import os, sys, subprocess
+        import os
+        import sys
+        import subprocess
+
         path = self._last_summary_path
         if not path:
-            b = load_bracket()
-            if not b:
-                return
-            out = Path(get_base_dir()) / 'data' / f"playoffs_summary_{getattr(b, 'year', '')}.md"
+            bracket = load_bracket()
+            if not bracket:
+                return {"status": "error", "message": "No playoff bracket available."}
+            out = Path(get_base_dir()) / "data" / f"playoffs_summary_{getattr(bracket, 'year', '')}.md"
             if not out.exists():
-                self._export_summary()
-            path = str(out)
-        try:
-            p = Path(path)
-            if not p.exists():
-                return
-            if os.name == 'nt':  # Windows
-                try:
-                    os.startfile(str(p))  # type: ignore[attr-defined]
-                except Exception:
-                    subprocess.Popen(['cmd', '/c', 'start', '', str(p)])
-            elif sys.platform == 'darwin':
-                subprocess.Popen(['open', str(p)])
+                export_result = self._export_summary_work()
+                if export_result.get("status") != "success":
+                    return export_result
+                path = export_result.get("path")
             else:
-                subprocess.Popen(['xdg-open', str(p)])
-        except Exception:
-            pass
+                path = str(out)
+        target = Path(path)
+        if not target.exists():
+            return {"status": "error", "message": "Summary file does not exist."}
+        try:
+            if os.name == "nt":
+                try:
+                    os.startfile(str(target))  # type: ignore[attr-defined]
+                except Exception:
+                    subprocess.Popen(["cmd", "/c", "start", "", str(target)])
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(target)])
+            else:
+                subprocess.Popen(["xdg-open", str(target)])
+        except Exception as exc:
+            return {"status": "error", "message": f"Unable to open summary: {exc}"}
+        return {"status": "success", "message": f"Opened summary at {target}", "path": str(target)}
+
+    def _handle_open_result(self, result: dict[str, Any]) -> None:
+        status = result.get("status", "error")
+        message = result.get("message", "")
+        path = result.get("path")
+        if status != "success":
+            retry = False
+            try:
+                btn = QMessageBox.question(
+                    self,
+                    "Open Summary",
+                    message or "Failed to open summary. Retry?",
+                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Close,
+                    QMessageBox.StandardButton.Retry,
+                )
+                retry = btn == QMessageBox.StandardButton.Retry
+            except Exception:
+                if message:
+                    QMessageBox.warning(self, "Open Summary", message)
+            if self._show_toast:
+                self._show_toast("error", message or "Failed to open summary.")
+            if retry:
+                self._open_summary()
+            return
+        if path:
+            self._last_summary_path = path
+        if self._show_toast:
+            self._show_toast("success", message or "Opened summary.")
 
 
 __all__ = ["PlayoffsWindow"]
+
+

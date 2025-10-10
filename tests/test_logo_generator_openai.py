@@ -6,8 +6,9 @@ import pytest
 pytest.importorskip("PIL")
 from PIL import Image
 
-from utils import logo_generator
+from images import auto_logo
 from models.team import Team
+from utils import logo_generator
 
 
 def _fake_b64_png(size: int) -> str:
@@ -49,8 +50,15 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     def cb(done, total):
         progress.append((done, total))
 
+    statuses = []
+
     out_dir = tmp_path
-    logo_generator.generate_team_logos(out_dir=str(out_dir), size=logo_size, progress_callback=cb)
+    logo_generator.generate_team_logos(
+        out_dir=str(out_dir),
+        size=logo_size,
+        progress_callback=cb,
+        status_callback=statuses.append,
+    )
 
     assert calls["size"] == "1024x1024"
     assert "Testville" in calls["prompt"]
@@ -62,7 +70,8 @@ def test_generates_logo_and_calls_callback(tmp_path, monkeypatch):
     assert outfile.exists()
     with Image.open(outfile) as img:
         assert img.size == (logo_size, logo_size)
-    assert progress == [(1, 1)]
+    assert progress == [(0, 1), (1, 1)]
+    assert statuses == ["openai"]
 
 
 def test_existing_logos_are_removed(tmp_path, monkeypatch):
@@ -106,8 +115,51 @@ def test_auto_logo_fallback_without_client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(logo_generator, "_auto_logo_fallback", fake_fallback)
 
-    logo_generator.generate_team_logos(out_dir=str(tmp_path))
+    statuses = []
+    logo_generator.generate_team_logos(out_dir=str(tmp_path), status_callback=statuses.append)
     assert "args" in called
+    assert statuses == ["auto_logo"]
+
+
+def test_auto_logo_fallback_uses_location_and_mascot_seed(tmp_path, monkeypatch):
+    team = Team(
+        team_id="TST",
+        name="Testers",
+        city="Testville",
+        abbreviation="TST",
+        division="Test",
+        stadium="Test Field",
+        primary_color="#112233",
+        secondary_color="#445566",
+        owner_id="0",
+    )
+
+    monkeypatch.setattr(logo_generator, "client", None)
+    captured = {}
+
+    def fake_generate_logo(spec, size=1024):
+        captured["spec"] = spec
+        return Image.new("RGBA", (size, size))
+
+    def fake_save_logo(img, path):
+        captured["path"] = path
+
+    monkeypatch.setattr(auto_logo, "generate_logo", fake_generate_logo)
+    monkeypatch.setattr(auto_logo, "save_logo", fake_save_logo)
+
+    logo_generator._auto_logo_fallback(
+        teams=[team],
+        out_dir=str(tmp_path),
+        size=256,
+        progress_callback=None,
+    )
+
+    spec = captured["spec"]
+    assert spec.location == team.city
+    assert spec.mascot == team.name
+    assert spec.abbrev == team.team_id
+    assert spec.seed == auto_logo._seed_from_name(team.city, team.name)
+    assert "tst" in captured["path"].lower()
 
 
 def test_raises_without_client_when_disabled(tmp_path, monkeypatch):

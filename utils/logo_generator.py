@@ -73,7 +73,7 @@ def _auto_logo_fallback(
                 secondary=t.secondary_color,
                 abbrev=t.team_id,
                 template="auto",
-                seed=_seed_from_name(t.name, t.city),
+                seed=_seed_from_name(t.city, t.name),
             )
         )
 
@@ -82,6 +82,9 @@ def _auto_logo_fallback(
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    if progress_callback:
+        progress_callback(completed, total)
 
     for spec in specs:
         img = generate_logo(spec, size=1024)
@@ -95,11 +98,52 @@ def _auto_logo_fallback(
             progress_callback(completed, total)
 
 
+def _build_openai_prompt(team: object) -> str:
+    """Return a richer logo prompt that highlights location and mascot."""
+
+    city = getattr(team, "city", "") or ""
+    name = getattr(team, "name", "") or ""
+    abbrev = getattr(team, "abbreviation", "") or getattr(team, "team_id", "") or ""
+    primary = getattr(team, "primary_color", "")
+    secondary = getattr(team, "secondary_color", "")
+
+    parts = [
+        (
+            "Design a professional baseball team logo for the "
+            f"{city} {name}."
+        ),
+        (
+            f"Feature the {name} mascot as the hero element with dynamic sports "
+            "energy and incorporate baseball iconography such as a ball, bat, or "
+            "diamond."
+        ),
+        (
+            f"Include a subtle nod to {city} and weave the team initials "
+            f"{abbrev.upper()} into the badge or monogram."
+        ),
+        (
+            "Use modern sports-brand styling with clean vector shapes, bold outlines, "
+            "layered shading, and a balanced composition suitable for merchandise "
+            "and digital use."
+        ),
+        (
+            f"The primary color must be {primary} and the secondary accent color must "
+            f"be {secondary}."
+        ),
+        (
+            "Avoid photo-realistic details or busy backgrounds; deliver a polished "
+            "emblem with transparent background aesthetics."
+        ),
+    ]
+    return " ".join(part.strip() for part in parts if part.strip())
+
+
 def generate_team_logos(
     out_dir: str | None = None,
     size: int = 512,
     progress_callback: Optional[Callable[[int, int], None]] = None,
     allow_auto_logo: bool = True,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> str:
     """Generate logos for all teams and return the output directory.
 
@@ -118,7 +162,17 @@ def generate_team_logos(
         When ``True`` (the default) and the OpenAI client is not configured,
         fall back to the older :mod:`images.auto_logo` generator. Set to
         ``False`` to raise a ``RuntimeError`` instead.
+    status_callback:
+        Optional callable invoked with ``"openai"`` or ``"auto_logo"`` to
+        indicate which generation path was used.
     """
+
+    def _notify_status(value: str) -> None:
+        if status_callback:
+            try:
+                status_callback(value)
+            except Exception:
+                pass
 
     _require_pillow()
     teams = load_teams("data/teams.csv")
@@ -134,16 +188,18 @@ def generate_team_logos(
 
     if client is None:
         if allow_auto_logo:
+            _notify_status("auto_logo")
             _auto_logo_fallback(teams, out_dir, size, progress_callback)
-            return out_dir
+            return str(out_dir)
         raise RuntimeError("OpenAI client is not configured")
 
     total = len(teams)
+    _notify_status("openai")
+    if progress_callback:
+        progress_callback(0, total)
+
     for idx, t in enumerate(teams, start=1):
-        prompt = (
-            f"Professional baseball logo for the {t.city} {t.name}. "
-            f"Use primary color {t.primary_color} and secondary color {t.secondary_color}."
-        )
+        prompt = _build_openai_prompt(t)
         result = client.images.generate(
             model="gpt-image-1",
             prompt=prompt,

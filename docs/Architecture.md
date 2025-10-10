@@ -1,0 +1,6 @@
+Architecture & Data Flow
+
+Centralize persistence behind a repository/SQLite layer so modules stop re-opening CSV/JSON files independently (utils/player_loader.py:25, services/transaction_log.py:38, playbalance/season_manager.py:39); this unlocks transactional writes, avoids Windows-only locking fixes, and makes cloud/offline sync practical.
+Move business logic out of widgets into reusable services with an event bus so admin/owner dashboards can subscribe to updates instead of invoking file ops directly (ui/admin_dashboard.py:314, ui/owner_dashboard.py:70); a thin service API will also let scripts in scripts/simulate_season.py orchestrate the same flows headlessly.
+Version and surface configuration bundles for play-balance tuning by wrapping PlayBalanceConfig overrides with metadata and import/export tooling in the editor (playbalance/playbalance_config.py:25, ui/playbalance_editor.py:16); this enables scenario presets, diffing, and rollback when experimenting with physics tweaks.
+Extend stats persistence with structured logging/telemetry emitted alongside the daily shards (utils/stats_persistence.py:106) so you can capture sim timings, roster mutations, and news events in one stream for observability dashboards.

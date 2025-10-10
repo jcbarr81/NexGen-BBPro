@@ -1,15 +1,47 @@
 ﻿from __future__ import annotations
 
-from PyQt6.QtWidgets import (
-    QDialog,
-    QLabel,
-    QPushButton,
-    QVBoxLayout,
-    QMessageBox,
-    QProgressDialog,
-)
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 try:
-    from PyQt6.QtCore import pyqtSignal
+    from PyQt6.QtWidgets import (
+        QDialog,
+        QLabel,
+        QPushButton,
+        QVBoxLayout,
+        QMessageBox,
+        QListWidget,
+        QListWidgetItem,
+    )
+    from PyQt6.QtGui import QColor
+except ImportError:  # pragma: no cover - test stubs
+    class _WidgetDummy:
+        def __init__(self, *args, **kwargs) -> None:
+            if 'DummySignal' in globals():
+                self.clicked = DummySignal(self)
+            else:
+                self.clicked = None
+
+        def __getattr__(self, name):
+            def _noop(*_args, **_kwargs):
+                return None
+
+            return _noop
+
+    class _ListWidgetDummy(_WidgetDummy):
+        class SelectionMode:
+            NoSelection = 0
+
+    QDialog = QLabel = QPushButton = QVBoxLayout = QMessageBox = _WidgetDummy
+    QListWidget = _ListWidgetDummy
+    QListWidgetItem = _WidgetDummy
+
+    class QColor:  # type: ignore[too-many-ancestors]
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+try:
+    from PyQt6.QtCore import pyqtSignal, QTimer, QThread
 except Exception:  # pragma: no cover - fallback for headless tests
     class _DummySignal:
         def __init__(self, *args, **kwargs):
@@ -18,8 +50,16 @@ except Exception:  # pragma: no cover - fallback for headless tests
         def emit(self, *args, **kwargs):
             pass
 
+        def connect(self, *args, **kwargs):
+            pass
+
     def pyqtSignal(*args, **kwargs):  # type: ignore
         return _DummySignal()
+    class QTimer:  # type: ignore
+        @staticmethod
+        def singleShot(ms: int, callback: Callable[[], None]) -> None:
+            callback()
+    QThread = None  # type: ignore
 
 try:  # pragma: no cover - fallback for environments without PyQt6
     from PyQt6.QtWidgets import QApplication
@@ -59,6 +99,7 @@ from utils.lineup_loader import load_lineup
 from utils.player_loader import load_players_from_csv
 from utils.pitcher_role import get_role
 from utils.sim_date import get_current_sim_date
+from ui.sim_date_bus import notify_sim_date_changed
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -72,6 +113,7 @@ class SeasonProgressWindow(QDialog):
 
     # Emitted whenever season progress persists a new date, or when closing
     # the window. Carries the latest current sim date string.
+    _simStatusRequested = pyqtSignal(object)
     progressUpdated = pyqtSignal(str)
 
     def __init__(
@@ -79,6 +121,10 @@ class SeasonProgressWindow(QDialog):
         parent=None,
         schedule: list[dict[str, str]] | None = None,
         simulate_game=None,
+        *,
+        run_async: Optional[Callable[[Callable[[], Any]], Any]] = None,
+        show_toast: Optional[Callable[[str, str], None]] = None,
+        register_cleanup: Optional[Callable[[Callable[[], None]], None]] = None,
     ) -> None:
         super().__init__(parent)
         try:
@@ -86,6 +132,21 @@ class SeasonProgressWindow(QDialog):
             self.setMinimumSize(320, 280)
         except Exception:  # pragma: no cover - harmless in headless tests
             pass
+
+        self._run_async = run_async
+        self._show_toast = show_toast
+        self._register_cleanup = register_cleanup
+        self._active_future = None
+        self._executor: ThreadPoolExecutor | None = None
+        if self._run_async is None:
+            executor = ThreadPoolExecutor(max_workers=1)
+            self._executor = executor
+            self._run_async = executor.submit
+            if self._register_cleanup is not None:
+                try:
+                    self._register_cleanup(lambda ex=executor: ex.shutdown(wait=False))
+                except Exception:
+                    pass
 
         self.manager = SeasonManager()
         self._simulate_game = simulate_game
@@ -97,6 +158,7 @@ class SeasonProgressWindow(QDialog):
         # statistics remain current even if a simulation run is interrupted.
         # Compute Draft Day from schedule (third Tuesday in July)
         draft_date = self._compute_draft_date((schedule or [{}])[0].get("date") if schedule else None)
+        self._draft_date = draft_date
         if simulate_game is not None:
             self.simulator = SeasonSimulator(
                 schedule or [],
@@ -164,6 +226,15 @@ class SeasonProgressWindow(QDialog):
         self.notes_label.setWordWrap(True)
         layout.addWidget(self.notes_label)
 
+        self.timeline_label = QLabel("Season Timeline")
+        self.timeline_label.setStyleSheet("font-weight: 600;")
+        layout.addWidget(self.timeline_label)
+
+        self.timeline = QListWidget()
+        self.timeline.setMouseTracking(True)
+        self.timeline.setSelectionMode(QListWidget.SelectionMode.NoSelection)
+        layout.addWidget(self.timeline)
+
         # Actions available during the preseason
         self.free_agency_button = QPushButton("List Unsigned Players")
         self.free_agency_button.clicked.connect(self._show_free_agents)
@@ -180,6 +251,9 @@ class SeasonProgressWindow(QDialog):
         # Regular season controls
         self.remaining_label = QLabel()
         layout.addWidget(self.remaining_label)
+        self.simulation_status_label = QLabel()
+        self.simulation_status_label.setWordWrap(True)
+        layout.addWidget(self.simulation_status_label)
 
         self.simulate_day_button = QPushButton("Simulate Day")
         self.simulate_day_button.clicked.connect(self._simulate_day)
@@ -192,6 +266,11 @@ class SeasonProgressWindow(QDialog):
         self.simulate_month_button = QPushButton("Simulate Month")
         self.simulate_month_button.clicked.connect(self._simulate_month)
         layout.addWidget(self.simulate_month_button)
+
+        self.cancel_sim_button = QPushButton("Cancel Simulation")
+        self.cancel_sim_button.setEnabled(False)
+        self.cancel_sim_button.clicked.connect(self._request_cancel_simulation)
+        layout.addWidget(self.cancel_sim_button)
 
         # Maintenance tool: repair/auto-fill lineups
         self.repair_lineups_button = QPushButton("Repair Lineups")
@@ -206,6 +285,13 @@ class SeasonProgressWindow(QDialog):
         self.next_button.clicked.connect(self._next_phase)
         layout.addWidget(self.next_button)
 
+        self._sim_status_text: Optional[str] = None
+        try:
+            self._simStatusRequested.connect(self._apply_simulation_status)
+        except Exception:
+            # Fallback stubs do not expose Qt signal semantics
+            pass
+        self._set_simulation_status(None)
         self._update_ui()
 
     # ------------------------------------------------------------------
@@ -224,6 +310,65 @@ class SeasonProgressWindow(QDialog):
             return d.isoformat()
         except Exception:
             return None
+
+    def _days_until_draft(self) -> int:
+        """Return the number of remaining schedule days until Draft Day."""
+        draft_date = getattr(self, "_draft_date", None)
+        if not draft_date:
+            return 0
+
+        try:
+            draft_year = int(str(draft_date).split("-")[0])
+        except Exception:
+            draft_year = None
+
+        # If the draft was already completed for this year, no countdown.
+        if draft_year is not None:
+            try:
+                if PROGRESS_FILE.exists():
+                    progress = json.loads(PROGRESS_FILE.read_text(encoding="utf-8") or "{}")
+                    completed = set(progress.get("draft_completed_years", []))
+                    if draft_year in completed:
+                        return 0
+            except Exception:
+                pass
+
+        dates = getattr(self.simulator, "dates", None)
+        idx = getattr(self.simulator, "_index", 0)
+        if dates:
+            try:
+                remaining = 0
+                for offset, value in enumerate(dates[idx:], start=0):
+                    if str(value) >= str(draft_date):
+                        remaining = offset
+                        break
+                else:
+                    remaining = 0
+                return max(0, remaining)
+            except Exception:
+                pass
+
+        # Calendar fallback if schedule context is unavailable.
+        try:
+            from datetime import date as _date
+
+            dy, dm, dd = map(int, str(draft_date).split("-"))
+            draft_dt = _date(dy, dm, dd)
+
+            cur_str: str | None = None
+            if dates and idx < len(dates):
+                cur_str = str(dates[idx])
+            if not cur_str:
+                cur_str = get_current_sim_date()
+            if cur_str:
+                cy, cm, cd = map(int, str(cur_str).split("-"))
+                current_dt = _date(cy, cm, cd)
+                delta = (draft_dt - current_dt).days
+                if delta > 0:
+                    return delta
+        except Exception:
+            pass
+        return 0
 
     def _on_draft_day(self, date_str: str) -> None:
         """Handle Draft Day and block further simulation until committed.
@@ -311,6 +456,21 @@ class SeasonProgressWindow(QDialog):
             self.progressUpdated.emit(cur or "")
         except Exception:
             pass
+        if self._active_future is not None and hasattr(self._active_future, "cancel"):
+            try:
+                self._active_future.cancel()
+            except Exception:
+                pass
+        try:
+            self.cancel_sim_button.setEnabled(False)
+        except Exception:
+            pass
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
         super().closeEvent(event)
 
     # ------------------------------------------------------------------
@@ -363,7 +523,10 @@ class SeasonProgressWindow(QDialog):
         if is_regular:
             mid_remaining = self.simulator.remaining_days()
             # Draft milestone: only if not yet completed for the season
-            draft_remaining = self._days_until_draft()
+            try:
+                draft_remaining = self._days_until_draft()  # type: ignore[attr-defined]
+            except AttributeError:
+                draft_remaining = 0
             total_remaining = self.simulator.remaining_schedule_days()
             if total_remaining > 0:
                 if mid_remaining > 0:
@@ -466,6 +629,280 @@ class SeasonProgressWindow(QDialog):
             self.remaining_label.setVisible(False)
             self.simulate_phase_button.setVisible(False)
             self.next_button.setEnabled(True)
+        # Timeline reflects updated status after any UI refresh.
+        self._refresh_timeline()
+
+    def _set_simulation_status(self, text: str | None) -> None:
+        """Show or hide the simulation status label."""
+
+        if QThread is None:
+            self._apply_simulation_status(text)
+            return
+        try:
+            gui_thread = self.thread()
+            current_thread = QThread.currentThread()
+        except Exception:
+            gui_thread = None
+            current_thread = None
+        if (
+            gui_thread is not None
+            and current_thread is not None
+            and gui_thread != current_thread
+        ):
+            try:
+                self._simStatusRequested.emit(text)
+            except Exception:
+                pass
+            return
+        self._apply_simulation_status(text)
+
+    def _apply_simulation_status(self, text: str | None) -> None:
+        """Apply the simulation status label update on the GUI thread."""
+
+        label = getattr(self, "simulation_status_label", None)
+        if label is None:
+            return
+        if text:
+            if self._sim_status_text == text:
+                return
+            try:
+                label.setText(text)
+                label.setVisible(True)
+            except RuntimeError:
+                return
+            self._sim_status_text = text
+        else:
+            self._sim_status_text = None
+            try:
+                label.clear()
+                label.setVisible(False)
+            except RuntimeError:
+                pass
+
+    @staticmethod
+    def _format_simulation_progress(label: str, done: int, total: int) -> str:
+        """Return a human-friendly progress string for ``done`` of ``total`` days."""
+
+        total = max(total, 1)
+        done = max(0, min(done, total))
+        percent = min(100.0, (done / total) * 100.0)
+        remaining = max(total - done, 0)
+        parts = [
+            f"Simulating {label.lower()}",
+            f"{done}/{total} days",
+            f"{percent:.0f}% complete",
+        ]
+        if remaining > 0:
+            parts.append(f"{remaining} days remaining")
+        return " - ".join(parts)
+
+    def _refresh_timeline(self) -> None:
+        """Populate the season timeline list with milestone statuses."""
+        timeline = getattr(self, "timeline", None)
+        if timeline is None:
+            return
+        try:
+            timeline.clear()
+        except Exception:
+            return
+
+        status_labels = {
+            "done": "Done",
+            "current": "In Progress",
+            "pending": "Upcoming",
+        }
+        status_colors = {
+            "done": QColor("#2e7d32"),
+            "current": QColor("#1565c0"),
+            "pending": QColor("#6c757d"),
+        }
+
+        def resolve_status(completed: bool, active: bool) -> str:
+            if completed:
+                return "done"
+            if active:
+                return "current"
+            return "pending"
+
+        def add_event(title: str, status: str, detail: str | None = None) -> None:
+            label = status_labels.get(status, status.title())
+            text = f"{title} — {label}"
+            item = QListWidgetItem(text)
+            if detail:
+                try:
+                    item.setToolTip(detail)
+                except Exception:
+                    pass
+            color = status_colors.get(status)
+            if color is not None:
+                try:
+                    item.setForeground(color)
+                except Exception:
+                    pass
+            if status == "current":
+                try:
+                    font = item.font()
+                    font.setBold(True)
+                    item.setFont(font)
+                except Exception:
+                    pass
+            try:
+                timeline.addItem(item)
+            except Exception:
+                pass
+
+        phase = self.manager.phase
+        schedule_dates = list(getattr(self.simulator, "dates", []) or [])
+        current_index = int(getattr(self.simulator, "_index", 0) or 0)
+        total_days = len(schedule_dates)
+        opening_day = str(schedule_dates[0]) if schedule_dates else None
+        mid_index = getattr(self.simulator, "_mid", total_days // 2)
+        mid_date = (
+            str(schedule_dates[mid_index])
+            if schedule_dates and 0 <= mid_index < total_days
+            else None
+        )
+        draft_date = self._draft_date
+
+        progress_data: dict[str, object] = {}
+        try:
+            if PROGRESS_FILE.exists():
+                progress_data = json.loads(PROGRESS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            progress_data = {}
+        draft_completed_years = set(
+            progress_data.get("draft_completed_years", []) or []
+        )
+
+        current_date = get_current_sim_date()
+
+        preseason_order = [
+            ("Preseason • Free Agency", "free_agency", "List unsigned players and review bids."),
+            ("Preseason • Training Camp", "training_camp", "Run training camp to mark players ready."),
+            ("Preseason • Generate Schedule", "schedule", "Create the regular-season schedule."),
+        ]
+        prerequisites_complete = True
+        for title, key, detail in preseason_order:
+            done = bool(self._preseason_done.get(key))
+            active = (
+                phase == SeasonPhase.PRESEASON
+                and not done
+                and prerequisites_complete
+            )
+            add_event(title, resolve_status(done, active), detail)
+            prerequisites_complete = prerequisites_complete and done
+
+        if opening_day:
+            opening_done = current_index > 0 or phase in {
+                SeasonPhase.REGULAR_SEASON,
+                SeasonPhase.PLAYOFFS,
+                SeasonPhase.AMATEUR_DRAFT,
+                SeasonPhase.OFFSEASON,
+            }
+            opening_active = (
+                phase == SeasonPhase.PRESEASON
+                and self._preseason_done.get("schedule")
+                and not opening_done
+            )
+            add_event(
+                "Regular Season • Opening Day",
+                resolve_status(opening_done, opening_active),
+                f"Scheduled for {opening_day}",
+            )
+
+        if mid_date:
+            mid_done = current_index > mid_index or phase in {
+                SeasonPhase.PLAYOFFS,
+                SeasonPhase.AMATEUR_DRAFT,
+                SeasonPhase.OFFSEASON,
+            }
+            mid_active = (
+                phase == SeasonPhase.REGULAR_SEASON
+                and current_index <= mid_index
+                and not mid_done
+            )
+            add_event(
+                "Regular Season • Midseason Break",
+                resolve_status(mid_done, mid_active),
+                f"Target date {mid_date}",
+            )
+
+        if draft_date:
+            detail_parts = [f"Draft Day: {draft_date}"]
+            draft_year = None
+            try:
+                draft_year = int(str(draft_date).split("-")[0])
+            except Exception:
+                draft_year = None
+            draft_done = draft_year in draft_completed_years if draft_year else False
+            try:
+                days_until = self._days_until_draft()
+            except Exception:
+                days_until = None
+            if isinstance(days_until, int):
+                if days_until > 0:
+                    detail_parts.append(f"{days_until} days remaining")
+                elif days_until == 0:
+                    detail_parts.append("Draft is scheduled for today")
+                else:
+                    detail_parts.append(f"{abs(days_until)} days past target")
+            if current_date:
+                detail_parts.append(f"Current date: {current_date}")
+            draft_active = (
+                not draft_done
+                and (
+                    phase == SeasonPhase.AMATEUR_DRAFT
+                    or (
+                        phase == SeasonPhase.REGULAR_SEASON
+                        and isinstance(days_until, int)
+                        and days_until <= 0
+                    )
+                )
+            )
+            add_event(
+                "Regular Season • Draft Day",
+                resolve_status(draft_done, draft_active),
+                " • ".join(detail_parts),
+            )
+
+        playoffs_done = bool(self._playoffs_done)
+        playoffs_active = phase == SeasonPhase.PLAYOFFS and not playoffs_done
+        add_event(
+            "Postseason • Playoffs",
+            resolve_status(playoffs_done, playoffs_active),
+            "Simulate rounds and record bracket outcomes.",
+        )
+
+        champion = None
+        runner_up = None
+        try:
+            from playbalance.playoffs import load_bracket as _load_bracket
+
+            bracket = _load_bracket()
+            if bracket is not None:
+                champion = getattr(bracket, "champion", None)
+                runner_up = getattr(bracket, "runner_up", None)
+        except Exception:
+            champion = None
+
+        if champion or playoffs_done or playoffs_active:
+            if champion:
+                detail = (
+                    f"Champion: {champion}"
+                    + (f" • Runner-up: {runner_up}" if runner_up else "")
+                )
+            elif playoffs_done:
+                detail = "Awaiting championship record."
+            else:
+                detail = "Final series underway."
+            add_event(
+                "Postseason • Championship",
+                resolve_status(bool(champion), playoffs_active and not champion),
+                detail,
+            )
+
+        if timeline.count() == 0:
+            add_event("Timeline data unavailable", "pending")
 
     def _next_phase(self) -> None:
         """Advance to the next phase and update the display."""
@@ -688,114 +1125,186 @@ class SeasonProgressWindow(QDialog):
             pass
 
     def _simulate_span(self, days: int, label: str) -> None:
-        """Simulate multiple days with a progress dialog."""
+        self._simulate_span_async(days, label)
+
+    def _request_cancel_simulation(self) -> None:
+        """Attempt to cancel the currently running background simulation."""
+        if self._active_future is None:
+            return
+        self._cancel_requested = True
+        self._set_simulation_status("Cancelling simulation in progress...")
+        try:
+            self.cancel_sim_button.setEnabled(False)
+        except Exception:
+            pass
+        if hasattr(self._active_future, "cancel"):
+            try:
+                self._active_future.cancel()
+            except Exception:
+                pass
+        if self._show_toast:
+            self._show_toast("info", "Attempting to cancel the current simulation...")
+
+    def _simulate_span_async(self, days: int, label: str) -> None:
         if self.simulator.remaining_schedule_days() <= 0:
             return
-        # Ensure schedule uses valid team IDs before simulating
         if not self._ensure_valid_schedule_teams():
             return
-        # Validate lineups before running a long span
         issues = self._validate_all_team_lineups()
         if issues:
             QMessageBox.warning(self, "Missing Lineup or Pitching", "\n".join(issues))
             return
+        if self._active_future is not None:
+            QMessageBox.information(
+                self,
+                "Simulation Running",
+                "A simulation is already in progress. Please wait for it to finish.",
+            )
+            return
 
-        # Determine how many individual games will be played in the span so
-        # that the progress bar can advance after each contest rather than just
-        # once per day.
         start = self.simulator._index
         end = min(start + days, len(self.simulator.dates))
-        upcoming = self.simulator.dates[start:end]
-        total_games = sum(
-            1 for g in self.simulator.schedule if g["date"] in upcoming
-        )
+        upcoming = list(self.simulator.dates[start:end])
         self._cancel_requested = False
-
-        maximum = max(total_games, 1)
-        progress = None
-        cancel_button = None
-
-        def request_cancel() -> None:
-            nonlocal progress, cancel_button
-            if self._cancel_requested:
-                return
-            self._cancel_requested = True
-            try:
-                if progress is not None:
-                    progress.setLabelText("Finishing current day before canceling...")
-            except Exception:  # pragma: no cover
-                pass
-            if cancel_button is not None:
-                cancel_button.setEnabled(False)
-
-        try:  # pragma: no cover - harmless in headless tests
-            progress = QProgressDialog(
-                f"Simulating {label}...", "", 0, maximum, self
+        total_goal = len(upcoming)
+        if total_goal <= 0:
+            self._set_simulation_status(
+                f"No games available for the selected {label.lower()} span."
             )
-            progress.setWindowTitle("Simulation Progress")
-            progress.setAutoClose(False)
-            progress.setAutoReset(False)
-            cancel_button = QPushButton("Cancel Simulation", progress)
-            cancel_button.clicked.connect(request_cancel)
-            progress.setCancelButton(cancel_button)
-            progress.setValue(0)
-            progress.canceled.connect(request_cancel)
-            progress.show()
-            QApplication.processEvents()
-        except Exception:  # pragma: no cover
-            progress = None
-            cancel_button = None
+            return
 
-        completed = 0
-        original_after = self.simulator.after_game
-
-        def after_game(game):
-            nonlocal completed
-            completed += 1
-            if progress is not None:
-                try:  # pragma: no cover - gui only
-                    progress.setValue(min(completed, maximum))
-                    QApplication.processEvents()
-                except Exception:  # pragma: no cover
-                    pass
-            if original_after is not None:
-                try:  # pragma: no cover - best effort for persistence
-                    original_after(game)
-                except Exception:  # pragma: no cover
-                    pass
-
-        self.simulator.after_game = after_game
-
-        simulated_days = 0
+        self._set_sim_buttons_enabled(False)
         try:
-            while (
-                simulated_days < days
-                and self.simulator.remaining_schedule_days() > 0
-            ):
+            self.cancel_sim_button.setEnabled(True)
+        except Exception:
+            pass
+
+        def publish_progress(done: int, *, cancelling: bool = False) -> None:
+            text = self._format_simulation_progress(label, done, total_goal)
+            if cancelling:
+                text = f"{text} - cancelling..."
+
+            self._set_simulation_status(text)
+
+        publish_progress(0)
+
+        if self._show_toast:
+            self._show_toast("info", f"Simulating {label.lower()} in background...")
+
+        def worker() -> Tuple[str, dict[str, Any]]:
+            warning: Optional[Tuple[str, str]] = None
+            simulated_days = 0
+            try:
+                while (
+                    simulated_days < days
+                    and self.simulator.remaining_schedule_days() > 0
+                ):
+                    try:
+                        self.simulator.simulate_next_day()
+                    except DraftRosterError as exc:
+                        message = str(exc) or "Draft assignments remain incomplete."
+                        failures = getattr(exc, "failures", None)
+                        if failures:
+                            message += "\n\n" + "\n".join(failures)
+                        warning = ("draft", message)
+                        break
+                    except (FileNotFoundError, ValueError) as err:
+                        warning = ("lineup", str(err))
+                        break
+                    simulated_days += 1
+                    publish_progress(simulated_days, cancelling=self._cancel_requested)
+                    if self._cancel_requested:
+                        break
+                was_cancelled = bool(self._cancel_requested and simulated_days < total_goal)
+                publish_progress(simulated_days, cancelling=was_cancelled)
+                return (
+                    "success",
+                    {
+                        "simulated_days": simulated_days,
+                        "warning": warning,
+                        "was_cancelled": was_cancelled,
+                        "upcoming": upcoming,
+                    },
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                return ("error", str(exc))
+
+        future = self._run_async(worker)
+        self._active_future = future
+
+        def handle_result(fut) -> None:
+            try:
+                result = fut.result()
+            except Exception as exc:  # pragma: no cover - defensive
+                result = ("error", str(exc))
+
+            def finish() -> None:
+                self._active_future = None
+                self._set_sim_buttons_enabled(True)
                 try:
-                    self.simulator.simulate_next_day()
-                except DraftRosterError as exc:
-                    message = str(exc) or "Draft assignments remain incomplete."
-                    failures = getattr(exc, 'failures', None)
-                    if failures:
-                        message += "\n\n" + "\n".join(failures)
-                    QMessageBox.warning(self, "Draft Assignments Incomplete", message)
-                    break
-                except (FileNotFoundError, ValueError) as e:
-                    QMessageBox.warning(
-                        self, "Missing Lineup or Pitching", str(e)
-                    )
-                    break
-                simulated_days += 1
-                if self._cancel_requested:
-                    break
-        finally:
-            self.simulator.after_game = original_after
-            if progress is not None:
-                try:  # pragma: no cover - gui only
-                    progress.close()
-                except Exception:  # pragma: no cover
+                    self.cancel_sim_button.setEnabled(False)
+                except Exception:
                     pass
+                kind, payload = result
+                if kind == "error":
+                    error_text = str(payload)
+                    self._set_simulation_status(f"Simulation failed: {error_text}")
+                    QMessageBox.warning(self, "Simulation Failed", error_text)
+                    if self._show_toast:
+                        self._show_toast("error", error_text)
+                    self._update_ui()
+                    return
+                warning = payload.get("warning")
+                if warning is not None:
+                    QMessageBox.warning(self, "Simulation Warning", warning[1])
+                was_cancelled = payload.get("was_cancelled", False)
+                message = self._finalize_span(
+                    payload.get("simulated_days", 0),
+                    days,
+                    label,
+                    payload.get("upcoming", []),
+                    was_cancelled,
+                )
+                if self._show_toast:
+                    if warning is not None:
+                        toast_kind = "error"
+                    elif was_cancelled:
+                        toast_kind = "info"
+                    else:
+                        toast_kind = "success"
+                    self._show_toast(toast_kind, message)
+
+            QTimer.singleShot(0, finish)
+
+        if hasattr(future, "add_done_callback"):
+            future.add_done_callback(handle_result)
+            if self._register_cleanup and hasattr(future, "cancel"):
+                self._register_cleanup(lambda fut=future: fut.cancel())
+        else:  # pragma: no cover - fallback for synchronous workers
+            handle_result(type("_Immediate", (), {"result": lambda self: future})())
+
+    def _set_sim_buttons_enabled(self, enabled: bool) -> None:
+        for btn in (
+            self.simulate_day_button,
+            self.simulate_week_button,
+            self.simulate_month_button,
+            self.simulate_phase_button,
+        ):
+            try:
+                btn.setEnabled(enabled)
+            except Exception:
+                pass
+
+    def _finalize_span(
+        self,
+        simulated_days: int,
+        days: int,
+        label: str,
+        upcoming: list,
+        was_cancelled: bool,
+    ) -> str:
+        total_goal = len(upcoming) or days
+        total_goal = max(total_goal, 1)
         mid_remaining = self.simulator.remaining_days()
         draft_remaining = self._days_until_draft()
         total_remaining = self.simulator.remaining_schedule_days()
@@ -818,10 +1327,7 @@ class SeasonProgressWindow(QDialog):
         else:
             self.remaining_label.setText("Regular season complete.")
             remaining_msg = "regular season complete"
-        # Treat as "cancelled" only if the user requested cancel and
-        # we actually stopped before completing the requested span.
-        was_cancelled = bool(self._cancel_requested) and (simulated_days < days)
-        self._cancel_requested = False
+
         if was_cancelled:
             if simulated_days <= 0:
                 progress_note = "no days completed during the run"
@@ -835,6 +1341,7 @@ class SeasonProgressWindow(QDialog):
             )
         else:
             message = f"Simulated {label.lower()}; {remaining_msg}"
+
         if not was_cancelled and self._pb_cfg is not None:
             try:
                 if days >= 30:
@@ -849,34 +1356,43 @@ class SeasonProgressWindow(QDialog):
                 message += f" (K% {k_pct:.3f}, BB% {bb_pct:.3f})"
             except Exception:  # pragma: no cover - best effort
                 pass
+
         self.notes_label.setText(message)
-        # Log recaps for each simulated day
+        percent = min(100.0, (simulated_days / total_goal) * 100.0)
+        status_suffix = f"{simulated_days}/{total_goal} days ({percent:.0f}% complete)"
+        self._set_simulation_status(f"{message} - {status_suffix}")
         try:
             dates_covered = [str(d) for d in upcoming[:simulated_days]]
             for d in dates_covered:
                 self._log_daily_recap_for_date(d)
         except Exception:
             pass
+
         log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
-        # Always merge daily shards into canonical history after any simulation span.
+
         try:  # pragma: no cover - best effort merge
             from utils.stats_persistence import merge_daily_history as _merge
+
             _merge()
         except Exception:
             pass
-        # Clear loader caches so other windows see fresh stats immediately
         try:
             from utils.player_loader import load_players_from_csv as _lp
+
             _lp.cache_clear()  # type: ignore[attr-defined]
         except Exception:
             pass
         try:
             from utils.roster_loader import load_roster as _lr
+
             _lr.cache_clear()  # type: ignore[attr-defined]
         except Exception:
             pass
+
+        self._cancel_requested = False
+        return message
 
     def _log_daily_recap_for_date(self, date_str: str) -> None:
         """Compose and append a daily recap for games on ``date_str``."""
@@ -942,17 +1458,62 @@ class SeasonProgressWindow(QDialog):
         """Simulate the next thirty days or until the break."""
         self._simulate_span(30, "Month")
 
-    def _simulate_playoffs(self) -> None:
-        """Simulate the postseason bracket and unlock the offseason when done.
 
-        - If a completed bracket (with champion) already exists, mark playoffs
-          done and update the UI without re-simulating.
-        - If a bracket exists but is incomplete, run the playoffs to completion
-          while persisting progress after each game.
-        - If no bracket exists yet, attempt to generate one from standings and
-          current teams. If the engine is unavailable, mark playoffs complete
-          as a placeholder so the UI can advance.
-        """
+    def _simulate_playoffs(self) -> None:
+        """Simulate the postseason bracket with background support."""
+        if self._playoffs_done:
+            self._update_ui("Playoffs complete.")
+            return
+        if self._run_async is None:
+            self._simulate_playoffs_sync()
+        else:
+            self._simulate_playoffs_async()
+
+    def _simulate_playoffs_sync(self) -> None:
+        self._set_playoff_controls_enabled(False)
+        self._set_simulation_status("Simulating playoffs...")
+        result = self._playoffs_workflow()
+        self._handle_playoffs_result(result)
+
+    def _simulate_playoffs_async(self) -> None:
+        if self._active_future is not None:
+            QMessageBox.information(
+                self,
+                "Simulation Running",
+                "A simulation is already in progress. Please wait for it to finish.",
+            )
+            return
+        self._set_playoff_controls_enabled(False)
+        self._set_simulation_status("Simulating playoffs...")
+        if self._show_toast:
+            self._show_toast("info", "Simulating playoffs in background...")
+
+        def worker() -> dict[str, Any]:
+            return self._playoffs_workflow()
+
+        future = self._run_async(worker)
+        self._active_future = future
+
+        def handle_result(fut) -> None:
+            try:
+                result = fut.result()
+            except Exception as exc:  # defensive
+                result = {"status": "error", "message": str(exc), "playoffs_done": False}
+
+            def finish() -> None:
+                self._active_future = None
+                self._handle_playoffs_result(result)
+
+            QTimer.singleShot(0, finish)
+
+        if hasattr(future, "add_done_callback"):
+            future.add_done_callback(handle_result)
+            if self._register_cleanup and hasattr(future, "cancel"):
+                self._register_cleanup(lambda fut=future: fut.cancel())
+        else:
+            handle_result(type("_Immediate", (), {"result": lambda self: future})())
+
+    def _playoffs_workflow(self) -> dict[str, Any]:
         from playbalance.playoffs_config import load_playoffs_config
         from playbalance.playoffs import (
             load_bracket,
@@ -962,28 +1523,19 @@ class SeasonProgressWindow(QDialog):
         )
         from utils.team_loader import load_teams
 
-        if self._playoffs_done:
-            # Already marked complete — just refresh UI state
-            self._update_ui("Playoffs complete.")
-            return
+        try:
+            bracket = load_bracket()
+        except Exception as exc:
+            return {"status": "error", "message": f"Failed loading bracket: {exc}", "playoffs_done": False}
 
-        # 1) Load existing bracket (user may have simulated via Playoffs Viewer)
-        bracket = load_bracket()
         if bracket and getattr(bracket, "champion", None):
-            # Respect external completion and persist flag
-            self._playoffs_done = True
-            self._save_progress()
-            msg = f"Playoffs already completed; champion: {bracket.champion}"
-            log_news_event(msg)
-            self._update_ui(msg)
-            try:
-                self.simulate_phase_button.setEnabled(False)
-                self.next_button.setEnabled(True)
-            except Exception:
-                pass
-            return
+            return {
+                "status": "already_complete",
+                "message": f"Playoffs already completed; champion: {bracket.champion}",
+                "playoffs_done": True,
+                "bracket": bracket,
+            }
 
-        # 2) If no bracket, try to create one from standings/teams
         if bracket is None:
             try:
                 teams = load_teams()
@@ -993,369 +1545,190 @@ class SeasonProgressWindow(QDialog):
             try:
                 bracket = generate_bracket(self._standings, teams, cfg)
             except NotImplementedError:
-                # Engine not available; allow advancing as placeholder
-                self._playoffs_done = True
-                self._save_progress()
-                msg = "Playoffs engine unavailable; marking playoffs complete."
-                log_news_event(msg)
-                self._update_ui(msg)
-                return
+                return {
+                    "status": "engine_missing",
+                    "message": "Playoffs engine unavailable; marking playoffs complete.",
+                    "playoffs_done": True,
+                }
             except Exception:
-                # Could not generate a bracket; consider playoffs resolved for UI flow
-                self._playoffs_done = True
-                self._save_progress()
-                msg = "Simulated playoffs; championship decided."
-                log_news_event(msg)
-                self._update_ui(msg)
-                try:
-                    self.simulate_phase_button.setEnabled(False)
-                    self.next_button.setEnabled(True)
-                except Exception:
-                    pass
-                return
-            # If a bracket could be created but contains no rounds/matchups,
-            # treat playoffs as trivially complete (small/special leagues).
+                return {
+                    "status": "placeholder_complete",
+                    "message": "Simulated playoffs; championship decided.",
+                    "playoffs_done": True,
+                }
             try:
                 rounds = list(getattr(bracket, "rounds", []) or [])
                 has_games = any(getattr(r, "matchups", None) for r in rounds)
             except Exception:
                 has_games = False
             if not has_games:
-                self._playoffs_done = True
-                self._save_progress()
-                msg = "Simulated playoffs; championship decided."
-                log_news_event(msg)
-                self._update_ui(msg)
+                return {
+                    "status": "placeholder_complete",
+                    "message": "Simulated playoffs; championship decided.",
+                    "playoffs_done": True,
+                    "bracket": bracket,
+                }
+
+        def _persist(br):
+            try:
+                save_bracket(br)
+            except Exception:
+                pass
+
+        try:
+            bracket = run_playoffs(bracket, persist_cb=_persist)
+        except NotImplementedError:
+            return {
+                "status": "engine_missing",
+                "message": "Playoffs engine not available; cannot simulate.",
+                "playoffs_done": False,
+            }
+        except Exception as exc:
+            return {
+                "status": "error",
+                "message": f"Playoffs simulation encountered an error: {exc}",
+                "playoffs_done": False,
+            }
+
+        champion = getattr(bracket, "champion", None)
+        if champion:
+            series_result = self._compute_series_result(bracket)
+            return {
+                "status": "completed",
+                "message": f"Simulated playoffs; champion: {champion}",
+                "playoffs_done": True,
+                "bracket": bracket,
+                "series_result": series_result,
+            }
+
+        return {
+            "status": "placeholder_complete",
+            "message": "Simulated playoffs; championship decided.",
+            "playoffs_done": True,
+            "bracket": bracket,
+        }
+
+    def _handle_playoffs_result(self, result: dict[str, Any]) -> None:
+        status = result.get("status", "error")
+        message = result.get("message", "")
+        playoffs_done = bool(result.get("playoffs_done"))
+        bracket = result.get("bracket")
+        series_result = result.get("series_result", "")
+
+        if playoffs_done:
+            self._playoffs_done = True
+            self._save_progress()
+
+        if status == "error":
+            QMessageBox.warning(self, "Playoffs Simulation", message)
+            self._set_playoff_controls_enabled(True)
+            self.next_button.setEnabled(self._playoffs_done)
+            self._set_simulation_status(f"Playoffs simulation failed: {message}")
+            if self._show_toast:
+                self._show_toast("error", message)
+            self._update_ui(message)
+            return
+
+        if status == "engine_missing":
+            QMessageBox.information(self, "Playoffs Simulation", message)
+            self._set_playoff_controls_enabled(False)
+            self.next_button.setEnabled(True)
+            log_news_event(message)
+            self._set_simulation_status(message)
+            if self._show_toast:
+                self._show_toast("info", message)
+            self._update_ui(message)
+            return
+
+        if status == "already_complete":
+            self._set_playoff_controls_enabled(False)
+            self.next_button.setEnabled(True)
+            log_news_event(message)
+            self._set_simulation_status(message)
+            if self._show_toast:
+                self._show_toast("success", message)
+            self._update_ui(message)
+            return
+
+        if bracket is not None:
+            try:
+                from playbalance.playoffs import save_bracket as _save_bracket
+                _save_bracket(bracket)
+            except Exception:
+                pass
+
+        if status == "completed" and bracket is not None:
+            self._write_champions_record(bracket, series_result)
+
+        self._set_playoff_controls_enabled(False)
+        self.next_button.setEnabled(True)
+        log_news_event(message)
+        if self._show_toast:
+            self._show_toast("success", message)
+        self._set_simulation_status(message)
+        self._update_ui(message)
+
+    def _set_playoff_controls_enabled(self, enabled: bool) -> None:
+        try:
+            self.simulate_phase_button.setEnabled(enabled)
+        except Exception:
+            pass
+        if not enabled:
+            try:
+                self.next_button.setEnabled(False)
+            except Exception:
+                pass
+
+    def _write_champions_record(self, bracket, series_result: str) -> None:
+        try:
+            import csv
+
+            champions = DATA_DIR / "champions.csv"
+            champions.parent.mkdir(parents=True, exist_ok=True)
+            write_header = not champions.exists()
+            with champions.open("a", encoding="utf-8", newline="") as fh:
+                writer = csv.writer(fh)
+                if write_header:
+                    writer.writerow(["year", "champion", "runner_up", "series_result"])
+                writer.writerow([
+                    getattr(bracket, "year", ""),
+                    bracket.champion or "",
+                    getattr(bracket, "runner_up", "") or "",
+                    series_result,
+                ])
+        except Exception:
+            pass
+
+    def _compute_series_result(self, bracket) -> str:
+        try:
+            ws_round = next((r for r in bracket.rounds if r.name in {"WS", "Final"}), None)
+            if not ws_round or not ws_round.matchups:
+                return ""
+            matchup = ws_round.matchups[0]
+            champ = bracket.champion
+            wins_c = 0
+            wins_o = 0
+            for game in getattr(matchup, "games", []):
+                res = str(getattr(game, "result", "") or "")
+                if "-" not in res:
+                    continue
                 try:
-                    self.simulate_phase_button.setEnabled(False)
-                    self.next_button.setEnabled(True)
+                    h, a = map(int, res.split("-", 1))
                 except Exception:
-                    pass
-                return
-
-        # 3) Simulate to completion (persist after each game)
-        def _persist(b):
-            try:
-                save_bracket(b)
-            except Exception:
-                pass
-
-        try:
-            bracket = run_playoffs(bracket, persist_cb=_persist)
-        except NotImplementedError:
-            msg = "Playoffs engine not available; cannot simulate."
-            log_news_event(msg)
-            self._update_ui(msg)
-            try:
-                self.simulate_phase_button.setEnabled(False)
-                self.next_button.setEnabled(True)
-            except Exception:
-                pass
-            return
+                    continue
+                if h > a:
+                    winner = getattr(game, "home", "")
+                elif a > h:
+                    winner = getattr(game, "away", "")
+                else:
+                    continue
+                if winner == champ:
+                    wins_c += 1
+                else:
+                    wins_o += 1
+            return f"{wins_c}-{wins_o}" if (wins_c or wins_o) else ""
         except Exception:
-            msg = "Playoffs simulation encountered an error."
-            log_news_event(msg)
-            self._update_ui(msg)
-            return
-
-        # 4) Finalize if a champion exists (or infer from final round winners)
-        if getattr(bracket, "champion", None):
-            # Compute WS series result if available (best effort)
-            series_result = ""
-            try:
-                ws_round = next((r for r in bracket.rounds if r.name in {"WS", "Final"}), None)
-                if ws_round and ws_round.matchups:
-                    m = ws_round.matchups[0]
-                    champ = bracket.champion
-                    wins_c = 0
-                    wins_o = 0
-                    for g in m.games:
-                        res = str(g.result or "")
-                        if "-" in res:
-                            h, a = res.split("-", 1)
-                            try:
-                                h = int(h)
-                                a = int(a)
-                            except Exception:
-                                continue
-                            if h > a:
-                                winner = g.home
-                            elif a > h:
-                                winner = g.away
-                            else:
-                                continue
-                            if winner == champ:
-                                wins_c += 1
-                            else:
-                                wins_o += 1
-                    if wins_c or wins_o:
-                        series_result = f"{wins_c}-{wins_o}"
-            except Exception:
-                series_result = ""
-
-            msg = f"Simulated playoffs; champion: {bracket.champion}"
-            self._playoffs_done = True
-            self._save_progress()
-            # Append to champions.csv (best effort)
-            try:
-                import csv
-                champions = (DATA_DIR / "champions.csv")
-                champions.parent.mkdir(parents=True, exist_ok=True)
-                hdr = ["year", "champion", "runner_up", "series_result"]
-                write_header = not champions.exists()
-                with champions.open("a", encoding="utf-8", newline="") as fh:
-                    w = csv.writer(fh)
-                    if write_header:
-                        w.writerow(hdr)
-                    w.writerow([
-                        getattr(bracket, "year", ""),
-                        bracket.champion or "",
-                        getattr(bracket, "runner_up", "") or "",
-                        series_result,
-                    ])
-            except Exception:
-                pass
-            log_news_event(msg)
-            self._update_ui(msg)
-            return
-        # Attempt to infer champion from a fully decided final round
-        try:
-            finals = [r for r in (getattr(bracket, "rounds", []) or []) if any(t in str(getattr(r, 'name', '')).lower() for t in ("final", "finals", "championship", "ws"))]
-            final_round = finals[-1] if finals else (getattr(bracket, "rounds", []) or [])[-1] if getattr(bracket, "rounds", None) else None
-            matchups = list(getattr(final_round, "matchups", []) or []) if final_round else []
-            if matchups and all(getattr(m, "winner", None) for m in matchups):
-                champ_id = getattr(matchups[0], "winner", None)
-                if champ_id:
-                    bracket.champion = champ_id
-                    try:
-                        m = matchups[0]
-                        bracket.runner_up = m.low.team_id if champ_id == m.high.team_id else m.high.team_id
-                    except Exception:
-                        pass
-                    try:
-                        save_bracket(bracket)
-                    except Exception:
-                        pass
-                    msg = f"Simulated playoffs; champion: {champ_id}"
-                    self._playoffs_done = True
-                    self._save_progress()
-                    log_news_event(msg)
-                    self._update_ui(msg)
-                    return
-        except Exception:
-            pass
-        # No champion after simulation; try to finalize from current bracket state
-        if self._maybe_finalize_playoffs():
-            msg = "Playoffs complete."
-            log_news_event(msg)
-            self._update_ui(msg)
-            try:
-                self.simulate_phase_button.setEnabled(False)
-                self.next_button.setEnabled(True)
-            except Exception:
-                pass
-            return
-        # Still undecided; update with a neutral message
-        self._update_ui("Playoffs simulation finished without a decided champion.")
-
-    def _ensure_playoff_bracket(self) -> None:
-        """Create and persist a playoffs bracket if one does not exist."""
-        try:
-            from playbalance.playoffs import load_bracket, generate_bracket, save_bracket
-            from playbalance.playoffs_config import load_playoffs_config
-            from utils.team_loader import load_teams
-        except Exception:
-            return
-        b = load_bracket()
-        if b is not None:
-            return
-        try:
-            teams = load_teams()
-        except Exception:
-            teams = []
-        cfg = load_playoffs_config()
-        try:
-            bracket = generate_bracket(self._standings, teams, cfg)
-        except Exception:
-            return
-        try:
-            save_bracket(bracket)
-            log_news_event("Generated initial playoffs bracket from final standings")
-        except Exception:
-            pass
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-    def _maybe_finalize_playoffs(self) -> bool:
-        """Detect a completed bracket and mark playoffs done.
-
-        - Returns True if playoffs are now considered complete.
-        - If a champion can be inferred from a fully decided final round,
-          persists it back to the bracket file.
-        """
-        try:
-            from playbalance.playoffs import load_bracket as _lb, save_bracket as _sb
-            b = _lb()
-            if not b:
-                return False
-            rounds = list(getattr(b, "rounds", []) or [])
-            if not rounds:
-                self._playoffs_done = True
-                self._save_progress()
-                return True
-            # If any matchup is undecided, playoffs are not complete
-            try:
-                pendings = [
-                    m for r in rounds for m in (getattr(r, "matchups", []) or []) if not getattr(m, "winner", None)
-                ]
-            except Exception:
-                pendings = []
-            if pendings:
-                return False
-            # All series decided; ensure champion
-            if not getattr(b, "champion", None):
-                def _is_final_round(name: str) -> bool:
-                    tokens = [t.lower() for t in str(name or "").replace("-", " ").replace("_", " ").split() if t]
-                    return any(t in {"ws", "final", "finals", "championship"} for t in tokens)
-                finals = [r for r in rounds if _is_final_round(getattr(r, "name", ""))]
-                fr = finals[-1] if finals else rounds[-1]
-                matchups = list(getattr(fr, "matchups", []) or []) if fr else []
-                champ = getattr(matchups[0], "winner", None) if matchups else None
-                if champ:
-                    try:
-                        b.champion = champ
-                        if matchups:
-                            m = matchups[0]
-                            b.runner_up = m.low.team_id if champ == m.high.team_id else m.high.team_id
-                        _sb(b)
-                    except Exception:
-                        pass
-            self._playoffs_done = True
-            self._save_progress()
-            return True
-        except Exception:
-            return False
-    def _days_until_draft(self) -> int:
-        """Return days until Draft Day if not yet completed; otherwise 0.
-
-        Counts the number of schedule dates remaining before the inserted Draft
-        milestone date. If draft for the simulator's year has already been
-        completed (per progress file), returns 0.
-        """
-        try:
-            draft_date = getattr(self.simulator, "draft_date", None)
-            if not draft_date:
-                return 0
-            # Check completion for year
-            try:
-                year = int(str(draft_date).split("-")[0])
-            except Exception:
-                return 0
-            completed_years: set[int] = set()
-            try:
-                with PROGRESS_FILE.open("r", encoding="utf-8") as fh:
-                    data = json.load(fh)
-                completed_years = set(data.get("draft_completed_years", []))
-            except Exception:
-                completed_years = set()
-            if year in completed_years:
-                return 0
-            # Find index positions
-            dates = list(getattr(self.simulator, "dates", []) or [])
-            cur = int(getattr(self.simulator, "_index", 0) or 0)
-            try:
-                draft_idx = dates.index(str(draft_date))
-            except Exception:
-                return 0
-            if cur < draft_idx:
-                return max(0, draft_idx - cur)
-            return 0
-        except Exception:
-            return 0
-            save_bracket(bracket)
-
-        # Simulate to completion (persist after each game)
-        def _persist(b):
-            try:
-                save_bracket(b)
-            except Exception:
-                pass
-
-        try:
-            bracket = run_playoffs(bracket, persist_cb=_persist)
-        except NotImplementedError:
-            # If engine stubbed, exit gracefully
-            message = "Playoffs engine not available; cannot simulate."
-            log_news_event(message)
-            self._update_ui(message)
-            return
-        except Exception:
-            message = "Playoffs simulation encountered an error."
-            log_news_event(message)
-            self._update_ui(message)
-            return
-
-        # If a champion exists, mark playoffs done and write champions.csv with WS result
-        if getattr(bracket, "champion", None):
-            # Compute WS series result if available
-            series_result = ""
-            try:
-                ws_round = next((r for r in bracket.rounds if r.name in {"WS", "Final"}), None)
-                if ws_round and ws_round.matchups:
-                    m = ws_round.matchups[0]
-                    champ = bracket.champion
-                    wins_c = 0
-                    wins_o = 0
-                    for g in m.games:
-                        res = str(g.result or "")
-                        if "-" in res:
-                            h, a = res.split("-", 1)
-                            try:
-                                h = int(h)
-                                a = int(a)
-                            except Exception:
-                                continue
-                            # Determine winner for each game
-                            if h > a:
-                                winner = g.home
-                            elif a > h:
-                                winner = g.away
-                            else:
-                                continue
-                            if winner == champ:
-                                wins_c += 1
-                            else:
-                                wins_o += 1
-                    if wins_c or wins_o:
-                        series_result = f"{wins_c}-{wins_o}"
-            except Exception:
-                series_result = ""
-
-            message = f"Simulated playoffs; champion: {bracket.champion}"
-            self._playoffs_done = True
-            self._save_progress()
-            # Append to champions.csv (best-effort)
-            try:
-                import csv
-                champions = (DATA_DIR / "champions.csv")
-                champions.parent.mkdir(parents=True, exist_ok=True)
-                hdr = ["year", "champion", "runner_up", "series_result"]
-                write_header = not champions.exists()
-                with champions.open("a", encoding="utf-8", newline="") as fh:
-                    w = csv.writer(fh)
-                    if write_header:
-                        w.writerow(hdr)
-                    w.writerow([
-                        getattr(bracket, "year", ""),
-                        bracket.champion or "",
-                        getattr(bracket, "runner_up", "") or "",
-                        series_result,
-                    ])
-            except Exception:
-                pass
-            log_news_event(message)
-            self._update_ui(message)
+            return ""
 
     # ------------------------------------------------------------------
     # Persistence helpers
@@ -1741,9 +2114,14 @@ class SeasonProgressWindow(QDialog):
         with PROGRESS_FILE.open("w", encoding="utf-8") as fh:
             json.dump(existing, fh, indent=2)
         # Notify listeners that the date may have advanced
+        cur: str | None = None
         try:
             cur = get_current_sim_date()
             self.progressUpdated.emit(cur or "")
+        except Exception:
+            pass
+        try:
+            notify_sim_date_changed(cur)
         except Exception:
             pass
 

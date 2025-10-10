@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import csv
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
-from typing import Dict
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional
 
 from PyQt6.QtCore import Qt
 try:
@@ -12,16 +14,16 @@ except ImportError:  # pragma: no cover - support test stubs
     from PyQt6.QtWidgets import QAction
     QIcon = None  # type: ignore[assignment]
 from PyQt6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QStackedWidget,
-    QLabel,
     QFrame,
-    QStatusBar,
-    QMessageBox,
+    QHBoxLayout,
+    QLabel,
     QListWidgetItem,
+    QMainWindow,
+    QMessageBox,
+    QStackedWidget,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
 )
 
 from .components import NavButton
@@ -53,8 +55,10 @@ from utils.pitcher_role import get_role
 from utils.team_loader import load_teams, save_team_settings
 from utils.path_utils import get_base_dir
 from utils.sim_date import get_current_sim_date
-from utils.roster_validation import missing_positions
+from ui.analytics import gather_owner_quick_metrics
+from ui.dashboard_core import DashboardContext, NavigationController, PageRegistry
 from ui.window_utils import show_on_top
+from ui.sim_date_bus import sim_date_bus
 
 
 class OwnerDashboard(QMainWindow):
@@ -69,6 +73,22 @@ class OwnerDashboard(QMainWindow):
         self.roster = load_roster(team_id)
         teams = load_teams()
         self.team = next((t for t in teams if t.team_id == team_id), None)
+
+        base_path = get_base_dir()
+        self._executor = ThreadPoolExecutor(max_workers=2)
+        self._background_futures: set[Future[Any]] = set()
+        self._cleanup_callbacks: list[Callable[[], None]] = []
+        self._context = DashboardContext(
+            base_path=base_path,
+            run_async=self._submit_background,
+            show_toast=self._show_toast,
+            register_cleanup=self._register_cleanup,
+        )
+        self.context = self._context
+        self._latest_metrics: Dict[str, Any] = {}
+        self._registry = PageRegistry()
+        self._nav_controller = NavigationController(self._registry)
+        self._nav_controller.add_listener(self._on_nav_changed)
 
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
         self.resize(1100, 720)
@@ -85,7 +105,7 @@ class OwnerDashboard(QMainWindow):
         side.setContentsMargins(10, 12, 10, 12)
         side.setSpacing(6)
 
-        logo_path = get_base_dir() / "logo" / "teams" / f"{team_id.lower()}.png"
+        logo_path = base_path / "logo" / "teams" / f"{team_id.lower()}.png"
         if logo_path.exists():
             logo_label = QLabel()
             pixmap = QPixmap(str(logo_path)).scaledToWidth(
@@ -123,7 +143,6 @@ class OwnerDashboard(QMainWindow):
 
         # Nav icons and tooltips (best-effort)
         try:
-            from pathlib import Path
             icon_dir = Path(__file__).resolve().parent / "icons"
             def _set(btn, name: str, tip: str) -> None:
                 try:
@@ -159,15 +178,8 @@ class OwnerDashboard(QMainWindow):
 
         # Stacked pages
         self.stack = QStackedWidget()
-        self.pages = {
-            "home": OwnerHomePage(self),
-            "roster": RosterPage(self),
-            "team": TeamPage(self),
-            "transactions": TransactionsPage(self),
-            "league": SchedulePage(self),
-        }
-        for p in self.pages.values():
-            self.stack.addWidget(p)
+        self.pages: Dict[str, QWidget] = {}
+        self._register_pages()
 
         right = QWidget()
         rv = QVBoxLayout(right)
@@ -183,8 +195,17 @@ class OwnerDashboard(QMainWindow):
 
         self.setCentralWidget(central)
         self.setStatusBar(QStatusBar())
+        try:
+            self.setWindowState(Qt.WindowState.WindowMaximized)
+        except Exception:
+            pass
 
         self._build_menu()
+        self._sim_date_bus = sim_date_bus()
+        try:
+            self._sim_date_bus.dateChanged.connect(self._on_sim_date_changed)
+        except Exception:
+            pass
 
         # Navigation signals
         self.btn_home.clicked.connect(lambda: self._go("home"))
@@ -192,7 +213,6 @@ class OwnerDashboard(QMainWindow):
         self.btn_team.clicked.connect(lambda: self._go("team"))
         self.btn_transactions.clicked.connect(lambda: self._go("transactions"))
         self.btn_league.clicked.connect(lambda: self._go("league"))
-        self.btn_home.setChecked(True)
         self._go("home")
 
         # Expose actions for tests
@@ -221,31 +241,103 @@ class OwnerDashboard(QMainWindow):
         except Exception:
             pass
 
+    def _register_pages(self) -> None:
+        factories: Dict[str, Callable[[DashboardContext], QWidget]] = {
+            "home": lambda ctx: OwnerHomePage(self),
+            "roster": lambda ctx: RosterPage(self),
+            "team": lambda ctx: TeamPage(self),
+            "transactions": lambda ctx: TransactionsPage(self),
+            "league": lambda ctx: SchedulePage(self),
+        }
+        for key, factory in factories.items():
+            self._registry.register(key, factory)
+            widget = self._registry.build(key, self._context)
+            self.pages[key] = widget
+            self.stack.addWidget(widget)
+
+
+    def _submit_background(self, worker: Callable[[], Any]) -> Future[Any]:
+        future = self._executor.submit(worker)
+        self._background_futures.add(future)
+
+        def _cleanup(fut: Future[Any]) -> None:
+            self._background_futures.discard(fut)
+
+        future.add_done_callback(_cleanup)
+        return future
+
+    def _register_cleanup(self, callback: Callable[[], None]) -> None:
+        if callback not in self._cleanup_callbacks:
+            self._cleanup_callbacks.append(callback)
+
+    def _show_toast(self, kind: str, message: str) -> None:
+        prefixes = {
+            "success": "SUCCESS",
+            "error": "ERROR",
+            "warning": "WARN",
+            "info": "INFO",
+        }
+        prefix = prefixes.get(kind, kind.upper())
+        try:
+            self.statusBar().showMessage(f"[{prefix}] {message}", 5000)
+        except Exception:
+            pass
+
+
     def _go(self, key: str) -> None:
-        for btn in self.nav_buttons.values():
-            btn.setChecked(False)
-        btn = self.nav_buttons.get(key)
-        if btn:
-            btn.setChecked(True)
-        idx = list(self.pages.keys()).index(key)
-        self.stack.setCurrentIndex(idx)
-        date_str = get_current_sim_date()
-        suffix = f" | Date: {date_str}" if date_str else ""
-        self.statusBar().showMessage(f"Ready • {key.capitalize()}" + suffix)
-        # Refresh page if it supports a refresh() hook
+        if key not in self.pages:
+            return
+        try:
+            self._nav_controller.set_current(key)
+        except KeyError:
+            return
+
+    def _on_nav_changed(self, key: Optional[str]) -> None:
+        for name, btn in self.nav_buttons.items():
+            btn.setChecked(name == key)
+        if key is None:
+            return
         page = self.pages.get(key)
-        if page is not None and hasattr(page, "refresh"):
+        if page is None:
+            return
+        self.stack.setCurrentWidget(page)
+        self._update_status_bar(key)
+        refresh = getattr(page, 'refresh', None)
+        if callable(refresh):
             try:
-                page.refresh()  # type: ignore[attr-defined]
+                refresh()
             except Exception:
                 pass
-        # Update header scoreboard context on navigation
         try:
             self._update_header_context()
         except Exception:
             pass
 
-    # ---------- Actions used by pages ----------
+    def _update_status_bar(self, key: Optional[str] = None) -> None:
+        """Render the status bar message with the current sim date."""
+
+        if key is None:
+            key = self._nav_controller.current_key or "home"
+        label = key.capitalize() if isinstance(key, str) else "Home"
+        date_str = get_current_sim_date()
+        suffix = f" | Date: {date_str}" if date_str else ""
+        try:
+            self.statusBar().showMessage(f"Ready - {label}{suffix}")
+        except Exception:
+            pass
+
+    def _on_sim_date_changed(self, _value: object) -> None:
+        """Update status bar and metrics when the sim date advances."""
+
+        try:
+            self._update_status_bar()
+        except Exception:
+            pass
+        try:
+            self._update_header_context()
+        except Exception:
+            pass
+
     def open_lineup_editor(self) -> None:
         show_on_top(LineupEditor(self.team_id))
 
@@ -269,6 +361,10 @@ class OwnerDashboard(QMainWindow):
 
     def open_trade_dialog(self) -> None:
         show_on_top(TradeDialog(self.team_id, self))
+
+    def open_roster_page(self) -> None:
+        """Switch the main view to the roster page."""
+        self._go("roster")
 
     def sign_free_agent(self) -> None:
         try:
@@ -382,134 +478,40 @@ class OwnerDashboard(QMainWindow):
 
     # ---------- Metrics for Home page and header ----------
     def get_quick_metrics(self) -> dict:
-        """Compute lightweight metrics for display on the Home page.
-
-        Returns keys: record (e.g., '10-8'), run_diff ('+12'/'-3'/'0'),
-        next_opponent (e.g., 'vs BOS'), next_date (ISO date or '--'),
-        streak (e.g., 'W3'), last10 (e.g., '7-3'), injuries (int), prob_sp (name/id).
-        """
-        from utils.path_utils import get_base_dir
-        from utils.standings_utils import normalize_record
-        import json
-        import csv
-
-        team_id = getattr(self, "team_id", None)
-        base = get_base_dir() / "data"
-
-        # Record, run diff, streak and last10 from standings.json
-        record_str = "--"
-        run_diff_str = "--"
-        streak_str = "--"
-        last10_str = "--"
-        standings_path = base / "standings.json"
+        """Return cached metrics for the header and home page."""
         try:
-            raw = {}
-            if standings_path.exists():
-                with standings_path.open("r", encoding="utf-8") as fh:
-                    raw = json.load(fh) or {}
-            rec = normalize_record(raw.get(team_id)) if team_id else None
-            if rec:
-                wins = int(rec.get("wins", 0))
-                losses = int(rec.get("losses", 0))
-                record_str = f"{wins}-{losses}"
-                rd = int(rec.get("runs_for", 0)) - int(rec.get("runs_against", 0))
-                run_diff_str = f"{rd:+d}"
-                # streak
-                st = rec.get("streak", {}) or {}
-                res = st.get("result")
-                length = int(st.get("length", 0) or 0)
-                if res in {"W", "L"} and length > 0:
-                    streak_str = f"{res}{length}"
-                # last10
-                l10 = rec.get("last10", []) or []
-                if isinstance(l10, list) and l10:
-                    w = sum(1 for x in l10 if str(x).upper().startswith("W"))
-                    l = sum(1 for x in l10 if str(x).upper().startswith("L"))
-                    last10_str = f"{w}-{l}"
+            metrics = gather_owner_quick_metrics(
+                self.team_id,
+                base_path=self.context.base_path,
+                roster=self.roster,
+                players=self.players,
+            )
+        except Exception:
+            metrics = {}
+        self._latest_metrics = metrics
+        return metrics
+
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        for callback in list(self._cleanup_callbacks):
+            try:
+                callback()
+            except Exception:
+                pass
+        for fut in list(self._background_futures):
+            try:
+                fut.cancel()
+            except Exception:
+                pass
+        try:
+            self._executor.shutdown(wait=False)
         except Exception:
             pass
-
-        # Next game info from schedule.csv and current sim date
-        next_opp = "--"
-        next_date = "--"
-        sched = base / "schedule.csv"
         try:
-            cur_date = get_current_sim_date()
-            rows: list[dict[str, str]] = []
-            if sched.exists():
-                with sched.open(newline="", encoding="utf-8") as fh:
-                    rows = list(csv.DictReader(fh))
-            # Filter games for this team
-            games = [r for r in rows if r.get("home") == team_id or r.get("away") == team_id]
-            # Prefer next unplayed game on/after current date
-            def key_date(row: dict[str, str]) -> str:
-                return str(row.get("date") or "9999-12-31")
-            games.sort(key=key_date)
-            target = None
-            if games:
-                if cur_date:
-                    for g in games:
-                        date_val = str(g.get("date") or "")
-                        res = str(g.get("result") or "")
-                        if date_val >= cur_date and not res:
-                            target = g
-                            break
-                    if target is None:
-                        # fallback: first game on/after current date
-                        for g in games:
-                            if str(g.get("date") or "") >= cur_date:
-                                target = g
-                                break
-                if target is None:
-                    # fallback: first future unplayed regardless of date
-                    for g in games:
-                        if not str(g.get("result") or ""):
-                            target = g
-                            break
-                if target is None:
-                    # fallback: last game (season over)
-                    target = games[-1]
-            if target:
-                if target.get("home") == team_id:
-                    next_opp = f"vs {target.get('away','--')}"
-                else:
-                    next_opp = f"at {target.get('home','--')}"
-                next_date = str(target.get("date") or "--")
+            if hasattr(self, "_sim_date_bus"):
+                self._sim_date_bus.dateChanged.disconnect(self._on_sim_date_changed)
         except Exception:
             pass
-
-        # Injuries from roster DL/IR (best-effort)
-        injuries = 0
-        try:
-            injuries = len(getattr(self.roster, "dl", []) or []) + len(getattr(self.roster, "ir", []) or [])
-        except Exception:
-            injuries = 0
-
-        # Probable starter: highest endurance SP on active roster
-        prob_sp = "--"
-        try:
-            act_ids = set(getattr(self.roster, "act", []) or [])
-            sps = []
-            for pid, p in (self.players or {}).items():
-                if pid in act_ids and (getattr(p, "is_pitcher", False) or str(getattr(p, "primary_position", "")).upper() == "P"):
-                    if (getattr(p, "role", "") or get_role(p)) == "SP":
-                        sps.append(p)
-            if sps:
-                cand = max(sps, key=lambda x: int(getattr(x, "endurance", 0) or 0))
-                prob_sp = f"{getattr(cand,'first_name','')} {getattr(cand,'last_name','')}".strip() or getattr(cand, 'player_id', '--')
-        except Exception:
-            pass
-
-        return {
-            "record": record_str,
-            "run_diff": run_diff_str,
-            "next_opponent": next_opp,
-            "next_date": next_date,
-            "streak": streak_str,
-            "last10": last10_str,
-            "injuries": injuries,
-            "prob_sp": prob_sp,
-        }
+        super().closeEvent(event)
 
     def _update_header_context(self) -> None:
         """Update header scoreboard label with quick context."""
@@ -522,9 +524,17 @@ class OwnerDashboard(QMainWindow):
         last10 = metrics.get("last10", "--")
         injuries = metrics.get("injuries", 0)
         prob = metrics.get("prob_sp", "--")
+        bullpen = metrics.get("bullpen", {}) or {}
+        bp_ready = int(bullpen.get("ready", 0) or 0)
+        bp_total = int(bullpen.get("total", 0) or 0)
+        bp_summary = f"{bp_ready}/{bp_total}" if bp_total else "--"
+        trend_series = ((metrics.get("trends") or {}).get("series") or {})
+        win_pct_series = trend_series.get("win_pct") or []
+        win_pct = f"{win_pct_series[-1]:.3f}" if win_pct_series else "--"
         text = (
             f"Next: {opp} {date} | Record {rec} RD {rd} | "
-            f"Stk {streak} L10 {last10} | Inj {injuries} | Prob SP {prob}"
+            f"Stk {streak} L10 {last10} | Inj {injuries} | Prob SP {prob} | "
+            f"BP {bp_summary} | Win% {win_pct}"
         )
         try:
             self.scoreboard.setText(text)
