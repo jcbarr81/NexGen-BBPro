@@ -224,3 +224,123 @@
 [2025-10-09 21:16:50] Generated regular season schedule with 162 games
 [2025-10-09 21:16:50] No unsigned players available
 [2025-10-09 21:16:51] Simulated playoffs; championship decided.
+[2025-10-09 21:19:01] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-09 21:19:01] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-09 21:19:01] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-09 21:19:02] [progress] Simulated week; 3 days until Midseason
+[2025-10-09 21:19:02] [progress] Simulated midseason; 5 days until Draft
+[2025-10-09 21:19:02] [progress] Simulated week; 3 days until Draft
+[2025-10-09 21:19:03] [progress] Simulated month; 10 days until Draft
+[2025-10-09 21:19:03] Season advanced to Preseason
+[2025-10-09 21:19:03] No unsigned players available
+[2025-10-09 21:19:03] Training camp completed; players marked ready
+[2025-10-09 21:19:03] Generated regular season schedule with 162 games
+[2025-10-09 21:19:03] Generated regular season schedule with 162 games
+[2025-10-09 21:19:04] No unsigned players available
+[2025-10-09 21:19:06] Simulated playoffs; championship decided.
+[2025-10-09 21:19:35] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-09 21:19:35] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-09 21:19:35] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-09 21:19:36] [progress] Simulated week; 3 days until Midseason
+[2025-10-09 21:19:36] [progress] Simulated midseason; 5 days until Draft
+[2025-10-09 21:19:36] [progress] Simulated week; 3 days until Draft
+[2025-10-09 21:19:36] [progress] Simulated month; 10 days until Draft
+[2025-10-09 21:19:37] Simulated playoffs; championship decided.
+[2025-10-09 21:19:37] Season advanced to Preseason
+[2025-10-09 21:19:37] No unsigned players available
+[2025-10-09 21:19:37] Training camp completed; players marked ready
+[2025-10-09 21:19:37] Generated regular season schedule with 162 games
+[2025-10-09 21:19:37] Generated regular season schedule with 162 games
+[2025-10-09 21:19:37] No unsigned players available
+[2025-10-09 21:20:57] League reset to Opening Day
+[2025-10-09 21:20:57] Purged saved season boxscores
+[2025-10-09 21:21:01] Generated regular season schedule with 1215 games
+[2025-10-09 21:22:37] Amateur Draft 2025 committed: 17 players added; 45 roster assignments
+[2025-10-09 21:22:43] [game_recap] Daily Recap 2025-07-15: 7 games; 7 one-run; 2 extras. SEA at DEN â€” 1-0; ALB at MIL â€” 0-1; OKL at SAN â€” 1-0
+[2025-10-09 21:22:43] [progress] Simulated a regular season day; 86 days until Season End
+[2025-10-09 21:34:10] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-09 21:34:11] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-09 21:34:11] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-09 21:34:11] [progress] Simulated week; 3 days until Midseason
+[2025-10-09 21:34:11] [progress] Simulated week; 3 days until Draft
+[2025-10-09 21:34:12] [progress] Simulated month; 10 days until Draft
+[2025-10-09 21:34:12] [progress] Simulated midseason; 5 days until Draft
+[2025-10-09 21:34:13] Season advanced to Preseason
+[2025-10-09 21:34:13] No unsigned players available
+[2025-10-09 21:34:13] Training camp completed; players marked ready
+[2025-10-09 21:34:13] Generated regular season schedule with 162 games
+[2025-10-09 21:34:13] Simulated playoffs; championship decided.
+[2025-10-09 21:34:13] Generated regular season schedule with 162 games
+[2025-10-09 21:34:13] No unsigned players available
+[2025-10-09 21:54:17] League reset to Opening Day
+[2025-10-09 21:54:17] Purged saved season boxscores
+[2025-10-09 21:54:24] Generated regular season schedule with 1215 games
+[2025-10-09 21:57:16] Amateur Draft 2025 committed: 6 players added; 45 roster assignments
+[2025-10-09 22:05:47] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-09 22:05:47] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-09 22:05:48] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-09 22:05:48] [progress] Simulated week; 3 days until Midseason
+[2025-10-09 22:05:49] [progress] Simulated week; 3 days until Draft
+[2025-10-09 22:05:49] [progress] Simulated month; 10 days until Draft
+[2025-10-09 22:05:49] [progress] Simulated midseason; 5 days until Draft
+[2025-10-09 22:05:50] Season advanced to Preseason
+[2025-10-09 22:05:50] Simulated playoffs; championship decided.
+[2025-10-09 22:05:50] No unsigned players available
+[2025-10-09 22:05:50] Training camp completed; players marked ready
+[2025-10-09 22:05:50] Generated regular season schedule with 162 games
+[2025-10-09 22:05:50] Generated regular season schedule with 162 games
+[2025-10-09 22:05:51] No unsigned players available
+[2025-10-09 22:17:06] League reset to Opening Day
+[2025-10-09 22:17:06] Purged saved season boxscores
+[2025-10-09 22:17:11] Generated regular season schedule with 1215 games
+[2025-10-09 22:19:14] Amateur Draft 2025 committed: 5 players added; 45 roster assignments
+[2025-10-09 22:23:42] Season advanced to Playoffs
+[2025-10-09 22:32:54] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-09 22:32:55] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-09 22:32:56] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-09 22:32:56] [progress] Simulated week; 3 days until Midseason
+[2025-10-09 22:32:56] [progress] Simulated week; 3 days until Draft
+[2025-10-09 22:32:57] [progress] Simulated month; 10 days until Draft
+[2025-10-09 22:32:57] [progress] Simulated midseason; 5 days until Draft
+[2025-10-09 22:32:59] Season advanced to Preseason
+[2025-10-09 22:32:59] No unsigned players available
+[2025-10-09 22:32:59] Training camp completed; players marked ready
+[2025-10-09 22:32:59] Generated regular season schedule with 162 games
+[2025-10-09 22:32:59] Generated regular season schedule with 162 games
+[2025-10-09 22:32:59] No unsigned players available
+[2025-10-09 22:32:59] Simulated playoffs; championship decided.
+[2025-10-09 22:37:53] League reset to Opening Day
+[2025-10-09 22:37:53] Purged saved season boxscores
+[2025-10-09 22:38:07] Generated regular season schedule with 1215 games
+[2025-10-09 22:41:54] Amateur Draft 2025 committed: 1 players added; 45 roster assignments
+[2025-10-09 22:41:57] [game_recap] Daily Recap 2025-07-15: 7 games; 6 one-run; 3 extras. SEA at DEN â€” 0-1; ALB at MIL â€” 0-4; OKL at SAN â€” 1-0
+[2025-10-09 22:41:57] [progress] Simulated a regular season day; 86 days until Season End
+[2025-10-09 22:46:11] Season advanced to Playoffs
+[2025-10-09 22:53:04] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-09 22:53:04] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-09 22:53:05] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-09 22:53:05] [progress] Simulated week; 3 days until Midseason
+[2025-10-09 22:53:06] [progress] Simulated week; 3 days until Draft
+[2025-10-09 22:53:06] [progress] Simulated month; 10 days until Draft
+[2025-10-09 22:53:06] [progress] Simulated midseason; 5 days until Draft
+[2025-10-09 22:53:07] Season advanced to Preseason
+[2025-10-09 22:53:07] Simulated playoffs; champion: LOU
+[2025-10-09 22:53:07] No unsigned players available
+[2025-10-09 22:53:07] Training camp completed; players marked ready
+[2025-10-09 22:53:07] Generated regular season schedule with 162 games
+[2025-10-09 22:53:07] Generated regular season schedule with 162 games
+[2025-10-09 22:53:07] No unsigned players available
+[2025-10-09 22:57:11] League reset to Opening Day
+[2025-10-09 22:57:11] Purged saved season boxscores
+[2025-10-09 22:57:16] Generated regular season schedule with 1215 games
+[2025-10-09 22:58:38] Amateur Draft 2025 committed: 1 players added; 45 roster assignments
+[2025-10-09 23:05:06] League reset to Opening Day
+[2025-10-09 23:05:06] Purged saved season boxscores
+[2025-10-09 23:06:35] Amateur Draft 2025 committed: 0 players added; 45 roster assignments
+[2025-10-09 23:08:26] Season advanced to Playoffs
+[2025-10-09 23:08:35] Season advanced to Offseason
+[2025-10-09 23:08:39] Season advanced to Preseason
+[2025-10-09 23:09:49] No unsigned players available
+[2025-10-09 23:09:53] Training camp completed; players marked ready
+[2025-10-09 23:10:25] Generated regular season schedule with 1215 games
+[2025-10-09 23:10:30] Season advanced to Regular Season

@@ -4,334 +4,55 @@
   "champion": null,
   "runner_up": null,
   "seeds": {
-    "AL": [
+    "LEAGUE": [
       {
-        "team_id": "A1",
+        "team_id": "OKL",
         "seed": 1,
-        "league": "AL",
-        "wins": 98,
-        "run_diff": 148
-      },
-      {
-        "team_id": "A3",
-        "seed": 2,
-        "league": "AL",
-        "wins": 94,
-        "run_diff": 144
-      },
-      {
-        "team_id": "A4",
-        "seed": 3,
-        "league": "AL",
+        "league": "LEAGUE",
         "wins": 92,
-        "run_diff": 142
+        "run_diff": 25
       },
       {
-        "team_id": "A2",
-        "seed": 4,
-        "league": "AL",
-        "wins": 96,
-        "run_diff": 146
-      }
-    ],
-    "NL": [
-      {
-        "team_id": "N1",
-        "seed": 1,
-        "league": "NL",
-        "wins": 97,
-        "run_diff": 147
-      },
-      {
-        "team_id": "N3",
+        "team_id": "PHO",
         "seed": 2,
-        "league": "NL",
-        "wins": 93,
-        "run_diff": 143
+        "league": "LEAGUE",
+        "wins": 92,
+        "run_diff": 15
       },
       {
-        "team_id": "N4",
+        "team_id": "DEN",
         "seed": 3,
-        "league": "NL",
-        "wins": 91,
-        "run_diff": 141
+        "league": "LEAGUE",
+        "wins": 79,
+        "run_diff": 13
       },
       {
-        "team_id": "N2",
+        "team_id": "MEM",
         "seed": 4,
-        "league": "NL",
-        "wins": 95,
-        "run_diff": 145
+        "league": "LEAGUE",
+        "wins": 91,
+        "run_diff": 46
       }
     ]
   },
   "rounds": [
     {
-      "name": "AL DS",
+      "name": "LEAGUE DS",
       "matchups": [
         {
           "high": {
-            "team_id": "A1",
+            "team_id": "OKL",
             "seed": 1,
-            "league": "AL",
-            "wins": 98,
-            "run_diff": 148
-          },
-          "low": {
-            "team_id": "A2",
-            "seed": 4,
-            "league": "AL",
-            "wins": 96,
-            "run_diff": 146
-          },
-          "config": {
-            "length": 5,
-            "pattern": [
-              2,
-              2,
-              1
-            ]
-          },
-          "games": [
-            {
-              "home": "A1",
-              "away": "A2",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S0_G0_A2_at_A1.html",
-              "meta": {}
-            },
-            {
-              "home": "A1",
-              "away": "A2",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S0_G1_A2_at_A1.html",
-              "meta": {}
-            },
-            {
-              "home": "A2",
-              "away": "A1",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S0_G2_A1_at_A2.html",
-              "meta": {}
-            },
-            {
-              "home": "A2",
-              "away": "A1",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S0_G3_A1_at_A2.html",
-              "meta": {}
-            },
-            {
-              "home": "A1",
-              "away": "A2",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S0_G4_A2_at_A1.html",
-              "meta": {}
-            }
-          ],
-          "winner": "A1"
-        },
-        {
-          "high": {
-            "team_id": "A3",
-            "seed": 2,
-            "league": "AL",
-            "wins": 94,
-            "run_diff": 144
-          },
-          "low": {
-            "team_id": "A4",
-            "seed": 3,
-            "league": "AL",
+            "league": "LEAGUE",
             "wins": 92,
-            "run_diff": 142
-          },
-          "config": {
-            "length": 5,
-            "pattern": [
-              2,
-              2,
-              1
-            ]
-          },
-          "games": [
-            {
-              "home": "A3",
-              "away": "A4",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S1_G0_A4_at_A3.html",
-              "meta": {}
-            },
-            {
-              "home": "A3",
-              "away": "A4",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S1_G1_A4_at_A3.html",
-              "meta": {}
-            },
-            {
-              "home": "A4",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S1_G2_A3_at_A4.html",
-              "meta": {}
-            },
-            {
-              "home": "A4",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S1_G3_A3_at_A4.html",
-              "meta": {}
-            },
-            {
-              "home": "A3",
-              "away": "A4",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL DS_S1_G4_A4_at_A3.html",
-              "meta": {}
-            }
-          ],
-          "winner": "A3"
-        }
-      ],
-      "plan": []
-    },
-    {
-      "name": "AL CS",
-      "matchups": [
-        {
-          "high": {
-            "team_id": "A1",
-            "seed": 1,
-            "league": "AL",
-            "wins": 98,
-            "run_diff": 148
+            "run_diff": 25
           },
           "low": {
-            "team_id": "A3",
-            "seed": 2,
-            "league": "AL",
-            "wins": 94,
-            "run_diff": 144
-          },
-          "config": {
-            "length": 7,
-            "pattern": [
-              2,
-              3,
-              2
-            ]
-          },
-          "games": [
-            {
-              "home": "A1",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G0_A3_at_A1.html",
-              "meta": {}
-            },
-            {
-              "home": "A1",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G1_A3_at_A1.html",
-              "meta": {}
-            },
-            {
-              "home": "A3",
-              "away": "A1",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G2_A1_at_A3.html",
-              "meta": {}
-            },
-            {
-              "home": "A3",
-              "away": "A1",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G3_A1_at_A3.html",
-              "meta": {}
-            },
-            {
-              "home": "A3",
-              "away": "A1",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G4_A1_at_A3.html",
-              "meta": {}
-            },
-            {
-              "home": "A1",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G5_A3_at_A1.html",
-              "meta": {}
-            },
-            {
-              "home": "A1",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_AL CS_S0_G6_A3_at_A1.html",
-              "meta": {}
-            }
-          ],
-          "winner": "A1"
-        }
-      ],
-      "plan": [
-        {
-          "series_key": "cs",
-          "sources": [
-            {
-              "kind": "winner",
-              "league": null,
-              "seed": null,
-              "source_round": "AL DS",
-              "slot": 0
-            },
-            {
-              "kind": "winner",
-              "league": null,
-              "seed": null,
-              "source_round": "AL DS",
-              "slot": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "NL DS",
-      "matchups": [
-        {
-          "high": {
-            "team_id": "N1",
-            "seed": 1,
-            "league": "NL",
-            "wins": 97,
-            "run_diff": 147
-          },
-          "low": {
-            "team_id": "N2",
+            "team_id": "MEM",
             "seed": 4,
-            "league": "NL",
-            "wins": 95,
-            "run_diff": 145
+            "league": "LEAGUE",
+            "wins": 91,
+            "run_diff": 46
           },
           "config": {
             "length": 5,
@@ -343,62 +64,78 @@
           },
           "games": [
             {
-              "home": "N1",
-              "away": "N2",
+              "home": "OKL",
+              "away": "MEM",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S0_G0_N2_at_N1.html",
-              "meta": {}
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S0_G0_MEM_at_OKL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "R"
+              }
             },
             {
-              "home": "N1",
-              "away": "N2",
+              "home": "OKL",
+              "away": "MEM",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S0_G1_N2_at_N1.html",
-              "meta": {}
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S0_G1_MEM_at_OKL.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N2",
-              "away": "N1",
+              "home": "MEM",
+              "away": "OKL",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S0_G2_N1_at_N2.html",
-              "meta": {}
+              "result": "0-1",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S0_G2_OKL_at_MEM.html",
+              "meta": {
+                "home_innings": 16,
+                "away_innings": 16,
+                "extra_innings": true,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N2",
-              "away": "N1",
+              "home": "MEM",
+              "away": "OKL",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S0_G3_N1_at_N2.html",
-              "meta": {}
-            },
-            {
-              "home": "N1",
-              "away": "N2",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S0_G4_N2_at_N1.html",
-              "meta": {}
+              "result": "1-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S0_G3_OKL_at_MEM.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             }
           ],
-          "winner": "N1"
+          "winner": "OKL"
         },
         {
           "high": {
-            "team_id": "N3",
+            "team_id": "PHO",
             "seed": 2,
-            "league": "NL",
-            "wins": 93,
-            "run_diff": 143
+            "league": "LEAGUE",
+            "wins": 92,
+            "run_diff": 15
           },
           "low": {
-            "team_id": "N4",
+            "team_id": "DEN",
             "seed": 3,
-            "league": "NL",
-            "wins": 91,
-            "run_diff": 141
+            "league": "LEAGUE",
+            "wins": 79,
+            "run_diff": 13
           },
           "config": {
             "length": 5,
@@ -410,68 +147,84 @@
           },
           "games": [
             {
-              "home": "N3",
-              "away": "N4",
+              "home": "PHO",
+              "away": "DEN",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S1_G0_N4_at_N3.html",
-              "meta": {}
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S1_G0_DEN_at_PHO.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N3",
-              "away": "N4",
+              "home": "PHO",
+              "away": "DEN",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S1_G1_N4_at_N3.html",
-              "meta": {}
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S1_G1_DEN_at_PHO.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
             },
             {
-              "home": "N4",
-              "away": "N3",
+              "home": "DEN",
+              "away": "PHO",
               "date": null,
               "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S1_G2_N3_at_N4.html",
-              "meta": {}
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S1_G2_PHO_at_DEN.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N4",
-              "away": "N3",
+              "home": "DEN",
+              "away": "PHO",
               "date": null,
               "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S1_G3_N3_at_N4.html",
-              "meta": {}
-            },
-            {
-              "home": "N3",
-              "away": "N4",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL DS_S1_G4_N4_at_N3.html",
-              "meta": {}
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE DS_S1_G3_PHO_at_DEN.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             }
           ],
-          "winner": "N3"
+          "winner": "DEN"
         }
       ],
       "plan": []
     },
     {
-      "name": "NL CS",
+      "name": "LEAGUE CS",
       "matchups": [
         {
           "high": {
-            "team_id": "N1",
+            "team_id": "OKL",
             "seed": 1,
-            "league": "NL",
-            "wins": 97,
-            "run_diff": 147
+            "league": "LEAGUE",
+            "wins": 92,
+            "run_diff": 25
           },
           "low": {
-            "team_id": "N3",
-            "seed": 2,
-            "league": "NL",
-            "wins": 93,
-            "run_diff": 143
+            "team_id": "DEN",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 79,
+            "run_diff": 13
           },
           "config": {
             "length": 7,
@@ -483,63 +236,91 @@
           },
           "games": [
             {
-              "home": "N1",
-              "away": "N3",
+              "home": "OKL",
+              "away": "DEN",
               "date": null,
               "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G0_N3_at_N1.html",
-              "meta": {}
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G0_DEN_at_OKL.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N1",
-              "away": "N3",
+              "home": "OKL",
+              "away": "DEN",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G1_N3_at_N1.html",
-              "meta": {}
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G1_DEN_at_OKL.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N3",
-              "away": "N1",
+              "home": "DEN",
+              "away": "OKL",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G2_N1_at_N3.html",
-              "meta": {}
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G2_OKL_at_DEN.html",
+              "meta": {
+                "home_innings": 20,
+                "away_innings": 20,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
+              }
             },
             {
-              "home": "N3",
-              "away": "N1",
+              "home": "DEN",
+              "away": "OKL",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G3_N1_at_N3.html",
-              "meta": {}
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G3_OKL_at_DEN.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "home": "N3",
-              "away": "N1",
+              "home": "DEN",
+              "away": "OKL",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G4_N1_at_N3.html",
-              "meta": {}
+              "result": "0-1",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G4_OKL_at_DEN.html",
+              "meta": {
+                "home_innings": 17,
+                "away_innings": 17,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
+              }
             },
             {
-              "home": "N1",
-              "away": "N3",
+              "home": "OKL",
+              "away": "DEN",
               "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G5_N3_at_N1.html",
-              "meta": {}
-            },
-            {
-              "home": "N1",
-              "away": "N3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_NL CS_S0_G6_N3_at_N1.html",
-              "meta": {}
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G5_DEN_at_OKL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             }
           ],
-          "winner": "N1"
+          "winner": "OKL"
         }
       ],
       "plan": [
@@ -550,14 +331,14 @@
               "kind": "winner",
               "league": null,
               "seed": null,
-              "source_round": "NL DS",
+              "source_round": "LEAGUE DS",
               "slot": 0
             },
             {
               "kind": "winner",
               "league": null,
               "seed": null,
-              "source_round": "NL DS",
+              "source_round": "LEAGUE DS",
               "slot": 1
             }
           ]
@@ -565,29 +346,121 @@
       ]
     },
     {
-      "name": "WS",
-      "matchups": [],
-      "plan": [
+      "name": "Final",
+      "matchups": [
         {
-          "series_key": "ws",
-          "sources": [
+          "high": {
+            "team_id": "OKL",
+            "seed": 1,
+            "league": "LEAGUE",
+            "wins": 92,
+            "run_diff": 25
+          },
+          "low": {
+            "team_id": "DEN",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 79,
+            "run_diff": 13
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
             {
-              "kind": "winner",
-              "league": null,
-              "seed": null,
-              "source_round": "AL CS",
-              "slot": 0
+              "home": "OKL",
+              "away": "DEN",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G0_DEN_at_OKL.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             },
             {
-              "kind": "winner",
-              "league": null,
-              "seed": null,
-              "source_round": "NL CS",
-              "slot": 0
+              "home": "OKL",
+              "away": "DEN",
+              "date": null,
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G1_DEN_at_OKL.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "DEN",
+              "away": "OKL",
+              "date": null,
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G2_OKL_at_DEN.html",
+              "meta": {
+                "home_innings": 20,
+                "away_innings": 20,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "DEN",
+              "away": "OKL",
+              "date": null,
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G3_OKL_at_DEN.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "DEN",
+              "away": "OKL",
+              "date": null,
+              "result": "0-1",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G4_OKL_at_DEN.html",
+              "meta": {
+                "home_innings": 17,
+                "away_innings": 17,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "OKL",
+              "away": "DEN",
+              "date": null,
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2025_LEAGUE CS_S0_G5_DEN_at_OKL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
             }
-          ]
+          ],
+          "winner": "OKL"
         }
-      ]
+      ],
+      "plan": []
     }
   ]
 }

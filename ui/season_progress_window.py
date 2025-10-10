@@ -476,13 +476,16 @@ class SeasonProgressWindow(QDialog):
     # ------------------------------------------------------------------
     # UI helpers
     # ------------------------------------------------------------------
-    def _update_ui(self, note: str | None = None) -> None:
+    def _update_ui(self, note: str | None = None, *, bracket: object | None = None) -> None:
         """Refresh the label and notes for the current phase.
 
         Parameters
         ----------
         note:
             Optional note to display instead of the default phase message.
+        bracket:
+            Optional in-memory playoff bracket to reuse when refreshing the
+            playoffs view to avoid stale disk reads after background updates.
         """
         phase_name = self.manager.phase.name.replace("_", " ").title()
         self.phase_label.setText(f"Current Phase: {phase_name}")
@@ -520,6 +523,7 @@ class SeasonProgressWindow(QDialog):
         self.simulate_month_button.setVisible(is_regular)
         self.simulate_phase_button.setVisible(is_regular or is_playoffs)
         self.repair_lineups_button.setVisible(is_regular)
+        playoffs_bracket = bracket
         if is_regular:
             mid_remaining = self.simulator.remaining_days()
             # Draft milestone: only if not yet completed for the season
@@ -576,7 +580,8 @@ class SeasonProgressWindow(QDialog):
             if not self._playoffs_done:
                 try:
                     from playbalance.playoffs import load_bracket as _lb, save_bracket as _sb
-                    b = _lb()
+                    b = playoffs_bracket or _lb()
+                    playoffs_bracket = b
                     def _is_final_round(name: str) -> bool:
                         tokens = [t.lower() for t in str(name or "").replace("-", " ").replace("_", " ").split() if t]
                         final_tokens = {"ws", "world", "worlds", "final", "finals", "championship"}
@@ -630,7 +635,7 @@ class SeasonProgressWindow(QDialog):
             self.simulate_phase_button.setVisible(False)
             self.next_button.setEnabled(True)
         # Timeline reflects updated status after any UI refresh.
-        self._refresh_timeline()
+        self._refresh_timeline(bracket=playoffs_bracket)
 
     def _set_simulation_status(self, text: str | None) -> None:
         """Show or hide the simulation status label."""
@@ -696,7 +701,7 @@ class SeasonProgressWindow(QDialog):
             parts.append(f"{remaining} days remaining")
         return " - ".join(parts)
 
-    def _refresh_timeline(self) -> None:
+    def _refresh_timeline(self, *, bracket: object | None = None) -> None:
         """Populate the season timeline list with milestone statuses."""
         timeline = getattr(self, "timeline", None)
         if timeline is None:
@@ -875,13 +880,15 @@ class SeasonProgressWindow(QDialog):
 
         champion = None
         runner_up = None
+        playoff_bracket = bracket
         try:
             from playbalance.playoffs import load_bracket as _load_bracket
 
-            bracket = _load_bracket()
-            if bracket is not None:
-                champion = getattr(bracket, "champion", None)
-                runner_up = getattr(bracket, "runner_up", None)
+            if playoff_bracket is None:
+                playoff_bracket = _load_bracket()
+            if playoff_bracket is not None:
+                champion = getattr(playoff_bracket, "champion", None)
+                runner_up = getattr(playoff_bracket, "runner_up", None)
         except Exception:
             champion = None
 
@@ -1626,7 +1633,7 @@ class SeasonProgressWindow(QDialog):
             self._set_simulation_status(f"Playoffs simulation failed: {message}")
             if self._show_toast:
                 self._show_toast("error", message)
-            self._update_ui(message)
+            self._update_ui(message, bracket=bracket)
             return
 
         if status == "engine_missing":
@@ -1637,7 +1644,7 @@ class SeasonProgressWindow(QDialog):
             self._set_simulation_status(message)
             if self._show_toast:
                 self._show_toast("info", message)
-            self._update_ui(message)
+            self._update_ui(message, bracket=bracket)
             return
 
         if status == "already_complete":
@@ -1647,7 +1654,7 @@ class SeasonProgressWindow(QDialog):
             self._set_simulation_status(message)
             if self._show_toast:
                 self._show_toast("success", message)
-            self._update_ui(message)
+            self._update_ui(message, bracket=bracket)
             return
 
         if bracket is not None:
@@ -1666,7 +1673,7 @@ class SeasonProgressWindow(QDialog):
         if self._show_toast:
             self._show_toast("success", message)
         self._set_simulation_status(message)
-        self._update_ui(message)
+        self._update_ui(message, bracket=bracket)
 
     def _set_playoff_controls_enabled(self, enabled: bool) -> None:
         try:

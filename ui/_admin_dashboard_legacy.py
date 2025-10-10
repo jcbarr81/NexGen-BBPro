@@ -679,6 +679,10 @@ class MainWindow(QMainWindow):
         date_str = self._compute_draft_date_for_year(year)
         dlg = DraftConsole(date_str, self)
         dlg.exec()
+        try:
+            self._refresh_draft_page()
+        except Exception:
+            pass
 
     def open_draft_console(self) -> None:
         self._open_draft_console()

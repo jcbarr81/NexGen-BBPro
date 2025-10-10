@@ -906,16 +906,29 @@ def _refresh_bracket_if_stale(bracket: PlayoffBracket) -> PlayoffBracket:
 def _championship_round_names(bracket: PlayoffBracket) -> set[str]:
     """Return the set of round names that should resolve the champion."""
 
-    explicit = {
-        rnd.name
-        for rnd in getattr(bracket, "rounds", []) or []
+    rounds = list(getattr(bracket, "rounds", []) or [])
+
+    def _has_content(rnd: Round) -> bool:
+        matchups = getattr(rnd, "matchups", []) or []
+        plan = getattr(rnd, "plan", []) or []
+        return bool(matchups) or bool(plan)
+
+    finals: list[tuple[int, Round]] = [
+        (idx, rnd)
+        for idx, rnd in enumerate(rounds)
         if _stage_key_from_round_name(rnd.name) in {"ws", "final"}
-    }
-    if explicit:
-        return explicit
-    rounds = getattr(bracket, "rounds", []) or []
-    if rounds:
-        return {rounds[-1].name}
+    ]
+    finals_with_content = [rnd for _, rnd in finals if _has_content(rnd)]
+    if finals_with_content:
+        return {rnd.name for rnd in finals_with_content}
+    if finals:
+        cutoff = max(idx for idx, _ in finals)
+        for rnd in reversed(rounds[:cutoff]):
+            if _has_content(rnd):
+                return {rnd.name}
+    for rnd in reversed(rounds):
+        if _has_content(rnd):
+            return {rnd.name}
     return set()
 
 

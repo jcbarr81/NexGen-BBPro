@@ -20,8 +20,9 @@ try:
         QScrollArea,
         QWidget,
         QFrame,
+        QMessageBox,
     )
-    from PyQt6.QtCore import Qt, QTimer
+    from PyQt6.QtCore import Qt, QTimer, QObject, pyqtSignal
 except Exception:  # pragma: no cover - headless stubs for tests
     class _Signal:
         def __init__(self):
@@ -31,6 +32,18 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def emit(self, *a, **k):
             if self._slot:
                 self._slot(*a, **k)
+    class _SignalDescriptor:
+        def __init__(self):
+            self._signals = {}
+        def __get__(self, obj, owner):
+            if obj is None:
+                return self
+            key = id(obj)
+            sig = self._signals.get(key)
+            if sig is None:
+                sig = _Signal()
+                self._signals[key] = sig
+            return sig
     class QDialog:
         def __init__(self, *a, **k):
             pass
@@ -45,6 +58,11 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def setText(self, t): self._t=t
     class QPushButton:
         def __init__(self, *a, **k): self.clicked=_Signal()
+    class QMessageBox:
+        @staticmethod
+        def information(*a, **k): pass
+        @staticmethod
+        def warning(*a, **k): pass
     class QVBoxLayout:
         def __init__(self, *a, **k): pass
         def addWidget(self, *a, **k): pass
@@ -59,10 +77,15 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def setWidgetResizable(self, *a, **k): pass
     class Qt:
         class AlignmentFlag: AlignLeft = 0; AlignTop = 0; AlignHCenter = 0
+    class QObject:
+        def __init__(self, *a, **k):
+            pass
     class QTimer:
         @staticmethod
         def singleShot(ms, func):
             func()
+    def pyqtSignal(*a, **k):
+        return _SignalDescriptor()
 
 from playbalance.playoffs import load_bracket
 
@@ -76,6 +99,13 @@ ROUND_STAGE_ALIASES = {
     "FINAL": "Championship",
     "FINALS": "Championship",
 }
+
+
+class _PlayoffNotifier(QObject):
+    sim_finished = pyqtSignal(dict)
+
+    def __init__(self) -> None:
+        super().__init__()
 
 
 def _friendly_round_title(raw_name: str, *, single_league: bool = False) -> str:
@@ -192,6 +222,11 @@ class PlayoffsWindow(QDialog):
             self._run_async = run_async
         self._show_toast = show_toast
         self._register_cleanup = register_cleanup
+        self._notifier = _PlayoffNotifier()
+        try:
+            self._notifier.sim_finished.connect(self._handle_sim_result)
+        except Exception:
+            pass
         self._active_future: Any | None = None
         self._export_future: Any | None = None
         self._open_future: Any | None = None
@@ -253,8 +288,11 @@ class PlayoffsWindow(QDialog):
             self._executor = None
         super().closeEvent(event)
 
-    def refresh(self) -> None:
-        self._bracket = load_bracket()
+    def refresh(self, *, bracket: object | None = None) -> None:
+        if bracket is not None:
+            self._bracket = bracket
+        else:
+            self._bracket = load_bracket()
         # Clear existing
         while getattr(self.cv, 'count', lambda: 0)():
             item = self.cv.takeAt(0)
@@ -445,12 +483,11 @@ class PlayoffsWindow(QDialog):
                 result = fut.result()
             except Exception as exc:
                 result = {"status": "error", "message": str(exc)}
-
-            def finish() -> None:
-                self._active_future = None
+            self._active_future = None
+            try:
+                self._notifier.sim_finished.emit(result)
+            except Exception:
                 self._handle_sim_result(result)
-
-            QTimer.singleShot(0, finish)
 
         if hasattr(future, "add_done_callback"):
             future.add_done_callback(handle_result)
@@ -525,7 +562,10 @@ class PlayoffsWindow(QDialog):
         if message:
             if self._show_toast:
                 self._show_toast("success", message)
-        self.refresh()
+        bracket = result.get("bracket")
+        if bracket is not None:
+            self._bracket = bracket
+        self.refresh(bracket=bracket)
 
     def _set_sim_buttons_enabled(self, enabled: bool) -> None:
         for btn in (self.sim_round_btn, self.sim_all_btn):

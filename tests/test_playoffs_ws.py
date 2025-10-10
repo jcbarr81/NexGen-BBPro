@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from models.team import Team
 from playbalance.playoffs_config import PlayoffsConfig
-from playbalance.playoffs import generate_bracket, simulate_next_round, simulate_playoffs
+from playbalance.playoffs import (
+    PlayoffTeam,
+    PlayoffBracket,
+    Round,
+    Matchup,
+    SeriesConfig,
+    generate_bracket,
+    simulate_next_round,
+    simulate_playoffs,
+)
 
 
 def make_team(team_id: str, division: str) -> Team:
@@ -43,3 +52,26 @@ def test_ws_population_and_champion_resolution():
     assert bracket.champion is not None
     assert bracket.runner_up is not None
 
+
+def test_single_league_placeholder_final_sets_champion():
+    high = PlayoffTeam(team_id="H1", seed=1, league="LEAGUE", wins=55, run_diff=25)
+    low = PlayoffTeam(team_id="L4", seed=4, league="LEAGUE", wins=48, run_diff=5)
+    matchup = Matchup(
+        high=high,
+        low=low,
+        config=SeriesConfig(length=7, pattern=[2, 3, 2]),
+        games=[],
+        winner=high.team_id,
+    )
+    bracket = PlayoffBracket(
+        year=2025,
+        rounds=[
+            Round(name="LEAGUE CS", matchups=[matchup]),
+            Round(name="Final"),  # placeholder round without matchups or plan
+        ],
+    )
+
+    simulate_playoffs(bracket, simulate_game=home_wins, persist_cb=lambda b: None)
+
+    assert bracket.champion == high.team_id
+    assert bracket.runner_up == low.team_id
