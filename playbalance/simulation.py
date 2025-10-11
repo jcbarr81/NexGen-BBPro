@@ -1471,13 +1471,10 @@ class GameSimulation:
                         dp_done = False
                         if can_force:
                             self.dp_attempts += 1
-                            # Now evaluate relay 2B->1B vs batter
-                            # Pick pivot based on which side fielded the ball: SS/3B -> 2B; 2B/1B -> SS
                             pivot_pos = "2B" if primary in {"SS", "3B"} else "SS"
                             two_fs = self._get_fielder(defense, pivot_pos)
                             two_fa = getattr(two_fs.player, "fa", 50) if two_fs else 50
                             two_arm = getattr(two_fs.player, "arm", 50) if two_fs else 50
-                            # Record the force out at second immediately
                             if two_fs is not None:
                                 self._add_fielding_stat(two_fs, "po", position=pivot_pos)
                             offense.bases[0] = None
@@ -1489,20 +1486,19 @@ class GameSimulation:
                             relay_time = self.physics.reaction_delay(pivot_pos, two_fa) + self.physics.throw_time(
                                 two_arm, relay_dist, pivot_pos
                             )
-                            # Base probability with timing margins and hard minimum
+
                             if self.config.get("dpAlwaysTurn", 0):
                                 dp_success = True
                             else:
                                 dp_prob = float(self.config.get("doublePlayProb", 0))
                                 dp_prob = max(dp_prob, float(self.config.get("dpHardMinProb", 0.35)))
-                            # Positive margins increase DP chance
-                            margin2 = runner_time_2b - force_time
-                            margin1 = batter_time_1b - relay_time
-                            # Auto-convert when both legs have strong positive margins
-                            force_auto = margin2 >= float(self.config.get("dpForceAutoSec", 0.25))
-                            relay_auto = margin1 >= float(self.config.get("dpRelayAutoSec", 0.30))
-                            if not self.config.get("dpAlwaysTurn", 0):
-                                if force_auto and relay_auto:
+                                margin2 = runner_time_2b - force_time
+                                margin1 = batter_time_1b - relay_time
+                                force_auto = margin2 >= float(self.config.get("dpForceAutoSec", 0.25))
+                                relay_auto = margin1 >= float(self.config.get("dpRelayAutoSec", 0.30))
+                                if dp_prob <= 0:
+                                    dp_success = bool(margin2 > 0 and margin1 > 0)
+                                elif force_auto and relay_auto:
                                     dp_success = True
                                 else:
                                     if margin2 > 0:
@@ -1520,11 +1516,11 @@ class GameSimulation:
                                             * float(self.config.get("dpRelayBoostPerSec", 0.12)),
                                         )
                                     dp_success = self.rng.random() < dp_prob
+
                             if dp_success:
                                 outs += 1
                                 self._add_stat(batter_state, "gidp")
                                 self.dp_made += 1
-                                # Credit pivot putout and 1B putout/assist
                                 if two_fs is not None:
                                     self._add_fielding_stat(two_fs, "po", position=pivot_pos)
                                 oneb_fs = self._get_fielder(defense, "1B")
@@ -1532,12 +1528,10 @@ class GameSimulation:
                                     self._add_fielding_stat(oneb_fs, "po", position="1B")
                                 if ffs is not None:
                                     self._add_fielding_stat(ffs, "a")
-                                dp_done = True
-                        if not dp_done and can_force:
-                            # Fielder's choice: batter safe at 1B after force at 2B
-                            offense.bases[0] = batter_state
-                            offense.base_pitchers[0] = defense.current_pitcher_state
-                            self._add_stat(batter_state, "fc")
+                            else:
+                                offense.bases[0] = batter_state
+                                offense.base_pitchers[0] = defense.current_pitcher_state
+                                self._add_stat(batter_state, "fc")
                     pitcher_state.toast += self.config.get("pitchScoringOut", 0)
                     pitcher_state.consecutive_hits = 0
                     pitcher_state.consecutive_baserunners = 0
@@ -2561,11 +2555,10 @@ class GameSimulation:
                         dp_prob = max(dp_prob, hard_min)
                     margin = (force_runner_time - force_fielder_time) if (force_runner_time and force_fielder_time) else None
                     time_margin = batter_time - relay_time
-                    # Auto-convert when both legs have strong positive margins
                     force_auto = (margin is not None) and margin >= float(self.config.get("dpForceAutoSec", 0.25))
                     relay_auto = time_margin >= float(self.config.get("dpRelayAutoSec", 0.30))
                     if dp_prob <= 0:
-                        dp_success = False
+                        dp_success = bool(margin and margin > 0 and time_margin > 0)
                     else:
                         dp_success = False
                         if time_margin > 0:
@@ -2588,7 +2581,6 @@ class GameSimulation:
                                     )
                                 dp_success = self.rng.random() < dp_prob
                         else:
-                            # Allow explicit DP probability to drive outcome even with tight timing
                             dp_success = self.rng.random() < dp_prob
                 if dp_success:
                     outs += 1

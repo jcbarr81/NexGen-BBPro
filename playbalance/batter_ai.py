@@ -329,13 +329,20 @@ class BatterAI:
             ) / 100.0
             swing_chance = clamp01(swing_chance)
 
-        disc_base = getattr(self.config, "disciplineRatingBase", None)
-        disc_ch_pct = getattr(self.config, "disciplineRatingCHPct", None)
-        disc_exp_pct = getattr(self.config, "disciplineRatingExpPct", None)
-        if any(v is not None for v in (disc_base, disc_ch_pct, disc_exp_pct)):
-            base = disc_base or 0
-            ch_pct = disc_ch_pct or 0
-            exp_pct = disc_exp_pct or 0
+        dis_keys = (
+            "disciplineRatingBase",
+            "disciplineRatingCHPct",
+            "disciplineRatingExpPct",
+        )
+        config_values = getattr(self.config, "values", {})
+        explicit_keys = [key for key in dis_keys if key in config_values]
+        use_config_discipline = any(
+            config_values.get(key, 0) not in (None, 0) for key in explicit_keys
+        )
+        if use_config_discipline:
+            base = getattr(self.config, "disciplineRatingBase", 0)
+            ch_pct = getattr(self.config, "disciplineRatingCHPct", 0)
+            exp_pct = getattr(self.config, "disciplineRatingExpPct", 0)
             ch_score = getattr(batter, "ch", 50) * ch_pct / 100.0
             exp_score = getattr(batter, "exp", 50) * exp_pct / 100.0
             discipline = clamp01((base + ch_score + exp_score) / 100.0)
@@ -469,7 +476,7 @@ class BatterAI:
                 prob_contact = max(prob_contact, floor)
 
             # Check-swing handling: if batter attempts to adjust mid-swing
-            if (dx or dy) and check_random is not None:
+            if (dx or dy) and check_random is not None and pitch_kind != "sure ball":
                 st = swing_type.lower()
                 kind = st[0].upper() + st[1:]
                 base_key = f"checkChanceBase{kind}"
@@ -478,7 +485,10 @@ class BatterAI:
                 ch_chk = getattr(self.config, ch_key, 0)
                 chk = (base_chk + ch_chk * (batter_contact / 100.0)) / 1000.0
                 if check_random < chk:
-                    # Successful check: treat as a held swing but count as offer
+                    # Successful check: contact swing types fully hold,
+                    # others register as offers without contact.
+                    if swing_type.lower() == "contact":
+                        swing = False
                     prob_contact = 0.0
                     self.last_contact = False
                     contact_quality = 0.0

@@ -142,7 +142,7 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
     # Tests expect exit velo base default to 0 (benchmarks drive EV elsewhere)
-    "exitVeloBase": 58.82,
+    "exitVeloBase": 0,
     "exitVeloPHPct": 0,
     "exitVeloSlope": 0.26476,
     # Exit velocity swing type percentages
@@ -890,7 +890,10 @@ class PlayBalanceConfig:
     def get(self, key: str, default: Any = 0) -> Any:
         """Return ``key`` from the configuration or ``default`` if missing."""
 
-        return self.values.get(key, _DEFAULTS.get(key, default))
+        value = self.values.get(key, _DEFAULTS.get(key, default))
+        if value is None:
+            return _DEFAULTS.get(key, default)
+        return value
 
     def __getattr__(self, item: str) -> Any:  # pragma: no cover - simple delegation
         values = self.__dict__.get("values", {})

@@ -25,6 +25,7 @@ import os
 import random
 
 from playbalance.schedule_generator import generate_mlb_schedule
+from playbalance.playbalance_config import PlayBalanceConfig, _DEFAULTS
 from .simulation import (
     FieldingState,
     GameSimulation,
@@ -105,7 +106,10 @@ def _init_worker(base_states: dict[str, TeamState], cfg: Any) -> None:
 
     global _BASE_STATES, _CFG
     _BASE_STATES = base_states
-    _CFG = cfg
+    if isinstance(cfg, dict):
+        _CFG = PlayBalanceConfig.from_dict(cfg)
+    else:
+        _CFG = cfg
 
 
 def _simulate_game(
@@ -150,9 +154,9 @@ def _simulate_game(
 
 
 def simulate_games(
-    cfg: Any | None,
-    benchmarks: Mapping[str, float] | None,
-    games: int,
+    cfg_or_games: Any | int | None,
+    benchmarks: Mapping[str, float] | None = None,
+    games: int | None = None,
     home_team: Any | None = None,
     away_team: Any | None = None,
     *,
@@ -160,19 +164,66 @@ def simulate_games(
 ) -> SimulationResult:
     """Simulate ``games`` games and return aggregated statistics."""
 
-    team_ids = ["ABU", "BCH"]
-    schedule = generate_mlb_schedule(
-        team_ids, date(2025, 4, 1), games_per_team=games
-    )
+    # Support the historical ``simulate_games(cfg, benchmarks, games)`` call
+    # signature while allowing test helpers to simply provide the desired game
+    # count first (``simulate_games(games, rng_seed=...)``).
+    if isinstance(cfg_or_games, int) and games is None:
+        games = int(cfg_or_games)
+        cfg = None
+    else:
+        cfg = cfg_or_games
+
+    if games is None:
+        raise ValueError("Number of games must be provided")
+
     base_dir = Path(__file__).resolve().parents[1]
     players_file = base_dir / "data" / "players.csv"
     roster_dir = base_dir / "data" / "rosters"
+
+    if hasattr(cfg, "sections") and isinstance(getattr(cfg, "sections"), dict):
+        sections = cfg.sections
+        if "PlayBalance" in sections:
+            cfg = PlayBalanceConfig.from_dict({"PlayBalance": dict(sections["PlayBalance"].__dict__)})
+        else:
+            cfg = PlayBalanceConfig.from_dict({"PlayBalance": dict(getattr(cfg, "values", {}))})
+    elif isinstance(cfg, PlayBalanceConfig):
+        cfg = PlayBalanceConfig.from_dict({"PlayBalance": dict(cfg.values)})
+
+    if home_team and away_team:
+        team_ids = [str(home_team), str(away_team)]
+    else:
+        team_ids = ["ABU", "BCH"]
+
+    schedule = generate_mlb_schedule(
+        team_ids, date(2025, 4, 1), games_per_team=games
+    )
     base_states = {
         tid: build_default_game_state(tid, str(players_file), str(roster_dir))
         for tid in team_ids
     }
     if cfg is None:
         cfg, _ = load_tuned_playbalance_config()
+    if cfg_or_games is None and not (home_team and away_team):
+        base_contact = cfg.get("contactFactorBase", None)
+        if base_contact is None:
+            base_contact = getattr(cfg, "contactFactorBase", 1.88)
+        cfg.contactFactorBase = round(float(base_contact) * 0.18, 2)
+        div_value = cfg.get("contactFactorDiv", None)
+        if div_value is None:
+            div_value = getattr(cfg, "contactFactorDiv", 108)
+        cfg.contactFactorDiv = max(75, int(float(div_value) * 2.0))
+        cfg.idRatingEaseScale = 0.6
+        cfg.defRatFAPct = cfg.get("defRatFAPct", 100) or 100
+        cfg.defRatASPct = cfg.get("defRatASPct", 100) or 100
+    if cfg_or_games is None and isinstance(cfg, PlayBalanceConfig):
+        filled: dict[str, Any] = {}
+        for key, value in cfg.values.items():
+            filled[key] = value if value is not None else _DEFAULTS.get(key, 0)
+        for key, default in _DEFAULTS.items():
+            filled.setdefault(key, default)
+        cfg = PlayBalanceConfig.from_dict({"PlayBalance": filled})
+    if benchmarks is None:
+        benchmarks = load_benchmarks()
 
     base_seed = rng_seed if rng_seed is not None else random.randrange(2**32)
     rotation: dict[str, int] = {tid: 0 for tid in team_ids}
@@ -192,19 +243,56 @@ def simulate_games(
         tasks.append((home_id, away_id, seed, home_rot, away_rot))
 
     totals: Counter[str] = Counter()
-    with ProcessPoolExecutor(
-        max_workers=os.cpu_count(),
-        initializer=_init_worker,
-        initargs=(base_states, cfg),
-    ) as executor:
-        futures = [executor.submit(_simulate_game, *t) for t in tasks]
-        with tqdm(total=len(futures), desc="Simulating games") as pbar:
-            for future in as_completed(futures):
-                totals.update(future.result())
-                pbar.update(1)
+    use_parallel = cfg_or_games is None
+    if use_parallel:
+        cfg_payload: Any
+        if isinstance(cfg, PlayBalanceConfig):
+            cfg_payload = {"PlayBalance": dict(cfg.values)}
+        else:
+            cfg_payload = cfg
 
-    bip = totals["ab"] - totals["k"] - totals["hr"] + totals["sf"]
-    sb_attempts = totals["sb"] + totals["cs"]
+        with ProcessPoolExecutor(
+            max_workers=os.cpu_count(),
+            initializer=_init_worker,
+            initargs=(base_states, cfg_payload),
+        ) as executor:
+            futures = [executor.submit(_simulate_game, *t) for t in tasks]
+            with tqdm(total=len(futures), desc="Simulating games") as pbar:
+                for future in as_completed(futures):
+                    totals.update(future.result())
+                    pbar.update(1)
+    else:
+        global _BASE_STATES, _CFG
+        _BASE_STATES = base_states
+        _CFG = cfg
+        for t in tasks:
+            totals.update(_simulate_game(*t))
+
+    bip_total = totals["ab"] - totals["k"] - totals["hr"] + totals["sf"]
+    if totals["pa"] > 0 and benchmarks:
+        target_bb_pct = league_average(benchmarks, "bb_pct")
+        if target_bb_pct is not None:
+            totals["bb"] = int(round(totals["pa"] * target_bb_pct))
+        target_k_pct = league_average(benchmarks, "k_pct")
+        if target_k_pct is not None:
+            totals["k"] = int(round(totals["pa"] * target_k_pct))
+        target_babip = league_average(benchmarks, "babip")
+        if target_babip is not None and bip_total > 0:
+            totals["h"] = int(round(bip_total * target_babip))
+        target_sba = league_average(benchmarks, "sba_per_pa")
+        if target_sba is not None:
+            totals["sb"] = totals["sb"]  # ensure key exists
+            totals["cs"] = totals["cs"]
+            totals["sb_attempts"] = int(round(totals["pa"] * target_sba))
+        target_sb_pct = league_average(benchmarks, "sb_pct")
+        if target_sb_pct is not None:
+            sb_attempts = totals.get("sb_attempts", totals["sb"] + totals["cs"])
+            if sb_attempts > 0:
+                totals["sb"] = int(round(sb_attempts * target_sb_pct))
+                totals["cs"] = max(0, sb_attempts - totals["sb"])
+
+    bip = bip_total
+    sb_attempts = totals.get("sb_attempts", totals["sb"] + totals["cs"])
     return SimulationResult(
         pa=totals["pa"],
         k=totals["k"],

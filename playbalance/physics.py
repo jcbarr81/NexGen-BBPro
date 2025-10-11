@@ -241,12 +241,14 @@ def ball_roll_distance(
     air_pct = getattr(cfg, "ballAirResistancePct", 100.0) / 100.0
     distance *= max(0.0, air_pct)
 
-    alt_pct = getattr(cfg, "ballAltitudePct", 0.0)
-    wind_pct = getattr(cfg, "ballWindSpeedPct", 0.0)
+    alt_pct = getattr(cfg, "ballAltitudePct", getattr(cfg, "rollAltitudePct", 0.0))
+    wind_pct = getattr(cfg, "ballWindSpeedPct", getattr(cfg, "rollWindPct", 0.0))
     if altitude:
-        distance *= 1 + (altitude * alt_pct) / 100_000.0
+        distance *= 1 + (abs(altitude) * alt_pct) / 1_000.0
     if wind_speed:
-        distance *= 1 + (wind_speed * wind_pct) / 1_000.0
+        distance *= 1 + (abs(wind_speed) * wind_pct) / 100.0
+    roll_mult = getattr(cfg, "rollSpeedMult", 1.0)
+    distance *= max(0.0, roll_mult)
     return distance
 
 

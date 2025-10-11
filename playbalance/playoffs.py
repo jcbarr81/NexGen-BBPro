@@ -468,18 +468,31 @@ def _seed_league(league_name: str, league_teams: List[Any], standings: Dict[str,
 
     minimum_winner_slots = min(len(winners), total_candidates)
 
-    if division_count > 0:
-        base_slots = min(division_count, total_candidates)
+    preferred_slots = None
+    if hasattr(cfg, "slots_for_league") and callable(getattr(cfg, "slots_for_league")):
+        try:
+            preferred_slots = int(cfg.slots_for_league(len(league_teams)))
+        except Exception:
+            preferred_slots = None
+
+    if preferred_slots is None or preferred_slots <= 0:
+        if division_count > 0:
+            base_slots = min(division_count, total_candidates)
+        else:
+            base_slots = minimum_winner_slots
+        base_slots = max(base_slots, minimum_winner_slots)
+        wildcard_slots = 1 if wildcards else 0
+        desired_slots = min(
+            base_slots + min(wildcard_slots, max(total_candidates - base_slots, 0)),
+            total_candidates,
+        )
+        configured_slots = int(
+            getattr(cfg, "num_playoff_teams_per_league", desired_slots) or desired_slots
+        )
+        slots_upper_bound = min(configured_slots, total_candidates) if configured_slots > 0 else total_candidates
+        slots = min(desired_slots, slots_upper_bound)
     else:
-        base_slots = minimum_winner_slots
-    base_slots = max(base_slots, minimum_winner_slots)
-
-    wildcard_slots = 1 if wildcards else 0
-    desired_slots = min(base_slots + min(wildcard_slots, max(total_candidates - base_slots, 0)), total_candidates)
-
-    configured_slots = int(getattr(cfg, "num_playoff_teams_per_league", desired_slots) or desired_slots)
-    slots_upper_bound = min(configured_slots, total_candidates) if configured_slots > 0 else total_candidates
-    slots = min(desired_slots, slots_upper_bound)
+        slots = min(preferred_slots, total_candidates)
 
     slots = max(slots, minimum_winner_slots)
     if slots < 2 and total_candidates >= 2:

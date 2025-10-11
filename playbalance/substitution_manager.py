@@ -67,11 +67,17 @@ class SubstitutionManager:
     def _defense_rating(self, player: Player) -> float:
         """Compute the combined Defense rating for ``player``."""
 
-        fa_mult = self.config.get("defRatFAPct", 100) / 100.0
-        arm_mult = self.config.get("defRatASPct", 100) / 100.0
+        fa_mult = self._cfg_value("defRatFAPct", 100) / 100.0
+        arm_mult = self._cfg_value("defRatASPct", 100) / 100.0
         fa = player.fa * fa_mult
         arm = player.arm * arm_mult
         return ((2 * fa * arm) + (fa * fa)) / (arm + 2 * fa + 1)
+
+    def _cfg_value(self, key: str, default: float = 0.0) -> float:
+        value = self.config.get(key, default)
+        if value is None:
+            return default
+        return value
 
     # ------------------------------------------------------------------
     # Pinch hitting
@@ -624,15 +630,15 @@ class SubstitutionManager:
         cfg = self.config
 
         # Base chance and inning adjustments
-        chance = cfg.get("defSubBase", 0)
+        chance = self._cfg_value("defSubBase", 0)
         if inning <= 6:
-            chance += cfg.get("defSubBeforeInn7Adjust", 0)
+            chance += self._cfg_value("defSubBeforeInn7Adjust", 0)
         elif inning == 7:
-            chance += cfg.get("defSubInn7Adjust", 0)
+            chance += self._cfg_value("defSubInn7Adjust", 0)
         elif inning == 8:
-            chance += cfg.get("defSubInn8Adjust", 0)
+            chance += self._cfg_value("defSubInn8Adjust", 0)
         else:
-            chance += cfg.get("defSubAfterInn8Adjust", 0)
+            chance += self._cfg_value("defSubAfterInn8Adjust", 0)
 
         # Position qualification adjustments
         target_pos = worst.primary_position
@@ -640,37 +646,37 @@ class SubstitutionManager:
             if target_pos in getattr(best, "other_positions", []):
                 chance += cfg.get("defSubNoPrimaryPosAdjust", 0)
             else:
-                chance += cfg.get("defSubNoQualifiedPosAdjust", 0)
+                chance += self._cfg_value("defSubNoQualifiedPosAdjust", 0)
 
         # Injury adjustment on current player
         if getattr(worst, "injured", False):
-            chance += cfg.get("defSubPerInjuryPointAdjust", 0)
+            chance += self._cfg_value("defSubPerInjuryPointAdjust", 0)
 
         # Current defender rating adjustments
         curr_def = self._defense_rating(worst)
-        if curr_def >= cfg.get("defSubVeryHighCurrDefThresh", 0):
-            chance += cfg.get("defSubVeryHighCurrDefAdjust", 0)
-        elif curr_def >= cfg.get("defSubHighCurrDefThresh", 0):
-            chance += cfg.get("defSubHighCurrDefAdjust", 0)
-        elif curr_def >= cfg.get("defSubMedCurrDefThresh", 0):
-            chance += cfg.get("defSubMedCurrDefAdjust", 0)
-        elif curr_def >= cfg.get("defSubLowCurrDefThresh", 0):
-            chance += cfg.get("defSubLowCurrDefAdjust", 0)
+        if curr_def >= self._cfg_value("defSubVeryHighCurrDefThresh", 0):
+            chance += self._cfg_value("defSubVeryHighCurrDefAdjust", 0)
+        elif curr_def >= self._cfg_value("defSubHighCurrDefThresh", 0):
+            chance += self._cfg_value("defSubHighCurrDefAdjust", 0)
+        elif curr_def >= self._cfg_value("defSubMedCurrDefThresh", 0):
+            chance += self._cfg_value("defSubMedCurrDefAdjust", 0)
+        elif curr_def >= self._cfg_value("defSubLowCurrDefThresh", 0):
+            chance += self._cfg_value("defSubLowCurrDefAdjust", 0)
         else:
-            chance += cfg.get("defSubVeryLowCurrDefAdjust", 0)
+            chance += self._cfg_value("defSubVeryLowCurrDefAdjust", 0)
 
         # Potential new defender rating adjustments
         new_def = self._defense_rating(best)
-        if new_def >= cfg.get("defSubVeryHighNewDefThresh", 0):
-            chance += cfg.get("defSubVeryHighNewDefAdjust", 0)
-        elif new_def >= cfg.get("defSubHighNewDefThresh", 0):
-            chance += cfg.get("defSubHighNewDefAdjust", 0)
-        elif new_def >= cfg.get("defSubMedNewDefThresh", 0):
-            chance += cfg.get("defSubMedNewDefAdjust", 0)
-        elif new_def >= cfg.get("defSubLowNewDefThresh", 0):
-            chance += cfg.get("defSubLowNewDefAdjust", 0)
+        if new_def >= self._cfg_value("defSubVeryHighNewDefThresh", 0):
+            chance += self._cfg_value("defSubVeryHighNewDefAdjust", 0)
+        elif new_def >= self._cfg_value("defSubHighNewDefThresh", 0):
+            chance += self._cfg_value("defSubHighNewDefAdjust", 0)
+        elif new_def >= self._cfg_value("defSubMedNewDefThresh", 0):
+            chance += self._cfg_value("defSubMedNewDefAdjust", 0)
+        elif new_def >= self._cfg_value("defSubLowNewDefThresh", 0):
+            chance += self._cfg_value("defSubLowNewDefAdjust", 0)
         else:
-            chance += cfg.get("defSubVeryLowNewDefAdjust", 0)
+            chance += self._cfg_value("defSubVeryLowNewDefAdjust", 0)
 
         chance = max(0.0, min(100.0, chance))
         if self.rng.random() >= chance / 100.0:

@@ -1,0 +1,46 @@
+# Failing Tests
+
+Tracked from the latest run of `.venv/bin/pytest`.
+
+- [x] tests/test_lineup_loader.py::test_build_default_game_state_creates_expected_lineup
+- [x] tests/test_offensive_manager.py::test_hit_and_run_chance_and_advance
+- [x] tests/test_orchestrator_stats.py::test_simulation_results_reasonable
+- [x] tests/test_physics.py::test_runner_advancement_respects_speed
+- [x] tests/test_pitcher_ai.py::test_pitch_objective_weights
+- [x] tests/test_pitcher_ai.py::test_ahead_count_prefers_outside
+- [x] tests/test_playbalance_config.py::test_playbalance_config_defaults
+- [x] tests/test_playbalance_foundation.py::test_load_config_sections
+- [x] tests/test_playbalance_orchestrator.py::test_season_stats_align_with_benchmarks
+- [x] tests/test_playbalance_orchestrator.py::test_simulation_runs_outside_repo
+- [x] tests/test_playbalance_physics.py::test_ball_roll_distance_accounts_for_environment
+- [x] tests/test_player_profile_dialog.py::test_player_profile_dialog_uses_history
+- [x] tests/test_player_profile_dialog.py::test_player_profile_dialog_handles_missing_positions
+- [x] tests/test_playoffs_rounds.py::test_generate_bracket_creates_plans_for_wildcard_structure
+- [x] tests/test_runner_advancement.py::test_double_play_records_gidp
+- [ ] tests/test_season_progress_window.py::test_simulate_day_until_midseason
+- [ ] tests/test_season_progress_window.py::test_simulation_status_tracks_progress
+- [ ] tests/test_season_progress_window.py::test_simulate_week_until_midseason
+- [ ] tests/test_season_progress_window.py::test_simulate_month_until_midseason
+- [ ] tests/test_season_progress_window.py::test_simulate_to_next_phase
+- [ ] tests/test_season_progress_window.py::test_playoffs_require_simulation
+- [ ] tests/test_season_simulator.py::test_default_simulation_runs_without_callback
+- [ ] tests/test_season_simulator.py::test_default_simulation_saves_team_stats
+- [ ] tests/test_simulation.py::test_pinch_hitter_not_used
+- [ ] tests/test_simulation.py::test_hit_and_run_count_adjust
+- [ ] tests/test_simulation.py::test_pitch_out_count_adjust
+- [ ] tests/test_simulation.py::test_starter_replaced_when_toast
+- [ ] tests/test_simulation.py::test_run_tracking_and_boxscore
+- [ ] tests/test_simulation.py::test_walk_records_stats
+- [ ] tests/test_simulation.py::test_swing_and_miss_records_strikeout
+- [ ] tests/test_simulation.py::test_passed_ball_advances_runner
+- [ ] tests/test_simulation.py::test_pitch_control_affects_location
+- [ ] tests/test_simulation.py::test_fielding_stats_tracking
+- [ ] tests/test_simulation_averages.py::test_simulated_averages_close_to_mlb
+- [ ] tests/test_simulation_foul_balls.py::test_fouls_increase_pitches_reduce_strikeouts
+- [ ] tests/test_simulation_foul_balls.py::test_foul_pitch_distribution
+- [ ] tests/test_simulation_strikeouts.py::test_strikeouts_within_mlb_range
+- [ ] tests/test_stadium_dimensions.py::test_custom_stadium_affects_hit_value
+- [ ] tests/test_standings_window.py::test_standings_window_displays_league_and_teams
+- [ ] tests/test_stats_windows.py::test_team_stats_window_instantiates
+- [ ] tests/test_stats_windows.py::test_league_stats_window_instantiates
+- [ ] tests/test_stats_windows.py::test_league_leaders_window_instantiates
