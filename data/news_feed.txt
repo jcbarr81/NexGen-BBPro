@@ -397,3 +397,29 @@
 [2025-10-10 22:53:16] Generated regular season schedule with 162 games
 [2025-10-10 22:53:17] Generated regular season schedule with 162 games
 [2025-10-10 22:53:17] No unsigned players available
+[2025-10-10 23:12:04] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-10 23:12:04] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-10 23:12:04] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-10 23:12:04] [progress] Simulated week; 3 days until Midseason
+[2025-10-10 23:12:04] [progress] Simulated week; 3 days until Draft
+[2025-10-10 23:12:05] [progress] Simulated month; 10 days until Draft
+[2025-10-10 23:12:05] [progress] Simulated midseason; 5 days until Draft
+[2025-10-10 23:12:05] Season advanced to Preseason
+[2025-10-10 23:12:05] No unsigned players available
+[2025-10-10 23:12:05] Training camp completed; players marked ready
+[2025-10-10 23:12:05] Generated regular season schedule with 162 games
+[2025-10-10 23:12:05] Generated regular season schedule with 162 games
+[2025-10-10 23:12:05] No unsigned players available
+[2025-10-10 23:12:23] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-10 23:12:23] [progress] Simulated a regular season day; 3 days until Season End
+[2025-10-10 23:12:23] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-10 23:12:23] [progress] Simulated week; 3 days until Midseason
+[2025-10-10 23:12:23] [progress] Simulated week; 3 days until Draft
+[2025-10-10 23:12:24] [progress] Simulated month; 10 days until Draft
+[2025-10-10 23:12:24] [progress] Simulated midseason; 5 days until Draft
+[2025-10-10 23:12:24] Season advanced to Preseason
+[2025-10-10 23:12:24] No unsigned players available
+[2025-10-10 23:12:24] Training camp completed; players marked ready
+[2025-10-10 23:12:24] Generated regular season schedule with 162 games
+[2025-10-10 23:12:24] Generated regular season schedule with 162 games
+[2025-10-10 23:12:24] No unsigned players available
