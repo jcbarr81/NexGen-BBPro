@@ -3,19 +3,23 @@ from __future__ import annotations
 import json
 from enum import Enum
 from pathlib import Path
+import logging
+import os
 import shutil
 from datetime import date
 
 from utils.path_utils import get_base_dir
+from services.league_rollover import LeagueRolloverService, RolloverResult
 
 
 # Trades are prohibited after this date.
 TRADE_DEADLINE = date(date.today().year, 7, 31)
 
+logger = logging.getLogger(__name__)
+
 
 class SeasonPhase(Enum):
     """Enumeration of the different phases of a season."""
-
     PRESEASON = "PRESEASON"
     REGULAR_SEASON = "REGULAR_SEASON"
     AMATEUR_DRAFT = "AMATEUR_DRAFT"
@@ -32,10 +36,12 @@ class SeasonPhase(Enum):
 class SeasonManager:
     """Manage the current season phase and persist it to disk."""
 
-    def __init__(self, path: str | Path | None = None) -> None:
+    def __init__(self, path: str | Path | None = None, *, enable_rollover: bool = True) -> None:
         base_dir = get_base_dir()
         self.path = Path(path) if path is not None else base_dir / "data" / "season_state.json"
         self.phase = SeasonPhase.PRESEASON
+        self.rollover_result: RolloverResult | None = None
+        self.enable_rollover = enable_rollover
         self.load()
 
     # ------------------------------------------------------------------
@@ -67,8 +73,28 @@ class SeasonManager:
     # ------------------------------------------------------------------
     def advance_phase(self) -> SeasonPhase:
         """Advance to the next season phase and persist it."""
+        previous = self.phase
         self.phase = self.phase.next()
         self.save()
+        if (
+            self.enable_rollover
+            and os.getenv("PB_DISABLE_ROLLOVER", "").lower() not in {"1", "true", "yes"}
+            and previous == SeasonPhase.PLAYOFFS
+            and self.phase == SeasonPhase.OFFSEASON
+        ):
+            try:
+                service = LeagueRolloverService()
+                result = service.archive_season()
+                self.rollover_result = result
+                logger.info("Season rollover complete for %s (%s)", result.season_id, result.status)
+            except Exception as exc:  # pragma: no cover - defensive, integration path
+                logger.exception("Season rollover failed: %s", exc)
+                self.rollover_result = RolloverResult(
+                    status="error",
+                    season_id="unknown",
+                    artifacts={},
+                    reason=str(exc),
+                )
         return self.phase
 
     # ------------------------------------------------------------------

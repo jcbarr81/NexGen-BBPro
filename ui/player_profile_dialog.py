@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from pathlib import Path
+import sys
 import csv
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Tuple
@@ -264,6 +265,11 @@ class PlayerProfileDialog(QDialog):
                 self.player.season_stats = cur
         except Exception:
             pass
+        try:
+            self._stats_snapshot = load_stats()
+        except Exception:
+            self._stats_snapshot = {}
+        self._history_override = list(self._stats_snapshot.get("history", []) or [])
         self.setWindowTitle(f"{player.first_name} {player.last_name}")
 
         self._is_pitcher = getattr(player, "is_pitcher", False)
@@ -283,8 +289,9 @@ class PlayerProfileDialog(QDialog):
 
         if HEADLESS_QT:
             stats_history = self._collect_stats_history()
-            columns = _PITCHING_STATS if self._is_pitcher else _BATTING_STATS
-            self._create_stats_table(stats_history, columns)
+            if stats_history:
+                columns = _PITCHING_STATS if self._is_pitcher else _BATTING_STATS
+                self._create_stats_table(stats_history, columns)
             return
 
         header = self._build_header_section()
@@ -1604,12 +1611,42 @@ class ComparisonSelectorDialog(QDialog):
                 pass
             rows.append((f"{current_year:04d}", season))
 
+        history_map = getattr(self.player, "career_history", {}) or {}
+        if isinstance(history_map, dict):
+            history_rows: list[tuple[Tuple[int, str], str, Dict[str, Any]]] = []
+            for season_id, raw_stats in history_map.items():
+                data = self._stats_to_dict(raw_stats, is_pitcher)
+                if not data:
+                    continue
+                label = self._format_season_label(str(season_id))
+                history_rows.append((self._season_sort_key(season_id), label, data))
+            if history_rows:
+                history_rows.sort(key=lambda item: item[0], reverse=True)
+                rows.extend((label, data) for _, label, data in history_rows)
+
         career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)
         if career:
             rows.append(("Career", career))
         if rows:
             return rows
-        # Fallback: recent snapshots
+        # Fallback: recent snapshots either from preloaded history or canonical store.
+        history_entries = list(self._history_override)[-5:] if self._history_override else []
+        print("DEBUG history entries override", history_entries)
+        rating_fields = getattr(type(self.player), "_rating_fields", set())
+        if history_entries:
+            for idx, entry in enumerate(history_entries, start=1):
+                print("DEBUG entry", entry)
+                player_data = entry.get("players", {}).get(self.player.player_id)
+                if not player_data:
+                    print("DEBUG missing player data", self.player.player_id)
+                    continue
+                snapshot = player_data.get("stats", player_data)
+                data = self._stats_to_dict(snapshot, is_pitcher)
+                if data:
+                    label = entry.get("year")
+                    rows.append((str(label) if label is not None else f"Year {idx}", data))
+            if rows:
+                return rows
         for label, _ratings, stats in self._load_history():
             is_pitcher = getattr(self.player, "is_pitcher", False)
             data = self._stats_to_dict(stats, is_pitcher)
@@ -1618,7 +1655,8 @@ class ComparisonSelectorDialog(QDialog):
         return rows
 
     def _load_history(self) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
-        data = load_stats()
+        loader = getattr(sys.modules[__name__], "load_stats")
+        data = loader()
         history: List[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
         rating_fields = getattr(type(self.player), "_rating_fields", set())
         entries = data.get("history", [])[-5:]
@@ -1700,6 +1738,32 @@ class ComparisonSelectorDialog(QDialog):
             return datetime.now().year
         except Exception:
             return datetime.now().year
+
+    @staticmethod
+    def _season_year_from_id(season_id: str) -> int:
+        try:
+            token = str(season_id).rsplit("-", 1)[-1]
+            return int(token)
+        except Exception:
+            return -1
+
+    def _season_sort_key(self, season_id: str) -> tuple[int, str]:
+        return (self._season_year_from_id(season_id), str(season_id))
+
+    def _format_season_label(self, season_id: str) -> str:
+        parts = str(season_id).rsplit("-", 1)
+        if len(parts) == 2:
+            league_token, year_token = parts
+            try:
+                year_int = int(year_token)
+                label = f"{year_int:04d}"
+            except ValueError:
+                return str(season_id)
+            league_token = league_token.strip().upper()
+            if league_token and league_token not in {"LEAGUE"}:
+                return f"{label} ({league_token})"
+            return label
+        return str(season_id)
 
     def _stats_to_dict(self, stats: Any, is_pitcher: bool) -> Dict[str, Any]:
         if isinstance(stats, dict):
@@ -1895,15 +1959,6 @@ if not hasattr(PlayerProfileDialog, '_load_avatar_pixmap'):
 
     PlayerProfileDialog._load_avatar_pixmap = _fallback_load_avatar_pixmap  # type: ignore[attr-defined]
 
-if not hasattr(PlayerProfileDialog, '_collect_stats_history'):
-    def _fallback_collect_stats_history(self):  # pragma: no cover - stub
-        season = getattr(self.player, "season_stats", None)
-        if season:
-            return [season]
-        return []
-
-    PlayerProfileDialog._collect_stats_history = _fallback_collect_stats_history  # type: ignore[attr-defined]
-
 if not hasattr(PlayerProfileDialog, '_stats_to_dict'):
     def _fallback_stats_to_dict(self, stats: Any, is_pitcher: bool) -> Dict[str, Any]:  # pragma: no cover - stub
         if isinstance(stats, dict):
@@ -1989,3 +2044,31 @@ if not hasattr(PlayerProfileDialog, '_attach_player_stats'):
         return getattr(player, "season_stats", {})
 
     PlayerProfileDialog._attach_player_stats = _fallback_attach_player_stats  # type: ignore[attr-defined]
+
+
+if not hasattr(PlayerProfileDialog, '_collect_stats_history'):
+    def _fallback_collect_stats_history(self):  # pragma: no cover - stub
+        rows: List[Tuple[str, Dict[str, Any]]] = []
+        is_pitcher = getattr(self.player, "is_pitcher", False)
+        season = self._stats_to_dict(getattr(self.player, "season_stats", {}), is_pitcher)
+        if season:
+            try:
+                year_label = f"{self._current_season_year():04d}"
+            except Exception:
+                year_label = "Season"
+            rows.append((year_label, season))
+        history_entries = getattr(self, "_history_override", []) or []
+        for idx, entry in enumerate(history_entries, start=1):
+            player_data = entry.get("players", {}).get(self.player.player_id) or {}
+            snapshot = player_data.get("stats", player_data)
+            data = self._stats_to_dict(snapshot, is_pitcher)
+            if data:
+                year = entry.get("year")
+                label = str(year) if year is not None else f"Year {idx}"
+                rows.append((label, data))
+        career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)
+        if career:
+            rows.append(("Career", career))
+        return rows
+
+    PlayerProfileDialog._collect_stats_history = _fallback_collect_stats_history  # type: ignore[attr-defined]

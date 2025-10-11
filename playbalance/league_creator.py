@@ -3,6 +3,7 @@ import csv
 import json
 import random
 import shutil
+from datetime import date
 from pathlib import Path
 from typing import Dict, List, Tuple, Iterable, Set
 
@@ -13,6 +14,7 @@ from playbalance.player_generator import generate_player, reset_name_cache
 from utils.user_manager import clear_users
 from utils.player_loader import load_players_from_csv
 from utils.lineup_loader import build_default_game_state
+from playbalance.season_context import SeasonContext
 
 
 def _abbr(city: str, name: str, existing: set) -> str:
@@ -337,3 +339,9 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
         writer.writerows(team_rows)
     with open(league_path, "w", newline="") as f:
         f.write(league_name)
+
+    # Initialize season context for the new league.
+    ctx = SeasonContext.load()
+    ctx.ensure_league(name=league_name)
+    ctx.ensure_current_season(league_year=date.today().year)
+    ctx.save()

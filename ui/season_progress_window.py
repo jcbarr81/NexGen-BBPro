@@ -684,6 +684,32 @@ class SeasonProgressWindow(QDialog):
             except RuntimeError:
                 pass
 
+    def _consume_rollover_note(self) -> str | None:
+        """Return and clear any pending rollover summary message."""
+        result = getattr(self.manager, "rollover_result", None)
+        if not result:
+            return None
+        status = getattr(result, "status", "")
+        message: str | None = None
+        if status == "archived":
+            season_id = getattr(result, "season_id", "season")
+            message = f"Season {season_id} archived; next season prepared."
+            if self._show_toast:
+                self._show_toast("success", message)
+        elif status == "error":
+            reason = getattr(result, "reason", "unknown error")
+            message = f"Season rollover failed: {reason}"
+            if self._show_toast:
+                self._show_toast("error", message)
+        elif status == "skipped":
+            note = getattr(result, "reason", None)
+            if note:
+                message = note
+                if self._show_toast:
+                    self._show_toast("info", message)
+        self.manager.rollover_result = None
+        return message
+
     @staticmethod
     def _format_simulation_progress(label: str, done: int, total: int) -> str:
         """Return a human-friendly progress string for ``done`` of ``total`` days."""
@@ -964,6 +990,7 @@ class SeasonProgressWindow(QDialog):
                         pass
                 note = None
         else:
+            previous_phase = self.manager.phase
             self.manager.advance_phase()
             if self.manager.phase == SeasonPhase.PLAYOFFS:
                 self._playoffs_done = False
@@ -971,7 +998,10 @@ class SeasonProgressWindow(QDialog):
                     self._ensure_playoff_bracket()
                 except Exception:
                     pass
-            note = None
+            if previous_phase == SeasonPhase.PLAYOFFS:
+                note = self._consume_rollover_note()
+            else:
+                note = None
         log_news_event(
             f"Season advanced to {self.manager.phase.name.replace('_', ' ').title()}"
         )
@@ -1032,6 +1062,20 @@ class SeasonProgressWindow(QDialog):
         start = date(date.today().year, 4, 1)
         schedule = generate_mlb_schedule(teams, start)
         save_schedule(schedule, SCHEDULE_FILE)
+        try:
+            from playbalance.season_context import SeasonContext as _SeasonContext
+
+            if schedule:
+                first_date = str(schedule[0].get("date") or "").strip()
+                if first_date:
+                    try:
+                        year = int(first_date.split("-")[0])
+                    except Exception:
+                        year = None
+                    ctx = _SeasonContext.load()
+                    ctx.ensure_current_season(league_year=year, started_on=first_date)
+        except Exception:
+            pass
         if self._simulate_game is not None:
             self.simulator = SeasonSimulator(
                 schedule, self._simulate_game, after_game=self._record_game

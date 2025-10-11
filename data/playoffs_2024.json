@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "year": 2024,
+  "champion": "MEM",
+  "runner_up": "DEN",
+  "seeds": {
+    "LEAGUE": [
+      {
+        "team_id": "OKL",
+        "seed": 1,
+        "league": "LEAGUE",
+        "wins": 92,
+        "run_diff": 25
+      },
+      {
+        "team_id": "PHO",
+        "seed": 2,
+        "league": "LEAGUE",
+        "wins": 92,
+        "run_diff": 15
+      },
+      {
+        "team_id": "DEN",
+        "seed": 3,
+        "league": "LEAGUE",
+        "wins": 79,
+        "run_diff": 13
+      },
+      {
+        "team_id": "MEM",
+        "seed": 4,
+        "league": "LEAGUE",
+        "wins": 91,
+        "run_diff": 46
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "name": "LEAGUE DS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "OKL",
+            "seed": 1,
+            "league": "LEAGUE",
+            "wins": 92,
+            "run_diff": 25
+          },
+          "low": {
+            "team_id": "MEM",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 91,
+            "run_diff": 46
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "OKL",
+              "away": "MEM",
+              "date": null,
+              "result": "0-1",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S0_G0_MEM_at_OKL.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "OKL",
+              "away": "MEM",
+              "date": null,
+              "result": "0-1",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S0_G1_MEM_at_OKL.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "MEM",
+              "away": "OKL",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S0_G2_OKL_at_MEM.html",
+              "meta": {
+                "home_innings": 11,
+                "away_innings": 11,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            }
+          ],
+          "winner": "MEM"
+        },
+        {
+          "high": {
+            "team_id": "PHO",
+            "seed": 2,
+            "league": "LEAGUE",
+            "wins": 92,
+            "run_diff": 15
+          },
+          "low": {
+            "team_id": "DEN",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 79,
+            "run_diff": 13
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "PHO",
+              "away": "DEN",
+              "date": null,
+              "result": "2-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S1_G0_DEN_at_PHO.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "PHO",
+              "away": "DEN",
+              "date": null,
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S1_G1_DEN_at_PHO.html",
+              "meta": {
+                "home_innings": 13,
+                "away_innings": 13,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "DEN",
+              "away": "PHO",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S1_G2_PHO_at_DEN.html",
+              "meta": {
+                "home_innings": 12,
+                "away_innings": 12,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "DEN",
+              "away": "PHO",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE DS_S1_G3_PHO_at_DEN.html",
+              "meta": {
+                "home_innings": 18,
+                "away_innings": 18,
+                "extra_innings": true,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            }
+          ],
+          "winner": "DEN"
+        }
+      ],
+      "plan": []
+    },
+    {
+      "name": "LEAGUE CS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "DEN",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 79,
+            "run_diff": 13
+          },
+          "low": {
+            "team_id": "MEM",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 91,
+            "run_diff": 46
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
+            {
+              "home": "DEN",
+              "away": "MEM",
+              "date": null,
+              "result": "0-2",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE CS_S0_G0_MEM_at_DEN.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "DEN",
+              "away": "MEM",
+              "date": null,
+              "result": "0-1",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE CS_S0_G1_MEM_at_DEN.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "MEM",
+              "away": "DEN",
+              "date": null,
+              "result": "3-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE CS_S0_G2_DEN_at_MEM.html",
+              "meta": {
+                "home_innings": 13,
+                "away_innings": 13,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "MEM",
+              "away": "DEN",
+              "date": null,
+              "result": "0-3",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE CS_S0_G3_DEN_at_MEM.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "MEM",
+              "away": "DEN",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "C:\\Users\\james\\Documents\\Baseball-AI\\NexGen-BBPro\\data\\boxscores\\playoffs\\2024_LEAGUE CS_S0_G4_DEN_at_MEM.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "S"
+              }
+            }
+          ],
+          "winner": "MEM"
+        }
+      ],
+      "plan": [
+        {
+          "series_key": "cs",
+          "sources": [
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "LEAGUE DS",
+              "slot": 0
+            },
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "LEAGUE DS",
+              "slot": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Final",
+      "matchups": [],
+      "plan": []
+    }
+  ]
+}

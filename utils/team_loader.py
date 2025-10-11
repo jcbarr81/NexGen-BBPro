@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import re
 from pathlib import Path
@@ -7,6 +8,7 @@ try:  # Allow running as a standalone script
     from models.team import Team
     from utils.path_utils import get_base_dir
     from utils.stats_persistence import load_stats
+    from playbalance.season_context import CAREER_DATA_DIR
 except ModuleNotFoundError:  # pragma: no cover - for direct script execution
     import sys
 
@@ -14,6 +16,7 @@ except ModuleNotFoundError:  # pragma: no cover - for direct script execution
     from models.team import Team
     from utils.path_utils import get_base_dir
     from utils.stats_persistence import load_stats
+    from playbalance.season_context import CAREER_DATA_DIR
 
 
 def _resolve_path(file_path: str | Path) -> Path:
@@ -22,7 +25,25 @@ def _resolve_path(file_path: str | Path) -> Path:
     path = Path(file_path)
     if path.is_absolute():
         return path
-    return get_base_dir() / path
+    base = get_base_dir()
+    candidate = base / path
+    if candidate.exists():
+        return candidate
+    fallback_root = Path(__file__).resolve().parents[1]
+    return fallback_root / path
+
+
+def _load_career_teams() -> dict[str, dict]:
+    path = CAREER_DATA_DIR / "career_teams.json"
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh) or {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+    teams = data.get("teams", {})
+    if isinstance(teams, dict):
+        return teams
+    return {}
 
 
 def load_teams(file_path: str | Path = "data/teams.csv"):
@@ -44,10 +65,22 @@ def load_teams(file_path: str | Path = "data/teams.csv"):
             )
             teams.append(team)
     stats = load_stats()
+    career_map = _load_career_teams()
     for team in teams:
         season = stats["teams"].get(team.team_id)
         if season:
             team.season_stats = season
+        career_entry = career_map.get(team.team_id)
+        if career_entry:
+            totals = career_entry.get("totals", {})
+            if isinstance(totals, dict):
+                team.career_stats = dict(totals)
+            seasons = career_entry.get("seasons", {})
+            if isinstance(seasons, dict):
+                team.career_history = {
+                    sid: dict(data) if isinstance(data, dict) else data
+                    for sid, data in seasons.items()
+                }
     return teams
 
 

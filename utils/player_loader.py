@@ -1,9 +1,11 @@
 import csv
+import json
 from pathlib import Path
 from functools import lru_cache
 
 from models.player import Player
 from models.pitcher import Pitcher
+from playbalance.season_context import CAREER_DATA_DIR
 from utils.path_utils import get_base_dir
 from utils.stats_persistence import load_stats
 
@@ -20,6 +22,19 @@ def _optional_int(row, key, default=0):
     if value is None or value == "":
         return default
     return int(value)
+
+
+def _load_career_players() -> dict[str, dict]:
+    path = CAREER_DATA_DIR / "career_players.json"
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh) or {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+    players = data.get("players", {})
+    if isinstance(players, dict):
+        return players
+    return {}
 
 
 @lru_cache(maxsize=None)
@@ -157,8 +172,20 @@ def load_players_from_csv(file_path):
 
             players.append(player)
     stats = load_stats()
+    career_map = _load_career_players()
     for player in players:
         season = stats["players"].get(player.player_id)
         if season:
             player.season_stats = season
+        career_entry = career_map.get(player.player_id)
+        if career_entry:
+            totals = career_entry.get("totals", {})
+            if isinstance(totals, dict):
+                player.career_stats = dict(totals)
+            seasons = career_entry.get("seasons", {})
+            if isinstance(seasons, dict):
+                player.career_history = {
+                    sid: dict(data) if isinstance(data, dict) else data
+                    for sid, data in seasons.items()
+                }
     return players
