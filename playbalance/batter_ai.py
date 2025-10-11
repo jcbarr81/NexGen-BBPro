@@ -332,7 +332,7 @@ class BatterAI:
         disc_base = getattr(self.config, "disciplineRatingBase", None)
         disc_ch_pct = getattr(self.config, "disciplineRatingCHPct", None)
         disc_exp_pct = getattr(self.config, "disciplineRatingExpPct", None)
-        if any((disc_base or 0), (disc_ch_pct or 0), (disc_exp_pct or 0)):
+        if any(v is not None for v in (disc_base, disc_ch_pct, disc_exp_pct)):
             base = disc_base or 0
             ch_pct = disc_ch_pct or 0
             exp_pct = disc_exp_pct or 0

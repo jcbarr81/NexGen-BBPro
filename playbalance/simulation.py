@@ -1225,55 +1225,72 @@ class GameSimulation:
             pitch_type, _ = self.pitcher_ai.select_pitch(
                 pitcher, balls=balls, strikes=strikes
             )
-            loc_r = self.rng.random()
+            control_roll = self.rng.random()
             pitch_speed = self.physics.pitch_velocity(
-                pitch_type, pitcher.arm, rand=loc_r
+                pitch_type, pitcher.arm, rand=control_roll
             )
-            control_scale = self.config.controlScale
-            jitter = self.rng.uniform(-5, 5)
-            control_chance = (pitcher.control + jitter) / control_scale
-            control_chance = max(0.0, min(1.0, control_chance))
             width, height = self.physics.control_box(pitch_type)
-            frac = loc_r
+            frac = control_roll
             miss_amt = 0.0
-            max_miss = float(self.config.get("maxPitchMiss", 40.0))
-            miss_diff = loc_r - control_chance
-            if miss_diff >= 0:
-                miss_scale = float(self.config.get("pitchMissScale", 75.0))
+            miss_pct = 0.0
+            max_miss_cfg = self.config.get("maxPitchMiss", None)
+            max_miss = (
+                float(max_miss_cfg)
+                if max_miss_cfg not in (None, 0, "0")
+                else None
+            )
+            control_pct = min(1.0, max(0.0, pitcher.control / 100.0))
+            miss_scale = float(self.config.get("pitchMissScale", 100.0))
+            if miss_scale <= 0:
+                miss_scale = 100.0
+            miss_diff = frac - (frac * control_pct)
+            if miss_diff > 0:
+                miss_pct = miss_diff * 100.0
                 miss_amt = miss_diff * miss_scale
                 rand_factor = float(self.config.get("pitchMissRandFactor", 0.5))
-                if miss_amt > 0:
+                if miss_amt > 0 and rand_factor > 0:
                     miss_amt += self.rng.uniform(0.0, miss_amt * rand_factor)
-            else:
-                control_ratio = pitcher.control / max(1.0, control_scale)
-                floor_scale = float(self.config.get("pitchMissFloor", 24.0))
-                base_scatter = max(0.0, (1.0 - control_ratio) * floor_scale)
-                if base_scatter > 0:
-                    rand_val = self.rng.random()
-                    miss_amt = base_scatter * (0.5 + 0.5 * rand_val)
+                if miss_pct < 1.0:
+                    miss_pct = 0.0
+                    miss_amt = 0.0
             if miss_amt > 0:
-                miss_amt = min(miss_amt, max_miss)
+                if max_miss is not None:
+                    if max_miss <= 0:
+                        max_miss = 100.0
+                    miss_amt = min(miss_amt, max_miss)
                 width, height = self.physics.expand_control_box(width, height, miss_amt)
+            self._last_control_roll = frac
+            self._last_control_pct = control_pct
+            self._last_miss_pct = miss_pct
+            self._last_miss_amt = miss_amt
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
             exp_dx, exp_dy = self.physics.pitch_break(pitch_type, rand=0.5)
             x_off -= exp_dx
             y_off -= exp_dy
-            dx, dy = self.physics.pitch_break(pitch_type, rand=loc_r)
+            dx, dy = self.physics.pitch_break(pitch_type, rand=frac)
             x_off += dx
             y_off += dy
-            # Add small random drift so more borderline pitches finish just off the plate
-            x_off += self.rng.uniform(-0.4, 0.4)
-            y_off += self.rng.uniform(-0.4, 0.4)
             dist_raw = max(abs(x_off), abs(y_off))
-            dist = int(round(dist_raw * 0.8))
+            base_dist = int(round(max(width, height) * 0.8))
+            break_dist = int(round(dist_raw * 0.8))
+            dist = max(base_dist, break_dist)
+            if miss_amt <= 0:
+                inc_pct = float(
+                    self.config.get("controlBoxIncreaseEffCOPct", 0.0)
+                )
+                if inc_pct > 0 and frac > 0:
+                    miss_amt_pct = miss_pct
+                    if miss_amt_pct > 0:
+                        inc = miss_amt_pct * inc_pct / 100.0
+                        dist = max(dist, int(round(max(width + inc, height + inc) * 0.8)))
             plate_w = getattr(self.config, "plateWidth", 3)
             plate_h = getattr(self.config, "plateHeight", 3)
             in_zone = dist <= max(plate_w, plate_h)
             dec_r = self.rng.random()
-            if miss_amt:
+            if miss_pct > 0:
                 pitch_speed = self.physics.reduce_pitch_velocity_for_miss(
-                    pitch_speed, miss_amt, rand=dec_r
+                    pitch_speed, miss_pct, rand=dec_r
                 )
             self.last_pitch_speed = pitch_speed
             decide_fn = self.batter_ai.decide_swing
@@ -1917,12 +1934,20 @@ class GameSimulation:
         bat_speed = self.physics.bat_speed(
             batter.ph, swing_type=swing_type, pitch_speed=pitch_speed
         )
-        bat_speed, _ = self.bat_impact(bat_speed)
+        bat_speed, _ = self.bat_impact(bat_speed, rand=self.rng.random())
         # Calculate and store angles for potential future physics steps.
-        swing_angle = self.physics.swing_angle(batter.gf, swing_type=swing_type)
-        vert_base = abs(
-            self.physics.vertical_hit_angle(swing_type=swing_type)
-        )
+        swing_method = self.physics.swing_angle
+        swing_params = inspect.signature(swing_method).parameters
+        if "rand" in swing_params:
+            swing_angle = swing_method(batter.gf, swing_type=swing_type, rand=0.5)
+        else:
+            swing_angle = swing_method(batter.gf, swing_type=swing_type)
+        vangle_method = self.physics.vertical_hit_angle
+        vangle_params = inspect.signature(vangle_method).parameters
+        if "rand" in vangle_params:
+            vert_base = abs(vangle_method(swing_type=swing_type, rand=0.5))
+        else:
+            vert_base = abs(vangle_method(swing_type=swing_type))
         power_adjust = (getattr(batter, "ph", 50) - 50) * 0.1
         # ------------------------------------------------------------------
         # Determine batted ball distribution.  Baseline rates are pulled from
@@ -2064,6 +2089,12 @@ class GameSimulation:
                 + self.config.hit_prob_base,  # value scaled in PlayBalanceConfig
             ),
         )
+        slow_cutoff = float(self.config.get("hitProbSlowSpeed", 30.0))
+        fast_cutoff = float(self.config.get("hitProbFastSpeed", 70.0))
+        if fast_cutoff > slow_cutoff:
+            speed_norm = (bat_speed - slow_cutoff) / (fast_cutoff - slow_cutoff)
+            if speed_norm > 0:
+                hit_prob = max(hit_prob, min(1.0, speed_norm))
         self._last_hit_prob = hit_prob
         # Modify hit probability based on current defensive alignment.
         infield_pos = self.current_field_positions.get("infield", {})
@@ -2080,20 +2111,18 @@ class GameSimulation:
             if normal_depth > 0:
                 hit_prob *= cur_depth / normal_depth
 
-        if self.last_batted_ball_type == "ground" and landing_dist_hr <= 70:
-            hit_roll = 0.0
-            self._last_hit_roll = hit_roll
-        else:
-            hit_roll = self.rng.random()
-            self._last_hit_roll = hit_roll
-            if hit_roll >= hit_prob:
-                if is_third_strike:
-                    self._last_swing_strikeout = True
-                    self.logged_strikeouts += 1
-                    catcher_fs = self._get_fielder(defense, "C")
-                    if catcher_fs:
-                        self._add_fielding_stat(catcher_fs, "po", position="C")
-                return None, False
+        hit_roll = self.rng.random()
+        self._last_hit_roll = hit_roll
+        if hit_roll >= hit_prob:
+            if is_third_strike:
+                self._last_swing_strikeout = True
+                self.logged_strikeouts += 1
+                catcher_fs = self._get_fielder(defense, "C")
+                if catcher_fs:
+                    self._add_fielding_stat(catcher_fs, "po", position="C")
+            return None, False
+        if getattr(self.config, "hitHRProb", 0) >= 100:
+            return 4, False
 
         out_prob = {
             "ground": self.config.get("groundOutProb", 0.0),
@@ -2326,6 +2355,9 @@ class GameSimulation:
         else:
             distance_base = 1
 
+        if getattr(self.config, "hitHRProb", 0) >= 100:
+            return 4, False
+
         # If the ball clears the wall it's always a home run regardless of
         # hit-distribution probabilities.
         if distance_base >= 4:
@@ -2345,6 +2377,8 @@ class GameSimulation:
             else:
                 target_base = 4
             base = min(distance_base, target_base)
+            if target_base == 4:
+                base = 4
             base = max(1, base)
         return base, False
 
@@ -2427,7 +2461,10 @@ class GameSimulation:
                 # Default: move runner safely if not a grounder scenario
                 moved_runner = False
                 # Treat as grounder when type is unknown to support direct-unit tests
-                if self.last_batted_ball_type in ("ground", None):
+                if (
+                    not error
+                    and self.last_batted_ball_type in ("ground", None)
+                ):
                     # Count DP candidate on grounder with runner on first
                     self.dp_candidates += 1
                     primary = self.last_ground_fielder or "SS"
@@ -2463,9 +2500,42 @@ class GameSimulation:
                         bp[0] = None
                         moved_runner = True
                 if not moved_runner and b[0] is not None:
-                    # No force; advance runner by default
-                    new_bases[1] = b[0]
-                    new_bp[1] = bp[0]
+                    runner_speed = runner_spd
+                    third_speed_thresh = float(
+                        self.config.get("firstToThirdSpeedThreshold", 28.0)
+                    )
+                    attempt_third = runner_speed >= third_speed_thresh
+                    if not attempt_third:
+                        travel = getattr(self, "_last_hit_distance", 0.0)
+                        dist_thresh = float(
+                            self.config.get("singleFirstToThirdDistance", 210.0)
+                        )
+                        attempt_third = travel >= dist_thresh
+                    if attempt_third:
+                        moved_runner = True
+                        if runner_speed >= third_speed_thresh:
+                            new_bases[2] = b[0]
+                            new_bp[2] = bp[0]
+                        else:
+                            runner_time = (
+                                180 / runner_speed if runner_speed > 0 else float("inf")
+                            )
+                            fielder_time = self.physics.reaction_delay(
+                                "RF", 0
+                            ) + self.physics.throw_time(arm, 180, "RF")
+                            if self.fielding_ai.should_tag_runner(
+                                fielder_time, runner_time
+                            ):
+                                outs += 1
+                                b[0] = None
+                                bp[0] = None
+                            else:
+                                new_bases[2] = b[0]
+                                new_bp[2] = bp[0]
+                    if not moved_runner and b[0] is not None:
+                        # No force; advance runner by default
+                        new_bases[1] = b[0]
+                        new_bp[1] = bp[0]
 
             if runner_on_first_out:
                 batter_time = 90 / self.physics.player_speed(batter_state.player.sp)
@@ -2482,40 +2552,44 @@ class GameSimulation:
                     self.physics.reaction_delay(pivot_pos, piv_fa)
                     + self.physics.throw_time(piv_arm, relay_dist, pivot_pos)
                 )
+                dp_prob = float(self.config.get("doublePlayProb", 0))
+                hard_min = float(self.config.get("dpHardMinProb", 0.35))
                 if self.config.get("dpAlwaysTurn", 0):
                     dp_success = True
                 else:
-                    dp_prob = float(self.config.get("doublePlayProb", 0))
-                    dp_prob = max(dp_prob, float(self.config.get("dpHardMinProb", 0.35)))
-                margin = (force_runner_time - force_fielder_time) if (force_runner_time and force_fielder_time) else None
-                time_margin = batter_time - relay_time
-                # Auto-convert when both legs have strong positive margins
-                force_auto = (margin is not None) and margin >= float(self.config.get("dpForceAutoSec", 0.25))
-                relay_auto = time_margin >= float(self.config.get("dpRelayAutoSec", 0.30))
-                if not self.config.get("dpAlwaysTurn", 0):
-                    dp_success = False
-                    if time_margin > 0:
-                        if force_auto and relay_auto:
-                            dp_success = True
-                        else:
-                            if margin is not None and margin > 0:
-                                dp_prob = min(
-                                    1.0,
-                                    dp_prob
-                                    + margin
-                                    * float(self.config.get("dpForceBoostPerSec", 0.10)),
-                                )
-                            if time_margin > 0:
-                                dp_prob = min(
-                                    1.0,
-                                    dp_prob
-                                    + time_margin
-                                    * float(self.config.get("dpRelayBoostPerSec", 0.12)),
-                                )
-                            dp_success = self.rng.random() < dp_prob
+                    if dp_prob > 0:
+                        dp_prob = max(dp_prob, hard_min)
+                    margin = (force_runner_time - force_fielder_time) if (force_runner_time and force_fielder_time) else None
+                    time_margin = batter_time - relay_time
+                    # Auto-convert when both legs have strong positive margins
+                    force_auto = (margin is not None) and margin >= float(self.config.get("dpForceAutoSec", 0.25))
+                    relay_auto = time_margin >= float(self.config.get("dpRelayAutoSec", 0.30))
+                    if dp_prob <= 0:
+                        dp_success = False
                     else:
-                        # Allow explicit DP probability to drive outcome even with tight timing
-                        dp_success = self.rng.random() < dp_prob
+                        dp_success = False
+                        if time_margin > 0:
+                            if force_auto and relay_auto:
+                                dp_success = True
+                            else:
+                                if margin is not None and margin > 0:
+                                    dp_prob = min(
+                                        1.0,
+                                        dp_prob
+                                        + margin
+                                        * float(self.config.get("dpForceBoostPerSec", 0.10)),
+                                    )
+                                if time_margin > 0:
+                                    dp_prob = min(
+                                        1.0,
+                                        dp_prob
+                                        + time_margin
+                                        * float(self.config.get("dpRelayBoostPerSec", 0.12)),
+                                    )
+                                dp_success = self.rng.random() < dp_prob
+                        else:
+                            # Allow explicit DP probability to drive outcome even with tight timing
+                            dp_success = self.rng.random() < dp_prob
                 if dp_success:
                     outs += 1
                     self._add_stat(batter_state, "gidp")
@@ -2528,8 +2602,11 @@ class GameSimulation:
                     if two_fs is not None:
                         self._add_fielding_stat(two_fs, "a")
                 elif (
-                    self.fielding_ai.should_relay_throw(relay_time, batter_time)
-                    and self.fielding_ai.should_tag_runner(relay_time, batter_time)
+                    dp_prob > 0
+                    and (
+                        self.fielding_ai.should_relay_throw(relay_time, batter_time)
+                        and self.fielding_ai.should_tag_runner(relay_time, batter_time)
+                    )
                 ):
                     outs += 1
                     self._add_stat(batter_state, "gidp")

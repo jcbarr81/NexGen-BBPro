@@ -133,10 +133,12 @@ def swing_angle(
         "middle": 0.0,
     }.get(pitch_loc, 0.0)
 
+    spread = getattr(cfg, "swingAngleRange", 0.0)
+    if spread == 0:
+        return angle
     rng = rng or Random()
     if rand is None:
         rand = rng.random()
-    spread = getattr(cfg, "swingAngleRange", 0.0)
     return angle + (rand - 0.5) * spread
 
 
@@ -210,10 +212,12 @@ def vertical_hit_angle(
     # Legacy functional API ignores swing-type adjustments; tests expect
     # ``power`` not to alter the base here.
 
+    spread = getattr(cfg, "hitAngleRange", 0.0)
+    if spread == 0:
+        return base
     rng = rng or Random()
     if rand is None:
         rand = rng.random()
-    spread = getattr(cfg, "hitAngleRange", 0.0)
     return base + rand * spread
 
 

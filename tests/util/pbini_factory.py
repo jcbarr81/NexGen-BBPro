@@ -24,9 +24,32 @@ def make_cfg(**entries: int) -> PlayBalanceConfig:
         "swingProbCloseBall": 0.56,
         "swingProbSureBall": 0.18,
         "disciplineRatingPct": 0,
+        "doublePlayProb": 0,
+        "dpHardMinProb": 0,
+        "dpForceAutoSec": 5,
+        "dpRelayAutoSec": 5,
+        "firstToThirdSpeedThreshold": 28,
+        "singleFirstToThirdDistance": 210,
+        "targetPitchesPerPA": 0,
     }
     base_entries.update(entries)
-    return PlayBalanceConfig.from_dict({"PlayBalance": base_entries})
+    cfg = PlayBalanceConfig.from_dict({"PlayBalance": base_entries})
+    # Clear pitch objective weights to prevent additional randomness during
+    # deterministic unit tests. ``load_config`` performs the same reset, but
+    # direct calls to ``make_cfg`` bypass that helper.
+    for balls in range(4):
+        for strikes in range(3):
+            prefix = f"pitchObj{balls}{strikes}Count"
+            for suffix in [
+                "EstablishWeight",
+                "OutsideWeight",
+                "BestWeight",
+                "BestCenterWeight",
+                "FastCenterWeight",
+                "PlusWeight",
+            ]:
+                cfg.values[f"{prefix}{suffix}"] = 0
+    return cfg
 
 
 def load_config(path: Path | None = None) -> PlayBalanceConfig:
