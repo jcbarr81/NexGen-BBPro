@@ -35,12 +35,12 @@ def apply_league_benchmarks(
     # scaled down in :mod:`playbalance.simulation` so multiply the MLB BABIP
     # by ``1.5`` to produce a small additive term in the final hit probability
     # calculation.
-    cfg.hitProbBase = benchmarks["babip"] * 1.40
+    cfg.hitProbBase = benchmarks["babip"] * 1.50
     pip_pct = benchmarks["pitches_put_in_play_pct"]
     cfg.ballInPlayPitchPct = int(round(pip_pct * 100)) - 1
     pitches_per_pa = benchmarks["pitches_per_pa"]
     if pitches_per_pa:
-        cfg.swingProbScale = round((4.0 / pitches_per_pa) * 1.32, 2)
+        cfg.swingProbScale = round(4.0 / pitches_per_pa, 2)
     else:
         cfg.swingProbScale = 1.0
 

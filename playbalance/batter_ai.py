@@ -303,7 +303,6 @@ class BatterAI:
         else:
             self.last_misread = False
 
-        discipline = getattr(batter, "ch", 50) / 100.0
         pitch_kind = self.pitch_class(dist)
         prob_key = {
             "sure strike": "swingProbSureStrike",
@@ -311,9 +310,13 @@ class BatterAI:
             "close ball": "swingProbCloseBall",
             "sure ball": "swingProbSureBall",
         }[pitch_kind]
-        # Use base swing probabilities directly (no extra scaling)
         base = getattr(self.config, prob_key, 0.0)
-        swing_chance = base
+        scale = getattr(self.config, "swingProbScale", 1.0)
+        if pitch_kind in {"sure strike", "close strike"}:
+            scale *= getattr(self.config, "zSwingProbScale", 1.0)
+        else:
+            scale *= getattr(self.config, "oSwingProbScale", 1.0)
+        swing_chance = clamp01(base * scale)
 
         # Count-based adjustment allows tuning per ball-strike count.
         count_key = f"swingProb{balls}{strikes}CountAdjust"
@@ -326,19 +329,27 @@ class BatterAI:
             ) / 100.0
             swing_chance = clamp01(swing_chance)
 
-        # Discipline pushes aggressiveness in the expected direction. On close
-        # balls, disciplined hitters take more often based on CH/EXP weights.
-        zone_weight = 0.22
-        ball_weight = 0.05
+        disc_base = getattr(self.config, "disciplineRatingBase", None)
+        disc_ch_pct = getattr(self.config, "disciplineRatingCHPct", None)
+        disc_exp_pct = getattr(self.config, "disciplineRatingExpPct", None)
+        if any((disc_base or 0), (disc_ch_pct or 0), (disc_exp_pct or 0)):
+            base = disc_base or 0
+            ch_pct = disc_ch_pct or 0
+            exp_pct = disc_exp_pct or 0
+            ch_score = getattr(batter, "ch", 50) * ch_pct / 100.0
+            exp_score = getattr(batter, "exp", 50) * exp_pct / 100.0
+            discipline = clamp01((base + ch_score + exp_score) / 100.0)
+        else:
+            discipline = getattr(batter, "ch", 50) / 100.0
+        zone_weight = getattr(self.config, "swingZoneDisciplineWeight", None) or 0.1
+        ball_weight = getattr(self.config, "swingBallDisciplineWeight", None) or 0.05
+        disc_pct = getattr(self.config, "disciplineRatingPct", 0) / 100.0
+        ball_penalty = getattr(self.config, "disciplineBallPenalty", None) or 1.0
         if pitch_kind in {"sure strike", "close strike"}:
             swing_chance += (discipline - 0.5) * zone_weight
         else:
-            swing_chance -= (discipline - 0.5) * ball_weight
-            # Additional take probability on close balls using discipline knobs
-            disc_pct = getattr(self.config, "disciplineRatingPct", 0) / 100.0
-            ch_factor = getattr(batter, "ch", 50) / 100.0
-            # Strong CH sharply reduces swings at close balls when enabled
-            swing_chance = clamp01(swing_chance - 0.8 * ch_factor * disc_pct)
+            swing_chance += (0.5 - discipline) * ball_weight
+            swing_chance *= max(0.0, 1.0 - discipline * disc_pct * ball_penalty)
 
         # Location-based adjustment penalises pitches further from the target.
         dx_abs = abs(dx) if dx is not None else 0.0
@@ -347,7 +358,7 @@ class BatterAI:
         swing_chance -= (dx_abs + dy_abs) * loc_factor
 
         swing_chance = clamp01(swing_chance)
-
+        self.last_swing_chance = swing_chance
         # Two-strike protection: become more aggressive to reduce called Ks.
         # Tunable via config key "twoStrikeSwingBonus" (percent additive).
         if strikes >= 2:
@@ -467,8 +478,7 @@ class BatterAI:
                 ch_chk = getattr(self.config, ch_key, 0)
                 chk = (base_chk + ch_chk * (batter_contact / 100.0)) / 1000.0
                 if check_random < chk:
-                    # Successful check: no swing
-                    swing = False
+                    # Successful check: treat as a held swing but count as offer
                     prob_contact = 0.0
                     self.last_contact = False
                     contact_quality = 0.0

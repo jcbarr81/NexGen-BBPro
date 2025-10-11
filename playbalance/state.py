@@ -46,6 +46,7 @@ class PitcherState:
     b2: int = 0
     b3: int = 0
     bb: int = 0
+    walks: int = 0
     ibb: int = 0
     so: int = 0
     so_looking: int = 0

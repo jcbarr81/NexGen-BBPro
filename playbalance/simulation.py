@@ -253,6 +253,9 @@ class GameSimulation:
         self.logged_strikeouts = 0
         self.logged_catcher_putouts = 0
         self._last_swing_strikeout = False
+        self._hit_and_run_active = False
+        self._force_hit_and_run_grounder = False
+        self._skip_next_ball_count = False
 
     # ------------------------------------------------------------------
     # Physics helper shims
@@ -316,6 +319,12 @@ class GameSimulation:
         """Increment ``attr`` on ``state``."""
 
         setattr(state, attr, getattr(state, attr) + amount)
+
+    def _record_ball(self, pitcher_state: PitcherState) -> None:
+        if self._skip_next_ball_count:
+            self._skip_next_ball_count = False
+            return
+        pitcher_state.balls_thrown += 1
 
     def _add_fielding_stat(
         self,
@@ -1002,6 +1011,7 @@ class GameSimulation:
             self._add_stat(batter_state, "bb")
             self._add_stat(batter_state, "ibb")
             pitcher_state.bb += 1
+            pitcher_state.walks += 1
             pitcher_state.ibb += 1
             pitcher_state.toast += self.config.get("pitchScoringWalk", 0)
             pitcher_state.consecutive_hits = 0
@@ -1042,6 +1052,7 @@ class GameSimulation:
                     )
                     * 100
                 )
+                force_hit_run_grounder = hit_run_chance >= 90
                 if holding_runner and self.defense.maybe_pitch_out(
                     steal_chance=steal_chance,
                     hit_run_chance=hit_run_chance,
@@ -1061,6 +1072,8 @@ class GameSimulation:
                     pitcher_wild=pitcher.control <= 30,
                 ):
                     self.debug_log.append("Hit and run")
+                    self._hit_and_run_active = True
+                    self._force_hit_and_run_grounder = force_hit_run_grounder
                     steal_result = self._attempt_steal(
                         offense,
                         defense,
@@ -1116,6 +1129,50 @@ class GameSimulation:
                     pitcher_state.outs += outs
                     return outs + outs_from_pick
 
+            pre_pitch_out = False
+            for runner_on in (1,):
+                if runner_on == 1 and getattr(self, "_hit_and_run_active", False):
+                    continue
+                steal_result = self._attempt_steal(
+                    offense,
+                    defense,
+                    pitcher_state.player,
+                    batter=batter,
+                    balls=balls,
+                    strikes=strikes,
+                    outs=outs,
+                    runner_on=runner_on,
+                    batter_ch=batter.ch,
+                    pitcher_is_wild=pitcher.control <= 30,
+                    pitcher_in_windup=False,
+                    run_diff=run_diff,
+                )
+                if steal_result is False:
+                    outs += 1
+                    self.current_outs += 1
+                    pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                    pitcher_state.consecutive_hits = 0
+                    pitcher_state.consecutive_baserunners = 0
+                    run_diff = offense.runs - defense.runs
+                    pre_pitch_out = True
+                    break
+                if steal_result:
+                    break
+            if pre_pitch_out:
+                if self.current_outs >= 3:
+                    self._add_stat(
+                        batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+                    )
+                    pitcher_state.outs += outs
+                    self.subs.maybe_warm_reliever(
+                        defense,
+                        inning=inning,
+                        run_diff=run_diff,
+                        home_team=home_team,
+                    )
+                    return outs + outs_from_pick
+                continue
+
             if (
                 offense.bases[2]
                 and balls == 0
@@ -1143,7 +1200,12 @@ class GameSimulation:
             target_pitches = self.config.get("targetPitchesPerPA", 0)
             strike_rate = float(self.config.get("leagueStrikePct", 65.9)) / 100.0
             pitches_this_pa = pitcher_state.pitches_thrown - start_pitches
-            if target_pitches and pitches_this_pa < target_pitches:
+            if (
+                target_pitches
+                and pitches_this_pa > 0
+                and strikes > 0
+                and pitches_this_pa < target_pitches
+            ):
                 desired_total = int(target_pitches)
                 if self.rng.random() < target_pitches - desired_total:
                     desired_total += 1
@@ -1156,7 +1218,7 @@ class GameSimulation:
                     if self.rng.random() < strike_rate:
                         pitcher_state.strikes_thrown += 1
                     else:
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
 
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
@@ -1174,11 +1236,23 @@ class GameSimulation:
             width, height = self.physics.control_box(pitch_type)
             frac = loc_r
             miss_amt = 0.0
-            if loc_r >= control_chance:
-                miss_amt = (loc_r - control_chance) * 100.0
-                # Increase variance/magnitude so more pitches end up just off the plate
-                miss_amt += self.rng.uniform(0.0, miss_amt)
-                miss_amt *= 1.2
+            max_miss = float(self.config.get("maxPitchMiss", 40.0))
+            miss_diff = loc_r - control_chance
+            if miss_diff >= 0:
+                miss_scale = float(self.config.get("pitchMissScale", 75.0))
+                miss_amt = miss_diff * miss_scale
+                rand_factor = float(self.config.get("pitchMissRandFactor", 0.5))
+                if miss_amt > 0:
+                    miss_amt += self.rng.uniform(0.0, miss_amt * rand_factor)
+            else:
+                control_ratio = pitcher.control / max(1.0, control_scale)
+                floor_scale = float(self.config.get("pitchMissFloor", 24.0))
+                base_scatter = max(0.0, (1.0 - control_ratio) * floor_scale)
+                if base_scatter > 0:
+                    rand_val = self.rng.random()
+                    miss_amt = base_scatter * (0.5 + 0.5 * rand_val)
+            if miss_amt > 0:
+                miss_amt = min(miss_amt, max_miss)
                 width, height = self.physics.expand_control_box(width, height, miss_amt)
             x_off = (frac * 2 - 1) * width
             y_off = (frac * 2 - 1) * height
@@ -1223,6 +1297,14 @@ class GameSimulation:
                 pitcher,
                 **swing_kwargs,
             )
+            if swing and not in_zone:
+                base_take = float(self.config.get("autoTakeDistanceBase", 3.0))
+                step_take = float(self.config.get("autoTakeDistanceBallStep", 0.5))
+                min_take = float(self.config.get("autoTakeDistanceMin", 1.5))
+                auto_take_dist = max(min_take, base_take - balls * step_take)
+                if dist >= auto_take_dist or balls >= 3:
+                    swing = False
+                    contact_quality = 0.0
             contact = getattr(self.batter_ai, "last_contact", contact_quality > 0)
             catcher_fs = self._get_fielder(defense, "C")
             if swing and self._maybe_catcher_interference(
@@ -1248,7 +1330,7 @@ class GameSimulation:
                     and self.rng.random()
                     >= self.config.get("outOfZoneContactHitChance", 0.1)
                 ):
-                    pitcher_state.balls_thrown += 1
+                    self._record_ball(pitcher_state)
                     self._add_stat(batter_state, "ab")
                     outs += 1
                     pitcher_state.toast += self.config.get("pitchScoringOut", 0)
@@ -1286,7 +1368,7 @@ class GameSimulation:
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
                     self._add_stat(batter_state, "ab")
                     self._add_stat(batter_state, "so")
                     self._add_stat(batter_state, "so_swinging")
@@ -1317,7 +1399,7 @@ class GameSimulation:
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
                     self._add_stat(batter_state, "ab")
                     outs += 1
                     pitcher_state.toast += self.config.get("pitchScoringOut", 0)
@@ -1338,7 +1420,7 @@ class GameSimulation:
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
                     self._add_stat(batter_state, "ab")
                     outs += 1
                     if (
@@ -1457,7 +1539,7 @@ class GameSimulation:
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
                     self._add_stat(batter_state, "ab")
                     if error:
                         pitcher_state.consecutive_hits = 0
@@ -1513,44 +1595,6 @@ class GameSimulation:
                             pitcher_state.consecutive_hits = 0
                             pitcher_state.consecutive_baserunners = 0
                             pitcher_state.outs += outs_made
-                    steal_result = self._attempt_steal(
-                        offense,
-                        defense,
-                        pitcher_state.player,
-                        batter=batter,
-                        balls=balls,
-                        strikes=strikes,
-                        outs=outs,
-                        runner_on=2,
-                        batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher.control <= 30,
-                        pitcher_in_windup=False,
-                        run_diff=run_diff,
-                    )
-                    if steal_result is False:
-                        outs += 1
-                        pitcher_state.toast += self.config.get("pitchScoringOut", 0)
-                        pitcher_state.consecutive_hits = 0
-                        pitcher_state.consecutive_baserunners = 0
-                    steal_result = self._attempt_steal(
-                        offense,
-                        defense,
-                        pitcher_state.player,
-                        batter=batter,
-                        balls=balls,
-                        strikes=strikes,
-                        outs=outs,
-                        runner_on=1,
-                        batter_ch=batter.ch,
-                        pitcher_is_wild=pitcher.control <= 30,
-                        pitcher_in_windup=False,
-                        run_diff=run_diff,
-                    )
-                    if steal_result is False:
-                        outs += 1
-                        pitcher_state.toast += self.config.get("pitchScoringOut", 0)
-                        pitcher_state.consecutive_hits = 0
-                        pitcher_state.consecutive_baserunners = 0
                     self._add_stat(
                         batter_state,
                         "pitches",
@@ -1571,7 +1615,7 @@ class GameSimulation:
                 )
                 if contact and self.rng.random() < foul_chance:
                     if not in_zone:
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
                     pitcher_state.strikes_thrown += 1
                     if self._attempt_foul_catch(
                         batter,
@@ -1604,7 +1648,7 @@ class GameSimulation:
                     continue
                 strikes += 1
                 if not in_zone:
-                    pitcher_state.balls_thrown += 1
+                    self._record_ball(pitcher_state)
                 else:
                     pitcher_state.strikes_thrown += 1
             else:
@@ -1630,7 +1674,9 @@ class GameSimulation:
                             is_hbp = True
                         if not is_hbp:
                             balls += 1
-                            pitcher_state.balls_thrown += 1
+                            self._record_ball(pitcher_state)
+                            self._skip_next_ball_count = True
+                            continue
                         else:
                             self._add_stat(batter_state, "hbp")
                             pitcher_state.hbp += 1
@@ -1656,7 +1702,7 @@ class GameSimulation:
                             return outs + outs_from_pick
                     else:
                         balls += 1
-                        pitcher_state.balls_thrown += 1
+                        self._record_ball(pitcher_state)
 
             self._maybe_passed_ball(offense, defense, catcher_fs)
 
@@ -1670,6 +1716,7 @@ class GameSimulation:
             if balls >= 4:
                 self._add_stat(batter_state, "bb")
                 pitcher_state.bb += 1
+                pitcher_state.walks += 1
                 pitcher_state.toast += self.config.get("pitchScoringWalk", 0)
                 pitcher_state.consecutive_hits = 0
                 pitcher_state.consecutive_baserunners += 1
@@ -1855,6 +1902,10 @@ class GameSimulation:
         is_third_strike: bool = False,
     ) -> tuple[Optional[int], bool]:
         self._last_swing_strikeout = False
+        forced_hit_and_run = getattr(self, "_hit_and_run_active", False)
+        force_hit_and_run_grounder = getattr(self, "_force_hit_and_run_grounder", False)
+        self._hit_and_run_active = False
+        self._force_hit_and_run_grounder = False
         if contact_quality <= 0:
             if is_third_strike:
                 self._last_swing_strikeout = True
@@ -1899,34 +1950,56 @@ class GameSimulation:
         fb = max(0.0, fb)
         ld = max(0.0, base_gb + base_ld + base_fb - gb - fb)
         total = max(1.0, gb + ld + fb)
-        roll = self.rng.random() * total
-        if roll < gb:
+        bip_bucket = "ground"
+        if force_hit_and_run_grounder:
             vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
+        else:
+            roll = self.rng.random() * total
+            self._last_bip_roll = roll
+            if roll < gb:
+                vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
+                bip_bucket = "ground"
+            elif roll < gb + ld:
+                vert_angle = max(0.0, vert_base - 4)
+                launch = swing_angle + vert_angle + power_adjust
+                if launch > 15:
+                    vert_angle -= launch - 15
+                bip_bucket = "line"
+            else:
+                vert_angle = max(0.0, vert_base - 4)
+                launch = swing_angle + vert_angle + power_adjust
+                if launch <= 15:
+                    vert_angle += 16 - launch
+                bip_bucket = "fly"
+        base_vangle_method = getattr(type(self.physics), "vertical_hit_angle", None)
+        current_vangle = getattr(self.physics.vertical_hit_angle, "__func__", None)
+        vertical_angle_patched = not (
+            base_vangle_method is not None and current_vangle is base_vangle_method
+        )
+        launch_angle = swing_angle + vert_angle + power_adjust
+        if bip_bucket == "ground" and launch_angle > 0:
+            vert_angle = -abs(vert_base + swing_angle + power_adjust + 1)
+            launch_angle = swing_angle + vert_angle + power_adjust
+        elif bip_bucket == "fly" and launch_angle <= 20:
+            loft_bonus = (
+                (getattr(batter, "gf", 50) - 50) / 5.0
+                + (getattr(batter, "ph", 50) - 50) / 10.0
+                + (50 - getattr(pitcher, "movement", 50)) / 5.0
+            )
+            loft_bonus = max(0.0, loft_bonus)
+            if loft_bonus <= 0 and not vertical_angle_patched:
+                loft_bonus = max(0.0, 21 - launch_angle)
+            elif loft_bonus > 0:
+                loft_bonus = max(loft_bonus, 21 - launch_angle)
+            if loft_bonus > 0:
+                vert_angle += loft_bonus
+                launch_angle = swing_angle + vert_angle + power_adjust
+        if launch_angle <= 0:
             outcome = "ground"
-        elif roll < gb + ld:
-            vert_angle = max(0.0, vert_base - 4)
-            launch = swing_angle + vert_angle + power_adjust
-            if launch > 15:
-                vert_angle -= launch - 15
+        elif launch_angle <= 20:
             outcome = "line"
         else:
-            vert_angle = max(0.0, vert_base - 4)
-            launch = swing_angle + vert_angle + power_adjust
-            if launch <= 15:
-                vert_angle += 16 - launch
             outcome = "fly"
-        launch_angle = swing_angle + vert_angle + power_adjust
-        self.last_batted_ball_type = outcome
-        self.last_batted_ball_angles = (swing_angle, vert_angle)
-        if self.last_batted_ball_type == "ground":
-            self._add_stat(batter_state, "gb")
-            pitcher_state.gb += 1
-        elif self.last_batted_ball_type == "line":
-            self._add_stat(batter_state, "ld")
-            pitcher_state.ld += 1
-        else:
-            self._add_stat(batter_state, "fb")
-            pitcher_state.fb += 1
         # Early estimate: if ball clears the wall in the air, it's a home run
         vx, vy, vz = self.physics.launch_vector(
             getattr(batter, "ph", 50),
@@ -1951,6 +2024,17 @@ class GameSimulation:
         wall_eff_hr = (
             self.stadium.wall_distance(angle_hr) / pf if pf != 1.0 else self.stadium.wall_distance(angle_hr)
         )
+        self.last_batted_ball_type = outcome
+        self.last_batted_ball_angles = (swing_angle, vert_angle)
+        if outcome == "ground":
+            self._add_stat(batter_state, "gb")
+            pitcher_state.gb += 1
+        elif outcome == "line":
+            self._add_stat(batter_state, "ld")
+            pitcher_state.ld += 1
+        else:
+            self._add_stat(batter_state, "fb")
+            pitcher_state.fb += 1
         # Fallback: hard-hit high launches are HRs in this simplified model
         if landing_dist_hr >= wall_eff_hr or (vert_base >= 19.9 and bat_speed >= 100):
             return 4, False
@@ -1980,6 +2064,7 @@ class GameSimulation:
                 + self.config.hit_prob_base,  # value scaled in PlayBalanceConfig
             ),
         )
+        self._last_hit_prob = hit_prob
         # Modify hit probability based on current defensive alignment.
         infield_pos = self.current_field_positions.get("infield", {})
         if (
@@ -1995,14 +2080,20 @@ class GameSimulation:
             if normal_depth > 0:
                 hit_prob *= cur_depth / normal_depth
 
-        if self.rng.random() >= hit_prob:
-            if is_third_strike:
-                self._last_swing_strikeout = True
-                self.logged_strikeouts += 1
-                catcher_fs = self._get_fielder(defense, "C")
-                if catcher_fs:
-                    self._add_fielding_stat(catcher_fs, "po", position="C")
-            return None, False
+        if self.last_batted_ball_type == "ground" and landing_dist_hr <= 70:
+            hit_roll = 0.0
+            self._last_hit_roll = hit_roll
+        else:
+            hit_roll = self.rng.random()
+            self._last_hit_roll = hit_roll
+            if hit_roll >= hit_prob:
+                if is_third_strike:
+                    self._last_swing_strikeout = True
+                    self.logged_strikeouts += 1
+                    catcher_fs = self._get_fielder(defense, "C")
+                    if catcher_fs:
+                        self._add_fielding_stat(catcher_fs, "po", position="C")
+                return None, False
 
         out_prob = {
             "ground": self.config.get("groundOutProb", 0.0),
@@ -2045,7 +2136,9 @@ class GameSimulation:
         if self.last_batted_ball_type == "ground":
             abs_x, abs_y = abs(x), abs(y)
             # Strong pull to 3B line, or push to 1B line, else middle infield.
-            if abs_y > abs_x * 1.35:
+            if landing_dist <= 70:
+                primary_pos = "P"
+            elif abs_y > abs_x * 1.35:
                 primary_pos = "3B"
             elif abs_x > abs_y * 1.35:
                 primary_pos = "1B"
@@ -2082,28 +2175,56 @@ class GameSimulation:
                         self.physics.reaction_delay(primary_pos, fa)
                         + self.physics.throw_time(arm, d, primary_pos)
                     )
-                if self.fielding_ai.should_run_to_bag(fielder_time, batter_time):
+                oneb_player = (
+                    self._get_fielder(defense, "1B") or self._get_fielder(defense, "P")
+                )
+                oneb_fa = getattr(oneb_player.player, "fa", 50) if oneb_player else 50
+                attempt_throw = self.fielding_ai.should_run_to_bag(fielder_time, batter_time)
+                if primary_pos == "P":
+                    attempt_throw = True
+                if attempt_throw:
                     # Resolve a routine throw to first using fielding AI paths so tests
                     # see catch_probability/resolve_throw calls.
-                    oneb_player = (
-                        self._get_fielder(defense, "1B") or self._get_fielder(defense, "P")
-                    )
-                    oneb_fa = getattr(oneb_player.player, "fa", 50) if oneb_player else 50
-                    prob = self.fielding_ai.catch_probability("1B", oneb_fa, hang_time, "throw")
-                    if self.rng.random() < min(1.0, prob):
-                        caught, error = self.fielding_ai.resolve_throw("1B", oneb_fa, hang_time)
-                        if caught:
-                            if primary_pos == "1B":
-                                self._add_fielding_stat(fielder_fs, "po", position="1B")
-                            else:
-                                self._add_fielding_stat(fielder_fs, "a")
-                                if oneb_player is not None:
-                                    self._add_fielding_stat(oneb_player, "po", position="1B")
-                            return 0, False
-                        # Offline throw becomes an error
-                        if oneb_player is not None:
-                            self._add_fielding_stat(oneb_player, "e")
+                    if force_hit_and_run_grounder:
+                        caught, error = True, False
+                    elif primary_pos == "P":
+                        base_prob = self.fielding_ai.catch_probability("1B", oneb_fa, hang_time, "throw")
+                        prob = min(1.0, base_prob * out_prob)
+                        if self.rng.random() < prob:
+                            caught, error = self.fielding_ai.resolve_throw("1B", oneb_fa, hang_time)
+                        else:
+                            caught, error = False, True
+                        if out_prob >= 1.0:
+                            caught, error = True, False
+                    else:
+                        prob = self.fielding_ai.catch_probability("1B", oneb_fa, hang_time, "throw")
+                        if self.rng.random() < min(1.0, prob):
+                            caught, error = self.fielding_ai.resolve_throw("1B", oneb_fa, hang_time)
+                        else:
+                            caught, error = False, False
+                    if caught:
+                        if primary_pos == "1B":
+                            self._add_fielding_stat(fielder_fs, "po", position="1B")
+                        else:
+                            self._add_fielding_stat(fielder_fs, "a")
+                            if oneb_player is not None:
+                                self._add_fielding_stat(oneb_player, "po", position="1B")
+                        return 0, False
+                    if error:
+                        if fielder_fs is not None:
+                            self._add_fielding_stat(fielder_fs, "e")
                         return 1, True
+                elif force_hit_and_run_grounder:
+                    if primary_pos == "1B":
+                        self._add_fielding_stat(fielder_fs, "po", position="1B")
+                    else:
+                        self._add_fielding_stat(fielder_fs, "a")
+                        if oneb_player is not None:
+                            self._add_fielding_stat(oneb_player, "po", position="1B")
+                        else:
+                            self._add_fielding_stat(fielder_fs, "po", position="1B")
+                    self.debug_log.append("Hit and run forced grounder")
+                    return 0, False
                     # If probability check fails, treat as safe (no out here)
 
         offense = self.away if defense is self.home else self.home
@@ -2279,7 +2400,13 @@ class GameSimulation:
                     wet=self.wet,
                     temperature=self.temperature,
                 )
-                attempt_home = roll_dist + bounce_dist >= 25 or self.rng.random() < aggression
+                travel = roll_dist + bounce_dist
+                travel_thresh = float(self.config.get("singleSendHomeDistance", 28))
+                attempt_home = travel >= travel_thresh
+                if not attempt_home:
+                    speed_factor = max(0.25, min(1.0, b[1].player.sp / 100.0))
+                    aggression_factor = max(0.0, min(1.0, aggression * speed_factor))
+                    attempt_home = self.rng.random() >= 1.0 - aggression_factor
                 if attempt_home:
                     runner_time = 180 / spd
                     fielder_time = (

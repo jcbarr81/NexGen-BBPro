@@ -23,6 +23,7 @@ def make_cfg(**entries: int) -> PlayBalanceConfig:
         "swingProbCloseStrike": 0.46,
         "swingProbCloseBall": 0.56,
         "swingProbSureBall": 0.18,
+        "disciplineRatingPct": 0,
     }
     base_entries.update(entries)
     return PlayBalanceConfig.from_dict({"PlayBalance": base_entries})
