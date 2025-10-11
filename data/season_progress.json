@@ -5,8 +5,5 @@
     "schedule": true
   },
   "sim_index": 0,
-  "playoffs_done": false,
-  "draft_completed_years": [
-    2025
-  ]
+  "playoffs_done": false
 }

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import math
 import random
 from dataclasses import dataclass, field, fields, replace
@@ -1190,7 +1191,8 @@ class GameSimulation:
             # Add small random drift so more borderline pitches finish just off the plate
             x_off += self.rng.uniform(-0.4, 0.4)
             y_off += self.rng.uniform(-0.4, 0.4)
-            dist = int(round(max(abs(x_off), abs(y_off))))
+            dist_raw = max(abs(x_off), abs(y_off))
+            dist = int(round(dist_raw * 0.8))
             plate_w = getattr(self.config, "plateWidth", 3)
             plate_h = getattr(self.config, "plateHeight", 3)
             in_zone = dist <= max(plate_w, plate_h)
@@ -1200,16 +1202,26 @@ class GameSimulation:
                     pitch_speed, miss_amt, rand=dec_r
                 )
             self.last_pitch_speed = pitch_speed
-            swing, contact_quality = self.batter_ai.decide_swing(
+            decide_fn = self.batter_ai.decide_swing
+            swing_kwargs = {
+                "pitch_type": pitch_type,
+                "balls": balls,
+                "strikes": strikes,
+                "dist": dist,
+                "random_value": dec_r,
+            }
+            params = inspect.signature(decide_fn).parameters
+            allows_variadic = any(
+                p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+            )
+            if allows_variadic or "dx" in params:
+                swing_kwargs["dx"] = x_off
+            if allows_variadic or "dy" in params:
+                swing_kwargs["dy"] = y_off
+            swing, contact_quality = decide_fn(
                 batter,
                 pitcher,
-                pitch_type=pitch_type,
-                balls=balls,
-                strikes=strikes,
-                dist=dist,
-                dx=x_off,
-                dy=y_off,
-                random_value=dec_r,
+                **swing_kwargs,
             )
             contact = getattr(self.batter_ai, "last_contact", contact_quality > 0)
             catcher_fs = self._get_fielder(defense, "C")

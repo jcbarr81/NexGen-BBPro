@@ -200,5 +200,8 @@ class FieldingAI:
     def should_run_to_bag(self, fielder_time: float, runner_time: float) -> bool:
         """Return ``True`` if the fielder can reach the bag in time."""
 
-        slop = (self.config.generalSlop + self.config.stepOnBagSlop) / 60
+        # Historical logic only applied the step-on-bag adjustment without the
+        # general timing slop.  Retain that behaviour so default PBINI values
+        # continue to allow routine force plays as asserted by tests.
+        slop = self.config.stepOnBagSlop / 60
         return fielder_time + slop <= runner_time

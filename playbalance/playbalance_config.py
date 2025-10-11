@@ -142,9 +142,9 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFMax": 92,
     # Exit velocity and launch characteristics
     # Tests expect exit velo base default to 0 (benchmarks drive EV elsewhere)
-    "exitVeloBase": 0,
+    "exitVeloBase": 58.82,
     "exitVeloPHPct": 0,
-    "exitVeloSlope": 0.3883,
+    "exitVeloSlope": 0.26476,
     # Exit velocity swing type percentages
     "exitVeloPowerPct": 85,
     "exitVeloNormalPct": 85,
@@ -649,10 +649,10 @@ _DEFAULTS: Dict[str, Any] = {
     # Fielding AI -------------------------------------------------------
     "couldBeCaughtSlop": -18,
     "shouldBeCaughtSlop": 6,
-    "generalSlop": -12,
-    "relaySlop": -46,
-    "tagTimeSlop": -22,
-    "stepOnBagSlop": -65,
+    "generalSlop": 9,
+    "relaySlop": 12,
+    "tagTimeSlop": 6,
+    "stepOnBagSlop": -5,
     "tagAtBagSlop": 4,
     "throwToBagSlop": 8,
     # Multipliers improving defensive efficiency
