@@ -17,24 +17,24 @@ Tracked from the latest run of `.venv/bin/pytest`.
 - [x] tests/test_player_profile_dialog.py::test_player_profile_dialog_handles_missing_positions
 - [x] tests/test_playoffs_rounds.py::test_generate_bracket_creates_plans_for_wildcard_structure
 - [x] tests/test_runner_advancement.py::test_double_play_records_gidp
-- [ ] tests/test_season_progress_window.py::test_simulate_day_until_midseason
-- [ ] tests/test_season_progress_window.py::test_simulation_status_tracks_progress
-- [ ] tests/test_season_progress_window.py::test_simulate_week_until_midseason
-- [ ] tests/test_season_progress_window.py::test_simulate_month_until_midseason
-- [ ] tests/test_season_progress_window.py::test_simulate_to_next_phase
-- [ ] tests/test_season_progress_window.py::test_playoffs_require_simulation
-- [ ] tests/test_season_simulator.py::test_default_simulation_runs_without_callback
-- [ ] tests/test_season_simulator.py::test_default_simulation_saves_team_stats
-- [ ] tests/test_simulation.py::test_pinch_hitter_not_used
-- [ ] tests/test_simulation.py::test_hit_and_run_count_adjust
-- [ ] tests/test_simulation.py::test_pitch_out_count_adjust
-- [ ] tests/test_simulation.py::test_starter_replaced_when_toast
-- [ ] tests/test_simulation.py::test_run_tracking_and_boxscore
-- [ ] tests/test_simulation.py::test_walk_records_stats
-- [ ] tests/test_simulation.py::test_swing_and_miss_records_strikeout
-- [ ] tests/test_simulation.py::test_passed_ball_advances_runner
+- [x] tests/test_season_progress_window.py::test_simulate_day_until_midseason
+- [x] tests/test_season_progress_window.py::test_simulation_status_tracks_progress
+- [x] tests/test_season_progress_window.py::test_simulate_week_until_midseason
+- [x] tests/test_season_progress_window.py::test_simulate_month_until_midseason
+- [x] tests/test_season_progress_window.py::test_simulate_to_next_phase
+- [x] tests/test_season_progress_window.py::test_playoffs_require_simulation
+- [x] tests/test_season_simulator.py::test_default_simulation_runs_without_callback
+- [x] tests/test_season_simulator.py::test_default_simulation_saves_team_stats
+- [x] tests/test_simulation.py::test_pinch_hitter_not_used
+- [x] tests/test_simulation.py::test_hit_and_run_count_adjust
+- [x] tests/test_simulation.py::test_pitch_out_count_adjust
+- [x] tests/test_simulation.py::test_starter_replaced_when_toast
+- [x] tests/test_simulation.py::test_run_tracking_and_boxscore
+- [x] tests/test_simulation.py::test_walk_records_stats
+- [x] tests/test_simulation.py::test_swing_and_miss_records_strikeout
+- [x] tests/test_simulation.py::test_passed_ball_advances_runner
 - [ ] tests/test_simulation.py::test_pitch_control_affects_location
-- [ ] tests/test_simulation.py::test_fielding_stats_tracking
+- [x] tests/test_simulation.py::test_fielding_stats_tracking
 - [ ] tests/test_simulation_averages.py::test_simulated_averages_close_to_mlb
 - [ ] tests/test_simulation_foul_balls.py::test_fouls_increase_pitches_reduce_strikeouts
 - [ ] tests/test_simulation_foul_balls.py::test_foul_pitch_distribution

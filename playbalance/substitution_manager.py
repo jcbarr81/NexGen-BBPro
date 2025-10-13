@@ -834,7 +834,10 @@ class SubstitutionManager:
         warmed = False
         if state.player.role == "SP":
             thresh = self._starter_toast_threshold(defense, inning, home_team)
-            if state.toast < thresh or remaining <= tired_thresh:
+            toast_trigger = state.toast < thresh or remaining <= tired_thresh
+            if not toast_trigger and thresh <= 0:
+                toast_trigger = state.consecutive_baserunners > 0
+            if toast_trigger:
                 defense.warming_reliever = True
                 warmed = True
         else:
@@ -892,6 +895,8 @@ class SubstitutionManager:
         if state.player.role == "SP":
             thresh = self._starter_toast_threshold(defense, inning, home_team)
             if state.toast < thresh or remaining <= tired:
+                change = True
+            elif thresh <= 0 and state.consecutive_baserunners >= 1:
                 change = True
         else:
             pct_left = (

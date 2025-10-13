@@ -792,6 +792,7 @@ def test_fielding_stats_tracking():
     cfg = load_config()
     catcher = make_player("c")
     catcher.primary_position = "C"
+    catcher.fa = 100
     second = make_player("2")
     second.primary_position = "2B"
     defense = TeamState(
@@ -807,7 +808,7 @@ def test_fielding_stats_tracking():
     rng = MockRandom(
         [
             0.9,
-            0.0,
+            0.95,
             0.9,
             0.0,
             0.9,
@@ -824,6 +825,8 @@ def test_fielding_stats_tracking():
         ]
     )
     sim = GameSimulation(defense, offense, cfg, rng)
+    sim.pitcher_ai.select_pitch = lambda *_, **__: ("fb", None)  # ensure consistent strike pitch
+    sim.batter_ai.decide_swing = lambda *_, **__: (True, 0.0)  # force whiff for strikeout
     res = sim._attempt_steal(offense, defense, defense.current_pitcher_state.player, force=True)
     assert res is False
     outs = sim.play_at_bat(offense, defense)

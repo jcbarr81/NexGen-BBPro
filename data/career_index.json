@@ -1,65 +1,18 @@
 {
   "version": 1,
   "league": {
-    "id": "test-league",
-    "name": "Test League",
-    "created_at": "2025-10-11T01:51:41Z"
+    "id": "jbl",
+    "name": "JBL",
+    "created_at": "2025-10-13T20:12:31Z"
   },
   "current": {
-    "season_id": "test-league-2025",
+    "season_id": "jbl-2025",
     "league_year": 2025,
-    "sequence": 3,
-    "started_on": "2025-04-01",
+    "sequence": 1,
+    "started_on": null,
     "metadata": {},
     "rollover_complete": false,
-    "created_at": "2025-10-11T02:04:25Z"
+    "created_at": "2025-10-13T20:12:31Z"
   },
-  "seasons": [
-    {
-      "season_id": "test-league-2025",
-      "league_year": 2025,
-      "sequence": 1,
-      "started_on": "2025-04-01",
-      "metadata": {},
-      "rollover_complete": true,
-      "created_at": "2025-10-11T01:51:41Z",
-      "archived_on": "2025-10-11T02:03:59Z",
-      "ended_on": "2025-04-01",
-      "artifacts": {
-        "stats": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/stats.json",
-        "standings": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/standings.json",
-        "schedule": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/schedule.csv",
-        "progress": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/season_progress.json",
-        "history": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/history",
-        "playoffs": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/playoffs_2025.json",
-        "champions": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/champions.csv",
-        "transactions": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/transactions.csv",
-        "draft": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/draft",
-        "metadata": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/metadata.json"
-      }
-    },
-    {
-      "season_id": "test-league-2025",
-      "league_year": 2025,
-      "sequence": 2,
-      "started_on": "2025-04-01",
-      "metadata": {},
-      "rollover_complete": true,
-      "created_at": "2025-10-11T02:03:59Z",
-      "archived_on": "2025-10-11T02:04:25Z",
-      "ended_on": "2025-04-01",
-      "artifacts": {
-        "stats": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/stats.json",
-        "standings": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/standings.json",
-        "schedule": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/schedule.csv",
-        "progress": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/season_progress.json",
-        "history": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/history",
-        "playoffs": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/playoffs_2025.json",
-        "champions": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/champions.csv",
-        "transactions": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/transactions.csv",
-        "draft": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/draft",
-        "metadata": "C:/Users/james/Documents/Baseball-AI/NexGen-BBPro/data/careers/test-league-2025/metadata.json"
-      }
-    }
-  ]
+  "seasons": []
 }

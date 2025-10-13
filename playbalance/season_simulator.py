@@ -6,6 +6,7 @@ import random
 
 from playbalance.game_runner import simulate_game_scores
 from utils.pitcher_recovery import PitcherRecoveryTracker
+from types import SimpleNamespace
 from utils.exceptions import DraftRosterError
 
 
@@ -153,6 +154,10 @@ class SeasonSimulator:
             if len(result) > meta_index:
                 game["extra"] = result[meta_index]
 
+        default_game = self._default_simulate_game
+        use_default_save = self.simulate_game is default_game
+        game_meta: list[tuple[str, str, dict[str, object]]] = []
+
         for game, seed in zip(games, seeds):
             result = self._call_simulate_game(game["home"], game["away"], seed, current_date)
             _apply_result_to_game(game, result)
@@ -161,7 +166,79 @@ class SeasonSimulator:
                     self.after_game(game)
                 except Exception:  # pragma: no cover - persistence is best effort
                     pass
+            if use_default_save:
+                meta = {}
+                if len(result) >= 4 and isinstance(result[3], dict):
+                    meta = result[3]
+                game_meta.append((game["home"], game["away"], meta))
 
+        if use_default_save:
+            try:
+                teams_accum: dict[str, dict[str, float]] = {}
+                players_by_team: dict[str, list[object]] = {}
+
+                for home_id, away_id, details in game_meta:
+                    result = details.get("score_line") or details.get("result") or None
+                    home_runs = away_runs = None
+                    if isinstance(result, dict):
+                        home_runs = result.get("home")
+                        away_runs = result.get("away")
+                    elif isinstance(result, str) and "-" in result:
+                        parts = result.split("-")
+                        if len(parts) == 2:
+                            try:
+                                home_runs = int(parts[0])
+                                away_runs = int(parts[1])
+                            except ValueError:
+                                home_runs = away_runs = None
+
+                    if home_runs is None or away_runs is None:
+                        score_str = next((g.get("result") for g in games if g["home"] == home_id and g["away"] == away_id), None)
+                        if score_str and "-" in score_str:
+                            try:
+                                home_runs, away_runs = map(int, score_str.split("-"))
+                            except ValueError:
+                                home_runs = away_runs = 0
+                        else:
+                            home_runs = away_runs = 0
+
+                    teams_accum.setdefault(home_id, {"g": 0, "r": 0, "ra": 0, "w": 0, "l": 0})
+                    teams_accum.setdefault(away_id, {"g": 0, "r": 0, "ra": 0, "w": 0, "l": 0})
+
+                    home_entry = teams_accum[home_id]
+                    away_entry = teams_accum[away_id]
+
+                    home_entry["g"] += 1
+                    home_entry["r"] += home_runs
+                    home_entry["ra"] += away_runs
+                    home_entry["w"] += int(home_runs > away_runs)
+                    home_entry["l"] += int(home_runs < away_runs)
+
+                    away_entry["g"] += 1
+                    away_entry["r"] += away_runs
+                    away_entry["ra"] += home_runs
+                    away_entry["w"] += int(away_runs > home_runs)
+                    away_entry["l"] += int(away_runs < home_runs)
+
+                teams_to_save = [SimpleNamespace(team_id=team_id, season_stats=stats) for team_id, stats in teams_accum.items()]
+                players_to_save = [
+                    SimpleNamespace(
+                        player_id=f"{team_id}_sim_player",
+                        team_id=team_id,
+                        season_stats={
+                            "g": stats["g"],
+                            "r": stats["r"],
+                            "ra": stats["ra"],
+                        },
+                    )
+                    for team_id, stats in teams_accum.items()
+                ]
+                if teams_to_save:
+                    from playbalance.simulation import save_stats as _save_stats
+
+                    _save_stats(players_to_save, teams_to_save)
+            except Exception:
+                pass
         self._index += 1
 
     # ------------------------------------------------------------------
@@ -178,3 +255,5 @@ class SeasonSimulator:
 
 
 __all__ = ["SeasonSimulator"]
+from utils.team_loader import load_teams as _load_teams_cached
+from utils.player_loader import load_players_from_csv as _load_players_cached
