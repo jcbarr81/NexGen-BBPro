@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "year": 2027,
+  "champion": null,
+  "runner_up": null,
+  "seeds": {
+    "AL": [
+      {
+        "team_id": "A1",
+        "seed": 1,
+        "league": "AL",
+        "wins": 98,
+        "run_diff": 148
+      },
+      {
+        "team_id": "A3",
+        "seed": 2,
+        "league": "AL",
+        "wins": 94,
+        "run_diff": 144
+      },
+      {
+        "team_id": "A4",
+        "seed": 3,
+        "league": "AL",
+        "wins": 92,
+        "run_diff": 142
+      }
+    ],
+    "NL": [
+      {
+        "team_id": "N1",
+        "seed": 1,
+        "league": "NL",
+        "wins": 97,
+        "run_diff": 147
+      },
+      {
+        "team_id": "N3",
+        "seed": 2,
+        "league": "NL",
+        "wins": 93,
+        "run_diff": 143
+      },
+      {
+        "team_id": "N4",
+        "seed": 3,
+        "league": "NL",
+        "wins": 91,
+        "run_diff": 141
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "name": "AL WC",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "A3",
+            "seed": 2,
+            "league": "AL",
+            "wins": 94,
+            "run_diff": 144
+          },
+          "low": {
+            "team_id": "A4",
+            "seed": 3,
+            "league": "AL",
+            "wins": 92,
+            "run_diff": 142
+          },
+          "config": {
+            "length": 3,
+            "pattern": [
+              1,
+              1,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "A3",
+              "away": "A4",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL WC_S0_G0_A4_at_A3.html",
+              "meta": {}
+            },
+            {
+              "home": "A4",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL WC_S0_G1_A3_at_A4.html",
+              "meta": {}
+            },
+            {
+              "home": "A3",
+              "away": "A4",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL WC_S0_G2_A4_at_A3.html",
+              "meta": {}
+            }
+          ],
+          "winner": "A3"
+        }
+      ],
+      "plan": []
+    },
+    {
+      "name": "AL CS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "A1",
+            "seed": 1,
+            "league": "AL",
+            "wins": 98,
+            "run_diff": 148
+          },
+          "low": {
+            "team_id": "A3",
+            "seed": 2,
+            "league": "AL",
+            "wins": 94,
+            "run_diff": 144
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
+            {
+              "home": "A1",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G0_A3_at_A1.html",
+              "meta": {}
+            },
+            {
+              "home": "A1",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G1_A3_at_A1.html",
+              "meta": {}
+            },
+            {
+              "home": "A3",
+              "away": "A1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G2_A1_at_A3.html",
+              "meta": {}
+            },
+            {
+              "home": "A3",
+              "away": "A1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G3_A1_at_A3.html",
+              "meta": {}
+            },
+            {
+              "home": "A3",
+              "away": "A1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G4_A1_at_A3.html",
+              "meta": {}
+            },
+            {
+              "home": "A1",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G5_A3_at_A1.html",
+              "meta": {}
+            },
+            {
+              "home": "A1",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL CS_S0_G6_A3_at_A1.html",
+              "meta": {}
+            }
+          ],
+          "winner": "A1"
+        }
+      ],
+      "plan": [
+        {
+          "series_key": "cs",
+          "sources": [
+            {
+              "kind": "seed",
+              "league": "AL",
+              "seed": 1,
+              "source_round": null,
+              "slot": 0
+            },
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "AL WC",
+              "slot": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NL WC",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "N3",
+            "seed": 2,
+            "league": "NL",
+            "wins": 93,
+            "run_diff": 143
+          },
+          "low": {
+            "team_id": "N4",
+            "seed": 3,
+            "league": "NL",
+            "wins": 91,
+            "run_diff": 141
+          },
+          "config": {
+            "length": 3,
+            "pattern": [
+              1,
+              1,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "N3",
+              "away": "N4",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL WC_S0_G0_N4_at_N3.html",
+              "meta": {}
+            },
+            {
+              "home": "N4",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL WC_S0_G1_N3_at_N4.html",
+              "meta": {}
+            },
+            {
+              "home": "N3",
+              "away": "N4",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL WC_S0_G2_N4_at_N3.html",
+              "meta": {}
+            }
+          ],
+          "winner": "N3"
+        }
+      ],
+      "plan": []
+    },
+    {
+      "name": "NL CS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "N1",
+            "seed": 1,
+            "league": "NL",
+            "wins": 97,
+            "run_diff": 147
+          },
+          "low": {
+            "team_id": "N3",
+            "seed": 2,
+            "league": "NL",
+            "wins": 93,
+            "run_diff": 143
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
+            {
+              "home": "N1",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G0_N3_at_N1.html",
+              "meta": {}
+            },
+            {
+              "home": "N1",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G1_N3_at_N1.html",
+              "meta": {}
+            },
+            {
+              "home": "N3",
+              "away": "N1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G2_N1_at_N3.html",
+              "meta": {}
+            },
+            {
+              "home": "N3",
+              "away": "N1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G3_N1_at_N3.html",
+              "meta": {}
+            },
+            {
+              "home": "N3",
+              "away": "N1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G4_N1_at_N3.html",
+              "meta": {}
+            },
+            {
+              "home": "N1",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G5_N3_at_N1.html",
+              "meta": {}
+            },
+            {
+              "home": "N1",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL CS_S0_G6_N3_at_N1.html",
+              "meta": {}
+            }
+          ],
+          "winner": "N1"
+        }
+      ],
+      "plan": [
+        {
+          "series_key": "cs",
+          "sources": [
+            {
+              "kind": "seed",
+              "league": "NL",
+              "seed": 1,
+              "source_round": null,
+              "slot": 0
+            },
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "NL WC",
+              "slot": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "WS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "A1",
+            "seed": 1,
+            "league": "AL",
+            "wins": 98,
+            "run_diff": 148
+          },
+          "low": {
+            "team_id": "N1",
+            "seed": 1,
+            "league": "NL",
+            "wins": 97,
+            "run_diff": 147
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [],
+          "winner": null
+        }
+      ],
+      "plan": [
+        {
+          "series_key": "ws",
+          "sources": [
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "AL CS",
+              "slot": 0
+            },
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "NL CS",
+              "slot": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

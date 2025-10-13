@@ -1,15 +1,27 @@
+import logging
+from typing import Optional
+
 from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QGraphicsOpacityEffect
 from PyQt6.QtGui import QPixmap, QFont, QKeySequence, QShortcut
 from PyQt6.QtCore import Qt, QEvent, QPropertyAnimation, QEasingCurve, QTimer, QUrl
 try:  # Multimedia may not be available on all platforms
     from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-except Exception:  # pragma: no cover - optional dependency
+except Exception as exc:  # pragma: no cover - optional dependency
+    logging.getLogger(__name__).debug("Qt multimedia unavailable: %s", exc)
     QMediaPlayer = None  # type: ignore[assignment]
     QAudioOutput = None  # type: ignore[assignment]
+
+try:  # Optional pygame fallback for environments without Qt multimedia
+    import pygame  # type: ignore
+except Exception as exc:  # pragma: no cover - optional dependency
+    logging.getLogger(__name__).debug("pygame unavailable for splash music: %s", exc)
+    pygame = None  # type: ignore[assignment]
 
 from ui.login_window import LoginWindow
 from utils.path_utils import get_base_dir
 from ui.window_utils import show_on_top, set_all_on_top
+
+logger = logging.getLogger(__name__)
 
 class SplashScreen(QWidget):
     """Initial splash screen displaying the NexGen logo and start button."""
@@ -90,6 +102,7 @@ class SplashScreen(QWidget):
         # Start background music if available
         self._music_player = None
         self._audio_output = None
+        self._music_backend: str | None = None
         self._setup_music()
 
     def _build_sponsor_bar(self) -> QWidget:
@@ -146,81 +159,132 @@ class SplashScreen(QWidget):
     # ------------------------------------------------------------------
     # Music helpers
     def _setup_music(self) -> None:
-        if QMediaPlayer is None or QAudioOutput is None:
+        base = get_base_dir()
+        candidates = [
+            base / "assets" / "splash_music.ogg",
+            base / "assets" / "splash_music.mp3",
+            base / "assets" / "splash.ogg",
+            base / "assets" / "splash.mp3",
+            base / "assets" / "music" / "splash.mp3",
+        ]
+        audio = next((p for p in candidates if p.exists()), None)
+        if audio is None:
+            logger.debug("No splash music asset found at expected locations.")
             return
-        try:
-            base = get_base_dir()
-            # Search a few common filenames
-            candidates = [
-                base / "assets" / "splash_music.ogg",
-                base / "assets" / "splash_music.mp3",
-                base / "assets" / "splash.ogg",
-                base / "assets" / "splash.mp3",
-                base / "assets" / "music" / "splash.mp3",
-            ]
-            audio = next((p for p in candidates if p.exists()), None)
-            if audio is None:
-                return
-            self._music_player = QMediaPlayer(self)
-            self._audio_output = QAudioOutput(self)
-            self._music_player.setAudioOutput(self._audio_output)
-            # Set volume to 100%
+
+        last_error: Optional[Exception] = None
+
+        if QMediaPlayer is not None and QAudioOutput is not None:
             try:
-                # PyQt6 QAudioOutput volume is 0.0 - 1.0
-                self._audio_output.setVolume(1.0)
-            except Exception:
-                pass
-            self._music_player.setSource(QUrl.fromLocalFile(str(audio)))
-            # Seek to 24 seconds once media is loaded
-            try:
-                def _seek_to_24(status):  # pragma: no cover - depends on Qt version
+                player = QMediaPlayer(self)
+                audio_output = QAudioOutput(self)
+                player.setAudioOutput(audio_output)
+                try:
+                    audio_output.setVolume(1.0)
+                except Exception:
+                    pass
+                player.setSource(QUrl.fromLocalFile(str(audio)))
+
+                try:
+                    def _seek_to_24(status):  # pragma: no cover - depends on Qt version
+                        try:
+                            from PyQt6.QtMultimedia import QMediaPlayer as _MP
+                            if status == _MP.MediaStatus.LoadedMedia:
+                                player.setPosition(24000)
+                                try:
+                                    player.mediaStatusChanged.disconnect(_seek_to_24)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+
+                    player.mediaStatusChanged.connect(_seek_to_24)
+                except Exception:
                     try:
-                        from PyQt6.QtMultimedia import QMediaPlayer as _MP
-                        if status == _MP.MediaStatus.LoadedMedia:
-                            self._music_player.setPosition(24000)
-                            try:
-                                self._music_player.mediaStatusChanged.disconnect(_seek_to_24)
-                            except Exception:
-                                pass
+                        QTimer.singleShot(300, lambda: player.setPosition(24000))
                     except Exception:
                         pass
 
-                self._music_player.mediaStatusChanged.connect(_seek_to_24)
-            except Exception:
-                # Fallback: attempt a delayed seek shortly after starting
-                try:
-                    QTimer.singleShot(300, lambda: self._music_player.setPosition(24000))
-                except Exception:
-                    pass
-            # Loop if API available; otherwise restart on end
-            if hasattr(self._music_player, "setLoops"):
-                try:
-                    self._music_player.setLoops(-1)  # type: ignore[arg-type]
-                except Exception:
-                    pass
-            else:
-                def _restart_if_needed(state):  # pragma: no cover - depends on Qt version
+                if hasattr(player, "setLoops"):
                     try:
-                        from PyQt6.QtMultimedia import QMediaPlayer as _MP
-                        if state == _MP.PlaybackState.StoppedState:
-                            self._music_player.play()
+                        player.setLoops(-1)  # type: ignore[arg-type]
                     except Exception:
                         pass
+                else:
+                    def _restart_if_needed(state):  # pragma: no cover - depends on Qt version
+                        try:
+                            from PyQt6.QtMultimedia import QMediaPlayer as _MP
+                            if state == _MP.PlaybackState.StoppedState:
+                                player.play()
+                        except Exception:
+                            pass
+                    try:
+                        player.playbackStateChanged.connect(_restart_if_needed)
+                    except Exception:
+                        pass
+
+                player.play()
+                self._music_player = player
+                self._audio_output = audio_output
+                self._music_backend = "qt"
+                return
+            except Exception as exc:  # pragma: no cover - environment dependent
+                last_error = exc
+                logger.warning("Failed to start splash music via Qt multimedia: %s", exc)
+                self._music_player = None
+                self._audio_output = None
+                self._music_backend = None
+
+        if pygame is not None:
+            try:
+                if not pygame.get_init():
+                    pygame.init()  # type: ignore[attr-defined]
+                if not pygame.mixer.get_init():
+                    pygame.mixer.init()  # type: ignore[attr-defined]
+                pygame.mixer.music.load(str(audio))  # type: ignore[attr-defined]
+                pygame.mixer.music.set_volume(1.0)  # type: ignore[attr-defined]
+                pygame.mixer.music.play(-1)  # type: ignore[attr-defined]
                 try:
-                    self._music_player.playbackStateChanged.connect(_restart_if_needed)
+                    pygame.mixer.music.set_pos(24.0)  # type: ignore[attr-defined]
                 except Exception:
                     pass
-            self._music_player.play()
-        except Exception:
-            self._music_player = None
-            self._audio_output = None
+                self._music_player = "pygame"
+                self._audio_output = None
+                self._music_backend = "pygame"
+                return
+            except Exception as exc:  # pragma: no cover - environment dependent
+                last_error = exc
+                logger.warning("Failed to start splash music via pygame: %s", exc)
+                try:
+                    pygame.mixer.music.stop()  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+                self._music_player = None
+                self._music_backend = None
+
+        if last_error is not None:
+            logger.info(
+                "Splash music disabled; no working audio backend (%s). "
+                "Install Qt multimedia dependencies or pygame for audio playback.",
+                last_error,
+            )
+        else:
+            logger.info(
+                "Splash music disabled; no audio backend available. "
+                "Install Qt multimedia dependencies or pygame for audio playback."
+            )
 
     def _stop_music(self) -> None:
         try:
-            if self._music_player is not None:
+            if self._music_backend == "qt" and self._music_player is not None:
                 self._music_player.stop()
+            elif self._music_backend == "pygame" and pygame is not None:
+                pygame.mixer.music.stop()  # type: ignore[attr-defined]
         except Exception:
             pass
+        self._music_player = None
+        self._audio_output = None
+        self._music_backend = None
 
     def open_login(self):
         """Show the login window while keeping the splash visible."""

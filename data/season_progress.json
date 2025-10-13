@@ -1,8 +1,8 @@
 {
   "preseason_done": {
     "free_agency": true,
-    "training_camp": false,
-    "schedule": false
+    "training_camp": true,
+    "schedule": true
   },
   "sim_index": 0,
   "playoffs_done": false

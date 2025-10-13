@@ -81,6 +81,9 @@ _DEFAULTS: Dict[str, Any] = {
     "siControlBoxWidth": 1.5,
     "siControlBoxHeight": 1.5,
     "controlBoxIncreaseEffCOPct": 15,
+    "controlMissPenaltyDist": 0,
+    "controlMissBaseExpansion": 0.0,
+    "pitchMissRandFactor": 0.0,
     "controlScale": 130,
     "speedReductionBase": 3,
     "speedReductionRange": 3,
@@ -95,6 +98,7 @@ _DEFAULTS: Dict[str, Any] = {
     "swingAngleTenthDegreesOutsideAdjust": 0,
     "rollFrictionGrass": 12,
     "rollFrictionTurf": 10,
+    "rollSpeedMult": 1.0,
     "ballAirResistancePct": 95,
     "ballAltitudePct": 100,
     "ballBaseAltitude": 0,
@@ -140,8 +144,7 @@ _DEFAULTS: Dict[str, Any] = {
     "throwSpeedOFDistPct": 3,
     "throwSpeedOFASPct": 0,
     "throwSpeedOFMax": 92,
-    # Exit velocity and launch characteristics
-    # Tests expect exit velo base default to 0 (benchmarks drive EV elsewhere)
+    # Exit velocity and launch characteristics tuned via physics helpers
     "exitVeloBase": 0,
     "exitVeloPHPct": 0,
     "exitVeloSlope": 0.26476,

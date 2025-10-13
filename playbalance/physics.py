@@ -399,7 +399,9 @@ def launch_vector(
         "normal": getattr(cfg, "exitVeloNormalPct", 100.0),
     }.get(swing_type, getattr(cfg, "exitVeloNormalPct", 100.0))
 
-    base = getattr(cfg, "exitVeloBase", 58.82)
+    base = getattr(cfg, "exitVeloBase", 0.0)
+    if not base:
+        base = 58.82
     slope = getattr(cfg, "exitVeloSlope", 0.26476)
     raw_speed = base + slope * (ph + pl)
     speed_mph = raw_speed * scale / 100.0

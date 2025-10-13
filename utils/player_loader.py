@@ -54,6 +54,11 @@ def load_players_from_csv(file_path):
     csv_path = Path(file_path)
     if not csv_path.is_absolute():
         csv_path = base_path / csv_path
+        if not csv_path.exists():
+            repo_root = Path(__file__).resolve().parent.parent
+            alt_path = repo_root / file_path
+            if alt_path.exists():
+                csv_path = alt_path
 
     players = []
     with csv_path.open(mode="r", newline="") as csvfile:

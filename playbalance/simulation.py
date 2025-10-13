@@ -2013,8 +2013,10 @@ class GameSimulation:
         contact_quality: float = 1.0,
         swing_type: str = "normal",
         is_third_strike: bool = False,
-        start_pitches: int,
+        start_pitches: int | None = None,
     ) -> tuple[Optional[int], bool]:
+        if start_pitches is None:
+            start_pitches = getattr(pitcher_state, "pitches_thrown", 0)
         self._last_swing_strikeout = False
         forced_hit_and_run = getattr(self, "_hit_and_run_active", False)
         force_hit_and_run_grounder = getattr(self, "_force_hit_and_run_grounder", False)

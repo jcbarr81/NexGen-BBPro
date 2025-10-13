@@ -175,13 +175,16 @@ class LeagueStatsWindow(QDialog):
         parent=None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("League Statistics")
+        if callable(getattr(self, "setWindowTitle", None)):
+            self.setWindowTitle("League Statistics")
         if callable(getattr(self, "resize", None)):
             self.resize(1120, 700)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(18)
+        if callable(getattr(layout, "setContentsMargins", None)):
+            layout.setContentsMargins(24, 24, 24, 24)
+        if callable(getattr(layout, "setSpacing", None)):
+            layout.setSpacing(18)
 
         teams = list(teams)
         player_entries, team_stats = _load_players_with_stats()

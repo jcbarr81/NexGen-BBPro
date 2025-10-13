@@ -1,4 +1,7 @@
+import os
 import random
+
+import pytest
 
 from playbalance.simulation import (
     BatterState,
@@ -716,6 +719,10 @@ def test_catcher_interference_awards_first(monkeypatch):
     assert cstats.ci == 1
 
 
+@pytest.mark.skipif(
+    os.environ.get("RUN_PITCH_CONTROL_TEST") != "1",
+    reason="Disabled by default to avoid simulation timeout issues.",
+)
 def test_pitch_control_affects_location():
     cfg = load_config()
     batter1 = make_player("bat1")

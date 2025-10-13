@@ -206,6 +206,85 @@ from .components import Card, section_title
 HEADLESS_QT = getattr(QDialog, "__name__", "").lower().startswith("_qt")
 
 
+def _safe_call(target: Any, method: str, *args, **kwargs) -> None:
+    """Invoke ``method`` on ``target`` when available and callable."""
+
+    func = getattr(target, method, None)
+    if callable(func):
+        func(*args, **kwargs)
+
+
+def _safe_set_margins(layout: Any, *values: int) -> None:
+    _safe_call(layout, "setContentsMargins", *values)
+
+
+def _safe_set_spacing(layout: Any, value: int) -> None:
+    _safe_call(layout, "setSpacing", value)
+
+
+def _safe_set_hspacing(layout: Any, value: int) -> None:
+    _safe_call(layout, "setHorizontalSpacing", value)
+
+
+def _safe_set_vspacing(layout: Any, value: int) -> None:
+    _safe_call(layout, "setVerticalSpacing", value)
+
+
+def _alignment(*names: str) -> Any | None:
+    flags = getattr(Qt, "AlignmentFlag", None)
+    if not flags:
+        return None
+    combo = None
+    for name in names:
+        flag = getattr(flags, name, None)
+        if flag is None:
+            return None
+        combo = flag if combo is None else combo | flag
+    return combo
+
+
+def _set_alignment(widget: Any, *names: str) -> None:
+    align = _alignment(*names)
+    if align is None:
+        return
+    try:
+        widget.setAlignment(align)
+    except Exception:
+        pass
+
+
+def _set_text_alignment(item: Any, *names: str) -> None:
+    align = _alignment(*names)
+    if align is None:
+        return
+    try:
+        item.setTextAlignment(align)
+    except Exception:
+        pass
+
+
+def _layout_add_widget(layout: Any, *args: Any, **kwargs: Any) -> None:
+    method = getattr(layout, "addWidget", None)
+    if not callable(method):
+        return
+    try:
+        method(*args, **kwargs)
+    except TypeError:
+        try:
+            method(*args)
+        except TypeError:
+            pass
+
+
+def _layout_add_stretch(layout: Any, *args: Any) -> None:
+    method = getattr(layout, "addStretch", None)
+    if callable(method):
+        try:
+            method(*args)
+        except TypeError:
+            method()
+
+
 _BATTING_STATS: List[str] = [
     "g",
     "ab",
@@ -270,7 +349,8 @@ class PlayerProfileDialog(QDialog):
         except Exception:
             self._stats_snapshot = {}
         self._history_override = list(self._stats_snapshot.get("history", []) or [])
-        self.setWindowTitle(f"{player.first_name} {player.last_name}")
+        if callable(getattr(self, "setWindowTitle", None)):
+            self.setWindowTitle(f"{player.first_name} {player.last_name}")
 
         self._is_pitcher = getattr(player, "is_pitcher", False)
         self._comparison_player: Optional[Any] = None
@@ -284,8 +364,10 @@ class PlayerProfileDialog(QDialog):
         self._comparison_name_label: Optional[QLabel] = None
 
         root = QVBoxLayout()
-        root.setContentsMargins(24, 24, 24, 24)
-        root.setSpacing(18)
+        if callable(getattr(root, "setContentsMargins", None)):
+            _safe_set_margins(root, 24, 24, 24, 24)
+        if callable(getattr(root, "setSpacing", None)):
+            _safe_set_spacing(root, 18)
 
         if HEADLESS_QT:
             stats_history = self._collect_stats_history()
@@ -295,24 +377,24 @@ class PlayerProfileDialog(QDialog):
             return
 
         header = self._build_header_section()
-        root.addWidget(header)
+        _layout_add_widget(root, header)
 
         self._comparison_panel = self._build_comparison_panel()
-        root.addWidget(self._comparison_panel)
+        _layout_add_widget(root, self._comparison_panel)
         self._comparison_panel.hide()
 
         overview = self._build_overview_section()
         if overview is not None:
-            root.addWidget(overview)
+            _layout_add_widget(root, overview)
 
         insights = self._build_insights_section()
         if insights is not None:
-            root.addWidget(insights)
+            _layout_add_widget(root, insights)
 
         stats_history = self._collect_stats_history()
-        root.addWidget(self._build_stats_section(stats_history))
+        _layout_add_widget(root, self._build_stats_section(stats_history))
 
-        root.addStretch()
+        _layout_add_stretch(root)
         self.setLayout(root)
         self._update_comparison_panel()
         # Size policy: provide a generous default width so headers and row titles
@@ -346,108 +428,112 @@ class PlayerProfileDialog(QDialog):
     def _build_avatar_panel(self) -> QWidget:
         wrapper = QWidget()
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(6)
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_spacing(layout, 6)
 
         avatar_label = QLabel()
         pix = self._load_avatar_pixmap()
         if not pix.isNull():
-            avatar_label.setPixmap(pix)
-        avatar_label.setFixedSize(128, 128)
-        avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(
-            avatar_label,
-            alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-        )
-        layout.addStretch()
+            _safe_call(avatar_label, "setPixmap", pix)
+        _safe_call(avatar_label, "setFixedSize", 128, 128)
+        try:
+            _set_alignment(avatar_label, "AlignCenter")
+        except Exception:
+            pass
+        align = _alignment("AlignHCenter", "AlignTop")
+        if align is not None:
+            _layout_add_widget(layout, avatar_label, alignment=align)
+        else:
+            _layout_add_widget(layout, avatar_label)
+        _layout_add_stretch(layout)
         return wrapper
 
     def _build_hitter_header(self) -> QFrame | None:
         frame = QFrame()
-        frame.setObjectName("ProfileHeader")
+        _safe_call(frame, "setObjectName", "ProfileHeader")
         outer = QVBoxLayout(frame)
-        outer.setContentsMargins(18, 18, 18, 18)
-        outer.setSpacing(12)
+        _safe_set_margins(outer, 18, 18, 18, 18)
+        _safe_set_spacing(outer, 12)
 
         header_row = QHBoxLayout()
-        header_row.setSpacing(18)
+        _safe_set_spacing(header_row, 18)
 
-        header_row.addWidget(self._build_avatar_panel(), 0)
-        header_row.addWidget(self._build_hitter_identity_block(), 2)
-        header_row.addWidget(self._build_overall_block(), 1)
-        header_row.addWidget(self._build_fielding_block(), 1)
+        _layout_add_widget(header_row, self._build_avatar_panel(), 0)
+        _layout_add_widget(header_row, self._build_hitter_identity_block(), 2)
+        _layout_add_widget(header_row, self._build_overall_block(), 1)
+        _layout_add_widget(header_row, self._build_fielding_block(), 1)
 
         outer.addLayout(header_row)
-        outer.addWidget(self._build_scouting_summary_box())
-        outer.addWidget(self._build_header_actions())
+        _layout_add_widget(outer, self._build_scouting_summary_box())
+        _layout_add_widget(outer, self._build_header_actions())
         return frame
 
     def _build_hitter_identity_block(self) -> QWidget:
         panel = QWidget()
         layout = QGridLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setHorizontalSpacing(8)
-        layout.setVerticalSpacing(4)
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_hspacing(layout, 8)
+        _safe_set_vspacing(layout, 4)
 
         name = QLabel(f"{self.player.first_name} {self.player.last_name}")
-        name.setObjectName("PlayerName")
-        name.setProperty("profile", "name")
-        layout.addWidget(name, 0, 0, 1, 2)
+        _safe_call(name, "setObjectName", "PlayerName")
+        _safe_call(name, "setProperty", "profile", "name")
+        _layout_add_widget(layout, name, 0, 0, 1, 2)
 
         age = self._calculate_age(self.player.birthdate)
-        layout.addWidget(QLabel(f"Age: {age}"), 1, 0)
-        layout.addWidget(QLabel(f"Bats: {getattr(self.player, 'bats', '?')}"), 1, 1)
-        layout.addWidget(QLabel(f"Height: {self._format_height(getattr(self.player, 'height', None))}"), 2, 0)
-        layout.addWidget(QLabel(f"Weight: {getattr(self.player, 'weight', '?')}"), 2, 1)
+        _layout_add_widget(layout, QLabel(f"Age: {age}"), 1, 0)
+        _layout_add_widget(layout, QLabel(f"Bats: {getattr(self.player, 'bats', '?')}"), 1, 1)
+        _layout_add_widget(layout, QLabel(f"Height: {self._format_height(getattr(self.player, 'height', None))}"), 2, 0)
+        _layout_add_widget(layout, QLabel(f"Weight: {getattr(self.player, 'weight', '?')}"), 2, 1)
 
         positions = [self.player.primary_position, *getattr(self.player, 'other_positions', [])]
         positions = [p for p in positions if p]
         pos_label = ', '.join(positions) if positions else '?'
-        layout.addWidget(QLabel(f"Positions: {pos_label}"), 3, 0, 1, 2)
+        _layout_add_widget(layout, QLabel(f"Positions: {pos_label}"), 3, 0, 1, 2)
 
-        layout.addWidget(QLabel(f"Groundball/Flyball: {getattr(self.player, 'gf', '?')}"), 4, 0, 1, 2)
+        _layout_add_widget(layout, QLabel(f"Groundball/Flyball: {getattr(self.player, 'gf', '?')}"), 4, 0, 1, 2)
         return panel
 
     def _build_overall_block(self, *, title: str = "Overall", overall: int | None = None) -> QWidget:
         wrapper = QFrame()
-        wrapper.setObjectName("OverallBlock")
+        _safe_call(wrapper, "setObjectName", "OverallBlock")
         wrapper.setFrameShape(QFrame.Shape.StyledPanel)
 
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(6)
+        _safe_set_margins(layout, 12, 12, 12, 12)
+        _safe_set_spacing(layout, 6)
 
         header = QLabel(title)
-        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(header)
+        _set_alignment(header, "AlignCenter")
+        _layout_add_widget(layout, header)
 
         overall_val = overall if overall is not None else getattr(self.player, 'overall', None)
         if not isinstance(overall_val, (int, float)):
             overall_val = self._estimate_overall_rating()
 
         overall_label = QLabel(str(int(round(overall_val))) if isinstance(overall_val, (int, float)) else str(overall_val))
-        overall_label.setObjectName("OverallValue")
-        overall_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(overall_label)
+        _safe_call(overall_label, "setObjectName", "OverallValue")
+        _set_alignment(overall_label, "AlignCenter")
+        _layout_add_widget(layout, overall_label)
 
         return wrapper
 
     def _build_fielding_block(self) -> QWidget:
         wrapper = QFrame()
-        wrapper.setObjectName("FieldingBlock")
+        _safe_call(wrapper, "setObjectName", "FieldingBlock")
         wrapper.setFrameShape(QFrame.Shape.StyledPanel)
 
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(6)
+        _safe_set_margins(layout, 12, 12, 12, 12)
+        _safe_set_spacing(layout, 6)
 
         title = QLabel("Defense")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        _set_alignment(title, "AlignCenter")
+        _layout_add_widget(layout, title)
 
         diagram = QLabel()
-        diagram.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        diagram.setObjectName("FieldDiagram")
+        _set_alignment(diagram, "AlignCenter")
+        _safe_call(diagram, "setObjectName", "FieldDiagram")
         pix = self._load_field_diagram_pixmap()
         if pix is not None:
             scaled = pix.scaled(
@@ -460,13 +546,13 @@ class PlayerProfileDialog(QDialog):
         else:
             diagram.setText("Field Chart")
             diagram.setMinimumSize(160, 130)
-        layout.addWidget(diagram)
+        _layout_add_widget(layout, diagram)
 
         metrics = QWidget()
         grid = QGridLayout(metrics)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(4)
+        _safe_set_margins(grid, 0, 0, 0, 0)
+        _safe_set_hspacing(grid, 12)
+        _safe_set_vspacing(grid, 4)
 
         metric_pairs = [
             ("Fielding", getattr(self.player, 'fa', '?')),
@@ -474,93 +560,93 @@ class PlayerProfileDialog(QDialog):
             ("Speed", getattr(self.player, 'sp', '?')),
         ]
         for row, (label, value) in enumerate(metric_pairs):
-            grid.addWidget(QLabel(label), row, 0)
-            grid.addWidget(QLabel(str(value)), row, 1)
+            _layout_add_widget(grid, QLabel(label), row, 0)
+            _layout_add_widget(grid, QLabel(str(value)), row, 1)
 
-        layout.addWidget(metrics)
+        _layout_add_widget(layout, metrics)
         return wrapper
 
     def _build_scouting_summary_box(self) -> QWidget:
         box = QFrame()
-        box.setObjectName("ScoutingBox")
+        _safe_call(box, "setObjectName", "ScoutingBox")
         box.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(box)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(6)
+        _safe_set_margins(layout, 12, 12, 12, 12)
+        _safe_set_spacing(layout, 6)
 
         summary = getattr(self.player, 'summary', '') or "No scouting report available."
         label = QLabel(summary)
         label.setWordWrap(True)
-        layout.addWidget(label)
+        _layout_add_widget(layout, label)
         return box
 
     def _build_pitcher_header(self) -> QFrame | None:
         frame = QFrame()
-        frame.setObjectName("ProfileHeader")
+        _safe_call(frame, "setObjectName", "ProfileHeader")
 
         outer = QVBoxLayout(frame)
-        outer.setContentsMargins(18, 18, 18, 18)
-        outer.setSpacing(12)
+        _safe_set_margins(outer, 18, 18, 18, 18)
+        _safe_set_spacing(outer, 12)
 
         header_row = QHBoxLayout()
-        header_row.setSpacing(18)
+        _safe_set_spacing(header_row, 18)
 
-        header_row.addWidget(self._build_avatar_panel(), 0)
-        header_row.addWidget(self._build_pitcher_identity_block(), 2)
-        header_row.addWidget(self._build_overall_block(), 1)
-        header_row.addWidget(self._build_pitcher_arsenal_block(), 1)
+        _layout_add_widget(header_row, self._build_avatar_panel(), 0)
+        _layout_add_widget(header_row, self._build_pitcher_identity_block(), 2)
+        _layout_add_widget(header_row, self._build_overall_block(), 1)
+        _layout_add_widget(header_row, self._build_pitcher_arsenal_block(), 1)
 
         outer.addLayout(header_row)
-        outer.addWidget(self._build_pitcher_summary_box())
-        outer.addWidget(self._build_header_actions())
+        _layout_add_widget(outer, self._build_pitcher_summary_box())
+        _layout_add_widget(outer, self._build_header_actions())
         return frame
 
     def _build_pitcher_identity_block(self) -> QWidget:
         panel = QWidget()
         layout = QGridLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setHorizontalSpacing(8)
-        layout.setVerticalSpacing(4)
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_hspacing(layout, 8)
+        _safe_set_vspacing(layout, 4)
 
         name = QLabel(f"{self.player.first_name} {self.player.last_name}")
-        name.setObjectName("PlayerName")
-        name.setProperty("profile", "name")
-        layout.addWidget(name, 0, 0, 1, 2)
+        _safe_call(name, "setObjectName", "PlayerName")
+        _safe_call(name, "setProperty", "profile", "name")
+        _layout_add_widget(layout, name, 0, 0, 1, 2)
 
         age = self._calculate_age(self.player.birthdate)
         role = getattr(self.player, 'role', '') or 'Pitcher'
-        layout.addWidget(QLabel(f"Age: {age}"), 1, 0)
-        layout.addWidget(QLabel(f"Role: {role}"), 1, 1)
+        _layout_add_widget(layout, QLabel(f"Age: {age}"), 1, 0)
+        _layout_add_widget(layout, QLabel(f"Role: {role}"), 1, 1)
 
         bats = getattr(self.player, 'bats', '?')
         gf = getattr(self.player, 'gf', '?')
-        layout.addWidget(QLabel(f"Bats: {bats}"), 2, 0)
-        layout.addWidget(QLabel(f"GF: {gf}"), 2, 1)
+        _layout_add_widget(layout, QLabel(f"Bats: {bats}"), 2, 0)
+        _layout_add_widget(layout, QLabel(f"GF: {gf}"), 2, 1)
 
         control = getattr(self.player, 'control', '?')
         movement = getattr(self.player, 'movement', '?')
-        layout.addWidget(QLabel(f"Control: {control}"), 3, 0)
-        layout.addWidget(QLabel(f"Movement: {movement}"), 3, 1)
+        _layout_add_widget(layout, QLabel(f"Control: {control}"), 3, 0)
+        _layout_add_widget(layout, QLabel(f"Movement: {movement}"), 3, 1)
 
         endurance = getattr(self.player, 'endurance', '?')
         hold_runner = getattr(self.player, 'hold_runner', '?')
-        layout.addWidget(QLabel(f"Endurance: {endurance}"), 4, 0)
-        layout.addWidget(QLabel(f"Hold Runner: {hold_runner}"), 4, 1)
+        _layout_add_widget(layout, QLabel(f"Endurance: {endurance}"), 4, 0)
+        _layout_add_widget(layout, QLabel(f"Hold Runner: {hold_runner}"), 4, 1)
         return panel
 
     def _build_pitcher_arsenal_block(self) -> QWidget:
         wrapper = QFrame()
-        wrapper.setObjectName("ArsenalBlock")
+        _safe_call(wrapper, "setObjectName", "ArsenalBlock")
         wrapper.setFrameShape(QFrame.Shape.StyledPanel)
 
         layout = QGridLayout(wrapper)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setHorizontalSpacing(12)
-        layout.setVerticalSpacing(6)
+        _safe_set_margins(layout, 12, 12, 12, 12)
+        _safe_set_hspacing(layout, 12)
+        _safe_set_vspacing(layout, 6)
 
         title = QLabel("Pitch Arsenal")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title, 0, 0, 1, 2)
+        _set_alignment(title, "AlignCenter")
+        _layout_add_widget(layout, title, 0, 0, 1, 2)
 
         pitch_labels = {
             'fb': 'Fastball',
@@ -577,17 +663,17 @@ class PlayerProfileDialog(QDialog):
             if isinstance(value, (int, float)) and value > 0:
                 values.append((label, int(value)))
         if not values:
-            layout.addWidget(QLabel("No pitch data"), 1, 0, 1, 2)
+            _layout_add_widget(layout, QLabel("No pitch data"), 1, 0, 1, 2)
             return wrapper
 
         max_value = max(v for _, v in values)
         for idx, (label, value) in enumerate(values, start=1):
             row = idx
-            layout.addWidget(QLabel(label), row, 0)
+            _layout_add_widget(layout, QLabel(label), row, 0)
             value_label = QLabel(str(value))
             if value == max_value:
-                value_label.setProperty("highlight", True)
-            layout.addWidget(value_label, row, 1)
+                _safe_call(value_label, "setProperty", "highlight", True)
+            _layout_add_widget(layout, value_label, row, 1)
 
         return wrapper
 
@@ -597,50 +683,50 @@ class PlayerProfileDialog(QDialog):
         if layout is not None:
             fatigue = getattr(self.player, 'fatigue', '').replace('_', ' ').title()
             fatigue_text = fatigue or 'Fresh'
-            layout.addWidget(QLabel(f"Fatigue: {fatigue_text}"))
+            _layout_add_widget(layout, QLabel(f"Fatigue: {fatigue_text}"))
             if getattr(self.player, 'injured', False):
                 desc = getattr(self.player, 'injury_description', 'Injured') or 'Injured'
-                layout.addWidget(QLabel(f"Injury: {desc}"))
+                _layout_add_widget(layout, QLabel(f"Injury: {desc}"))
         return box
 
     def _build_generic_header(self) -> QFrame:
         frame = QFrame()
-        frame.setObjectName("ProfileHeader")
+        _safe_call(frame, "setObjectName", "ProfileHeader")
         outer = QVBoxLayout(frame)
-        outer.setContentsMargins(18, 18, 18, 18)
-        outer.setSpacing(12)
-        outer.addWidget(section_title("Player Profile"))
+        _safe_set_margins(outer, 18, 18, 18, 18)
+        _safe_set_spacing(outer, 12)
+        _layout_add_widget(outer, section_title("Player Profile"))
 
         body = QWidget()
         body_layout = QHBoxLayout(body)
-        body_layout.setContentsMargins(0, 0, 0, 0)
-        body_layout.setSpacing(18)
+        _safe_set_margins(body_layout, 0, 0, 0, 0)
+        _safe_set_spacing(body_layout, 18)
 
-        body_layout.addWidget(self._build_avatar_panel(), 0)
-        body_layout.addWidget(self._build_identity_panel(), 1)
-        body_layout.addWidget(self._build_role_panel(), 1)
+        _layout_add_widget(body_layout, self._build_avatar_panel(), 0)
+        _layout_add_widget(body_layout, self._build_identity_panel(), 1)
+        _layout_add_widget(body_layout, self._build_role_panel(), 1)
 
-        outer.addWidget(body)
-        outer.addWidget(self._build_header_actions())
+        _layout_add_widget(outer, body)
+        _layout_add_widget(outer, self._build_header_actions())
         return frame
 
     def _build_header_actions(self) -> QWidget:
         bar = QWidget()
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        layout.addStretch()
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_spacing(layout, 8)
+        _layout_add_stretch(layout)
 
         compare_btn = QPushButton("Compare...")
-        compare_btn.setObjectName("SecondaryButton")
+        _safe_call(compare_btn, "setObjectName", "SecondaryButton")
         compare_btn.clicked.connect(self._prompt_comparison_player)
-        layout.addWidget(compare_btn)
+        _layout_add_widget(layout, compare_btn)
 
         clear_btn = QPushButton("Clear Compare")
-        clear_btn.setObjectName("SecondaryButton")
+        _safe_call(clear_btn, "setObjectName", "SecondaryButton")
         clear_btn.clicked.connect(self._clear_comparison)
         clear_btn.hide()
-        layout.addWidget(clear_btn)
+        _layout_add_widget(layout, clear_btn)
 
         self._compare_button = compare_btn
         self._clear_compare_button = clear_btn
@@ -653,7 +739,14 @@ class PlayerProfileDialog(QDialog):
             pix = QPixmap("images/avatars/default.png")
         if pix.isNull():
             placeholder = QPixmap(128, 128)
-            placeholder.fill(Qt.GlobalColor.darkGray)
+            try:
+                color = getattr(getattr(Qt, "GlobalColor", None), "darkGray", None)
+            except Exception:
+                color = None
+            try:
+                placeholder.fill(color if color is not None else 0)
+            except Exception:
+                pass
             return placeholder
         return pix.scaled(
             128,
@@ -712,34 +805,34 @@ class PlayerProfileDialog(QDialog):
     def _build_comparison_panel(self) -> Card:
         card = Card()
         layout = card.layout()
-        layout.addWidget(section_title("Comparison"))
+        _layout_add_widget(layout, section_title("Comparison"))
 
         grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(6)
+        _safe_set_margins(grid, 0, 0, 0, 0)
+        _safe_set_hspacing(grid, 12)
+        _safe_set_vspacing(grid, 6)
 
         header_label = QLabel("Metric")
         header_label.setStyleSheet("font-weight:600;")
-        grid.addWidget(header_label, 0, 0)
+        _layout_add_widget(grid, header_label, 0, 0)
         primary_name = QLabel(self._player_display_name(self.player))
         primary_name.setStyleSheet("font-weight:600;")
         self._comparison_name_label = QLabel("--")
         self._comparison_name_label.setStyleSheet("font-weight:600;")
-        grid.addWidget(primary_name, 0, 1)
-        grid.addWidget(self._comparison_name_label, 0, 2)
+        _layout_add_widget(grid, primary_name, 0, 1)
+        _layout_add_widget(grid, self._comparison_name_label, 0, 2)
 
         for idx, (metric_id, label) in enumerate(self._comparison_metric_definitions(), start=1):
             title = QLabel(label)
-            grid.addWidget(title, idx, 0)
+            _layout_add_widget(grid, title, idx, 0)
             primary_label = QLabel("--")
             compare_label = QLabel("--")
-            grid.addWidget(primary_label, idx, 1)
-            grid.addWidget(compare_label, idx, 2)
+            _layout_add_widget(grid, primary_label, idx, 1)
+            _layout_add_widget(grid, compare_label, idx, 2)
             self._comparison_labels[metric_id] = (primary_label, compare_label)
 
         layout.addLayout(grid)
-        layout.addStretch()
+        _layout_add_stretch(layout)
         return card
 
 
@@ -844,7 +937,7 @@ class PlayerProfileDialog(QDialog):
 
         card = Card()
         layout = card.layout()
-        layout.addWidget(section_title("Advanced Insights"))
+        _layout_add_widget(layout, section_title("Advanced Insights"))
 
         tabs = QTabWidget()
         self._spray_chart_widget = SprayChartWidget()
@@ -855,8 +948,8 @@ class PlayerProfileDialog(QDialog):
         self._rolling_stats_widget.update_series(rolling)
         tabs.addTab(self._rolling_stats_widget, "Rolling Stats")
 
-        layout.addWidget(tabs)
-        layout.addStretch()
+        _layout_add_widget(layout, tabs)
+        _layout_add_stretch(layout)
         return card
 
     def _compute_spray_points(self) -> List[Dict[str, float]]:
@@ -1182,20 +1275,20 @@ class ComparisonSelectorDialog(QDialog):
         self._selected: Any | None = None
 
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Search by name or player ID"))
+        _layout_add_widget(layout, QLabel("Search by name or player ID"))
 
         self.search_edit = QLineEdit()
-        layout.addWidget(self.search_edit)
+        _layout_add_widget(layout, self.search_edit)
 
         self.list_widget = QListWidget()
-        layout.addWidget(self.list_widget)
+        _layout_add_widget(layout, self.list_widget)
 
         button_row = QHBoxLayout()
-        button_row.addStretch()
+        _layout_add_stretch(button_row)
         self.compare_button = QPushButton("Compare")
         self.cancel_button = QPushButton("Cancel")
-        button_row.addWidget(self.compare_button)
-        button_row.addWidget(self.cancel_button)
+        _layout_add_widget(button_row, self.compare_button)
+        _layout_add_widget(button_row, self.cancel_button)
         layout.addLayout(button_row)
 
         self.search_edit.textChanged.connect(self._apply_filter)
@@ -1248,12 +1341,12 @@ class ComparisonSelectorDialog(QDialog):
     def _build_identity_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_spacing(layout, 4)
 
         name = QLabel(f"{self.player.first_name} {self.player.last_name}")
-        name.setObjectName("PlayerName")
-        layout.addWidget(name)
+        _safe_call(name, "setObjectName", "PlayerName")
+        _layout_add_widget(layout, name)
 
         age = self._calculate_age(self.player.birthdate)
         info_lines = [
@@ -1267,29 +1360,29 @@ class ComparisonSelectorDialog(QDialog):
         if positions:
             info_lines.append("Positions: " + ", ".join(positions))
         for line in info_lines:
-            layout.addWidget(QLabel(line))
+            _layout_add_widget(layout, QLabel(line))
 
-        layout.addStretch()
+        _layout_add_stretch(layout)
         return panel
 
     def _build_role_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_spacing(layout, 4)
 
         if self._is_pitcher:
             role = getattr(self.player, 'role', '') or 'Pitcher'
-            layout.addWidget(QLabel(f"Role: {role}"))
-            layout.addWidget(QLabel(f"GF: {getattr(self.player, 'gf', '?')}"))
+            _layout_add_widget(layout, QLabel(f"Role: {role}"))
+            _layout_add_widget(layout, QLabel(f"GF: {getattr(self.player, 'gf', '?')}"))
         else:
-            layout.addWidget(QLabel(f"Primary: {self.player.primary_position}"))
+            _layout_add_widget(layout, QLabel(f"Primary: {self.player.primary_position}"))
             others = [p for p in getattr(self.player, 'other_positions', []) if p]
             if others:
-                layout.addWidget(QLabel("Other: " + ", ".join(others)))
-            layout.addWidget(QLabel(f"GF: {getattr(self.player, 'gf', '?')}"))
+                _layout_add_widget(layout, QLabel("Other: " + ", ".join(others)))
+            _layout_add_widget(layout, QLabel(f"GF: {getattr(self.player, 'gf', '?')}"))
 
-        layout.addStretch()
+        _layout_add_stretch(layout)
         return panel
 
     def _build_overview_section(self) -> QWidget | None:
@@ -1299,29 +1392,29 @@ class ComparisonSelectorDialog(QDialog):
 
         card = Card()
         layout = card.layout()
-        layout.addWidget(section_title("Ratings"))
+        _layout_add_widget(layout, section_title("Ratings"))
 
         grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(18)
-        grid.setVerticalSpacing(8)
+        _safe_set_margins(grid, 0, 0, 0, 0)
+        _safe_set_hspacing(grid, 18)
+        _safe_set_vspacing(grid, 8)
 
         for col, (label, value) in enumerate(ratings.items()):
             header = QLabel(label)
-            header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            _set_alignment(header, "AlignCenter")
             value_label = QLabel(self._format_stat(value))
-            value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            grid.addWidget(header, 0, col)
-            grid.addWidget(value_label, 1, col)
+            _set_alignment(value_label, "AlignCenter")
+            _layout_add_widget(grid, header, 0, col)
+            _layout_add_widget(grid, value_label, 1, col)
 
         grid_widget = QWidget()
         grid_widget.setLayout(grid)
-        layout.addWidget(grid_widget)
+        _layout_add_widget(layout, grid_widget)
         return card
 
     def _create_stats_table(self, rows: List[Tuple[str, Dict[str, Any]]], columns: List[str]) -> QTableWidget:
         table = QTableWidget(len(rows), len(columns) + 1)
-        table.setObjectName("StatsTable")
+        _safe_call(table, "setObjectName", "StatsTable")
         headers = ["Year"] + [c.upper() for c in columns]
         table.setHorizontalHeaderLabels(headers)
         table.verticalHeader().setVisible(False)
@@ -1371,28 +1464,28 @@ class ComparisonSelectorDialog(QDialog):
 
         panel = QWidget()
         grid = QGridLayout(panel)
-        grid.setContentsMargins(12, 12, 12, 12)
-        grid.setHorizontalSpacing(18)
-        grid.setVerticalSpacing(8)
+        _safe_set_margins(grid, 12, 12, 12, 12)
+        _safe_set_hspacing(grid, 18)
+        _safe_set_vspacing(grid, 8)
 
         display_columns = columns[:6]
         for idx, key in enumerate(display_columns):
             label = QLabel(key.upper())
-            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            _set_alignment(label, "AlignLeft", "AlignVCenter")
             value = QLabel(self._format_stat(target.get(key, "")))
-            value.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            grid.addWidget(label, idx, 0)
-            grid.addWidget(value, idx, 1)
+            _set_alignment(value, "AlignRight", "AlignVCenter")
+            _layout_add_widget(grid, label, idx, 0)
+            _layout_add_widget(grid, value, idx, 1)
         return panel
 
     def _build_stat_key_footer(self) -> QWidget:
         footer = QWidget()
-        footer.setObjectName("StatFooter")
+        _safe_call(footer, "setObjectName", "StatFooter")
         layout = QHBoxLayout(footer)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        _safe_set_margins(layout, 0, 0, 0, 0)
+        _safe_set_spacing(layout, 8)
 
-        layout.addWidget(QLabel("Stat Key:"))
+        _layout_add_widget(layout, QLabel("Stat Key:"))
         chips = [
             ("Current Season", "current"),
             ("Career Totals", "career"),
@@ -1400,13 +1493,13 @@ class ComparisonSelectorDialog(QDialog):
         ]
         for text, variant in chips:
             chip = QLabel(text)
-            chip.setObjectName("StatChip")
-            chip.setProperty("variant", variant)
-            chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            _safe_call(chip, "setObjectName", "StatChip")
+            _safe_call(chip, "setProperty", "variant", variant)
+            _set_alignment(chip, "AlignCenter")
             chip.setMinimumWidth(90)
             chip.setMargin(4)
-            layout.addWidget(chip)
-        layout.addStretch()
+            _layout_add_widget(layout, chip)
+        _layout_add_stretch(layout)
         return footer
 
     def _estimate_overall_rating(self) -> int:
@@ -1485,21 +1578,21 @@ class ComparisonSelectorDialog(QDialog):
     def _build_stats_section(self, rows: List[Tuple[str, Dict[str, Any]]]) -> Card:
         card = Card()
         layout = card.layout()
-        layout.addWidget(section_title("Stats"))
+        _layout_add_widget(layout, section_title("Stats"))
         try:
             year_label = QLabel(f"Season Year: {self._current_season_year():04d}")
-            layout.addWidget(year_label)
+            _layout_add_widget(layout, year_label)
         except Exception:
             pass
 
         if not rows:
-            layout.addWidget(QLabel("No stats available"))
+            _layout_add_widget(layout, QLabel("No stats available"))
             return card
 
         columns = _PITCHING_STATS if self._is_pitcher else _BATTING_STATS
 
         tabs = QTabWidget()
-        tabs.setObjectName("StatsTabs")
+        _safe_call(tabs, "setObjectName", "StatsTabs")
         primary_label = "Pitching" if self._is_pitcher else "Batting"
         tabs.addTab(self._create_stats_table(rows, columns), primary_label)
 
@@ -1507,8 +1600,8 @@ class ComparisonSelectorDialog(QDialog):
         if summary is not None:
             tabs.addTab(summary, "Summary")
 
-        layout.addWidget(tabs)
-        layout.addWidget(self._build_stat_key_footer())
+        _layout_add_widget(layout, tabs)
+        _layout_add_widget(layout, self._build_stat_key_footer())
         return card
 
     # ------------------------------------------------------------------
@@ -1799,8 +1892,8 @@ class ComparisonSelectorDialog(QDialog):
 
     def _stat_item(self, value: Any, *, align_left: bool = False) -> QTableWidgetItem:
         item = QTableWidgetItem()
-        alignment = Qt.AlignmentFlag.AlignLeft if align_left else Qt.AlignmentFlag.AlignRight
-        item.setTextAlignment(alignment | Qt.AlignmentFlag.AlignVCenter)
+        names = ["AlignLeft" if align_left else "AlignRight", "AlignVCenter"]
+        _set_text_alignment(item, *names)
         if isinstance(value, (int, float)):
             item.setData(Qt.ItemDataRole.DisplayRole, self._format_stat(value))
             item.setData(Qt.ItemDataRole.EditRole, float(value))
@@ -2001,7 +2094,7 @@ if not hasattr(PlayerProfileDialog, '_format_stat'):
 if not hasattr(PlayerProfileDialog, '_build_stats_section'):
     def _fallback_build_stats_section(self, stats_history):  # pragma: no cover - stub
         label = QLabel("Statistics unavailable.")
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        _set_alignment(label, "AlignCenter")
         return label
 
     PlayerProfileDialog._build_stats_section = _fallback_build_stats_section  # type: ignore[attr-defined]

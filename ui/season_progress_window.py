@@ -1092,7 +1092,8 @@ class SeasonProgressWindow(QDialog):
         )
         self._save_progress()
         self._update_ui(message)
-        if force_season_end and total_remaining > 0:
+        total_remaining = self._remaining_regular_days()
+        if total_remaining > 0:
             try:
                 self.remaining_label.setText(
                     f"Days until Season End: {total_remaining}"

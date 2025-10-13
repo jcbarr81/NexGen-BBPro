@@ -84,13 +84,16 @@ class LeagueLeadersWindow(QDialog):
         parent=None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("League Leaders")
+        if callable(getattr(self, "setWindowTitle", None)):
+            self.setWindowTitle("League Leaders")
         if callable(getattr(self, "resize", None)):
             self.resize(960, 640)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(18)
+        if callable(getattr(layout, "setContentsMargins", None)):
+            layout.setContentsMargins(24, 24, 24, 24)
+        if callable(getattr(layout, "setSpacing", None)):
+            layout.setSpacing(18)
 
         # Always refresh from season_stats.json to ensure accuracy
         player_entries = self._load_players_with_stats()
@@ -124,8 +127,10 @@ class LeagueLeadersWindow(QDialog):
         card = Card()
         card.layout().addWidget(section_title(title))
         grid = QGridLayout()
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(16)
+        if callable(getattr(grid, "setContentsMargins", None)):
+            grid.setContentsMargins(0, 0, 0, 0)
+        if callable(getattr(grid, "setSpacing", None)):
+            grid.setSpacing(16)
         for idx, (label, key, descending, pitcher_only, decimals) in enumerate(categories):
             leaders = top_players(players, key, pitcher_only=pitcher_only, descending=descending, limit=5)
             table = QTableWidget(len(leaders), 3)
