@@ -284,6 +284,7 @@ class BatterAI:
         swing = False
         contact_quality = 1.0
         self.last_contact = False
+        apply_reduction = True
 
         rv = random.random() if random_value is None else random_value
 
@@ -404,6 +405,7 @@ class BatterAI:
             if id_prob >= 1.0:
                 # Perfect identification yields a fixed high contact probability
                 prob_contact = 0.93
+                apply_reduction = False
             elif id_prob <= 0.0:
                 # Complete misread: if the batter was looking for a type, allow
                 # a tiny deterministic contact based on configured look adjust;
@@ -420,6 +422,7 @@ class BatterAI:
                     prob_contact = min(1.0, look_adj / 300.0 + 0.09)
                 else:
                     prob_contact = floor
+                apply_reduction = False
             else:
                 # When CH/EXP/Pitch weights are disabled, fall back to timing
                 # curve selection using ID base and configured dice. This
@@ -459,13 +462,30 @@ class BatterAI:
                     ease_scale = getattr(self.config, "idRatingEaseScale", 1.0)
                     if ease_scale > 1.0:
                         prob_contact = min(1.0, prob_contact + 0.02 * (ease_scale - 1.0))
+                    apply_reduction = False
                 else:
                     # Map identification score onto contact probability using
                     # a linear blend chosen to match expected test behaviours.
                     # Use the un-normalised score to avoid tiny floating errors.
                     prob_contact = 0.5 + (16.0 / 3500.0) * id_score
                     prob_contact = round(prob_contact, 2)
+                    apply_reduction = True
                 
+            if apply_reduction:
+                reduction_enabled = getattr(self.config, "enableContactReduction", None)
+                if reduction_enabled is None or reduction_enabled:
+                    miss_scale = getattr(self.config, "missChanceScale", None)
+                    if miss_scale is None and reduction_enabled is None:
+                        miss_scale = 1.3
+                    if not miss_scale:
+                        miss_scale = 1.0
+                    reduction = max(0.0, min(0.95, miss_chance * miss_scale))
+                    prob_contact = max(0.0, min(1.0, prob_contact * (1.0 - reduction)))
+                    contact_scale = getattr(self.config, "contactOutcomeScale", 0.65)
+                    if not contact_scale:
+                        contact_scale = 0.65
+                    prob_contact = max(0.0, min(1.0, prob_contact * contact_scale))
+
             # Two-strike contact safety: modestly increase contact probability
             if strikes >= 2 and id_prob > 0.0:
                 prob_contact = min(1.0, prob_contact + 0.05)

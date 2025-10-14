@@ -50,7 +50,16 @@ except ImportError:  # pragma: no cover - test stubs
             ResizeToContents = None
 
 from models.base_player import BasePlayer
-from .components import Card, section_title
+from .components import Card, section_title, ensure_layout
+
+
+def _call_if_exists(obj, method: str, *args, **kwargs) -> None:
+    func = getattr(obj, method, None)
+    if callable(func):
+        try:
+            func(*args, **kwargs)
+        except Exception:
+            pass
 from .stat_helpers import format_number, top_players
 from utils.player_loader import load_players_from_csv
 from utils.path_utils import get_base_dir
@@ -125,7 +134,8 @@ class LeagueLeadersWindow(QDialog):
         categories: List[Tuple[str, str, bool, bool, int]],
     ) -> Card:
         card = Card()
-        card.layout().addWidget(section_title(title))
+        layout = ensure_layout(card)
+        _call_if_exists(layout, "addWidget", section_title(title))
         grid = QGridLayout()
         if callable(getattr(grid, "setContentsMargins", None)):
             grid.setContentsMargins(0, 0, 0, 0)
@@ -134,31 +144,44 @@ class LeagueLeadersWindow(QDialog):
         for idx, (label, key, descending, pitcher_only, decimals) in enumerate(categories):
             leaders = top_players(players, key, pitcher_only=pitcher_only, descending=descending, limit=5)
             table = QTableWidget(len(leaders), 3)
-            table.setHorizontalHeaderLabels([label, "Player", "Value"])
-            table.verticalHeader().setVisible(False)
-            table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-            table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-            table.horizontalHeader().setStretchLastSection(True)
-            table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-            table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-            table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+            try:
+                table.setHorizontalHeaderLabels([label, "Player", "Value"])
+                table.verticalHeader().setVisible(False)
+                table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+                table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+                header = table.horizontalHeader()
+                header.setStretchLastSection(True)
+                header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+                header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+                header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+            except Exception:
+                pass
             for row, (player, value) in enumerate(leaders):
-                table.setItem(row, 0, QTableWidgetItem(str(row + 1)))
+                try:
+                    table.setItem(row, 0, QTableWidgetItem(str(row + 1)))
+                except Exception:
+                    pass
                 name = f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')}".strip()
                 item = QTableWidgetItem(name)
-                item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                try:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                except Exception:
+                    pass
                 try:
                     item.setData(Qt.ItemDataRole.UserRole, getattr(player, 'player_id', ''))
                 except Exception:
                     pass
-                table.setItem(row, 1, item)
-                table.setItem(row, 2, QTableWidgetItem(format_number(value, decimals=decimals)))
+                try:
+                    table.setItem(row, 1, item)
+                    table.setItem(row, 2, QTableWidgetItem(format_number(value, decimals=decimals)))
+                except Exception:
+                    pass
             try:
                 table.itemDoubleClicked.connect(lambda item, table=table: self._open_player_from_table(item, table))
             except Exception:
                 pass
-            grid.addWidget(table, idx // 2, idx % 2)
-        card.layout().addLayout(grid)
+            _call_if_exists(grid, "addWidget", table, idx // 2, idx % 2)
+        _call_if_exists(layout, "addLayout", grid)
         return card
 
     # Load players merged with season stats so leaders reflect current file

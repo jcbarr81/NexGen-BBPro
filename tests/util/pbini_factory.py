@@ -19,6 +19,11 @@ def make_cfg(**entries: int) -> PlayBalanceConfig:
         "hit2BProb": 0,
         "hit3BProb": 0,
         "hitHRProb": 0,
+        "enableContactReduction": 0,
+        "missChanceScale": 1.0,
+        "contactReductionLocked": True,
+        "maxHitProb": 1,
+        "hitProbCap": 1,
         "swingProbScale": 1.25,
         "zSwingProbScale": 0.79,
         "oSwingProbScale": 0.69,
@@ -79,6 +84,10 @@ def load_config(path: Path | None = None) -> PlayBalanceConfig:
             "swingProbCloseStrike": 0.46,
             "swingProbCloseBall": 0.56,
             "swingProbSureBall": 0.18,
+            "contactOutcomeScale": 0.92,
+            "enableContactReduction": 0,
+            "missChanceScale": 1.0,
+            "contactReductionLocked": True,
         }
     )
     # The real configuration contains pitch objective weights which would

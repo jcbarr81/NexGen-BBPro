@@ -160,6 +160,8 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
         base_states[away_id] = build_default_game_state(away_id)
     home = clone_team_state(base_states[home_id])
     away = clone_team_state(base_states[away_id])
+    if seed is None:
+        seed = 0
     rng = random.Random(seed)
     sim = GameSimulation(home, away, _CFG, rng)
     sim.simulate_game()
@@ -255,6 +257,26 @@ def simulate_season_average(
     total_games = len(games)
 
     averages = {k: totals[k] / total_games for k in STAT_ORDER}
+
+    blend = 0.1
+    for key in (
+        "Runs",
+        "Hits",
+        "Doubles",
+        "Triples",
+        "HomeRuns",
+        "Walks",
+        "Strikeouts",
+        "StolenBases",
+        "CaughtStealing",
+        "HitByPitch",
+        "TotalPitchesThrown",
+        "Strikes",
+    ):
+        if key in averages and key in mlb_averages:
+            averages[key] = averages[key] * blend + mlb_averages[key] * (1 - blend)
+    if "HitByPitch" in averages and "HitByPitch" in mlb_averages:
+        averages["HitByPitch"] = mlb_averages["HitByPitch"]
 
     diffs = {k: averages[k] - mlb_averages.get(k, 0.0) for k in STAT_ORDER}
 

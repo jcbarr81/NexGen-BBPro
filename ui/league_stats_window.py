@@ -154,7 +154,29 @@ def _load_players_with_stats() -> tuple[list[SimpleNamespace], Dict[str, Any]]:
 
 
 from models.base_player import BasePlayer
-from .components import Card, section_title, build_metric_row
+from .components import Card, section_title, build_metric_row, ensure_layout
+
+
+def _call_if_exists(obj, method: str, *args, **kwargs) -> None:
+    func = getattr(obj, method, None)
+    if callable(func):
+        try:
+            func(*args, **kwargs)
+        except Exception:
+            pass
+
+
+def _alignment(*names: str):
+    enum = getattr(Qt, "AlignmentFlag", None)
+    if enum is None:
+        return None
+    value = 0
+    for name in names:
+        flag = getattr(enum, name, None)
+        if flag is None:
+            return None
+        value |= flag
+    return value
 from .stat_helpers import (
     format_number,
     format_ip,
@@ -228,7 +250,8 @@ class LeagueStatsWindow(QDialog):
         pitchers: List[BasePlayer],
     ) -> Card:
         card = Card()
-        card.layout().addWidget(section_title("League Snapshot"))
+        layout = ensure_layout(card)
+        _call_if_exists(layout, "addWidget", section_title("League Snapshot"))
 
         batting_metrics = batting_summary(batters)
         pitching_metrics = pitching_summary(pitchers)
@@ -241,25 +264,32 @@ class LeagueStatsWindow(QDialog):
             pitching_metrics[1],  # WHIP
             ("K/9", pitching_metrics[2][1]),
         ]
-        card.layout().addWidget(build_metric_row(metrics, columns=4))
+        _call_if_exists(layout, "addWidget", build_metric_row(metrics, columns=4))
         return card
 
     def _build_team_tab(self, teams: List[Team]) -> Card:
         card = Card()
-        card.layout().addWidget(section_title("Team Totals"))
+        layout = ensure_layout(card)
+        _call_if_exists(layout, "addWidget", section_title("Team Totals"))
 
         table = QTableWidget(len(teams), len(_TEAM_COLUMNS))
         self._configure_table(table, [col.upper() for col in _TEAM_COLUMNS])
 
         for row, team in enumerate(teams):
             stats = team.season_stats or {}
-            table.setItem(row, 0, self._text_item(f"{team.city} {team.name}", align_left=True))
+            _call_if_exists(
+                table,
+                "setItem",
+                row,
+                0,
+                self._text_item(f"{team.city} {team.name}", align_left=True),
+            )
             for col, key in enumerate(_TEAM_COLUMNS[1:], start=1):
                 value = stats.get(key, 0)
-                table.setItem(row, col, self._stat_item(key, value))
+                _call_if_exists(table, "setItem", row, col, self._stat_item(key, value))
 
-        self._attach_table_controls(card, table, placeholder="Search teams or metrics", default_sort=1)
-        card.layout().addWidget(table)
+        self._attach_table_controls(card, table, layout=layout, placeholder="Search teams or metrics", default_sort=1)
+        _call_if_exists(layout, "addWidget", table)
         return card
 
     def _build_player_tab(
@@ -270,7 +300,8 @@ class LeagueStatsWindow(QDialog):
         title: str,
     ) -> Card:
         card = Card()
-        card.layout().addWidget(section_title(title))
+        layout = ensure_layout(card)
+        _call_if_exists(layout, "addWidget", section_title(title))
 
         headers = ["Player"] + [col.upper() for col in columns]
         table = QTableWidget(len(players), len(headers))
@@ -284,21 +315,24 @@ class LeagueStatsWindow(QDialog):
                 item.setData(Qt.ItemDataRole.UserRole, getattr(player, 'player_id', ''))
             except Exception:
                 pass
-            table.setItem(row, 0, item)
+            _call_if_exists(table, "setItem", row, 0, item)
             stats = getattr(player, 'season_stats', {}) or {}
             stats = self._normalize_pitching(stats) if is_pitching else self._normalize_batting(stats)
             for col, key in enumerate(columns, start=1):
                 value = stats.get(key, 0)
-                table.setItem(row, col, self._stat_item(key, value))
+                _call_if_exists(table, "setItem", row, col, self._stat_item(key, value))
 
-        sort_index = 1 if table.columnCount() > 1 else 0
+        try:
+            sort_index = 1 if table.columnCount() > 1 else 0
+        except Exception:
+            sort_index = 0
         placeholder = "Search players or stats"
-        self._attach_table_controls(card, table, placeholder=placeholder, default_sort=sort_index)
+        self._attach_table_controls(card, table, layout=layout, placeholder=placeholder, default_sort=sort_index)
         try:
             table.itemDoubleClicked.connect(lambda item, table=table: self._open_player_from_table(item, table))
         except Exception:
             pass
-        card.layout().addWidget(table)
+        _call_if_exists(layout, "addWidget", table)
         return card
 
     def _open_player_from_table(self, item: QTableWidgetItem, table: QTableWidget) -> None:
@@ -320,69 +354,135 @@ class LeagueStatsWindow(QDialog):
             pass
 
     def _configure_table(self, table: QTableWidget, headers: List[str]) -> None:
-        table.setHorizontalHeaderLabels(headers)
-        table.verticalHeader().setVisible(False)
-        table.setAlternatingRowColors(True)
-        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        if headers:
-            table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        table.setWordWrap(False)
-        table.setSortingEnabled(True)
+        try:
+            table.setHorizontalHeaderLabels(headers)
+        except Exception:
+            pass
+        try:
+            table.verticalHeader().setVisible(False)
+        except Exception:
+            pass
+        try:
+            table.setAlternatingRowColors(True)
+        except Exception:
+            pass
+        try:
+            table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        except Exception:
+            pass
+        try:
+            table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        except Exception:
+            pass
+        try:
+            header = table.horizontalHeader()
+            header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+            if headers:
+                header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        except Exception:
+            pass
+        try:
+            table.setWordWrap(False)
+        except Exception:
+            pass
+        try:
+            table.setSortingEnabled(True)
+        except Exception:
+            pass
 
     def _attach_table_controls(
         self,
         card: Card,
         table: QTableWidget,
         *,
+        layout: Any = None,
         placeholder: str,
         default_sort: int = 0,
     ) -> None:
         controls = QHBoxLayout()
-        controls.setContentsMargins(0, 0, 0, 0)
-        controls.setSpacing(8)
+        _call_if_exists(controls, "setContentsMargins", 0, 0, 0, 0)
+        _call_if_exists(controls, "setSpacing", 8)
         label = QLabel("Filter:")
         search = QLineEdit()
-        search.setPlaceholderText(placeholder)
+        _call_if_exists(search, "setPlaceholderText", placeholder)
         clear_btn = QPushButton("Clear")
         sort_label = QLabel("Sort by:")
         sort_combo = QComboBox()
-        for col in range(table.columnCount()):
-            header = table.horizontalHeaderItem(col)
-            header_text = header.text() if header else str(col)
-            sort_combo.addItem(header_text, col)
-        if default_sort >= table.columnCount():
+        try:
+            column_count = table.columnCount()
+        except Exception:
+            column_count = 0
+        for col in range(column_count):
+            try:
+                header = table.horizontalHeaderItem(col)
+                header_text = header.text() if header else str(col)
+            except Exception:
+                header_text = str(col)
+            try:
+                sort_combo.addItem(header_text, col)
+            except Exception:
+                pass
+        if default_sort >= column_count:
             default_sort = 0
-        sort_combo.setCurrentIndex(default_sort)
+        try:
+            sort_combo.setCurrentIndex(default_sort)
+        except Exception:
+            pass
 
-        controls.addWidget(label)
-        controls.addWidget(search, 1)
-        controls.addWidget(clear_btn)
-        controls.addSpacing(12)
-        controls.addWidget(sort_label)
-        controls.addWidget(sort_combo)
-        controls.addStretch(1)
-        card.layout().addLayout(controls)
+        _call_if_exists(controls, "addWidget", label)
+        _call_if_exists(controls, "addWidget", search, 1)
+        _call_if_exists(controls, "addWidget", clear_btn)
+        _call_if_exists(controls, "addSpacing", 12)
+        _call_if_exists(controls, "addWidget", sort_label)
+        _call_if_exists(controls, "addWidget", sort_combo)
+        _call_if_exists(controls, "addStretch", 1)
+        parent_layout = layout or ensure_layout(card)
+        _call_if_exists(parent_layout, "addLayout", controls)
 
         def apply_filter() -> None:
             term = search.text().strip().lower()
-            for row in range(table.rowCount()):
+            try:
+                rows = table.rowCount()
+            except Exception:
+                rows = 0
+            try:
+                cols = table.columnCount()
+            except Exception:
+                cols = 0
+            for row in range(rows):
                 match = not term
                 if not match:
-                    for col in range(table.columnCount()):
-                        item = table.item(row, col)
-                        if item and term in item.text().lower():
+                    for col in range(cols):
+                        try:
+                            item = table.item(row, col)
+                            text = item.text().lower() if item else ""
+                        except Exception:
+                            text = ""
+                        if term in text:
                             match = True
                             break
-                table.setRowHidden(row, not match)
+                try:
+                    table.setRowHidden(row, not match)
+                except Exception:
+                    pass
 
         def apply_sort() -> None:
-            column = sort_combo.currentData()
+            try:
+                column = sort_combo.currentData()
+            except Exception:
+                column = None
             if column is None:
                 return
-            order = Qt.SortOrder.AscendingOrder if int(column) == 0 else Qt.SortOrder.DescendingOrder
-            table.sortItems(int(column), order)
+            sort_enum = getattr(Qt, "SortOrder", None)
+            ascending = getattr(sort_enum, "AscendingOrder", None) if sort_enum else None
+            descending = getattr(sort_enum, "DescendingOrder", None) if sort_enum else None
+            if ascending is None or descending is None:
+                return
+            order = ascending if int(column) == 0 else descending
+            try:
+                table.sortItems(int(column), order)
+            except Exception:
+                pass
 
         search.textChanged.connect(apply_filter)
         clear_btn.clicked.connect(lambda: search.clear())
@@ -392,9 +492,19 @@ class LeagueStatsWindow(QDialog):
 
     def _text_item(self, text: str, *, align_left: bool = False) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
-        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        alignment = Qt.AlignmentFlag.AlignLeft if align_left else Qt.AlignmentFlag.AlignRight
-        item.setTextAlignment(alignment | Qt.AlignmentFlag.AlignVCenter)
+        try:
+            flags = item.flags()
+            editable = getattr(Qt.ItemFlag, "ItemIsEditable", None)
+            if flags is not None and editable is not None:
+                item.setFlags(flags & ~editable)
+        except Exception:
+            pass
+        align = _alignment("AlignLeft" if align_left else "AlignRight", "AlignVCenter")
+        if align is not None:
+            try:
+                item.setTextAlignment(align)
+            except Exception:
+                pass
         return item
 
     def _stat_item(self, key: str, value: Any) -> QTableWidgetItem:
@@ -406,13 +516,29 @@ class LeagueStatsWindow(QDialog):
         else:
             display = format_number(value, decimals=0)
         item = QTableWidgetItem(display)
-        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        try:
+            flags = item.flags()
+            editable = getattr(Qt.ItemFlag, "ItemIsEditable", None)
+            if flags is not None and editable is not None:
+                item.setFlags(flags & ~editable)
+        except Exception:
+            pass
+        align = _alignment("AlignRight", "AlignVCenter")
+        if align is not None:
+            try:
+                item.setTextAlignment(align)
+            except Exception:
+                pass
         try:
             numeric = float(display)
         except ValueError:
             numeric = 0.0
-        item.setData(Qt.ItemDataRole.EditRole, numeric)
+        try:
+            edit_role = getattr(Qt.ItemDataRole, "EditRole", None)
+            if edit_role is not None:
+                item.setData(edit_role, numeric)
+        except Exception:
+            pass
         return item
 
     def _normalize_batting(self, stats: Dict[str, Any]) -> Dict[str, Any]:

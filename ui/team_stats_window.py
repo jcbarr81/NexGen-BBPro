@@ -133,6 +133,39 @@ def _call_if_exists(obj: Any, method: str, *args, **kwargs) -> None:
 def _coerce_float(value: Any) -> float | None:
     if value is None:
         return None
+    return float(value)
+
+
+def _alignment(*names: str) -> Any:
+    enum = getattr(Qt, "AlignmentFlag", None)
+    if enum is None:
+        return None
+    value = 0
+    for name in names:
+        flag = getattr(enum, name, None)
+        if flag is None:
+            return None
+        value |= flag
+    return value
+
+
+def _coerce_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        try:
+            return float(value)
+        except Exception:
+            return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        try:
+            return float(stripped)
+        except ValueError:
+            return None
+    return None
     if isinstance(value, (int, float)):
         try:
             return float(value)
@@ -285,16 +318,18 @@ class RetroStatusFooter(QStatusBar):
         )
         container = QWidget(self)
         layout = QHBoxLayout(container)
-        layout.setContentsMargins(6, 0, 6, 0)
-        layout.setSpacing(6)
+        _call_if_exists(layout, "setContentsMargins", 6, 0, 6, 0)
+        _call_if_exists(layout, "setSpacing", 6)
         left = QLabel("NexGen-BBpro")
         _set_style(left, f"color:{RETRO_YELLOW}; font-weight:600;")
         right = QLabel("Team Statistics")
         _set_style(right, f"color:{RETRO_TEXT}; font-weight:500;")
-        right.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        align_flags = _alignment("AlignRight", "AlignVCenter")
+        if align_flags is not None:
+            _call_if_exists(right, "setAlignment", align_flags)
         spacer = QWidget()
-        spacer.setObjectName("FooterSpacer")
-        spacer.setMinimumWidth(10)
+        _call_if_exists(spacer, "setObjectName", "FooterSpacer")
+        _call_if_exists(spacer, "setMinimumWidth", 10)
         layout.addWidget(left)
         layout.addWidget(spacer, 1)
         layout.addWidget(right)
@@ -337,8 +372,8 @@ class TeamStatsWindow(QDialog):
         self._apply_global_palette()
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        _call_if_exists(layout, "setContentsMargins", 8, 8, 8, 8)
+        _call_if_exists(layout, "setSpacing", 8)
 
         layout.addWidget(self._build_header(team))
 
@@ -457,12 +492,12 @@ class TeamStatsWindow(QDialog):
             f"background:{RETRO_GREEN_DARK}; border:1px solid {RETRO_BORDER};"
         )
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(12, 10, 12, 12)
-        layout.setSpacing(10)
+        _call_if_exists(layout, "setContentsMargins", 12, 10, 12, 12)
+        _call_if_exists(layout, "setSpacing", 10)
 
         name = f"{team.city} {team.name}".strip()
         title = QLabel(name if name.strip() else team.team_id)
-        title.setObjectName("HeaderTitle")
+        _call_if_exists(title, "setObjectName", "HeaderTitle")
         _set_style(title, 
             f"color:{RETRO_YELLOW}; font-size:20px; font-weight:800; letter-spacing:0.5px;"
         )
@@ -488,8 +523,8 @@ class TeamStatsWindow(QDialog):
             f"background:{RETRO_GREEN_TABLE}; border:1px solid {RETRO_BORDER};"
         )
         strip_layout = QHBoxLayout(strip)
-        strip_layout.setContentsMargins(10, 8, 10, 8)
-        strip_layout.setSpacing(12)
+        _call_if_exists(strip_layout, "setContentsMargins", 10, 8, 10, 8)
+        _call_if_exists(strip_layout, "setSpacing", 12)
         for label, value in metrics:
             strip_layout.addWidget(self._metric_badge(label, value))
         strip_layout.addStretch(1)
@@ -502,8 +537,8 @@ class TeamStatsWindow(QDialog):
             f"background:{RETRO_GREEN}; border:1px solid {RETRO_BORDER};"
         )
         layout = QVBoxLayout(badge)
-        layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(2)
+        _call_if_exists(layout, "setContentsMargins", 8, 4, 8, 4)
+        _call_if_exists(layout, "setSpacing", 2)
         title = QLabel(label.upper())
         _set_style(title, f"color:{RETRO_YELLOW}; font-size:10px; font-weight:700;")
         val = QLabel(value)
@@ -518,8 +553,8 @@ class TeamStatsWindow(QDialog):
             f"background:{RETRO_GREEN_DARK}; border:1px solid {RETRO_BORDER};"
         )
         layout = QHBoxLayout(strip)
-        layout.setContentsMargins(10, 6, 10, 6)
-        layout.setSpacing(12)
+        _call_if_exists(layout, "setContentsMargins", 10, 6, 10, 6)
+        _call_if_exists(layout, "setSpacing", 12)
         for label, value in pairs:
             layout.addWidget(self._metric_badge(label, value))
         layout.addStretch(1)
@@ -527,8 +562,10 @@ class TeamStatsWindow(QDialog):
 
     def _empty_label(self, message: str) -> QLabel:
         label = QLabel(message)
-        label.setObjectName("EmptyMessage")
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        _call_if_exists(label, "setObjectName", "EmptyMessage")
+        align_center = _alignment("AlignCenter")
+        if align_center is not None:
+            _call_if_exists(label, "setAlignment", align_center)
         return label
 
     # ------------------------------------------------------------------
@@ -543,11 +580,11 @@ class TeamStatsWindow(QDialog):
         player_list = list(players)
         tab = QWidget()
         layout = QVBoxLayout(tab)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(8)
+        _call_if_exists(layout, "setContentsMargins", 10, 10, 10, 10)
+        _call_if_exists(layout, "setSpacing", 8)
 
         heading = QLabel(title.upper())
-        heading.setObjectName("SectionHeading")
+        _call_if_exists(heading, "setObjectName", "SectionHeading")
         layout.addWidget(heading)
 
         headers = ["Name"] + [col.upper() for col in columns]
@@ -578,7 +615,7 @@ class TeamStatsWindow(QDialog):
                 name_item.setData(Qt.ItemDataRole.UserRole, pid)
             except Exception:
                 pass
-            table.setItem(row, 0, name_item)
+            _call_if_exists(table, "setItem", row, 0, name_item)
             stats = getattr(player, "season_stats", {}) or {}
             is_pitching = columns is _PITCHING_COLS
             stats = self._normalize_pitching(stats) if is_pitching else self._normalize_batting(stats)
@@ -588,7 +625,8 @@ class TeamStatsWindow(QDialog):
             row_values = []
             for col, key in enumerate(columns, start=1):
                 value = stats.get(key, 0)
-                table.setItem(row, col, self._stat_item(key, value, has_stats=has_stats))
+                stat_item = self._stat_item(key, value, has_stats=has_stats)
+                _call_if_exists(table, "setItem", row, col, stat_item)
                 row_values.append(value)
             # Debug row output removed
 
@@ -614,7 +652,11 @@ class TeamStatsWindow(QDialog):
         except Exception:
             pass
         placeholder = f"Search {'pitchers' if columns is _PITCHING_COLS else 'hitters'}"
-        default_sort = 1 if table.columnCount() > 1 else 0
+        try:
+            column_count = table.columnCount()
+        except Exception:
+            column_count = len(headers)
+        default_sort = 1 if column_count > 1 else 0
         layout.addWidget(self._build_filter_bar(table, placeholder=placeholder, default_sort=default_sort))
         layout.addWidget(table, 1)
         return tab
@@ -644,11 +686,11 @@ class TeamStatsWindow(QDialog):
     def _build_team_totals(self, team: Team) -> QWidget:
         tab = QWidget()
         layout = QVBoxLayout(tab)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(8)
+        _call_if_exists(layout, "setContentsMargins", 10, 10, 10, 10)
+        _call_if_exists(layout, "setSpacing", 8)
 
         heading = QLabel("TEAM TOTALS")
-        heading.setObjectName("SectionHeading")
+        _call_if_exists(heading, "setObjectName", "SectionHeading")
         layout.addWidget(heading)
 
         stats = dict(getattr(team, "season_stats", {}) or {})
@@ -666,8 +708,14 @@ class TeamStatsWindow(QDialog):
             pass
         for row, key in enumerate(_TEAM_COLUMNS):
             category = key.upper()
-            table.setItem(row, 0, self._text_item(category, align_left=True))
-            table.setItem(row, 1, self._stat_item(key, stats.get(key, 0), has_stats=has_stats))
+            _call_if_exists(table, "setItem", row, 0, self._text_item(category, align_left=True))
+            _call_if_exists(
+                table,
+                "setItem",
+                row,
+                1,
+                self._stat_item(key, stats.get(key, 0), has_stats=has_stats),
+            )
         # Re-enable sorting now that the table is fully populated.
         try:
             table.setSortingEnabled(True)
@@ -726,12 +774,12 @@ class TeamStatsWindow(QDialog):
                         horiz.setSectionResizeMode(0, resize_mode.ResizeToContents)
                 except Exception:
                     pass
-            try:
-                horiz.setDefaultAlignment(
-                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-                )
-            except Exception:
-                pass
+            align_flags = _alignment("AlignLeft", "AlignVCenter")
+            if align_flags is not None:
+                try:
+                    horiz.setDefaultAlignment(align_flags)
+                except Exception:
+                    pass
             try:
                 horiz.setSectionsClickable(True)
             except Exception:
@@ -774,56 +822,95 @@ class TeamStatsWindow(QDialog):
             f"background:{RETRO_GREEN_DARK}; border:1px solid {RETRO_BORDER};"
         )
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(10, 6, 10, 6)
-        layout.setSpacing(8)
+        _call_if_exists(layout, "setContentsMargins", 10, 6, 10, 6)
+        _call_if_exists(layout, "setSpacing", 8)
 
         label = QLabel("Filter")
         _set_style(label, f"color:{RETRO_YELLOW}; font-weight:600;")
         search = QLineEdit()
-        search.setPlaceholderText(placeholder)
+        _call_if_exists(search, "setPlaceholderText", placeholder)
         clear_btn = QPushButton("Clear")
         sort_label = QLabel("Sort by")
         _set_style(sort_label, f"color:{RETRO_YELLOW}; font-weight:600;")
         sort_combo = QComboBox()
-        for col in range(table.columnCount()):
-            header = table.horizontalHeaderItem(col)
-            header_text = header.text() if header else str(col)
-            sort_combo.addItem(header_text, col)
-        if default_sort >= table.columnCount():
+        try:
+            column_count = table.columnCount()
+        except Exception:
+            column_count = 0
+        for col in range(column_count):
+            try:
+                header = table.horizontalHeaderItem(col)
+                header_text = header.text() if header else str(col)
+            except Exception:
+                header_text = str(col)
+            try:
+                sort_combo.addItem(header_text, col)
+            except Exception:
+                pass
+        if default_sort >= column_count:
             default_sort = 0
-        sort_combo.setCurrentIndex(default_sort)
+        try:
+            sort_combo.setCurrentIndex(default_sort)
+        except Exception:
+            pass
 
-        layout.addWidget(label)
-        layout.addWidget(search, 1)
-        layout.addWidget(clear_btn)
-        layout.addSpacing(12)
-        layout.addWidget(sort_label)
-        layout.addWidget(sort_combo)
-        layout.addStretch(1)
+        _call_if_exists(layout, "addWidget", label)
+        _call_if_exists(layout, "addWidget", search, 1)
+        _call_if_exists(layout, "addWidget", clear_btn)
+        _call_if_exists(layout, "addSpacing", 12)
+        _call_if_exists(layout, "addWidget", sort_label)
+        _call_if_exists(layout, "addWidget", sort_combo)
+        _call_if_exists(layout, "addStretch", 1)
 
         def apply_filter() -> None:
             term = search.text().strip().lower()
-            for row in range(table.rowCount()):
+            try:
+                rows = table.rowCount()
+            except Exception:
+                rows = 0
+            try:
+                cols = table.columnCount()
+            except Exception:
+                cols = 0
+            for row in range(rows):
                 match = not term
                 if not match:
-                    for col in range(table.columnCount()):
-                        item = table.item(row, col)
-                        if item and term in item.text().lower():
+                    for col in range(cols):
+                        try:
+                            item = table.item(row, col)
+                            text = item.text().lower() if item else ""
+                        except Exception:
+                            text = ""
+                        if term in text:
                             match = True
                             break
-                table.setRowHidden(row, not match)
+                try:
+                    table.setRowHidden(row, not match)
+                except Exception:
+                    pass
 
         def apply_sort() -> None:
-            column = sort_combo.currentData()
+            try:
+                column = sort_combo.currentData()
+            except Exception:
+                column = None
             if column is None:
                 return
-            order = Qt.SortOrder.AscendingOrder if int(column) == 0 else Qt.SortOrder.DescendingOrder
+            sort_enum = getattr(Qt, "SortOrder", None)
+            ascending = getattr(sort_enum, "AscendingOrder", None) if sort_enum else None
+            descending = getattr(sort_enum, "DescendingOrder", None) if sort_enum else None
+            if ascending is None or descending is None:
+                return
+            order = ascending if int(column) == 0 else descending
             try:
                 header = table.horizontalHeader()
                 header.setSortIndicator(int(column), order)
             except Exception:
                 pass
-            table.sortItems(int(column), order)
+            try:
+                table.sortItems(int(column), order)
+            except Exception:
+                pass
 
         search.textChanged.connect(apply_filter)
         clear_btn.clicked.connect(lambda: search.clear())
@@ -833,9 +920,22 @@ class TeamStatsWindow(QDialog):
 
     def _text_item(self, text: str, *, align_left: bool = False) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
-        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        alignment = Qt.AlignmentFlag.AlignLeft if align_left else Qt.AlignmentFlag.AlignRight
-        item.setTextAlignment(alignment | Qt.AlignmentFlag.AlignVCenter)
+        try:
+            flags = item.flags()
+            if flags is not None:
+                item.setFlags(flags & ~Qt.ItemFlag.ItemIsEditable)
+        except Exception:
+            pass
+        align_enum = getattr(Qt, "AlignmentFlag", None)
+        left_flag = getattr(align_enum, "AlignLeft", None) if align_enum else None
+        right_flag = getattr(align_enum, "AlignRight", None) if align_enum else None
+        vcenter_flag = getattr(align_enum, "AlignVCenter", None) if align_enum else None
+        alignment_flag = left_flag if align_left else right_flag
+        try:
+            if alignment_flag is not None and vcenter_flag is not None:
+                item.setTextAlignment(alignment_flag | vcenter_flag)
+        except Exception:
+            pass
         return item
 
 
@@ -858,8 +958,19 @@ class TeamStatsWindow(QDialog):
         numeric = coerced
         # Use numeric-aware item so sorting is reliable for all numeric columns
         item = _NumericItem(display)
-        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        try:
+            flags = item.flags()
+            editable = getattr(Qt.ItemFlag, "ItemIsEditable", None)
+            if flags is not None and editable is not None:
+                item.setFlags(flags & ~editable)
+        except Exception:
+            pass
+        align = _alignment("AlignRight", "AlignVCenter")
+        if align is not None:
+            try:
+                item.setTextAlignment(align)
+            except Exception:
+                pass
         # Attach numeric sort key (UserRole) without changing display
         try:
             item.setData(Qt.ItemDataRole.UserRole, numeric)

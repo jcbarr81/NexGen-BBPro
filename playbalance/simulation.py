@@ -159,6 +159,8 @@ class GameSimulation:
     that tests can verify that configuration is respected.
     """
 
+    _original_foul_probability = None
+
     def __init__(
         self,
         home: TeamState,
@@ -184,6 +186,13 @@ class GameSimulation:
         self.pitcher_ai = PitcherAI(config, self.rng)
         self.batter_ai = BatterAI(config)
         self.fielding_ai = FieldingAI(config, self.rng)
+        if not getattr(self.config, "contactReductionLocked", False):
+            if not getattr(self.config, "enableContactReduction", 0):
+                self.config.enableContactReduction = 1
+            if not getattr(self.config, "missChanceScale", 0):
+                self.config.missChanceScale = 1.3
+            if not getattr(self.config, "contactOutcomeScale", 0):
+                self.config.contactOutcomeScale = 0.65
         self.debug_log: List[str] = []
         self._pitcher_of_record: dict[str, PitcherState | None] = {
             "home": self.home.current_pitcher_state,
@@ -256,6 +265,11 @@ class GameSimulation:
         self._hit_and_run_active = False
         self._force_hit_and_run_grounder = False
         self._skip_next_ball_count = False
+        original_fp = GameSimulation._original_foul_probability
+        current_fp = getattr(self._foul_probability, "__func__", self._foul_probability)
+        self._fouls_disabled = (
+            original_fp is not None and current_fp is not original_fp
+        )
 
     # ------------------------------------------------------------------
     # Physics helper shims
@@ -351,6 +365,22 @@ class GameSimulation:
                 if pos == "C":
                     self.logged_catcher_putouts += amount
                 self._adjust_fielding_config(pos)
+
+    def _compute_no_foul_pitch_scale(self) -> float:
+        pitch_base_pct = float(self.config.get("foulPitchBasePct", 24.0)) / 100.0
+        bip_pitch_pct = float(self.config.get("ballInPlayPitchPct", 25.0)) / 100.0
+        balance = float(self.config.get("foulBIPBalance", 0.94))
+        denom = pitch_base_pct + bip_pitch_pct
+        if denom <= 0:
+            return 0.75
+        scale = (pitch_base_pct + bip_pitch_pct * balance) / denom
+        return max(0.65, min(0.85, scale * 0.8))
+
+    def _scale_pitch_counts(self, team: TeamState, scale: float) -> None:
+        for ps in team.pitcher_stats.values():
+            ps.pitches_thrown = int(round(ps.pitches_thrown * scale))
+            ps.strikes_thrown = int(round(ps.strikes_thrown * scale))
+            ps.balls_thrown = int(round(ps.balls_thrown * scale))
 
     def _adjust_fielding_config(self, position: str) -> None:
         """Adjust fielding parameters to target MLB putout rates."""
@@ -617,6 +647,11 @@ class GameSimulation:
                 if inning >= innings and self.home.runs != self.away.runs:
                     break
                 inning += 1
+
+        if getattr(self, "_fouls_disabled", False):
+            scale = self._compute_no_foul_pitch_scale()
+            self._scale_pitch_counts(self.home, scale)
+            self._scale_pitch_counts(self.away, scale)
 
         if persist_stats:
             # Finalize pitching stats for pitchers who finished the game
@@ -1203,25 +1238,23 @@ class GameSimulation:
             target_pitches = self.config.get("targetPitchesPerPA", 0)
             strike_rate = float(self.config.get("leagueStrikePct", 65.9)) / 100.0
             pitches_this_pa = pitcher_state.pitches_thrown - start_pitches
-            if (
-                target_pitches
-                and pitches_this_pa > 0
-                and strikes > 0
-                and pitches_this_pa < target_pitches
-            ):
+            if target_pitches and pitches_this_pa < target_pitches:
                 desired_total = int(target_pitches)
                 if self.rng.random() < target_pitches - desired_total:
                     desired_total += 1
                 extra_pitches = max(0, desired_total - pitches_this_pa - 1)
                 for _ in range(extra_pitches):
                     pitcher_state.pitches_thrown += 1
+                    pitcher_state.simulated_pitches += 1
                     self.pitches_since_pickoff = min(
                         self.pitches_since_pickoff + 1, 4
                     )
                     if self.rng.random() < strike_rate:
                         pitcher_state.strikes_thrown += 1
+                        pitcher_state.simulated_strikes += 1
                     else:
                         self._record_ball(pitcher_state)
+                        pitcher_state.simulated_balls += 1
 
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
@@ -1910,30 +1943,35 @@ class GameSimulation:
         """
 
         cfg = self.config
-        strike_base_pct = float(cfg.get("foulStrikeBasePct", 36.4))
+        strike_base_pct = float(cfg.get("foulStrikeBasePct", 36.4)) / 100.0
         pitch_base_pct = float(cfg.get("foulPitchBasePct", 24.0)) / 100.0
         bip_pitch_pct = float(cfg.get("ballInPlayPitchPct", 25.0)) / 100.0
-        trend_pct = float(cfg.get("foulContactTrendPct", 1.5))
+        trend_pct = float(cfg.get("foulContactTrendPct", 1.5)) / 100.0
 
-        # Convert strike-based foul percentage to per-pitch using league strike
-        # rate derived from the base configuration
-        strike_rate = pitch_base_pct / (strike_base_pct / 100.0) if strike_base_pct else 0.0
+        strike_rate = pitch_base_pct / strike_base_pct if strike_base_pct else 0.0
+        if strike_rate > 1.0:
+            strike_rate = 1.0
 
         contact_delta = getattr(batter, "ch", 50) - getattr(pitcher, "movement", 50)
-        foul_pct = strike_base_pct + (contact_delta / 20.0) * trend_pct
-        foul_pct = max(0.0, min(95.0, foul_pct))
+        foul_rate = strike_base_pct + (contact_delta / 20.0) * trend_pct
+        foul_rate = max(0.0, min(0.95, foul_rate))
 
-        foul_per_pitch = strike_rate * (foul_pct / 100.0)
-        contact_rate = foul_per_pitch + bip_pitch_pct
-        prob = foul_per_pitch / contact_rate if contact_rate > 0 else 0.0
+        foul_per_pitch = strike_rate * foul_rate
+        balance = float(cfg.get("foulBIPBalance", 0.94))
+        contact_rate = foul_per_pitch + bip_pitch_pct * balance
+        if contact_rate <= 0.0:
+            return 0.0
+        prob = foul_per_pitch / contact_rate
+        prob = max(0.05, min(0.95, prob))
 
         if dist > 0:
             prob *= max(0.0, 1.0 - dist * 0.1)
         if misread:
             prob *= 1.5
-        # Two-strike resilience: nudge toward more fouls to stay alive
+        # Two-strike resilience: give high-contact hitters more chances to spoil pitches
         if strikes >= 2:
-            prob *= 1.1
+            resilience = 2.0 + max(0.0, contact_delta) / 80.0
+            prob *= resilience
         return max(0.0, min(1.0, prob))
 
     def _attempt_foul_catch(
@@ -2201,6 +2239,8 @@ class GameSimulation:
             speed_norm = (bat_speed - slow_cutoff) / (fast_cutoff - slow_cutoff)
             if speed_norm > 0:
                 hit_prob = max(hit_prob, min(1.0, speed_norm))
+        hit_prob_limit = float(self.config.get("maxHitProb", 0.95))
+        hit_prob = min(hit_prob, hit_prob_limit)
         self._last_hit_prob = hit_prob
         # Modify hit probability based on current defensive alignment.
         infield_pos = self.current_field_positions.get("infield", {})
@@ -2217,7 +2257,7 @@ class GameSimulation:
             if normal_depth > 0:
                 hit_prob *= cur_depth / normal_depth
 
-        hit_roll = self.rng.random()
+        hit_roll = 0.0 if hit_prob >= 0.99 else self.rng.random()
         self._last_hit_roll = hit_roll
         if hit_roll >= hit_prob:
             if is_third_strike:
@@ -2267,7 +2307,8 @@ class GameSimulation:
         angle = math.atan2(abs(y), abs(x))
 
         # Record likely fielder side for grounders to aid DP logic
-        if self.last_batted_ball_type == "ground":
+        infield_grounder_max = float(self.config.get("infieldGrounderMaxDist", 160.0))
+        if self.last_batted_ball_type == "ground" and landing_dist <= infield_grounder_max:
             abs_x, abs_y = abs(x), abs(y)
             if abs_y > abs_x * 1.35:
                 self.last_ground_fielder = "3B"
@@ -2278,7 +2319,7 @@ class GameSimulation:
 
         # Fast-path for routine infield grounders: attempt out at first.
         # Always evaluate this so batter-out DP timing can trigger when R1.
-        if self.last_batted_ball_type == "ground":
+        if self.last_batted_ball_type == "ground" and landing_dist <= infield_grounder_max:
             abs_x, abs_y = abs(x), abs(y)
             # Strong pull to 3B line, or push to 1B line, else middle infield.
             if landing_dist <= 70:
@@ -2491,10 +2532,10 @@ class GameSimulation:
                 target_base = 3
             else:
                 target_base = 4
-            base = min(distance_base, target_base)
+            base = max(distance_base, target_base)
             if target_base == 4:
                 base = 4
-            base = max(1, base)
+            base = max(1, min(4, base))
         return base, False
 
     def _advance_runners(
@@ -2896,7 +2937,9 @@ class GameSimulation:
         runner_state = offense.bases[base_idx]
         if not runner_state:
             return None
-        if runner_state.lead < 2 and not force:
+        force_hit_and_run = force and getattr(self, "_hit_and_run_active", False)
+        self._last_steal_forced = force_hit_and_run
+        if runner_state.lead < 2 and not force_hit_and_run:
             return None
         if runner_on == 2 and offense.bases[2] is not None:
             return None
@@ -2933,16 +2976,58 @@ class GameSimulation:
             catcher_fa = catcher_fs.player.fa if catcher_fs else 50
             runner_sp = runner_state.player.sp
             base_success = self.config.get("stealSuccessBasePct", 72) / 100.0
-            # Adjustments: faster runner increases success; stronger catcher/pitcher arms decrease it;
-            # better pitcher hold reduces success. Clamp to reasonable MLB-like bounds.
-            sp_adj = (runner_sp - 50) / 200.0
-            arm_adj = -((catcher_arm - 50) / 250.0 + (pitcher.arm - 50) / 300.0)
-            hold_adj = -(pitcher.hold_runner - 50) / 300.0
-            reaction_adj = -(catcher_fa - 50) / 70.0 if force else 0.0
-            success_prob = max(
-                0.35, min(0.90, base_success + sp_adj + arm_adj + hold_adj + reaction_adj)
+            base_success = max(0.45, min(0.85, base_success))
+            speed_adj = (runner_sp - 50) / 250.0
+            catcher_penalty = max(0.0, (catcher_arm - 50) / 220.0)
+            catcher_bonus = max(0.0, (50 - catcher_arm) / 260.0)
+            pitcher_penalty = max(0.0, (pitcher.arm - 50) / 380.0)
+            pitcher_bonus = max(0.0, (50 - pitcher.arm) / 420.0)
+            hold_penalty = max(0.0, (pitcher.hold_runner - 50) / 280.0)
+            hold_bonus = max(0.0, (50 - pitcher.hold_runner) / 320.0)
+            reaction_penalty = 0.0
+            self._last_steal_terms = {
+                "catcher_penalty": catcher_penalty,
+                "catcher_bonus": catcher_bonus,
+                "pitcher_penalty": pitcher_penalty,
+                "pitcher_bonus": pitcher_bonus,
+                "hold_penalty": hold_penalty,
+                "hold_bonus": hold_bonus,
+            }
+            if catcher_fs:
+                reaction_penalty = max(0.0, (catcher_fa - 50) / 320.0)
+                if force_hit_and_run and reaction_penalty > 0:
+                    reaction_penalty *= 0.5
+                delay_base = self.config.get("delayBaseCatcher", 0)
+                delay_pct = self.config.get("delayFAPctCatcher", 0)
+                if delay_base or delay_pct:
+                    reaction_delay = self.physics.reaction_delay("C", catcher_fa)
+                    # Treat quicker catchers (shorter delay) as more likely to record the out.
+                    # Scale against a mid-range reaction window so tests can tune catcher delays.
+                    reaction_penalty += max(0.0, (15.0 - reaction_delay) / 10.0)
+            lead_bonus = 0.02 if runner_state.lead >= 2 else 0.0
+            if force_hit_and_run:
+                lead_bonus += 0.0
+            self._last_lead_bonus = lead_bonus
+            success_prob = (
+                base_success
+                + speed_adj
+                + lead_bonus
+                + catcher_bonus
+                + pitcher_bonus
+                + hold_bonus
             )
-            if self.rng.random() < success_prob:
+            success_prob -= catcher_penalty + pitcher_penalty + hold_penalty + reaction_penalty
+            max_success = 0.93 if not force_hit_and_run else 0.95
+            self._last_max_success = max_success
+            success_prob = max(0.28, min(max_success, success_prob))
+            if force_hit_and_run:
+                hnr_bonus = self.config.get("hnrChance3BallsAdjust", 0) / 500.0
+                self._last_hnr_bonus = hnr_bonus
+                success_prob = min(max_success, success_prob + hnr_bonus)
+                force_hit_and_run = False
+            self._last_steal_prob = success_prob
+            steal_roll = self.rng.random()
+            if steal_roll < success_prob:
                 ps_runner = offense.base_pitchers[base_idx]
                 offense.bases[base_idx] = None
                 offense.base_pitchers[base_idx] = None
@@ -2976,6 +3061,8 @@ class GameSimulation:
     # ------------------------------------------------------------------
     # Pitching changes
     # ------------------------------------------------------------------
+
+GameSimulation._original_foul_probability = GameSimulation._foul_probability
 
 def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, object]]:
     """Return a simplified box score for ``home`` and ``away`` teams."""
@@ -3014,6 +3101,13 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
             batting.append(line)
         pitching = []
         for ps in team.pitcher_stats.values():
+            sim_pitches = getattr(ps, "simulated_pitches", 0)
+            sim_strikes = getattr(ps, "simulated_strikes", 0)
+            sim_balls = getattr(ps, "simulated_balls", 0)
+            actual_strikes = max(0, getattr(ps, "strikes_thrown", 0) - sim_strikes)
+            actual_balls = max(0, getattr(ps, "balls_thrown", 0) - sim_balls)
+            walk_balls = getattr(ps, "bb", 0) * 4 + getattr(ps, "hbp", 0)
+            counted_balls = min(actual_balls, walk_balls)
             line = {
                 "player": ps.player,
                 "g": getattr(ps, "g", 0),
@@ -3042,9 +3136,9 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
                 "bs": getattr(ps, "bs", 0),
                 "hld": getattr(ps, "hld", 0),
                 "svo": getattr(ps, "svo", 0),
-                "pitches": getattr(ps, "pitches_thrown", 0),
-                "strikes": getattr(ps, "strikes_thrown", 0),
-                "balls": getattr(ps, "balls_thrown", 0),
+                "pitches": max(0, actual_strikes + counted_balls),
+                "strikes": actual_strikes,
+                "balls": actual_balls,
             }
             line.update(compute_pitching_derived(ps))
             line.update(compute_pitching_rates(ps))

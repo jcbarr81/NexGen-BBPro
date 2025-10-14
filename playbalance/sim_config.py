@@ -150,31 +150,37 @@ def load_tuned_playbalance_config(
 
         apply_league_benchmarks(cfg, benchmarks, cfg.babip_scale)
 
-        cfg.swingProbSureStrike = round(cfg.swingProbSureStrike * 1.04, 2)
-        cfg.swingProbCloseStrike = round(cfg.swingProbCloseStrike * 1.06, 2)
-        cfg.swingProbCloseBall = round(cfg.swingProbCloseBall * 1.25, 2)
-        cfg.swingProbSureBall = round(cfg.swingProbSureBall * 1.45, 2)
+        cfg.swingProbSureStrike = round(cfg.swingProbSureStrike * 1.02, 2)
+        cfg.swingProbCloseStrike = round(cfg.swingProbCloseStrike * 1.03, 2)
+        cfg.swingProbCloseBall = round(cfg.swingProbCloseBall * 1.12, 2)
+        cfg.swingProbSureBall = round(cfg.swingProbSureBall * 1.25, 2)
         cfg.extraZSwingScale = min(cfg.extraZSwingScale, 0.98)
-        cfg.extraOSwingScale = max(cfg.extraOSwingScale, 1.55)
+        cfg.extraOSwingScale = max(cfg.extraOSwingScale, 1.35)
         cfg.doublePlayProb = min(cfg.doublePlayProb, 0.74)
-        cfg.offManStealChancePct = max(cfg.offManStealChancePct, 115)
-        cfg.stealSuccessBasePct = max(cfg.stealSuccessBasePct, 86)
-        cfg.stealChanceMedThresh = min(cfg.stealChanceMedThresh, 52)
-        cfg.carryDistanceScale = max(cfg.get("carryDistanceScale", 1.0), 2.1)
-        cfg.carryExitVeloBaseline = max(cfg.get("carryExitVeloBaseline", 90.0), 95.0)
+        cfg.offManStealChancePct = min(max(cfg.offManStealChancePct, 90), 105)
+        cfg.stealSuccessBasePct = min(max(cfg.stealSuccessBasePct, 78), 84)
+        cfg.stealChanceMedThresh = max(cfg.stealChanceMedThresh, 58)
+        cfg.carryDistanceScale = min(max(cfg.get("carryDistanceScale", 1.0), 1.15), 1.3)
+        cfg.carryExitVeloBaseline = min(max(cfg.get("carryExitVeloBaseline", 90.0), 92.0), 95.0)
 
         # Apply contact-factor adjustments to curb excessive strikeouts observed
         # in full season simulations. Slightly boosting the contact factor nudges
         # the engine toward league-average strikeout rates.
-        cfg.contactFactorBase = round(cfg.contactFactorBase * 1.04, 2)
-        cfg.contactFactorDiv = int(cfg.contactFactorDiv * 0.94)
+        cfg.contactFactorBase = round(cfg.contactFactorBase * 0.92, 2)
+        cfg.contactFactorDiv = int(cfg.contactFactorDiv * 1.03)
         cfg.closeBallStrikeBonus = max(cfg.closeBallStrikeBonus, 2)
-        cfg.twoStrikeSwingBonus = max(cfg.twoStrikeSwingBonus, 8)
+        cfg.twoStrikeSwingBonus = max(cfg.twoStrikeSwingBonus, 6)
+
+        # Reduce base hit probability and cap to keep run environment in check.
+        cfg.hitProbBase = round(cfg.hitProbBase * 0.9, 3)
+        cfg.hitProbCap = min(cfg.hitProbCap, 0.72)
+        cfg.contactOutcomeScale = 0.95
+        cfg.maxHitProb = 0.4
 
         # Boost batter pitch recognition to curb excessive strikeouts seen in
         # season simulations. Increasing the ease scale makes identifying pitches
         # easier which leads to more contact and fewer swinging strikes.
-        cfg.idRatingEaseScale = 3.0
+        cfg.idRatingEaseScale = min(max(cfg.idRatingEaseScale, 2.0), 2.6)
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages

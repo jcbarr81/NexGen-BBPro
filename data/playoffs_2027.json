@@ -595,98 +595,56 @@
               "home": "A1",
               "away": "N1",
               "date": null,
-              "result": "7-4",
+              "result": "1-8",
               "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G0_N1_at_A1.html",
               "meta": {
-                "home_innings": 8,
+                "home_innings": 9,
                 "away_innings": 9,
                 "extra_innings": false,
-                "home_starter_hand": "L",
-                "away_starter_hand": "L"
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
               }
             },
             {
               "home": "A1",
               "away": "N1",
               "date": null,
-              "result": "10-13",
+              "result": "0-8",
               "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G1_N1_at_A1.html",
-              "meta": {
-                "home_innings": 10,
-                "away_innings": 10,
-                "extra_innings": true,
-                "home_starter_hand": "R",
-                "away_starter_hand": "L"
-              }
-            },
-            {
-              "home": "N1",
-              "away": "A1",
-              "date": null,
-              "result": "4-6",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G2_A1_at_N1.html",
               "meta": {
                 "home_innings": 9,
                 "away_innings": 9,
                 "extra_innings": false,
                 "home_starter_hand": "S",
-                "away_starter_hand": "R"
+                "away_starter_hand": "S"
               }
             },
             {
               "home": "N1",
               "away": "A1",
               "date": null,
-              "result": "5-1",
+              "result": "4-1",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G2_A1_at_N1.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "N1",
+              "away": "A1",
+              "date": null,
+              "result": "4-2",
               "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G3_A1_at_N1.html",
               "meta": {
                 "home_innings": 8,
                 "away_innings": 9,
                 "extra_innings": false,
                 "home_starter_hand": "L",
-                "away_starter_hand": "L"
-              }
-            },
-            {
-              "home": "N1",
-              "away": "A1",
-              "date": null,
-              "result": "4-7",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G4_A1_at_N1.html",
-              "meta": {
-                "home_innings": 9,
-                "away_innings": 9,
-                "extra_innings": false,
-                "home_starter_hand": "L",
-                "away_starter_hand": "S"
-              }
-            },
-            {
-              "home": "A1",
-              "away": "N1",
-              "date": null,
-              "result": "6-9",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G5_N1_at_A1.html",
-              "meta": {
-                "home_innings": 9,
-                "away_innings": 9,
-                "extra_innings": false,
-                "home_starter_hand": "R",
-                "away_starter_hand": "L"
-              }
-            },
-            {
-              "home": "A1",
-              "away": "N1",
-              "date": null,
-              "result": "3-9",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G6_N1_at_A1.html",
-              "meta": {
-                "home_innings": 9,
-                "away_innings": 9,
-                "extra_innings": false,
-                "home_starter_hand": "R",
-                "away_starter_hand": "L"
+                "away_starter_hand": "R"
               }
             }
           ],

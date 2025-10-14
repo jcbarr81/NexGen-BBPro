@@ -4,7 +4,48 @@ from collections import defaultdict
 from datetime import datetime
 import json
 
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
+try:
+    from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
+except ImportError:  # pragma: no cover - fallback for stubbed tests
+    class _QtDummy:
+        def __init__(self, *_, **__):
+            pass
+
+        def __getattr__(self, _name):
+            return self
+
+        def setHtml(self, *_):
+            pass
+
+        def toHtml(self):
+            return ""
+
+    class QDialog(_QtDummy):
+        pass
+
+    class QVBoxLayout(_QtDummy):
+        def addWidget(self, *_):
+            pass
+
+    class QTextEdit(_QtDummy):
+        def __init__(self, *_, **__):
+            super().__init__()
+            self._html = ""
+
+        def setHtml(self, html):
+            self._html = html
+
+        def setPlainText(self, text):
+            self._html = text
+
+        def setReadOnly(self, *_):
+            pass
+
+        def setMinimumHeight(self, *_):
+            pass
+
+        def toHtml(self):
+            return self._html
 
 from utils.team_loader import load_teams
 from utils.standings_utils import default_record, normalize_record
@@ -35,13 +76,7 @@ class StandingsWindow(QDialog):
     def _load_standings(self) -> None:
         """Load league, division and team names into the text viewer."""
         base_dir = get_base_dir()
-        league_path = base_dir / "data" / "league.txt"
-
-        try:
-            with league_path.open(encoding="utf-8") as f:
-                league_name = f.read().strip() or "League"
-        except OSError:
-            league_name = "League"
+        league_name, umbrella_name = self._load_league_names(base_dir)
 
         teams = load_teams()
         divisions: dict[str, list[tuple[str, str]]] = defaultdict(list)
@@ -84,8 +119,14 @@ class StandingsWindow(QDialog):
             "<hr><b><font size=\"+1\"><center>",
             league_name,
             "</center></font></b>",
-            "<pre>",
         ]
+        if umbrella_name and umbrella_name.lower() != league_name.lower():
+            parts.extend([
+                "<font size=\"+1\"><center>",
+                umbrella_name,
+                "</center></font>",
+            ])
+        parts.append("<pre>")
 
         def win_pct(record: dict[str, object]) -> float:
             wins = int(record.get("wins", 0))
@@ -176,3 +217,31 @@ class StandingsWindow(QDialog):
 
         parts.extend(["</pre></body></html>"])
         self.viewer.setHtml("\n".join(parts))
+
+    @staticmethod
+    def _load_league_names(base_dir) -> tuple[str, str]:
+        league_name = "League"
+        league_alias = "USABL"
+        league_path = base_dir / "data" / "league.txt"
+        lines: list[str] = []
+        try:
+            with league_path.open(encoding="utf-8") as fh:
+                lines = [line.strip() for line in fh if line.strip()]
+        except OSError:
+            lines = []
+        if lines:
+            league_name = lines[0] or league_name
+            if len(lines) > 1 and lines[1]:
+                league_alias = lines[1]
+
+        alias_path = base_dir / "data" / "league_alias.txt"
+        if alias_path.exists():
+            try:
+                with alias_path.open(encoding="utf-8") as fh:
+                    alias_line = fh.readline().strip()
+                    if alias_line:
+                        league_alias = alias_line
+            except OSError:
+                pass
+
+        return league_name, league_alias
