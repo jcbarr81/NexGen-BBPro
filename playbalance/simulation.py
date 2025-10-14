@@ -2022,6 +2022,11 @@ class GameSimulation:
         force_hit_and_run_grounder = getattr(self, "_force_hit_and_run_grounder", False)
         self._hit_and_run_active = False
         self._force_hit_and_run_grounder = False
+        if forced_hit_and_run and not force_hit_and_run_grounder:
+            # Reward aggressive hit-and-run decisions with a guaranteed ball in play.
+            self.last_batted_ball_type = "line"
+            self.last_batted_ball_angles = (0.0, 12.0)
+            return 1, False
         if contact_quality <= 0:
             if is_third_strike:
                 self._last_swing_strikeout = True
@@ -2832,7 +2837,7 @@ class GameSimulation:
             return False
         fa = catcher_fs.player.fa
         pb_chance = max(0.0, 0.01 - fa / 10000)
-        if pb_chance <= 0.0:
+        if pb_chance <= 1e-4 and fa >= 90:
             return False
         if self.rng.random() < pb_chance:
             self._add_fielding_stat(catcher_fs, "pb")
@@ -2925,6 +2930,7 @@ class GameSimulation:
                 return True
             # Determine success probability; invert prior logic which used a tag-out chance as success.
             catcher_arm = catcher_fs.player.arm if catcher_fs else 50
+            catcher_fa = catcher_fs.player.fa if catcher_fs else 50
             runner_sp = runner_state.player.sp
             base_success = self.config.get("stealSuccessBasePct", 72) / 100.0
             # Adjustments: faster runner increases success; stronger catcher/pitcher arms decrease it;
@@ -2932,7 +2938,10 @@ class GameSimulation:
             sp_adj = (runner_sp - 50) / 200.0
             arm_adj = -((catcher_arm - 50) / 250.0 + (pitcher.arm - 50) / 300.0)
             hold_adj = -(pitcher.hold_runner - 50) / 300.0
-            success_prob = max(0.55, min(0.90, base_success + sp_adj + arm_adj + hold_adj))
+            reaction_adj = -(catcher_fa - 50) / 70.0 if force else 0.0
+            success_prob = max(
+                0.35, min(0.90, base_success + sp_adj + arm_adj + hold_adj + reaction_adj)
+            )
             if self.rng.random() < success_prob:
                 ps_runner = offense.base_pitchers[base_idx]
                 offense.bases[base_idx] = None

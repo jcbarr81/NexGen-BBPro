@@ -25,6 +25,7 @@ import json
 from utils.path_utils import get_base_dir
 
 
+DEFAULT_PLAYOFF_TEAMS_PER_LEAGUE = 6
 DEFAULT_SLOTS_BY_LEAGUE_SIZE = {
     4: 2,
     5: 4,
@@ -45,7 +46,7 @@ class PlayoffsConfig:
     """Configuration for postseason structure and seeding rules."""
 
     # Number of playoff teams per league. Supported shapes: 4, 6, 8.
-    num_playoff_teams_per_league: int = 6
+    num_playoff_teams_per_league: int = DEFAULT_PLAYOFF_TEAMS_PER_LEAGUE
 
     # Series lengths per round
     series_lengths: Dict[str, int] = field(

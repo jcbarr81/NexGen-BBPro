@@ -153,8 +153,13 @@ def _simulate_game(home_id: str, away_id: str, seed: int) -> Counter[str]:
     """Simulate a single game and return stat totals for both teams."""
 
     assert _BASE_STATES is not None and _CFG is not None
-    home = clone_team_state(_BASE_STATES[home_id])
-    away = clone_team_state(_BASE_STATES[away_id])
+    base_states = _BASE_STATES
+    if home_id not in base_states:
+        base_states[home_id] = build_default_game_state(home_id)
+    if away_id not in base_states:
+        base_states[away_id] = build_default_game_state(away_id)
+    home = clone_team_state(base_states[home_id])
+    away = clone_team_state(base_states[away_id])
     rng = random.Random(seed)
     sim = GameSimulation(home, away, _CFG, rng)
     sim.simulate_game()

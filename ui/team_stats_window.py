@@ -310,7 +310,7 @@ class TeamStatsWindow(QDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setObjectName("TeamStatsWindow")
+        _call_if_exists(self, "setObjectName", "TeamStatsWindow")
         self.team = team
         player_lookup, team_stats = _load_players_lookup()
         self.players = player_lookup

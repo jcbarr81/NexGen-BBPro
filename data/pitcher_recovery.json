@@ -8,47 +8,47 @@
         "P6553",
         "P8664"
       ],
-      "next_index": 3,
+      "next_index": 1,
       "pitchers": {
         "P6553": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 8
         },
         "P4279": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 4
         },
         "P9284": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 5
         },
         "P8143": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 2
         },
         "P1838": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 4
         },
         "P8665": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-03",
+          "last_used": "2024-04-01",
+          "last_pitches": 23
         },
         "P8664": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 6
         },
         "P9074": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-04",
+          "last_used": "2024-04-01",
+          "last_pitches": 53
         }
       }
     },
@@ -60,42 +60,42 @@
         "P1507",
         "P8680"
       ],
-      "next_index": 3,
+      "next_index": 1,
       "pitchers": {
         "P1986": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-04",
+          "last_used": "2024-04-01",
+          "last_pitches": 43
         },
         "P2157": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-03",
+          "last_used": "2024-04-01",
+          "last_pitches": 21
         },
         "P1507": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 7
         },
         "P8680": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-03",
+          "last_used": "2024-04-01",
+          "last_pitches": 21
         },
         "P1937": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 19
         },
         "P9963": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 20
         },
         "P9097": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 1
         },
         "P2895": {
           "available_on": null,
@@ -103,19 +103,19 @@
           "last_pitches": 0
         },
         "P4963": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-03",
+          "last_used": "2024-04-01",
+          "last_pitches": 22
         },
         "P7844": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 18
         },
         "P1899": {
-          "available_on": null,
-          "last_used": null,
-          "last_pitches": 0
+          "available_on": "2024-04-02",
+          "last_used": "2024-04-01",
+          "last_pitches": 3
         }
       }
     }

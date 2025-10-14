@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "year": 2027,
-  "champion": null,
-  "runner_up": null,
+  "champion": "N1",
+  "runner_up": "A1",
   "seeds": {
     "AL": [
       {
@@ -25,6 +25,13 @@
         "league": "AL",
         "wins": 92,
         "run_diff": 142
+      },
+      {
+        "team_id": "A2",
+        "seed": 4,
+        "league": "AL",
+        "wins": 96,
+        "run_diff": 146
       }
     ],
     "NL": [
@@ -48,13 +55,87 @@
         "league": "NL",
         "wins": 91,
         "run_diff": 141
+      },
+      {
+        "team_id": "N2",
+        "seed": 4,
+        "league": "NL",
+        "wins": 95,
+        "run_diff": 145
       }
     ]
   },
   "rounds": [
     {
-      "name": "AL WC",
+      "name": "AL DS",
       "matchups": [
+        {
+          "high": {
+            "team_id": "A1",
+            "seed": 1,
+            "league": "AL",
+            "wins": 98,
+            "run_diff": 148
+          },
+          "low": {
+            "team_id": "A2",
+            "seed": 4,
+            "league": "AL",
+            "wins": 96,
+            "run_diff": 146
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "A1",
+              "away": "A2",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S0_G0_A2_at_A1.html",
+              "meta": {}
+            },
+            {
+              "home": "A1",
+              "away": "A2",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S0_G1_A2_at_A1.html",
+              "meta": {}
+            },
+            {
+              "home": "A2",
+              "away": "A1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S0_G2_A1_at_A2.html",
+              "meta": {}
+            },
+            {
+              "home": "A2",
+              "away": "A1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S0_G3_A1_at_A2.html",
+              "meta": {}
+            },
+            {
+              "home": "A1",
+              "away": "A2",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S0_G4_A2_at_A1.html",
+              "meta": {}
+            }
+          ],
+          "winner": "A1"
+        },
         {
           "high": {
             "team_id": "A3",
@@ -71,10 +152,10 @@
             "run_diff": 142
           },
           "config": {
-            "length": 3,
+            "length": 5,
             "pattern": [
-              1,
-              1,
+              2,
+              2,
               1
             ]
           },
@@ -84,15 +165,7 @@
               "away": "A4",
               "date": null,
               "result": "1-0",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL WC_S0_G0_A4_at_A3.html",
-              "meta": {}
-            },
-            {
-              "home": "A4",
-              "away": "A3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL WC_S0_G1_A3_at_A4.html",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S1_G0_A4_at_A3.html",
               "meta": {}
             },
             {
@@ -100,7 +173,31 @@
               "away": "A4",
               "date": null,
               "result": "1-0",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL WC_S0_G2_A4_at_A3.html",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S1_G1_A4_at_A3.html",
+              "meta": {}
+            },
+            {
+              "home": "A4",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S1_G2_A3_at_A4.html",
+              "meta": {}
+            },
+            {
+              "home": "A4",
+              "away": "A3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S1_G3_A3_at_A4.html",
+              "meta": {}
+            },
+            {
+              "home": "A3",
+              "away": "A4",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_AL DS_S1_G4_A4_at_A3.html",
               "meta": {}
             }
           ],
@@ -201,26 +298,93 @@
           "series_key": "cs",
           "sources": [
             {
-              "kind": "seed",
-              "league": "AL",
-              "seed": 1,
-              "source_round": null,
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "AL DS",
               "slot": 0
             },
             {
               "kind": "winner",
               "league": null,
               "seed": null,
-              "source_round": "AL WC",
-              "slot": 0
+              "source_round": "AL DS",
+              "slot": 1
             }
           ]
         }
       ]
     },
     {
-      "name": "NL WC",
+      "name": "NL DS",
       "matchups": [
+        {
+          "high": {
+            "team_id": "N1",
+            "seed": 1,
+            "league": "NL",
+            "wins": 97,
+            "run_diff": 147
+          },
+          "low": {
+            "team_id": "N2",
+            "seed": 4,
+            "league": "NL",
+            "wins": 95,
+            "run_diff": 145
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "N1",
+              "away": "N2",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S0_G0_N2_at_N1.html",
+              "meta": {}
+            },
+            {
+              "home": "N1",
+              "away": "N2",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S0_G1_N2_at_N1.html",
+              "meta": {}
+            },
+            {
+              "home": "N2",
+              "away": "N1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S0_G2_N1_at_N2.html",
+              "meta": {}
+            },
+            {
+              "home": "N2",
+              "away": "N1",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S0_G3_N1_at_N2.html",
+              "meta": {}
+            },
+            {
+              "home": "N1",
+              "away": "N2",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S0_G4_N2_at_N1.html",
+              "meta": {}
+            }
+          ],
+          "winner": "N1"
+        },
         {
           "high": {
             "team_id": "N3",
@@ -237,10 +401,10 @@
             "run_diff": 141
           },
           "config": {
-            "length": 3,
+            "length": 5,
             "pattern": [
-              1,
-              1,
+              2,
+              2,
               1
             ]
           },
@@ -250,15 +414,7 @@
               "away": "N4",
               "date": null,
               "result": "1-0",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL WC_S0_G0_N4_at_N3.html",
-              "meta": {}
-            },
-            {
-              "home": "N4",
-              "away": "N3",
-              "date": null,
-              "result": "1-0",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL WC_S0_G1_N3_at_N4.html",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S1_G0_N4_at_N3.html",
               "meta": {}
             },
             {
@@ -266,7 +422,31 @@
               "away": "N4",
               "date": null,
               "result": "1-0",
-              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL WC_S0_G2_N4_at_N3.html",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S1_G1_N4_at_N3.html",
+              "meta": {}
+            },
+            {
+              "home": "N4",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S1_G2_N3_at_N4.html",
+              "meta": {}
+            },
+            {
+              "home": "N4",
+              "away": "N3",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S1_G3_N3_at_N4.html",
+              "meta": {}
+            },
+            {
+              "home": "N3",
+              "away": "N4",
+              "date": null,
+              "result": "1-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_NL DS_S1_G4_N4_at_N3.html",
               "meta": {}
             }
           ],
@@ -367,18 +547,18 @@
           "series_key": "cs",
           "sources": [
             {
-              "kind": "seed",
-              "league": "NL",
-              "seed": 1,
-              "source_round": null,
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "NL DS",
               "slot": 0
             },
             {
               "kind": "winner",
               "league": null,
               "seed": null,
-              "source_round": "NL WC",
-              "slot": 0
+              "source_round": "NL DS",
+              "slot": 1
             }
           ]
         }
@@ -410,8 +590,107 @@
               2
             ]
           },
-          "games": [],
-          "winner": null
+          "games": [
+            {
+              "home": "A1",
+              "away": "N1",
+              "date": null,
+              "result": "7-4",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G0_N1_at_A1.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "A1",
+              "away": "N1",
+              "date": null,
+              "result": "10-13",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G1_N1_at_A1.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "N1",
+              "away": "A1",
+              "date": null,
+              "result": "4-6",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G2_A1_at_N1.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "N1",
+              "away": "A1",
+              "date": null,
+              "result": "5-1",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G3_A1_at_N1.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "N1",
+              "away": "A1",
+              "date": null,
+              "result": "4-7",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G4_A1_at_N1.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "A1",
+              "away": "N1",
+              "date": null,
+              "result": "6-9",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G5_N1_at_A1.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "A1",
+              "away": "N1",
+              "date": null,
+              "result": "3-9",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2027_WS_S0_G6_N1_at_A1.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            }
+          ],
+          "winner": "N1"
         }
       ],
       "plan": [

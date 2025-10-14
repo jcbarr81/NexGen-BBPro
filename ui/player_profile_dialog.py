@@ -203,7 +203,23 @@ from utils.player_loader import load_players_from_csv
 from .components import Card, section_title
 
 
-HEADLESS_QT = getattr(QDialog, "__name__", "").lower().startswith("_qt")
+def _looks_like_qt_stub(cls: Any) -> bool:
+    """Return True when the supplied class is a light-weight stub."""
+
+    name = getattr(cls, "__name__", "") or ""
+    module = getattr(cls, "__module__", "") or ""
+    name_lower = name.lower()
+    if "dummy" in name_lower or name_lower.startswith("fake"):
+        return True
+    return module.startswith("tests.") or module.startswith("tests_")
+
+
+HEADLESS_QT = (
+    _looks_like_qt_stub(QDialog)
+    or _looks_like_qt_stub(QTableWidget)
+    or _looks_like_qt_stub(QTabWidget)
+    or not hasattr(QFrame, "Shape")
+)
 
 
 def _safe_call(target: Any, method: str, *args, **kwargs) -> None:

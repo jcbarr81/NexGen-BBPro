@@ -197,6 +197,7 @@ class SeasonProgressWindow(QDialog):
             "schedule": False,
         }
         self._playoffs_done = False
+        self._loaded_playoffs_done = False
         self._load_progress()
 
         try:
@@ -630,6 +631,11 @@ class SeasonProgressWindow(QDialog):
             # requiring another simulation pass here. If no explicit champion is stored
             # but the championship round has winners decided, infer and persist it.
             if not self._playoffs_done:
+                progress_exists = False
+                try:
+                    progress_exists = PROGRESS_FILE.exists()
+                except Exception:
+                    progress_exists = False
                 try:
                     from playbalance.playoffs import load_bracket as _lb, save_bracket as _sb
                     b = playoffs_bracket or _lb()
@@ -644,7 +650,7 @@ class SeasonProgressWindow(QDialog):
                         if finals:
                             return finals[-1]
                         return rounds[-1] if rounds else None
-                    if b:
+                    if b and progress_exists and self._loaded_playoffs_done:
                         if getattr(b, "champion", None):
                             self._playoffs_done = True
                             self._save_progress()
@@ -1867,7 +1873,7 @@ class SeasonProgressWindow(QDialog):
             series_result = self._compute_series_result(bracket)
             return {
                 "status": "completed",
-                "message": f"Simulated playoffs; champion: {champion}",
+                "message": f"Simulated playoffs; championship decided. Champion: {champion}",
                 "playoffs_done": True,
                 "bracket": bracket,
                 "series_result": series_result,
@@ -2318,7 +2324,9 @@ class SeasonProgressWindow(QDialog):
             raw = data.get("sim_index", None)
             if isinstance(raw, int):
                 saved_index = raw
-            self._playoffs_done = data.get("playoffs_done", self._playoffs_done)
+            playoffs_flag = data.get("playoffs_done", self._playoffs_done)
+            self._playoffs_done = playoffs_flag
+            self._loaded_playoffs_done = bool(playoffs_flag)
         except (OSError, json.JSONDecodeError):
             # No saved file or invalid JSON â€” fall back to inference
             pass
