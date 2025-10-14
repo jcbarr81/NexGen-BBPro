@@ -9,6 +9,7 @@ from playbalance.simulation import (
     TeamState,
     generate_boxscore,
 )
+from playbalance.orchestrator import _clone_team_state
 from playbalance.state import PitcherState
 from models.player import Player
 from models.pitcher import Pitcher
@@ -118,6 +119,39 @@ def test_pitcher_games_counted_once(monkeypatch):
     game = GameSimulation(home, away, cfg, random.Random())
     game.simulate_game(innings=0)
     assert captured.get("g") == 1
+
+
+def test_games_played_accumulates(monkeypatch):
+    cfg = load_config()
+    base_home = TeamState(
+        lineup=[make_player(f"home{i}") for i in range(9)],
+        bench=[],
+        pitchers=[make_pitcher("p-home")],
+    )
+    base_away = TeamState(
+        lineup=[make_player(f"away{i}") for i in range(9)],
+        bench=[],
+        pitchers=[make_pitcher("p-away")],
+    )
+    tracked: dict[str, list[int]] = {}
+
+    def record(players, teams):
+        for player in players:
+            if player.player_id in {"home0", "p-home"}:
+                tracked.setdefault(player.player_id, []).append(
+                    player.season_stats.get("g", 0)
+                )
+
+    monkeypatch.setattr("playbalance.simulation.save_stats", record)
+
+    for _ in range(2):
+        home = _clone_team_state(base_home)
+        away = _clone_team_state(base_away)
+        GameSimulation(home, away, cfg, random.Random()).simulate_game(innings=0)
+
+    assert tracked["home0"][-1] == 2
+    assert tracked["p-home"][-1] == 2
+
 
 def test_pinch_hitter_used():
     cfg = load_config()

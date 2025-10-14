@@ -1,6 +1,7 @@
 import csv
+from functools import lru_cache
 from pathlib import Path
-from typing import List, Tuple, Iterable
+from typing import Iterable, List, Tuple
 
 from playbalance.simulation import TeamState
 from models.player import Player
@@ -9,6 +10,7 @@ from utils.path_utils import get_base_dir
 from .player_loader import load_players_from_csv
 from .roster_loader import load_roster
 from .pitcher_role import get_role
+from utils.team_loader import load_teams
 
 
 def load_lineup(team_id: str, vs: str = "lhp", lineup_dir: str | Path = "data/lineups") -> List[Tuple[str, str]]:
@@ -91,10 +93,20 @@ def _build_default_lists(team_id: str, players_file: str, roster_dir: str) -> Tu
     return lineup, bench, pitchers_sorted
 
 
+@lru_cache(maxsize=None)
+def _teams_lookup(path: str) -> dict[str, object]:
+    try:
+        teams = load_teams(path)
+    except Exception:
+        return {}
+    return {t.team_id: t for t in teams}
+
+
 def build_default_game_state(
     team_id: str,
     players_file: str = "data/players.csv",
     roster_dir: str = "data/rosters",
+    teams_file: str | Path = "data/teams.csv",
 ) -> TeamState:
     """Return a :class:`~playbalance.simulation.TeamState` for ``team_id``.
 
@@ -109,4 +121,16 @@ def build_default_game_state(
     if not pitchers:
         raise ValueError(f"Team {team_id} does not have any pitchers")
 
-    return TeamState(lineup=lineup, bench=bench, pitchers=pitchers)
+    team_obj = None
+    if teams_file:
+        lookup_path = Path(teams_file)
+        if not lookup_path.is_absolute():
+            lookup_path = get_base_dir() / lookup_path
+        team_obj = _teams_lookup(str(lookup_path)).get(team_id)
+
+    state = TeamState(lineup=lineup, bench=bench, pitchers=pitchers, team=team_obj)
+    if team_obj is not None:
+        season = getattr(team_obj, "season_stats", None)
+        if season:
+            state.team_stats = dict(season)
+    return state

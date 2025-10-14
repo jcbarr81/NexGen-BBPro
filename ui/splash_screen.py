@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QGraphicsOpacityEffect
@@ -237,10 +238,7 @@ class SplashScreen(QWidget):
 
         if pygame is not None:
             try:
-                if not pygame.get_init():
-                    pygame.init()  # type: ignore[attr-defined]
-                if not pygame.mixer.get_init():
-                    pygame.mixer.init()  # type: ignore[attr-defined]
+                self._init_pygame_mixer()
                 pygame.mixer.music.load(str(audio))  # type: ignore[attr-defined]
                 pygame.mixer.music.set_volume(1.0)  # type: ignore[attr-defined]
                 pygame.mixer.music.play(-1)  # type: ignore[attr-defined]
@@ -285,6 +283,85 @@ class SplashScreen(QWidget):
         self._music_player = None
         self._audio_output = None
         self._music_backend = None
+
+    def _init_pygame_mixer(self) -> None:
+        if pygame is None:
+            return
+        try:
+            if not pygame.get_init():
+                pygame.init()  # type: ignore[attr-defined]
+            if pygame.mixer.get_init():
+                return  # Mixer already initialised
+            self._initialise_pygame_with_preferred_driver()
+        except Exception as exc:  # pragma: no cover - environment dependent
+            message = str(exc).lower()
+            if "audio device" not in message and "audio driver" not in message:
+                raise
+            try:
+                pygame.mixer.quit()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+            os.environ["SDL_AUDIODRIVER"] = "dummy"
+            pygame.mixer.init()  # type: ignore[attr-defined]
+
+    def _initialise_pygame_with_preferred_driver(self) -> None:
+        """Try several SDL audio drivers before falling back to dummy."""
+        if pygame is None:
+            return
+        original_driver = os.environ.get("SDL_AUDIODRIVER")
+        drivers_to_try: list[str | None] = [original_driver]
+        if self._running_in_wsl():
+            drivers_to_try.extend(["pipewire", "pulse", "alsa"])
+        drivers_to_try.append("dummy")
+
+        # Deduplicate while preserving order
+        seen: set[str | None] = set()
+        unique_drivers = [d for d in drivers_to_try if not (d in seen or seen.add(d))]
+
+        last_error: Exception | None = None
+        for driver in unique_drivers:
+            try:
+                if driver is None:
+                    if original_driver is None:
+                        os.environ.pop("SDL_AUDIODRIVER", None)
+                    else:
+                        os.environ["SDL_AUDIODRIVER"] = original_driver
+                else:
+                    os.environ["SDL_AUDIODRIVER"] = driver
+                pygame.mixer.init()  # type: ignore[attr-defined]
+                if driver == "dummy":
+                    logger.info(
+                        "Splash music muted: SDL dummy audio driver active. "
+                        "Configure audio backend for playback."
+                    )
+                elif driver is not None and driver != original_driver:
+                    logger.info("Splash music using SDL audio driver '%s'.", driver)
+                return
+            except Exception as exc:  # pragma: no cover - environment dependent
+                last_error = exc
+                try:
+                    pygame.mixer.quit()  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+                continue
+
+        # Restore environment variable on complete failure
+        if original_driver is None:
+            os.environ.pop("SDL_AUDIODRIVER", None)
+        else:
+            os.environ["SDL_AUDIODRIVER"] = original_driver
+        if last_error is not None:
+            raise last_error
+
+    @staticmethod
+    def _running_in_wsl() -> bool:
+        """Detect whether the application is running under Windows Subsystem for Linux."""
+        try:
+            with open("/proc/sys/kernel/osrelease", encoding="utf-8") as handle:
+                contents = handle.read().lower()
+        except OSError:
+            return False
+        return "microsoft" in contents or "wsl" in contents
 
     def open_login(self):
         """Show the login window while keeping the splash visible."""

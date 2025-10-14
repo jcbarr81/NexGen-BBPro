@@ -16,7 +16,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from copy import deepcopy
 from datetime import date
 from pathlib import Path
 from typing import Mapping, Any
@@ -59,9 +58,16 @@ class SimulationResult:
 
 
 def _clone_team_state(base: TeamState) -> TeamState:
-    """Return a deep-copied ``TeamState`` with per-game fields reset."""
+    """Return a fresh ``TeamState`` snapshot with per-game fields reset."""
 
-    team = deepcopy(base)
+    team = TeamState(
+        lineup=list(base.lineup),
+        bench=list(base.bench),
+        pitchers=list(base.pitchers),
+        team=base.team,
+    )
+    # Ensure we never mutate the base state's seasonal aggregates
+    team.team_stats = dict(base.team_stats)
     team.lineup_stats = {}
     team.pitcher_stats = {}
     team.fielding_stats = {}
@@ -73,9 +79,12 @@ def _clone_team_state(base: TeamState) -> TeamState:
     team.lob = 0
     team.inning_lob = []
     team.inning_events = []
-    team.team_stats = {}
     team.warming_reliever = False
     team.bullpen_warmups = {}
+    # Reset persistent pitcher state that may have been altered in a prior game
+    for pitcher in team.pitchers:
+        if hasattr(pitcher, "fatigue"):
+            pitcher.fatigue = "fresh"
     if team.pitchers:
         starter = team.pitchers[0]
         ps = PitcherState()

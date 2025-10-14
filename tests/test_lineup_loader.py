@@ -44,3 +44,13 @@ def test_build_default_game_state_creates_expected_lineup():
     assert [p.player_id for p in state.lineup] == [p.player_id for p in lineup]
     assert [p.player_id for p in state.bench] == [p.player_id for p in bench]
     assert [p.player_id for p in state.pitchers] == [p.player_id for p in pitchers]
+
+
+def test_build_default_game_state_attaches_team_metadata():
+    team_id = "DEN"
+    state = build_default_game_state(team_id)
+    assert state.team is not None
+    assert state.team.team_id == team_id
+    original = getattr(state.team, "season_stats", {})
+    if original:
+        assert state.team_stats == original
