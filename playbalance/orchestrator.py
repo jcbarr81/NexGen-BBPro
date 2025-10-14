@@ -66,8 +66,20 @@ def _clone_team_state(base: TeamState) -> TeamState:
         pitchers=list(base.pitchers),
         team=base.team,
     )
-    # Ensure we never mutate the base state's seasonal aggregates
-    team.team_stats = dict(base.team_stats)
+    # Ensure we never mutate the base state's seasonal aggregates. Prefer the
+    # authoritative values stored on the shared ``Team`` instance when
+    # available so team totals keep accumulating between games. When the base
+    # state was populated before any games were played, ``base.team_stats``
+    # may still hold the original (empty) mapping even though the ``Team``
+    # object now contains updated season stats. Copying from the ``Team`` keeps
+    # both in sync for subsequent clones.
+    base_stats = dict(getattr(base, "team_stats", {}) or {})
+    if base.team is not None:
+        season_stats = getattr(base.team, "season_stats", None)
+        if isinstance(season_stats, dict) and season_stats:
+            base_stats = dict(season_stats)
+            base.team_stats = dict(base_stats)
+    team.team_stats = base_stats
     team.lineup_stats = {}
     team.pitcher_stats = {}
     team.fielding_stats = {}

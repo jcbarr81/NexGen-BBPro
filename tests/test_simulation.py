@@ -13,6 +13,7 @@ from playbalance.orchestrator import _clone_team_state
 from playbalance.state import PitcherState
 from models.player import Player
 from models.pitcher import Pitcher
+from models.team import Team
 from tests.util.pbini_factory import load_config, make_cfg
 
 
@@ -95,6 +96,20 @@ def make_pitcher(
         role=role,
     )
 
+
+def make_team(team_id: str = "TST") -> Team:
+    return Team(
+        team_id=team_id,
+        name="Testers",
+        city="Test City",
+        abbreviation="TST",
+        division="Test Division",
+        stadium="Test Park",
+        primary_color="#112233",
+        secondary_color="#445566",
+        owner_id="owner",
+    )
+
 def test_pitcher_games_counted_once(monkeypatch):
     cfg = load_config()
     home = TeamState(
@@ -151,6 +166,25 @@ def test_games_played_accumulates(monkeypatch):
 
     assert tracked["home0"][-1] == 2
     assert tracked["p-home"][-1] == 2
+
+
+def test_clone_uses_team_season_stats():
+    base = TeamState(
+        lineup=[make_player(f"home{i}") for i in range(9)],
+        bench=[],
+        pitchers=[make_pitcher("p-home")],
+        team=make_team("SAN"),
+    )
+    base.team_stats = {"g": 1, "w": 1, "l": 0}
+    assert base.team is not None
+    base.team.season_stats = {"g": 42, "w": 30, "l": 12}
+
+    clone = _clone_team_state(base)
+
+    assert clone.team_stats["g"] == 42
+    # ``base.team_stats`` should also stay synchronized with the underlying team
+    # object so future clones inherit the accumulated totals.
+    assert base.team_stats["g"] == 42
 
 
 def test_pinch_hitter_used():
