@@ -39,8 +39,9 @@ class Stadium:
     left: float = 330.0
     center: float = 400.0
     right: float = 330.0
-    double: float = 0.62
-    triple: float = 0.92
+    # Increase thresholds to reduce automatic doubles/triples off wall hits.
+    double: float = 0.82
+    triple: float = 0.97
 
     def wall_distance(self, angle: float) -> float:
         """Return the distance to the wall at ``angle`` in radians.

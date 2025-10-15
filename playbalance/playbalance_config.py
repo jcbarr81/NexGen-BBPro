@@ -383,6 +383,14 @@ _DEFAULTS: Dict[str, Any] = {
     "stealChance31Count": 15,
     "stealChance32Count": 20,
     "offManStealChancePct": 80,
+    # Minimum probability thresholds to gate steal attempts (0..1).
+    # Defaults are 0 to avoid changing behaviour in tests unless overridden.
+    "stealAttemptMinProb": 0.0,
+    "stealMinSuccessProb": 0.0,
+    "closeBallTakeBonus": 0.0,
+    "sureBallTakeBonus": 0.0,
+    "twoStrikeContactFloor": 0.0,
+    "twoStrikeContactQuality": 0.0,
     "stealSuccessTagOutPct": 22,
     "stealSuccessSafePct": 78,
     "stealChanceVerySlowThresh": 13,

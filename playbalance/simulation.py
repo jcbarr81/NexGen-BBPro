@@ -190,7 +190,7 @@ class GameSimulation:
             if not getattr(self.config, "enableContactReduction", 0):
                 self.config.enableContactReduction = 1
             if not getattr(self.config, "missChanceScale", 0):
-                self.config.missChanceScale = 1.3
+                self.config.missChanceScale = 1.5
             if not getattr(self.config, "contactOutcomeScale", 0):
                 self.config.contactOutcomeScale = 0.65
         self.debug_log: List[str] = []
@@ -2960,7 +2960,12 @@ class GameSimulation:
                 batter_ch=batter_ch,
                 run_diff=run_diff,
             )
-            if chance <= 0.0:
+            # Apply configurable minimum attempt probability gate
+            try:
+                min_attempt = float(self.config.get("stealAttemptMinProb", 0.0))
+            except Exception:
+                min_attempt = 0.0
+            if chance <= 0.0 or chance < min_attempt:
                 attempt = False
             elif chance >= 1.0:
                 attempt = True
@@ -3020,6 +3025,9 @@ class GameSimulation:
             max_success = 0.93 if not force_hit_and_run else 0.95
             self._last_max_success = max_success
             success_prob = max(0.28, min(max_success, success_prob))
+            # Apply configurable minimum success probability gate for attempts (non-forced)
+            if not force and success_prob < float(self.config.get("stealMinSuccessProb", 0.0)):
+                return None
             if force_hit_and_run:
                 hnr_bonus = self.config.get("hnrChance3BallsAdjust", 0) / 500.0
                 self._last_hnr_bonus = hnr_bonus

@@ -730,14 +730,41 @@ class DraftConsole(QDialog):
         )
         if combined_issues:
             detail_lines = "\n".join(combined_issues)
-            QMessageBox.warning(
-                self,
-                "Draft Assignments",
-                base_msg
-                + "\n\n"
-                + detail_lines
-                + "\nResolve roster compliance before resuming the season.",
-            )
+            try:
+                msg = QMessageBox(self)
+                icon = None
+                icon_enum = getattr(QMessageBox, "Icon", None)
+                if icon_enum is not None:
+                    icon = getattr(icon_enum, "Warning", None)
+                else:
+                    icon = getattr(QMessageBox, "Warning", None)
+                if icon:
+                    try:
+                        msg.setIcon(icon)
+                    except Exception:
+                        pass
+                msg.setWindowTitle("Draft Assignments")
+                msg.setText(base_msg)
+                msg.setInformativeText(
+                    "Resolve roster compliance before resuming the season."
+                )
+                msg.setDetailedText(detail_lines)
+                try:
+                    interaction = getattr(Qt, "TextInteractionFlag", None)
+                    if interaction and hasattr(interaction, "TextSelectableByMouse"):
+                        msg.setTextInteractionFlags(interaction.TextSelectableByMouse)
+                except Exception:
+                    pass
+                msg.exec()
+            except Exception:
+                QMessageBox.warning(
+                    self,
+                    "Draft Assignments",
+                    base_msg
+                    + "\n\n"
+                    + detail_lines
+                    + "\nResolve roster compliance before resuming the season.",
+                )
         else:
             QMessageBox.information(
                 self,

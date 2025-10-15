@@ -1,4 +1,7 @@
-[2025-10-14 18:03:46] No unsigned players available
-[2025-10-14 18:03:47] Training camp completed; players marked ready
-[2025-10-14 18:03:47] Generated regular season schedule with 1215 games
-[2025-10-14 18:03:49] Season advanced to Regular Season
+[2025-10-14 21:12:25] No unsigned players available
+[2025-10-14 21:12:25] Training camp completed; players marked ready
+[2025-10-14 21:12:26] Generated regular season schedule with 1215 games
+[2025-10-14 21:12:25] Season advanced to Regular Season
+[2025-10-14 21:42:53] Amateur Draft 2025 committed: 45 players added; 45 roster assignments
+[2025-10-14 21:43:33] Amateur Draft 2025 committed: 0 players added; 45 roster assignments
+[2025-10-14 22:06:52] Amateur Draft 2025 committed: 0 players added; 45 roster assignments

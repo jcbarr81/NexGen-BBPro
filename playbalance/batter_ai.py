@@ -365,6 +365,11 @@ class BatterAI:
         loc_factor = getattr(self.config, "swingLocationFactor", 0.0) / 100.0
         swing_chance -= (dx_abs + dy_abs) * loc_factor
 
+        if pitch_kind == "close ball" and strikes < 2:
+            swing_chance -= getattr(self.config, "closeBallTakeBonus", 0) / 100.0
+        elif pitch_kind == "sure ball":
+            swing_chance -= getattr(self.config, "sureBallTakeBonus", 0) / 100.0
+
         swing_chance = clamp01(swing_chance)
         self.last_swing_chance = swing_chance
         # Two-strike protection: become more aggressive to reduce called Ks.
@@ -374,6 +379,10 @@ class BatterAI:
             swing_chance = clamp01(swing_chance)
         if rv < swing_chance:
             swing = True
+
+        forced_two_strike_contact = False
+        two_strike_floor = getattr(self.config, "twoStrikeContactFloor", 0.0)
+        two_strike_quality_cap = getattr(self.config, "twoStrikeContactQuality", 0.0)
 
         if swing:
             # Base miss chance shaped by pitch quality vs batter contact
@@ -490,6 +499,10 @@ class BatterAI:
             if strikes >= 2 and id_prob > 0.0:
                 prob_contact = min(1.0, prob_contact + 0.05)
 
+            if strikes >= 2 and two_strike_floor > 0 and prob_contact < two_strike_floor:
+                prob_contact = two_strike_floor
+                forced_two_strike_contact = True
+
             # If look mismatch or poor ID, ensure floor still applies
             if self.last_misread:
                 floor = getattr(self.config, "minMisreadContact", 0.0) * (batter_contact / 100.0)
@@ -523,6 +536,8 @@ class BatterAI:
                 rv_contact = rv if check_random is None else check_random
                 self.last_contact = rv_contact < prob_contact
                 contact_quality = prob_contact
+                if forced_two_strike_contact and self.last_contact and two_strike_quality_cap > 0:
+                    contact_quality = min(contact_quality, two_strike_quality_cap)
         else:
             self.last_contact = False
 

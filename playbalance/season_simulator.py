@@ -8,6 +8,61 @@ from playbalance.game_runner import simulate_game_scores
 from utils.pitcher_recovery import PitcherRecoveryTracker
 from types import SimpleNamespace
 from utils.exceptions import DraftRosterError
+from utils.stats_persistence import load_stats as _load_season_stats
+
+_BASIC_TEAM_KEYS = {"g", "w", "l", "r", "ra"}
+
+
+def _coerce_int(value: object) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _persist_daily_totals(teams_accum: dict[str, dict[str, float]]) -> None:
+    """Persist fallback team totals without overriding detailed season stats."""
+
+    if not teams_accum:
+        return
+    try:
+        existing = _load_season_stats()
+    except Exception:
+        existing = {"players": {}, "teams": {}}
+    existing_teams: dict[str, dict[str, object]] = existing.get("teams", {}) or {}
+
+    teams_to_save: list[SimpleNamespace] = []
+    players_to_save: list[SimpleNamespace] = []
+
+    for team_id, stats in teams_accum.items():
+        current = existing_teams.get(team_id) or {}
+        # Skip when detailed stats from the full simulator already exist.
+        if any(key not in _BASIC_TEAM_KEYS for key in current.keys()):
+            continue
+
+        merged = {
+            key: _coerce_int(current.get(key)) + _coerce_int(stats.get(key))
+            for key in _BASIC_TEAM_KEYS
+        }
+        teams_to_save.append(SimpleNamespace(team_id=team_id, season_stats=merged))
+
+        player_id = f"{team_id}_sim_player"
+        players_to_save.append(
+            SimpleNamespace(
+                player_id=player_id,
+                team_id=team_id,
+                season_stats={
+                    "g": merged["g"],
+                    "r": merged["r"],
+                    "ra": merged["ra"],
+                },
+            )
+        )
+
+    if teams_to_save:
+        from playbalance.simulation import save_stats as _save_stats
+
+        _save_stats(players_to_save, teams_to_save)
 
 
 class SeasonSimulator:
@@ -175,7 +230,6 @@ class SeasonSimulator:
         if use_default_save:
             try:
                 teams_accum: dict[str, dict[str, float]] = {}
-                players_by_team: dict[str, list[object]] = {}
 
                 for home_id, away_id, details in game_meta:
                     result = details.get("score_line") or details.get("result") or None
@@ -220,23 +274,7 @@ class SeasonSimulator:
                     away_entry["w"] += int(away_runs > home_runs)
                     away_entry["l"] += int(away_runs < home_runs)
 
-                teams_to_save = [SimpleNamespace(team_id=team_id, season_stats=stats) for team_id, stats in teams_accum.items()]
-                players_to_save = [
-                    SimpleNamespace(
-                        player_id=f"{team_id}_sim_player",
-                        team_id=team_id,
-                        season_stats={
-                            "g": stats["g"],
-                            "r": stats["r"],
-                            "ra": stats["ra"],
-                        },
-                    )
-                    for team_id, stats in teams_accum.items()
-                ]
-                if teams_to_save:
-                    from playbalance.simulation import save_stats as _save_stats
-
-                    _save_stats(players_to_save, teams_to_save)
+                _persist_daily_totals(teams_accum)
             except Exception:
                 pass
         self._index += 1

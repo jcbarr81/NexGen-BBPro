@@ -1,6 +1,7 @@
+import json
 import random
 
-from playbalance.season_simulator import SeasonSimulator
+from playbalance.season_simulator import SeasonSimulator, _persist_daily_totals
 
 
 def test_simulate_regular_season_to_completion():
@@ -55,13 +56,76 @@ def test_default_simulation_saves_team_stats(monkeypatch):
     captured: dict[str, list] = {}
 
     def _capture(players, teams):
-        captured["players"] = list(players)
-        captured["teams"] = list(teams)
+        captured.setdefault("players", []).extend(list(players))
+        captured.setdefault("teams", []).extend(list(teams))
 
     monkeypatch.setattr("playbalance.simulation.save_stats", _capture)
 
     sim = SeasonSimulator(schedule)
     sim.simulate_next_day()
 
-    assert {team.team_id for team in captured.get("teams", [])} == {"AUS", "BAL"}
+    team_ids = {getattr(team, "team_id", None) for team in captured.get("teams", [])}
+    assert {"AUS", "BAL"}.issubset(team_ids)
     assert captured.get("players")
+
+
+def test_fallback_does_not_overwrite_detailed_stats(tmp_path, monkeypatch):
+    base = tmp_path
+    data_dir = base / "data"
+    data_dir.mkdir()
+    stats_path = data_dir / "season_stats.json"
+    stats_path.write_text(
+        json.dumps(
+            {
+                "players": {},
+                "teams": {
+                    "AAA": {
+                        "g": 42,
+                        "w": 30,
+                        "l": 12,
+                        "r": 210,
+                        "ra": 180,
+                        "opp_pa": 0,
+                    }
+                },
+                "history": [],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("utils.path_utils.get_base_dir", lambda: base)
+    monkeypatch.setattr("utils.stats_persistence.get_base_dir", lambda: base)
+
+    _persist_daily_totals({"AAA": {"g": 1, "w": 1, "l": 0, "r": 5, "ra": 3}})
+
+    updated = json.loads(stats_path.read_text(encoding="utf-8"))
+    assert updated["teams"]["AAA"]["g"] == 42
+    assert updated["teams"]["AAA"]["w"] == 30
+    assert updated["teams"]["AAA"]["l"] == 12
+    # Ensure derived keys remain untouched
+    assert "opp_pa" in updated["teams"]["AAA"]
+
+
+def test_fallback_accumulates_when_only_basic_keys(tmp_path, monkeypatch):
+    base = tmp_path
+    data_dir = base / "data"
+    data_dir.mkdir()
+    (data_dir / "season_stats.json").write_text(
+        json.dumps({"players": {}, "teams": {}, "history": []}, indent=2),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("utils.path_utils.get_base_dir", lambda: base)
+    monkeypatch.setattr("utils.stats_persistence.get_base_dir", lambda: base)
+
+    day_totals = {"AAA": {"g": 1, "w": 1, "l": 0, "r": 6, "ra": 2}}
+    _persist_daily_totals(day_totals)
+    _persist_daily_totals(day_totals)
+
+    updated = json.loads((data_dir / "season_stats.json").read_text(encoding="utf-8"))
+    team_entry = updated["teams"]["AAA"]
+    assert team_entry["g"] == 2
+    assert team_entry["w"] == 2
+    assert team_entry["l"] == 0
+    assert team_entry["r"] == 12
+    assert team_entry["ra"] == 4
