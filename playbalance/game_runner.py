@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, List, Mapping, Sequence, Tuple
 
+from models.pitcher import Pitcher
 from models.team import Team
 from playbalance.sim_config import load_tuned_playbalance_config
 from playbalance.simulation import (
@@ -123,6 +124,68 @@ def apply_lineup(state: TeamState, lineup: Sequence[LineupEntry]) -> None:
     state.bench = [p for p in hitters if p.player_id not in seen]
 
 
+def _apply_bullpen_usage_order(
+    state: TeamState,
+    team_id: str,
+    tracker: PitcherRecoveryTracker | None,
+    date_token: str | None,
+    seed: int | None,
+    *,
+    players_file: str,
+    roster_dir: str,
+) -> None:
+    """Reorder bullpen arms so rested pitchers are prioritised and tired arms sink."""
+
+    if tracker is None or not date_token or not state.pitchers or len(state.pitchers) <= 1:
+        return
+    status_map = tracker.bullpen_game_status(team_id, date_token, players_file, roster_dir)
+    if not status_map:
+        return
+
+    starter = state.pitchers[0]
+    bullpen = list(state.pitchers[1:])
+    if not bullpen:
+        return
+
+    rng_seed = hash((team_id, date_token, seed or 0))
+    ordering_rng = random.Random(rng_seed)
+    tie_breakers = {p.player_id: ordering_rng.random() for p in bullpen}
+
+    available: list[tuple[dict[str, object], Pitcher]] = []
+    resting: list[tuple[dict[str, object], Pitcher]] = []
+    for pitcher in bullpen:
+        info = dict(status_map.get(pitcher.player_id, {}))
+        if info.get("available", True):
+            available.append((info, pitcher))
+        else:
+            resting.append((info, pitcher))
+
+    def _available_key(item: tuple[dict[str, object], Pitcher]) -> tuple[float, float, float, float]:
+        info, pitcher = item
+        days_since = float(info.get("days_since_use", 9999))
+        last_pitches = float(info.get("last_pitches", 0))
+        return (
+            1.0,
+            days_since,
+            -last_pitches,
+            tie_breakers.get(pitcher.player_id, 0.0),
+        )
+
+    def _resting_key(item: tuple[dict[str, object], Pitcher]) -> tuple[float, float]:
+        info, pitcher = item
+        available_on = info.get("available_on")
+        ordinal = available_on.toordinal() if hasattr(available_on, "toordinal") else float("inf")
+        return (
+            ordinal,
+            tie_breakers.get(pitcher.player_id, 0.0),
+        )
+
+    available.sort(key=_available_key, reverse=True)
+    resting.sort(key=_resting_key)
+
+    state.pitchers = [starter] + [p for _, p in available] + [p for _, p in resting]
+
+
 def reorder_pitchers(state: TeamState, starter_id: str | None) -> None:
     """Move ``starter_id`` to the front and set as current starter.
 
@@ -136,7 +199,22 @@ def reorder_pitchers(state: TeamState, starter_id: str | None) -> None:
     starter so starts are attributed correctly.
     """
 
+    def _prioritize_bullpen() -> None:
+        if len(state.pitchers) <= 1:
+            return
+        starter = state.pitchers[0]
+        bullpen: list = []
+        rotation_rest: list = []
+        for pitcher in state.pitchers[1:]:
+            role = str(getattr(pitcher, "assigned_pitching_role", "") or "")
+            if role.upper().startswith("SP"):
+                rotation_rest.append(pitcher)
+            else:
+                bullpen.append(pitcher)
+        state.pitchers[:] = [starter] + bullpen + rotation_rest
+
     if not starter_id:
+        _prioritize_bullpen()
         return
     # Find desired starter
     target_index = None
@@ -161,6 +239,7 @@ def reorder_pitchers(state: TeamState, starter_id: str | None) -> None:
                 new_ps.gs += 1
                 state.pitcher_stats[starter_id] = new_ps
             state.current_pitcher_state = new_ps
+        _prioritize_bullpen()
         return
 
     # Move target pitcher to front
@@ -183,6 +262,7 @@ def reorder_pitchers(state: TeamState, starter_id: str | None) -> None:
     ps.g += 1
     ps.gs += 1
     state.current_pitcher_state = ps
+    _prioritize_bullpen()
 
 
 def prepare_team_state(
@@ -340,6 +420,24 @@ def run_single_game(
     rng = random.Random(seed)
     home_state = _build_state(home_id, home_lineup, home_starter)
     away_state = _build_state(away_id, away_lineup, away_starter)
+    _apply_bullpen_usage_order(
+        home_state,
+        home_id,
+        tracker,
+        date_token,
+        seed,
+        players_file=players_file,
+        roster_dir=roster_dir,
+    )
+    _apply_bullpen_usage_order(
+        away_state,
+        away_id,
+        tracker,
+        date_token,
+        seed,
+        players_file=players_file,
+        roster_dir=roster_dir,
+    )
 
     cfg, _ = load_tuned_playbalance_config()
     sim = GameSimulation(home_state, away_state, cfg, rng)

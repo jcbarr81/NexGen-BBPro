@@ -303,6 +303,35 @@ class PitcherRecoveryTracker:
         return self._assignments.get(team_id)
 
     # ------------------------------------------------------------------
+    def bullpen_game_status(
+        self,
+        team_id: str,
+        date_str: str,
+        players_file: str | Path,
+        roster_dir: str | Path,
+    ) -> Dict[str, Dict[str, object]]:
+        """Return bullpen availability and rest info for ``team_id`` on ``date_str``."""
+
+        entry = self._ensure_team(team_id, players_file, roster_dir)
+        pitchers = entry.get("pitchers", {}) or {}
+        date_obj = _parse_date(date_str)
+        status_map: Dict[str, Dict[str, object]] = {}
+        for pid, payload in pitchers.items():
+            status = _PitcherStatus.from_dict(payload)
+            available_on = _parse_date(status.available_on)
+            last_used = _parse_date(status.last_used)
+            days_since = (date_obj - last_used).days if last_used != _EPOCH else 9999
+            if days_since < 0:
+                days_since = 0
+            status_map[pid] = {
+                "available": available_on <= date_obj,
+                "days_since_use": days_since,
+                "last_pitches": status.last_pitches,
+                "available_on": available_on,
+            }
+        return status_map
+
+    # ------------------------------------------------------------------
     def record_game(
         self,
         team_id: str,

@@ -58,6 +58,38 @@ def _separate_players(players: Iterable[Player]) -> Tuple[List[Player], List[Pit
     return hitters, pitchers
 
 
+def _load_pitching_staff(
+    team_id: str,
+    roster_dir: str,
+    valid_pitchers: set[str],
+) -> List[tuple[str, str]]:
+    """Return ordered pitching staff entries from ``*_pitching.csv``."""
+
+    roster_path = Path(roster_dir)
+    if not roster_path.is_absolute():
+        roster_path = get_base_dir() / roster_path
+    file_path = roster_path / f"{team_id}_pitching.csv"
+    entries: List[tuple[str, str]] = []
+    if not file_path.exists():
+        return entries
+    seen: set[str] = set()
+    try:
+        with file_path.open("r", newline="", encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            for row in reader:
+                if len(row) < 2:
+                    continue
+                pid = row[0].strip()
+                role = row[1].strip()
+                if not pid or pid in seen or pid not in valid_pitchers:
+                    continue
+                entries.append((pid, role))
+                seen.add(pid)
+    except OSError:
+        return []
+    return entries
+
+
 def _build_default_lists(team_id: str, players_file: str, roster_dir: str) -> Tuple[List[Player], List[Player], List[Pitcher]]:
     """Return ``(lineup, bench, pitchers)`` for ``team_id``.
 
@@ -81,16 +113,36 @@ def _build_default_lists(team_id: str, players_file: str, roster_dir: str) -> Tu
     lineup = hitters[:9]
     bench = hitters[9:]
 
-    starter_candidates = [p for p in pitchers if get_role(p) == "SP"]
-    if starter_candidates:
-        starter = max(starter_candidates, key=lambda p: getattr(p, "endurance", 0))
-        bullpen = [p for p in pitchers if p is not starter]
-        pitchers_sorted = [starter] + bullpen
-    else:
-        pitchers.sort(key=lambda p: getattr(p, "endurance", 0), reverse=True)
-        pitchers_sorted = pitchers
+    pitcher_lookup = {p.player_id: p for p in pitchers}
+    staff_entries = _load_pitching_staff(team_id, roster_dir, set(pitcher_lookup))
+    ordered_pitchers: List[Pitcher] = []
 
-    return lineup, bench, pitchers_sorted
+    for pid, role in staff_entries:
+        pitcher = pitcher_lookup.pop(pid, None)
+        if pitcher is None:
+            continue
+        setattr(pitcher, "assigned_pitching_role", role)
+        ordered_pitchers.append(pitcher)
+
+    remaining = list(pitcher_lookup.values())
+    for pitcher in remaining:
+        assigned = getattr(pitcher, "assigned_pitching_role", None)
+        if not assigned:
+            derived = get_role(pitcher)
+            setattr(pitcher, "assigned_pitching_role", derived or "")
+    remaining.sort(key=lambda p: getattr(p, "endurance", 0), reverse=True)
+    ordered_pitchers.extend(remaining)
+
+    if not ordered_pitchers:
+        pitchers.sort(key=lambda p: getattr(p, "endurance", 0), reverse=True)
+        ordered_pitchers = pitchers
+        for pitcher in ordered_pitchers:
+            assigned = getattr(pitcher, "assigned_pitching_role", None)
+            if not assigned:
+                derived = get_role(pitcher)
+                setattr(pitcher, "assigned_pitching_role", derived or "")
+
+    return lineup, bench, ordered_pitchers
 
 
 @lru_cache(maxsize=None)

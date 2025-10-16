@@ -175,9 +175,9 @@ _DEFAULTS: Dict[str, Any] = {
     # :pyattr:`hit_prob_base`.  The property multiplies the stored value by
     # ``0.1`` so a default of ``1.2`` yields an effective additive term of
     # ``0.12`` in the simulation.
-    "hitProbBase": 1.2,
+    "hitProbBase": 1.35,
     # Boost contact to raise overall zone contact rate closer to MLB levels
-    "contactFactorBase": 1.88,
+    "contactFactorBase": 1.78,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
     "contactFactorDiv": 108,
@@ -207,7 +207,7 @@ _DEFAULTS: Dict[str, Any] = {
     # pipeline end-to-end; dial back after verifying DP path works leaguewide)
     "dpAlwaysTurn": 0,
     # Scaling factor for outs on balls in play (BABIP tuning)
-    "babipScale": 1.2,
+    "babipScale": 1.05,
     # Foul ball tuning -----------------------------------------------
     # Percentages for foul balls and balls put in play; strike-based rate is
     # derived from all pitches.
@@ -222,9 +222,9 @@ _DEFAULTS: Dict[str, Any] = {
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.70,
     # Baseline aggression for runners attempting extra bases
-    "baserunningAggression": 0.50,
+    "baserunningAggression": 0.42,
     # Baseline steal success rate (as percent, before arm/speed mods)
-    "stealSuccessBasePct": 72,
+    "stealSuccessBasePct": 80,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 18,
     "hbpBaseChance": 0.0,
@@ -385,14 +385,14 @@ _DEFAULTS: Dict[str, Any] = {
     "offManStealChancePct": 80,
     # Minimum probability thresholds to gate steal attempts (0..1).
     # Defaults are 0 to avoid changing behaviour in tests unless overridden.
-    "stealAttemptMinProb": 0.0,
-    "stealMinSuccessProb": 0.0,
+    "stealAttemptMinProb": 0.25,
+    "stealMinSuccessProb": 0.55,
     "closeBallTakeBonus": 0.0,
     "sureBallTakeBonus": 0.0,
     "twoStrikeContactFloor": 0.0,
     "twoStrikeContactQuality": 0.0,
-    "stealSuccessTagOutPct": 22,
-    "stealSuccessSafePct": 78,
+    "stealSuccessTagOutPct": 18,
+    "stealSuccessSafePct": 82,
     "stealChanceVerySlowThresh": 13,
     "stealChanceVerySlowAdjust": -40,
     "stealChanceSlowThresh": 27,

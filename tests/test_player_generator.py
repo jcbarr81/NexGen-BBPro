@@ -53,44 +53,34 @@ def test_primary_position_override():
 
 
 def test_pitcher_role_sp_when_endurance_high(monkeypatch):
-    def fake_distribute(total, weights):
-        fake_distribute.calls += 1
-        if fake_distribute.calls == 1:
-            return {
-                "endurance": 60,
-                "control": 50,
-                "movement": 50,
-                "hold_runner": 50,
-                "arm": 50,
-            }
-        return {k: 50 for k in weights}
+    def fake_core(_throws):
+        return {
+            "endurance": 60,
+            "control": 55,
+            "movement": 55,
+            "hold_runner": 50,
+            "arm": 55,
+            "fa": 50,
+        }
 
-    fake_distribute.calls = 0
-    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
-    monkeypatch.setattr(pg, "_adjust_endurance", lambda e: e)
-
+    monkeypatch.setattr(pg, "_generate_pitcher_core_ratings", fake_core)
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 60
     assert player["role"] == "SP"
 
 
 def test_pitcher_role_rp_when_endurance_low(monkeypatch):
-    def fake_distribute(total, weights):
-        fake_distribute.calls += 1
-        if fake_distribute.calls == 1:
-            return {
-                "endurance": 55,
-                "control": 50,
-                "movement": 50,
-                "hold_runner": 50,
-                "arm": 50,
-            }
-        return {k: 50 for k in weights}
+    def fake_core(_throws):
+        return {
+            "endurance": 55,
+            "control": 55,
+            "movement": 55,
+            "hold_runner": 50,
+            "arm": 55,
+            "fa": 50,
+        }
 
-    fake_distribute.calls = 0
-    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
-    monkeypatch.setattr(pg, "_adjust_endurance", lambda e: e)
-
+    monkeypatch.setattr(pg, "_generate_pitcher_core_ratings", fake_core)
     player = generate_player(is_pitcher=True)
     assert player["endurance"] == 55
     assert player["role"] == "RP"
@@ -121,47 +111,33 @@ def test_pitcher_can_hit(monkeypatch):
 
 
 def test_lefty_pitcher_adjustment(monkeypatch):
-    def fake_distribute(total, weights):
-        fake_distribute.calls += 1
-        if fake_distribute.calls == 1:
-            return {
-                "endurance": 50,
-                "control": 60,
-                "movement": 60,
-                "hold_runner": 50,
-                "arm": 50,
-            }
-        return {k: 50 for k in weights}
+    sequence = [50, 60, 60, 50, 55, 50]
 
-    fake_distribute.calls = 0
-    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
-    monkeypatch.setattr(pg, "assign_bats_throws", lambda _: ("R", "L"))
+    def fake_sample(*_args, **_kwargs):
+        value = sequence.pop(0)
+        return value, False
 
-    player = generate_player(is_pitcher=True)
-    assert player["movement"] == 70
-    assert player["control"] == 50
+    monkeypatch.setattr(pg, "_sample_rating", fake_sample)
+    monkeypatch.setattr(pg, "_adjust_endurance", lambda e: e)
+
+    ratings = pg._generate_pitcher_core_ratings("L")
+    assert ratings["movement"] == 64
+    assert ratings["control"] == 56
 
 
 def test_lefty_pitcher_adjustment_respects_caps(monkeypatch):
-    def fake_distribute(total, weights):
-        fake_distribute.calls += 1
-        if fake_distribute.calls == 1:
-            return {
-                "endurance": 50,
-                "control": 55,
-                "movement": 85,
-                "hold_runner": 50,
-                "arm": 50,
-            }
-        return {k: 50 for k in weights}
+    sequence = [50, 47, 88, 50, 55, 50]
 
-    fake_distribute.calls = 0
-    monkeypatch.setattr(pg, "distribute_rating_points", fake_distribute)
-    monkeypatch.setattr(pg, "assign_bats_throws", lambda _: ("R", "L"))
+    def fake_sample(*_args, **_kwargs):
+        value = sequence.pop(0)
+        return value, False
 
-    player = generate_player(is_pitcher=True)
-    assert player["movement"] == 90
-    assert player["control"] == 50
+    monkeypatch.setattr(pg, "_sample_rating", fake_sample)
+    monkeypatch.setattr(pg, "_adjust_endurance", lambda e: e)
+
+    ratings = pg._generate_pitcher_core_ratings("L")
+    assert ratings["movement"] == 92
+    assert ratings["control"] == 50
 
 
 def test_hitter_can_pitch(monkeypatch):
@@ -201,7 +177,7 @@ def test_hitter_modifier_ranges(monkeypatch):
     assert 40 <= player["cl"] <= 60
     assert 40 <= player["hm"] <= 60
     assert 40 <= player["sc"] <= 60
-    assert 40 <= player["pl"] <= 60
+    assert 30 <= player["pl"] <= 75
     if player["bats"] == "L":
         assert 30 <= player["vl"] <= 60
     elif player["bats"] == "R":
@@ -217,7 +193,7 @@ def test_pitcher_modifier_ranges(monkeypatch):
     assert 35 <= player["gf"] <= 65
     assert 40 <= player["cl"] <= 60
     assert 40 <= player["hm"] <= 60
-    assert 40 <= player["pl"] <= 60
+    assert 30 <= player["pl"] <= 75
     if player["throws"] == "L":
         assert 40 <= player["vl"] <= 70
     else:
@@ -253,6 +229,26 @@ def test_generate_player_varied_ethnicities():
         generate_player(is_pitcher=False)["ethnicity"] for _ in range(50)
     }
     assert {"Anglo", "African", "Asian", "Hispanic"} <= ethnicities
+
+
+def test_hitter_contact_speed_distribution_centered():
+    random.seed(42)
+    hitters = [generate_player(is_pitcher=False) for _ in range(300)]
+    contacts = [h["ch"] for h in hitters]
+    speeds = [h["sp"] for h in hitters]
+    contact_mid = sum(45 <= c <= 72 for c in contacts) / len(contacts)
+    speed_mid = sum(42 <= s <= 70 for s in speeds) / len(speeds)
+    elite_combo = sum(1 for c, s in zip(contacts, speeds) if c >= 90 and s >= 90)
+    assert contact_mid > 0.6
+    assert speed_mid > 0.6
+    assert elite_combo < 5
+
+
+def test_pitcher_control_movement_floor():
+    random.seed(99)
+    pitchers = [generate_player(is_pitcher=True) for _ in range(200)]
+    assert all(p["control"] >= 50 for p in pitchers)
+    assert all(p["movement"] >= 52 for p in pitchers)
 
 
 def test_generate_pitches_counts_and_bounds(monkeypatch):

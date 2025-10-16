@@ -16,6 +16,128 @@ from utils.path_utils import get_base_dir
 BASE_DIR = get_base_dir()
 NAME_PATH = BASE_DIR / "data" / "names.csv"
 PLAYER_PATH = BASE_DIR / "data" / "players.csv"
+POSITION_AVERAGE_PATH = (
+    BASE_DIR
+    / "data"
+    / "MLB_avg"
+    / "mlb_position_averages_2021-2025YTD.csv"
+)
+
+
+def _load_position_averages(path: Path) -> Dict[str, Dict[str, float]]:
+    """Return MLB average hitting stats by position to guide rating guardrails."""
+
+    data: Dict[str, Dict[str, float]] = {}
+    if not path.exists():
+        return data
+    with path.open(newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            position = (row.get("Position") or "").strip()
+            if not position:
+                continue
+            stats: Dict[str, float] = {}
+            for key in ("AVG", "OBP", "SLG", "OPS", "wRC+"):
+                raw = row.get(key)
+                if raw in (None, ""):
+                    continue
+                try:
+                    stats[key] = float(raw)
+                except ValueError:
+                    continue
+            if stats:
+                data[position] = stats
+    return data
+
+
+POSITION_AVERAGES = _load_position_averages(POSITION_AVERAGE_PATH)
+
+if not POSITION_AVERAGES:
+    POSITION_AVERAGES = {
+        "C": {"AVG": 0.233, "OBP": 0.302, "SLG": 0.383, "OPS": 0.685, "wRC+": 90.0},
+        "1B": {"AVG": 0.251, "OBP": 0.328, "SLG": 0.427, "OPS": 0.755, "wRC+": 109.0},
+        "2B": {"AVG": 0.247, "OBP": 0.313, "SLG": 0.384, "OPS": 0.698, "wRC+": 94.0},
+        "3B": {"AVG": 0.245, "OBP": 0.314, "SLG": 0.404, "OPS": 0.719, "wRC+": 99.0},
+        "SS": {"AVG": 0.253, "OBP": 0.315, "SLG": 0.401, "OPS": 0.716, "wRC+": 98.0},
+        "LF": {"AVG": 0.244, "OBP": 0.319, "SLG": 0.404, "OPS": 0.723, "wRC+": 101.0},
+        "CF": {"AVG": 0.242, "OBP": 0.309, "SLG": 0.398, "OPS": 0.708, "wRC+": 96.0},
+        "RF": {"AVG": 0.247, "OBP": 0.320, "SLG": 0.425, "OPS": 0.745, "wRC+": 106.0},
+        "DH": {"AVG": 0.249, "OBP": 0.330, "SLG": 0.442, "OPS": 0.772, "wRC+": 114.0},
+        "P": {"AVG": 0.108, "OBP": 0.147, "SLG": 0.137, "OPS": 0.284},
+    }
+
+
+def _stat_bounds(field: str, include_pitchers: bool = False) -> Tuple[float, float]:
+    values = [
+        stats[field]
+        for pos, stats in POSITION_AVERAGES.items()
+        if field in stats and (include_pitchers or pos != "P")
+    ]
+    if not values:
+        return 0.0, 1.0
+    return min(values), max(values)
+
+
+def _scale_stat(
+    value: float,
+    min_src: float,
+    max_src: float,
+    min_dest: float,
+    max_dest: float,
+) -> float:
+    if max_src <= min_src:
+        return (min_dest + max_dest) / 2.0
+    normalized = (value - min_src) / (max_src - min_src)
+    normalized = max(0.0, min(1.0, normalized))
+    return min_dest + normalized * (max_dest - min_dest)
+
+
+def _sample_rating(
+    center: float,
+    *,
+    floor: int,
+    ceiling: int,
+    spread: float = 6.0,
+    outlier_chance: float = 0.04,
+    outlier_bounds: Tuple[int, int] = (72, 90),
+) -> Tuple[int, bool]:
+    rating = int(round(random.gauss(center, spread)))
+    rating = max(floor, min(ceiling, rating))
+    outlier = False
+    if random.random() < outlier_chance:
+        outlier = True
+        rating = random.randint(outlier_bounds[0], outlier_bounds[1])
+    rating = max(20, min(95, rating))
+    return rating, outlier
+
+
+def _build_hitter_guardrails() -> Dict[str, Dict[str, float]]:
+    guardrails: Dict[str, Dict[str, float]] = {}
+    avg_min, avg_max = _stat_bounds("AVG")
+    slg_min, slg_max = _stat_bounds("SLG")
+    ops_min, ops_max = _stat_bounds("OPS")
+    for pos, stats in POSITION_AVERAGES.items():
+        if pos == "P":
+            continue
+        contact_center = _scale_stat(stats["AVG"], avg_min, avg_max, 52, 70)
+        power_center = _scale_stat(stats["SLG"], slg_min, slg_max, 50, 72)
+        speed_center = _scale_stat(stats["OPS"], ops_min, ops_max, 48, 68)
+        if pos in {"CF", "SS"}:
+            speed_center += 4
+        elif pos in {"2B", "LF"}:
+            speed_center += 2
+        elif pos in {"C", "1B", "DH"}:
+            speed_center -= 5
+        guardrails[pos] = {
+            "contact_center": contact_center,
+            "power_center": power_center,
+            "speed_center": max(45, min(70, speed_center)),
+        }
+    return guardrails
+
+
+HITTER_GUARDRAILS = _build_hitter_guardrails()
+DEFAULT_HITTER_GUARDRAIL = {"contact_center": 52.0, "power_center": 52.0, "speed_center": 50.0}
 
 
 def _load_name_pool() -> Dict[str, List[Tuple[str, str]]]:
@@ -399,6 +521,152 @@ def assign_secondary_positions(primary: str) -> List[str]:
 PITCH_LIST = ["fb", "si", "cu", "cb", "sl", "kn", "sc"]
 
 
+def _guardrail_for_position(position: str) -> Dict[str, float]:
+    return HITTER_GUARDRAILS.get(position, HITTER_GUARDRAILS.get("CF", DEFAULT_HITTER_GUARDRAIL))
+
+
+def _generate_hitter_ratings(primary_pos: str) -> Dict[str, int]:
+    """Derive hitter ratings anchored to MLB positional averages with mild variance."""
+    guardrail = _guardrail_for_position(primary_pos)
+    contact, contact_outlier = _sample_rating(
+        guardrail["contact_center"],
+        floor=42,
+        ceiling=78,
+        spread=6.0,
+        outlier_bounds=(75, 92),
+    )
+    power, _ = _sample_rating(
+        guardrail["power_center"],
+        floor=40,
+        ceiling=78,
+        spread=6.2,
+        outlier_bounds=(74, 92),
+    )
+    speed, speed_outlier = _sample_rating(
+        guardrail["speed_center"],
+        floor=38,
+        ceiling=72,
+        spread=5.8,
+        outlier_bounds=(74, 90),
+    )
+    if contact > 85 and speed > 85:
+        if contact_outlier and speed_outlier:
+            if guardrail["speed_center"] >= guardrail["contact_center"]:
+                contact = max(
+                    65,
+                    min(
+                        83,
+                        int(round(random.gauss(guardrail["contact_center"], 4.0))),
+                    ),
+                )
+            else:
+                speed = max(
+                    65,
+                    min(
+                        83,
+                        int(round(random.gauss(guardrail["speed_center"], 4.0))),
+                    ),
+                )
+        else:
+            speed = max(
+                65,
+                min(83, int(round(random.gauss(guardrail["speed_center"], 4.0)))),
+            )
+    fielding_center = guardrail["speed_center"]
+    if primary_pos in {"SS", "CF"}:
+        fielding_center += 2
+    elif primary_pos in {"2B", "LF"}:
+        fielding_center += 1
+    elif primary_pos in {"1B", "DH"}:
+        fielding_center -= 5
+    fielding, _ = _sample_rating(
+        fielding_center,
+        floor=32,
+        ceiling=72,
+        spread=5.2,
+        outlier_bounds=(70, 86),
+    )
+    arm_center = guardrail["power_center"]
+    if primary_pos in {"RF", "C"}:
+        arm_center += 5
+    elif primary_pos in {"3B", "LF"}:
+        arm_center += 2
+    elif primary_pos in {"1B"}:
+        arm_center -= 5
+    arm, _ = _sample_rating(
+        arm_center,
+        floor=38,
+        ceiling=80,
+        spread=5.5,
+        outlier_bounds=(74, 92),
+    )
+    return {
+        "ch": contact,
+        "ph": power,
+        "sp": speed,
+        "fa": fielding,
+        "arm": arm,
+    }
+
+
+def _generate_pitcher_core_ratings(throws: str) -> Dict[str, int]:
+    """Return core pitcher ratings with floors centered near league-average performance."""
+    endurance, _ = _sample_rating(
+        60,
+        floor=48,
+        ceiling=80,
+        spread=6.0,
+        outlier_bounds=(78, 92),
+    )
+    endurance = _adjust_endurance(endurance)
+    control, _ = _sample_rating(
+        62,
+        floor=50,
+        ceiling=80,
+        spread=5.2,
+        outlier_bounds=(76, 92),
+    )
+    movement, _ = _sample_rating(
+        64,
+        floor=52,
+        ceiling=82,
+        spread=5.4,
+        outlier_bounds=(78, 94),
+    )
+    if throws == "L":
+        movement = min(92, movement + 4)
+        control = max(50, control - 4)
+    hold_runner, _ = _sample_rating(
+        54,
+        floor=42,
+        ceiling=72,
+        spread=5.0,
+        outlier_bounds=(70, 86),
+    )
+    arm, _ = _sample_rating(
+        64,
+        floor=50,
+        ceiling=85,
+        spread=5.8,
+        outlier_bounds=(80, 94),
+    )
+    fielding, _ = _sample_rating(
+        54,
+        floor=40,
+        ceiling=74,
+        spread=5.0,
+        outlier_bounds=(72, 86),
+    )
+    return {
+        "endurance": endurance,
+        "control": control,
+        "movement": movement,
+        "hold_runner": hold_runner,
+        "arm": arm,
+        "fa": fielding,
+    }
+
+
 def generate_fielding_potentials(primary: str, others: List[str]) -> Dict[str, int]:
     matrix = FIELDING_POTENTIAL_MATRIX.get(primary, {})
     potentials: Dict[str, int] = {}
@@ -593,28 +861,13 @@ def generate_player(
         # Allocate pitching related ratings from a shared pool using the ARR
         # derived weights.  A second pool is used to determine the pitcher's
         # fielding ability.
-        pitch_pool = random.randint(
-            5 * len(PITCHER_RATING_WEIGHTS),
-            110 * len(PITCHER_RATING_WEIGHTS),
-        )
-        pitch_attrs = distribute_rating_points(pitch_pool, PITCHER_RATING_WEIGHTS)
-
-        field_pool = random.randint(
-            5 * len(HITTER_RATING_WEIGHTS["P"]),
-            110 * len(HITTER_RATING_WEIGHTS["P"]),
-        )
-        field_attrs = distribute_rating_points(field_pool, HITTER_RATING_WEIGHTS["P"])
-
-        endurance = _adjust_endurance(pitch_attrs["endurance"])
-        control = max(1, min(99, pitch_attrs["control"]))
-        movement = max(1, min(99, pitch_attrs["movement"]))
-        if throws == "L":
-            # Left-handed pitchers gain movement at the expense of control.
-            movement = min(90, movement + 10)
-            control = max(50, control - 10)
-        hold_runner = max(1, min(99, pitch_attrs["hold_runner"]))
-        arm = max(1, min(99, pitch_attrs["arm"]))
-        fa = max(1, min(99, field_attrs["fa"]))
+        core_ratings = _generate_pitcher_core_ratings(throws)
+        endurance = core_ratings["endurance"]
+        control = core_ratings["control"]
+        movement = core_ratings["movement"]
+        hold_runner = core_ratings["hold_runner"]
+        arm = core_ratings["arm"]
+        fa = core_ratings["fa"]
 
         role = "SP" if endurance > 55 else "RP"
         delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
@@ -680,16 +933,12 @@ def generate_player(
         else:
             vl = roll_dice(18, 10, 6)
         other_pos = assign_secondary_positions(primary_pos)
-        pool = random.randint(
-            5 * len(HITTER_RATING_WEIGHTS[primary_pos]),
-            110 * len(HITTER_RATING_WEIGHTS[primary_pos]),
-        )
-        attr = distribute_rating_points(pool, HITTER_RATING_WEIGHTS[primary_pos])
-        ch = max(1, min(99, attr["ch"]))
-        ph = max(1, min(99, attr["ph"]))
-        sp = max(1, min(99, attr["sp"]))
-        fa = max(1, min(99, attr["fa"]))
-        arm = max(1, min(99, attr["arm"]))
+        ratings = _generate_hitter_ratings(primary_pos)
+        ch = ratings["ch"]
+        ph = ratings["ph"]
+        sp = ratings["sp"]
+        fa = ratings["fa"]
+        arm = ratings["arm"]
 
         player = {
             "first_name": first_name,
