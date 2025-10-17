@@ -38,17 +38,26 @@ def _format_date(value: date) -> str:
 
 
 def _rest_days(pitches: int) -> int:
+    """Return rest days required after throwing ``pitches``.
+
+    Even light relief outings now require a day of rest to curb 90-100 game
+    seasons. Higher pitch counts scale more aggressively to keep long relief
+    appearances from stacking.
+    """
+
     if pitches <= 0:
         return 0
-    if pitches <= 20:
+    if pitches <= 10:
         return 1
-    if pitches <= 40:
+    if pitches <= 25:
         return 2
-    if pitches <= 70:
+    if pitches <= 45:
         return 3
-    if pitches <= 100:
+    if pitches <= 70:
         return 4
-    return 5
+    if pitches <= 95:
+        return 5
+    return 6
 
 
 @dataclass

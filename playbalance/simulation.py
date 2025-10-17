@@ -1031,6 +1031,7 @@ class GameSimulation:
 
         pitcher_state.bf += 1
         start_pitches = pitcher_state.pitches_thrown
+        start_simulated = getattr(pitcher_state, "simulated_pitches", 0)
 
         # Record plate appearance
         self._add_stat(batter_state, "pa")
@@ -1064,6 +1065,10 @@ class GameSimulation:
         run_diff = offense.runs - defense.runs
 
         while True:
+            real_pitch_count = (pitcher_state.pitches_thrown - start_pitches) - (
+                getattr(pitcher_state, "simulated_pitches", 0) - start_simulated
+            )
+            first_pitch_this_pitch = real_pitch_count == 0
             if not seen_two_strike and strikes >= 2:
                 seen_two_strike = True
                 self.two_strike_counts += 1
@@ -1420,6 +1425,8 @@ class GameSimulation:
                     contact_quality_var = max(0.1, contact_quality_var * 0.25)
                 if contact_quality_var <= 0:
                     pitcher_state.strikes_thrown += 1
+                    if first_pitch_this_pitch and strikes == 0:
+                        pitcher_state.first_pitch_strikes += 1
                     strikes += 1
                     self._maybe_passed_ball(offense, defense, catcher_fs)
                     if strikes >= 3:
@@ -1754,8 +1761,12 @@ class GameSimulation:
                         )
                         return outs + outs_from_pick
                     if strikes < 2:
+                        if first_pitch_this_pitch and strikes == 0:
+                            pitcher_state.first_pitch_strikes += 1
                         strikes += 1
                     continue
+                if first_pitch_this_pitch and strikes == 0:
+                    pitcher_state.first_pitch_strikes += 1
                 strikes += 1
                 if not in_zone:
                     self._record_ball(pitcher_state)
@@ -1764,6 +1775,8 @@ class GameSimulation:
             else:
                 if in_zone:
                     strikes += 1
+                    if first_pitch_this_pitch and strikes == 1:
+                        pitcher_state.first_pitch_strikes += 1
                     pitcher_state.strikes_thrown += 1
                 else:
                     hbp_dist = self.config.get("closeBallDist", 5) + self.rng.randint(1, 2)
@@ -1812,6 +1825,8 @@ class GameSimulation:
                         if orig_swing and contact_quality <= 0:
                             self._maybe_passed_ball(offense, defense, catcher_fs)
                             pitcher_state.strikes_thrown += 1
+                            if first_pitch_this_pitch and strikes == 0:
+                                pitcher_state.first_pitch_strikes += 1
                             strikes += 1
                             if strikes >= 3:
                                 self.logged_strikeouts += 1

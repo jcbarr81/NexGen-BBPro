@@ -37,7 +37,7 @@ def apply_league_benchmarks(
     # calculation.
     cfg.hitProbBase = benchmarks["babip"] * 1.50
     pip_pct = benchmarks["pitches_put_in_play_pct"]
-    cfg.ballInPlayPitchPct = int(round(pip_pct * 100 * 0.88)) - 1
+    cfg.ballInPlayPitchPct = int(round(pip_pct * 100 * 0.82)) - 1
     pitches_per_pa = benchmarks["pitches_per_pa"]
     if pitches_per_pa:
         cfg.swingProbScale = round(4.0 / pitches_per_pa, 2)
@@ -81,7 +81,7 @@ def apply_league_benchmarks(
         called_strike_pct = zone_pct - zone_swing
         strike_pct = pip_pct + swstr_pct + foul_pct + called_strike_pct
         cfg.foulPitchBasePct = int(round(foul_pct * 100))
-        cfg.leagueStrikePct = round(strike_pct * 100 * 0.95, 1)
+        cfg.leagueStrikePct = round(strike_pct * 100 * 1.05, 1)
         if strike_pct:
             cfg.foulStrikeBasePct = round((foul_pct / strike_pct) * 100, 1)
 
@@ -152,15 +152,17 @@ def load_tuned_playbalance_config(
 
         cfg.swingProbSureStrike = round(cfg.swingProbSureStrike * 1.00, 2)
         cfg.swingProbCloseStrike = round(cfg.swingProbCloseStrike * 1.00, 2)
-        cfg.swingProbCloseBall = round(max(0.0, cfg.swingProbCloseBall * 0.85), 2)
-        cfg.swingProbSureBall = round(max(0.0, cfg.swingProbSureBall * 0.70), 2)
-        cfg.extraZSwingScale = min(max(cfg.extraZSwingScale, 0.94), 1.02)
-        cfg.extraOSwingScale = max(0.78, min(round(cfg.extraOSwingScale * 0.95, 2), 1.08))
+        cfg.swingProbCloseBall = round(max(0.0, cfg.swingProbCloseBall * 0.84), 2)
+        cfg.swingProbSureBall = round(max(0.0, cfg.swingProbSureBall * 0.52), 2)
+        cfg.extraZSwingScale = min(max(cfg.extraZSwingScale, 0.98), 1.06)
+        cfg.extraOSwingScale = max(0.72, min(round(cfg.extraOSwingScale * 0.90, 2), 1.00))
         cfg.doublePlayProb = min(cfg.doublePlayProb, 0.66)
-        cfg.offManStealChancePct = min(max(cfg.offManStealChancePct, 62), 72)
-        cfg.baserunningAggression = round(min(max(cfg.baserunningAggression, 0.32), 0.38), 2)
-        cfg.stealSuccessBasePct = min(max(cfg.stealSuccessBasePct + 6, 86), 92)
-        cfg.stealChanceMedThresh = max(cfg.stealChanceMedThresh, 65)
+        cfg.offManStealChancePct = min(max(cfg.offManStealChancePct, 30), 40)
+        cfg.baserunningAggression = round(min(max(cfg.baserunningAggression, 0.14), 0.20), 2)
+        cfg.stealSuccessBasePct = min(max(cfg.stealSuccessBasePct + 20, 95), 98)
+        cfg.stealChanceMedThresh = max(cfg.stealChanceMedThresh, 82)
+        cfg.stealChanceFastAdjust = min(cfg.get("stealChanceFastAdjust", 20), 10)
+        cfg.stealChanceVeryFastAdjust = min(cfg.get("stealChanceVeryFastAdjust", 25), 14)
         cfg.carryDistanceScale = min(max(cfg.get("carryDistanceScale", 1.0), 1.2), 1.32)
         cfg.carryExitVeloBaseline = min(max(cfg.get("carryExitVeloBaseline", 90.0), 93.0), 95.0)
 
@@ -170,28 +172,37 @@ def load_tuned_playbalance_config(
         cfg.autoTakeDistanceBase = max(cfg.autoTakeDistanceBase, 4.0)
         cfg.autoTakeDistanceBallStep = max(cfg.autoTakeDistanceBallStep, 0.65)
         cfg.autoTakeDistanceMin = max(cfg.autoTakeDistanceMin, 2.2)
-        cfg.closeBallDist = max(getattr(cfg, "closeBallDist", 5), 7)
+        cfg.closeBallDist = max(3, min(getattr(cfg, "closeBallDist", 5), 4))
 
         # Apply contact-factor adjustments to curb excessive strikeouts observed
         # in full season simulations. Slightly boosting the contact factor nudges
         # the engine toward league-average strikeout rates.
-        cfg.contactFactorBase = round(cfg.contactFactorBase * 1.05, 2)
-        cfg.contactFactorDiv = max(95, int(cfg.contactFactorDiv * 0.95))
+        cfg.contactFactorBase = round(cfg.contactFactorBase * 0.80, 2)
+        cfg.contactFactorDiv = max(128, int(cfg.contactFactorDiv * 1.08))
         cfg.closeBallStrikeBonus = max(cfg.closeBallStrikeBonus, 0)
         cfg.twoStrikeSwingBonus = max(cfg.twoStrikeSwingBonus, 5)
 
         # Nudge base hit probability up slightly and relax caps to restore a
         # Major League run environment.
-        cfg.hitProbBase = round(cfg.hitProbBase * 1.12, 3)
-        cfg.hitProbCap = min(max(cfg.hitProbCap, 0.74), 0.78)
-        cfg.contactOutcomeScale = 1.0
-        cfg.maxHitProb = max(cfg.maxHitProb, 0.46)
+        cfg.hitProbBase = round(cfg.hitProbBase * 1.0, 3)
+        cfg.hitProbCap = min(max(cfg.hitProbCap, 0.67), 0.70)
+        cfg.contactOutcomeScale = 0.74
+        cfg.maxHitProb = min(max(cfg.maxHitProb, 0.38), 0.40)
 
         # Boost batter pitch recognition to curb excessive strikeouts seen in
         # season simulations. Increasing the ease scale makes identifying pitches
         # easier which leads to more contact and fewer swinging strikes.
-        cfg.idRatingEaseScale = min(max(cfg.idRatingEaseScale, 2.2), 2.6)
-        cfg.hbpBaseChance = max(cfg.get("hbpBaseChance", 0.0), 0.012)
+        cfg.idRatingEaseScale = min(max(cfg.idRatingEaseScale, 1.35), 1.75)
+        cfg.missChanceScale = max(getattr(cfg, "missChanceScale", 1.85), 1.85)
+
+        # Clean up defensive miscues: bump accuracy/catch baselines and scale throws.
+        cfg.catchBaseChance = min(max(cfg.get("catchBaseChance", 70), 78), 85)
+        cfg.catchFADiv = max(90, int(cfg.get("catchFADiv", 110) * 0.92))
+        cfg.goodThrowBase = min(max(cfg.get("goodThrowBase", 63), 78), 88)
+        cfg.goodThrowFAPct = min(max(cfg.get("goodThrowFAPct", 40), 48), 60)
+        cfg.throwSuccessScale = min(max(cfg.get("throwSuccessScale", 1.0), 1.12), 1.2)
+        cfg.hbpBaseChance = max(cfg.get("hbpBaseChance", 0.0), 0.15)
+        cfg.hbpBatterStepOutChance = min(cfg.get("hbpBatterStepOutChance", 18), 2)
 
     mlb_averages = {stat: float(val) for stat, val in row.items() if stat}
     return cfg, mlb_averages
