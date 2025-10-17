@@ -130,6 +130,16 @@ QPushButton#Danger:hover { background: #b32d2d; }
 QPushButton#Danger:pressed { background: #8f1a1a; }
 
 QStatusBar { background: #fffdf0; border-top: 1px solid #968d7d; }
+#VersionBadge {
+    color: #462d0d;
+    background: rgba(255, 253, 240, 0.75);
+    border: 1px solid #968d7d;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
 """
 
 DARK_QSS = """
@@ -235,6 +245,16 @@ QPushButton#Danger {
 QPushButton#Danger:hover { background: #a61e1e; }
 QPushButton#Danger:pressed { background: #701313; }
 QStatusBar { background: #1e1207; border-top: 1px solid #3b2810; }
+#VersionBadge {
+    color: #d2ba8f;
+    background: rgba(22, 14, 4, 0.7);
+    border: 1px solid rgba(150, 141, 125, 0.5);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
 """
 
 def _toggle_theme(status_bar: Optional[QStatusBar] = None) -> None:

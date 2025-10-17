@@ -16,6 +16,7 @@ import bcrypt
 from utils.path_utils import get_base_dir
 from ui.theme import DARK_QSS
 from ui.window_utils import show_on_top
+from ui.version_badge import install_version_badge
 
 # Determine the path to the users file in a cross-platform way
 USER_FILE = get_base_dir() / "data" / "users.txt"
@@ -115,6 +116,7 @@ class LoginWindow(QWidget):
         app = QApplication.instance()
         if app:
             app.setStyleSheet(DARK_QSS)
+            install_version_badge(app)
 
         show_on_top(self.dashboard)
 
@@ -144,6 +146,7 @@ class LoginWindow(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyleSheet(DARK_QSS)
+    install_version_badge(app)
     window = LoginWindow()
     window.show()
     sys.exit(app.exec())
