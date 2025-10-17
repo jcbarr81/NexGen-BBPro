@@ -1,0 +1,368 @@
+{
+  "schema_version": 1,
+  "year": 2024,
+  "champion": "LOU",
+  "runner_up": "PHI",
+  "seeds": {
+    "LEAGUE": [
+      {
+        "team_id": "LOU",
+        "seed": 1,
+        "league": "LEAGUE",
+        "wins": 94,
+        "run_diff": 107
+      },
+      {
+        "team_id": "PHI",
+        "seed": 2,
+        "league": "LEAGUE",
+        "wins": 90,
+        "run_diff": 62
+      },
+      {
+        "team_id": "WAS",
+        "seed": 3,
+        "league": "LEAGUE",
+        "wins": 87,
+        "run_diff": 73
+      },
+      {
+        "team_id": "ALB",
+        "seed": 4,
+        "league": "LEAGUE",
+        "wins": 88,
+        "run_diff": 52
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "name": "LEAGUE DS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "LOU",
+            "seed": 1,
+            "league": "LEAGUE",
+            "wins": 94,
+            "run_diff": 107
+          },
+          "low": {
+            "team_id": "ALB",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 88,
+            "run_diff": 52
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "LOU",
+              "away": "ALB",
+              "date": null,
+              "result": "3-0",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S0_G0_ALB_at_LOU.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "LOU",
+              "away": "ALB",
+              "date": null,
+              "result": "0-4",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S0_G1_ALB_at_LOU.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "ALB",
+              "away": "LOU",
+              "date": null,
+              "result": "1-11",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S0_G2_LOU_at_ALB.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "ALB",
+              "away": "LOU",
+              "date": null,
+              "result": "2-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S0_G3_LOU_at_ALB.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            }
+          ],
+          "winner": "LOU"
+        },
+        {
+          "high": {
+            "team_id": "PHI",
+            "seed": 2,
+            "league": "LEAGUE",
+            "wins": 90,
+            "run_diff": 62
+          },
+          "low": {
+            "team_id": "WAS",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 73
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "PHI",
+              "away": "WAS",
+              "date": null,
+              "result": "0-3",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S1_G0_WAS_at_PHI.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "PHI",
+              "away": "WAS",
+              "date": null,
+              "result": "5-3",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S1_G1_WAS_at_PHI.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "WAS",
+              "away": "PHI",
+              "date": null,
+              "result": "5-10",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S1_G2_PHI_at_WAS.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "WAS",
+              "away": "PHI",
+              "date": null,
+              "result": "11-6",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S1_G3_PHI_at_WAS.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "PHI",
+              "away": "WAS",
+              "date": null,
+              "result": "4-3",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE DS_S1_G4_WAS_at_PHI.html",
+              "meta": {
+                "home_innings": 14,
+                "away_innings": 14,
+                "extra_innings": true,
+                "home_starter_hand": "R",
+                "away_starter_hand": "R"
+              }
+            }
+          ],
+          "winner": "PHI"
+        }
+      ],
+      "plan": []
+    },
+    {
+      "name": "LEAGUE CS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "LOU",
+            "seed": 1,
+            "league": "LEAGUE",
+            "wins": 94,
+            "run_diff": 107
+          },
+          "low": {
+            "team_id": "PHI",
+            "seed": 2,
+            "league": "LEAGUE",
+            "wins": 90,
+            "run_diff": 62
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
+            {
+              "home": "LOU",
+              "away": "PHI",
+              "date": null,
+              "result": "12-4",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE CS_S0_G0_PHI_at_LOU.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S"
+              }
+            },
+            {
+              "home": "LOU",
+              "away": "PHI",
+              "date": null,
+              "result": "1-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE CS_S0_G1_PHI_at_LOU.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "PHI",
+              "away": "LOU",
+              "date": null,
+              "result": "1-4",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE CS_S0_G2_LOU_at_PHI.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "PHI",
+              "away": "LOU",
+              "date": null,
+              "result": "6-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE CS_S0_G3_LOU_at_PHI.html",
+              "meta": {
+                "home_innings": 10,
+                "away_innings": 10,
+                "extra_innings": true,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L"
+              }
+            },
+            {
+              "home": "PHI",
+              "away": "LOU",
+              "date": null,
+              "result": "4-3",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE CS_S0_G4_LOU_at_PHI.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "R"
+              }
+            },
+            {
+              "home": "LOU",
+              "away": "PHI",
+              "date": null,
+              "result": "7-2",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2024_LEAGUE CS_S0_G5_PHI_at_LOU.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "R"
+              }
+            }
+          ],
+          "winner": "LOU"
+        }
+      ],
+      "plan": [
+        {
+          "series_key": "cs",
+          "sources": [
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "LEAGUE DS",
+              "slot": 0
+            },
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "LEAGUE DS",
+              "slot": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Final",
+      "matchups": [],
+      "plan": []
+    }
+  ]
+}

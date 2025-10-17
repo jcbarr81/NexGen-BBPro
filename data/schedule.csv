@@ -1,1216 +1,163 @@
 date,home,away,result,played,boxscore
-2025-04-01,SAN3,LAS,10-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_LAS_at_SAN3.html
-2025-04-01,NEW,WAS,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_WAS_at_NEW.html
-2025-04-01,SAN2,IND,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_IND_at_SAN2.html
-2025-04-01,ALB,SAN1,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_SAN1_at_ALB.html
-2025-04-01,BAL,EL ,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_EL _at_BAL.html
-2025-04-01,PHI,SAN,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_SAN_at_PHI.html
-2025-04-01,DEN,BOS,7-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-01_BOS_at_DEN.html
-2025-04-02,SAN3,LOU,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_LOU_at_SAN3.html
-2025-04-02,SAN2,LAS,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_LAS_at_SAN2.html
-2025-04-02,NEW,SAN1,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_SAN1_at_NEW.html
-2025-04-02,BAL,IND,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_IND_at_BAL.html
-2025-04-02,ALB,SAN,10-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_SAN_at_ALB.html
-2025-04-02,DEN,EL ,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_EL _at_DEN.html
-2025-04-02,PHI,BOS,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-02_BOS_at_PHI.html
-2025-04-03,LOU,WAS,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_WAS_at_LOU.html
-2025-04-03,SAN2,SAN3,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_SAN3_at_SAN2.html
-2025-04-03,BAL,LAS,0-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_LAS_at_BAL.html
-2025-04-03,NEW,SAN,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_SAN_at_NEW.html
-2025-04-03,DEN,IND,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_IND_at_DEN.html
-2025-04-03,ALB,BOS,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_BOS_at_ALB.html
-2025-04-03,PHI,EL ,1-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-03_EL _at_PHI.html
-2025-04-04,SAN2,LOU,5-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_LOU_at_SAN2.html
-2025-04-04,WAS,SAN1,1-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_SAN1_at_WAS.html
-2025-04-04,BAL,SAN3,1-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_SAN3_at_BAL.html
-2025-04-04,DEN,LAS,8-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_LAS_at_DEN.html
-2025-04-04,NEW,BOS,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_BOS_at_NEW.html
-2025-04-04,PHI,IND,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_IND_at_PHI.html
-2025-04-04,ALB,EL ,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-04_EL _at_ALB.html
-2025-04-05,LOU,SAN1,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_SAN1_at_LOU.html
-2025-04-05,BAL,SAN2,6-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_SAN2_at_BAL.html
-2025-04-05,WAS,SAN,13-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_SAN_at_WAS.html
-2025-04-05,DEN,SAN3,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_SAN3_at_DEN.html
-2025-04-05,PHI,LAS,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_LAS_at_PHI.html
-2025-04-05,NEW,EL ,12-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_EL _at_NEW.html
-2025-04-05,ALB,IND,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-05_IND_at_ALB.html
-2025-04-06,BAL,LOU,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_LOU_at_BAL.html
-2025-04-06,SAN1,SAN,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_SAN_at_SAN1.html
-2025-04-06,DEN,SAN2,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_SAN2_at_DEN.html
-2025-04-06,WAS,BOS,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_BOS_at_WAS.html
-2025-04-06,PHI,SAN3,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_SAN3_at_PHI.html
-2025-04-06,ALB,LAS,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_LAS_at_ALB.html
-2025-04-06,NEW,IND,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-06_IND_at_NEW.html
-2025-04-07,LOU,SAN,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_SAN_at_LOU.html
-2025-04-07,DEN,BAL,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_BAL_at_DEN.html
-2025-04-07,SAN1,BOS,0-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_BOS_at_SAN1.html
-2025-04-07,PHI,SAN2,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_SAN2_at_PHI.html
-2025-04-07,WAS,EL ,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_EL _at_WAS.html
-2025-04-07,ALB,SAN3,0-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_SAN3_at_ALB.html
-2025-04-07,NEW,LAS,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-07_LAS_at_NEW.html
-2025-04-08,DEN,LOU,2-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_LOU_at_DEN.html
-2025-04-08,SAN,BOS,12-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_BOS_at_SAN.html
-2025-04-08,PHI,BAL,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_BAL_at_PHI.html
-2025-04-08,SAN1,EL ,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_EL _at_SAN1.html
-2025-04-08,ALB,SAN2,7-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_SAN2_at_ALB.html
-2025-04-08,WAS,IND,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_IND_at_WAS.html
-2025-04-08,NEW,SAN3,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-08_SAN3_at_NEW.html
-2025-04-09,LOU,BOS,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_BOS_at_LOU.html
-2025-04-09,PHI,DEN,2-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_DEN_at_PHI.html
-2025-04-09,SAN,EL ,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_EL _at_SAN.html
-2025-04-09,ALB,BAL,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_BAL_at_ALB.html
-2025-04-09,SAN1,IND,4-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_IND_at_SAN1.html
-2025-04-09,NEW,SAN2,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_SAN2_at_NEW.html
-2025-04-09,WAS,LAS,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-09_LAS_at_WAS.html
-2025-04-10,PHI,LOU,6-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_LOU_at_PHI.html
-2025-04-10,BOS,EL ,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_EL _at_BOS.html
-2025-04-10,ALB,DEN,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_DEN_at_ALB.html
-2025-04-10,SAN,IND,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_IND_at_SAN.html
-2025-04-10,NEW,BAL,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_BAL_at_NEW.html
-2025-04-10,SAN1,LAS,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_LAS_at_SAN1.html
-2025-04-10,WAS,SAN3,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-10_SAN3_at_WAS.html
-2025-04-11,LOU,EL ,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_EL _at_LOU.html
-2025-04-11,ALB,PHI,0-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_PHI_at_ALB.html
-2025-04-11,BOS,IND,8-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_IND_at_BOS.html
-2025-04-11,NEW,DEN,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_DEN_at_NEW.html
-2025-04-11,SAN,LAS,11-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_LAS_at_SAN.html
-2025-04-11,SAN1,SAN3,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_SAN3_at_SAN1.html
-2025-04-11,WAS,SAN2,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-11_SAN2_at_WAS.html
-2025-04-12,ALB,LOU,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_LOU_at_ALB.html
-2025-04-12,EL ,IND,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_IND_at_EL .html
-2025-04-12,NEW,PHI,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_PHI_at_NEW.html
-2025-04-12,BOS,LAS,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_LAS_at_BOS.html
-2025-04-12,SAN,SAN3,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_SAN3_at_SAN.html
-2025-04-12,WAS,BAL,9-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_BAL_at_WAS.html
-2025-04-12,SAN1,SAN2,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-12_SAN2_at_SAN1.html
-2025-04-13,LOU,IND,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_IND_at_LOU.html
-2025-04-13,NEW,ALB,2-18,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_ALB_at_NEW.html
-2025-04-13,EL ,LAS,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_LAS_at_EL .html
-2025-04-13,BOS,SAN3,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_SAN3_at_BOS.html
-2025-04-13,WAS,DEN,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_DEN_at_WAS.html
-2025-04-13,SAN,SAN2,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_SAN2_at_SAN.html
-2025-04-13,SAN1,BAL,0-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-13_BAL_at_SAN1.html
-2025-04-14,NEW,LOU,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_LOU_at_NEW.html
-2025-04-14,IND,LAS,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_LAS_at_IND.html
-2025-04-14,EL ,SAN3,10-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_SAN3_at_EL .html
-2025-04-14,WAS,PHI,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_PHI_at_WAS.html
-2025-04-14,BOS,SAN2,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_SAN2_at_BOS.html
-2025-04-14,SAN1,DEN,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_DEN_at_SAN1.html
-2025-04-14,SAN,BAL,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-14_BAL_at_SAN.html
-2025-04-15,LOU,LAS,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_LAS_at_LOU.html
-2025-04-15,IND,SAN3,7-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_SAN3_at_IND.html
-2025-04-15,WAS,ALB,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_ALB_at_WAS.html
-2025-04-15,EL ,SAN2,12-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_SAN2_at_EL .html
-2025-04-15,SAN1,PHI,12-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_PHI_at_SAN1.html
-2025-04-15,BOS,BAL,13-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_BAL_at_BOS.html
-2025-04-15,SAN,DEN,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-15_DEN_at_SAN.html
-2025-04-22,LAS,SAN3,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_SAN3_at_LAS.html
-2025-04-22,WAS,NEW,2-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_NEW_at_WAS.html
-2025-04-22,IND,SAN2,9-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_SAN2_at_IND.html
-2025-04-22,SAN1,ALB,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_ALB_at_SAN1.html
-2025-04-22,EL ,BAL,11-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_BAL_at_EL .html
-2025-04-22,SAN,PHI,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_PHI_at_SAN.html
-2025-04-22,BOS,DEN,7-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-22_DEN_at_BOS.html
-2025-04-23,LOU,SAN3,10-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_SAN3_at_LOU.html
-2025-04-23,LAS,SAN2,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_SAN2_at_LAS.html
-2025-04-23,SAN1,NEW,10-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_NEW_at_SAN1.html
-2025-04-23,IND,BAL,0-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_BAL_at_IND.html
-2025-04-23,SAN,ALB,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_ALB_at_SAN.html
-2025-04-23,EL ,DEN,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_DEN_at_EL .html
-2025-04-23,BOS,PHI,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-23_PHI_at_BOS.html
-2025-04-24,WAS,LOU,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_LOU_at_WAS.html
-2025-04-24,SAN3,SAN2,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_SAN2_at_SAN3.html
-2025-04-24,LAS,BAL,8-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_BAL_at_LAS.html
-2025-04-24,SAN,NEW,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_NEW_at_SAN.html
-2025-04-24,IND,DEN,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_DEN_at_IND.html
-2025-04-24,BOS,ALB,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_ALB_at_BOS.html
-2025-04-24,EL ,PHI,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-24_PHI_at_EL .html
-2025-04-25,LOU,SAN2,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_SAN2_at_LOU.html
-2025-04-25,SAN1,WAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_WAS_at_SAN1.html
-2025-04-25,SAN3,BAL,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_BAL_at_SAN3.html
-2025-04-25,LAS,DEN,10-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_DEN_at_LAS.html
-2025-04-25,BOS,NEW,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_NEW_at_BOS.html
-2025-04-25,IND,PHI,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_PHI_at_IND.html
-2025-04-25,EL ,ALB,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-25_ALB_at_EL .html
-2025-04-26,SAN1,LOU,6-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_LOU_at_SAN1.html
-2025-04-26,SAN2,BAL,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_BAL_at_SAN2.html
-2025-04-26,SAN,WAS,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_WAS_at_SAN.html
-2025-04-26,SAN3,DEN,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_DEN_at_SAN3.html
-2025-04-26,LAS,PHI,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_PHI_at_LAS.html
-2025-04-26,EL ,NEW,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_NEW_at_EL .html
-2025-04-26,IND,ALB,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-26_ALB_at_IND.html
-2025-04-27,LOU,BAL,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_BAL_at_LOU.html
-2025-04-27,SAN,SAN1,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_SAN1_at_SAN.html
-2025-04-27,SAN2,DEN,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_DEN_at_SAN2.html
-2025-04-27,BOS,WAS,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_WAS_at_BOS.html
-2025-04-27,SAN3,PHI,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_PHI_at_SAN3.html
-2025-04-27,LAS,ALB,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_ALB_at_LAS.html
-2025-04-27,IND,NEW,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-27_NEW_at_IND.html
-2025-04-28,SAN,LOU,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_LOU_at_SAN.html
-2025-04-28,BAL,DEN,13-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_DEN_at_BAL.html
-2025-04-28,BOS,SAN1,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_SAN1_at_BOS.html
-2025-04-28,SAN2,PHI,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_PHI_at_SAN2.html
-2025-04-28,EL ,WAS,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_WAS_at_EL .html
-2025-04-28,SAN3,ALB,5-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_ALB_at_SAN3.html
-2025-04-28,LAS,NEW,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-28_NEW_at_LAS.html
-2025-04-29,LOU,DEN,9-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_DEN_at_LOU.html
-2025-04-29,BOS,SAN,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_SAN_at_BOS.html
-2025-04-29,BAL,PHI,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_PHI_at_BAL.html
-2025-04-29,EL ,SAN1,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_SAN1_at_EL .html
-2025-04-29,SAN2,ALB,9-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_ALB_at_SAN2.html
-2025-04-29,IND,WAS,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_WAS_at_IND.html
-2025-04-29,SAN3,NEW,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-29_NEW_at_SAN3.html
-2025-04-30,BOS,LOU,0-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_LOU_at_BOS.html
-2025-04-30,DEN,PHI,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_PHI_at_DEN.html
-2025-04-30,EL ,SAN,10-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_SAN_at_EL .html
-2025-04-30,BAL,ALB,0-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_ALB_at_BAL.html
-2025-04-30,IND,SAN1,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_SAN1_at_IND.html
-2025-04-30,SAN2,NEW,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_NEW_at_SAN2.html
-2025-04-30,LAS,WAS,8-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-04-30_WAS_at_LAS.html
-2025-05-01,LOU,PHI,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_PHI_at_LOU.html
-2025-05-01,EL ,BOS,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_BOS_at_EL .html
-2025-05-01,DEN,ALB,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_ALB_at_DEN.html
-2025-05-01,IND,SAN,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_SAN_at_IND.html
-2025-05-01,BAL,NEW,14-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_NEW_at_BAL.html
-2025-05-01,LAS,SAN1,0-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_SAN1_at_LAS.html
-2025-05-01,SAN3,WAS,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-01_WAS_at_SAN3.html
-2025-05-02,EL ,LOU,10-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_LOU_at_EL .html
-2025-05-02,PHI,ALB,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_ALB_at_PHI.html
-2025-05-02,IND,BOS,12-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_BOS_at_IND.html
-2025-05-02,DEN,NEW,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_NEW_at_DEN.html
-2025-05-02,LAS,SAN,7-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_SAN_at_LAS.html
-2025-05-02,SAN3,SAN1,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_SAN1_at_SAN3.html
-2025-05-02,SAN2,WAS,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-02_WAS_at_SAN2.html
-2025-05-03,LOU,ALB,0-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_ALB_at_LOU.html
-2025-05-03,IND,EL ,11-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_EL _at_IND.html
-2025-05-03,PHI,NEW,11-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_NEW_at_PHI.html
-2025-05-03,LAS,BOS,1-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_BOS_at_LAS.html
-2025-05-03,SAN3,SAN,13-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_SAN_at_SAN3.html
-2025-05-03,BAL,WAS,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_WAS_at_BAL.html
-2025-05-03,SAN2,SAN1,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-03_SAN1_at_SAN2.html
-2025-05-04,IND,LOU,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_LOU_at_IND.html
-2025-05-04,ALB,NEW,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_NEW_at_ALB.html
-2025-05-04,LAS,EL ,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_EL _at_LAS.html
-2025-05-04,SAN3,BOS,19-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_BOS_at_SAN3.html
-2025-05-04,DEN,WAS,3-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_WAS_at_DEN.html
-2025-05-04,SAN2,SAN,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_SAN_at_SAN2.html
-2025-05-04,BAL,SAN1,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-04_SAN1_at_BAL.html
-2025-05-05,LOU,NEW,10-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_NEW_at_LOU.html
-2025-05-05,LAS,IND,7-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_IND_at_LAS.html
-2025-05-05,SAN3,EL ,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_EL _at_SAN3.html
-2025-05-05,PHI,WAS,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_WAS_at_PHI.html
-2025-05-05,SAN2,BOS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_BOS_at_SAN2.html
-2025-05-05,DEN,SAN1,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_SAN1_at_DEN.html
-2025-05-05,BAL,SAN,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-05_SAN_at_BAL.html
-2025-05-06,LAS,LOU,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_LOU_at_LAS.html
-2025-05-06,SAN3,IND,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_IND_at_SAN3.html
-2025-05-06,ALB,WAS,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_WAS_at_ALB.html
-2025-05-06,SAN2,EL ,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_EL _at_SAN2.html
-2025-05-06,PHI,SAN1,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_SAN1_at_PHI.html
-2025-05-06,BAL,BOS,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_BOS_at_BAL.html
-2025-05-06,DEN,SAN,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-06_SAN_at_DEN.html
-2025-05-07,SAN3,LAS,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_LAS_at_SAN3.html
-2025-05-07,NEW,WAS,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_WAS_at_NEW.html
-2025-05-07,SAN2,IND,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_IND_at_SAN2.html
-2025-05-07,ALB,SAN1,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_SAN1_at_ALB.html
-2025-05-07,BAL,EL ,7-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_EL _at_BAL.html
-2025-05-07,PHI,SAN,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_SAN_at_PHI.html
-2025-05-07,DEN,BOS,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-07_BOS_at_DEN.html
-2025-05-08,SAN3,LOU,9-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_LOU_at_SAN3.html
-2025-05-08,SAN2,LAS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_LAS_at_SAN2.html
-2025-05-08,NEW,SAN1,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_SAN1_at_NEW.html
-2025-05-08,BAL,IND,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_IND_at_BAL.html
-2025-05-08,ALB,SAN,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_SAN_at_ALB.html
-2025-05-08,DEN,EL ,0-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_EL _at_DEN.html
-2025-05-08,PHI,BOS,2-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-08_BOS_at_PHI.html
-2025-05-09,LOU,WAS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_WAS_at_LOU.html
-2025-05-09,SAN2,SAN3,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_SAN3_at_SAN2.html
-2025-05-09,BAL,LAS,5-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_LAS_at_BAL.html
-2025-05-09,NEW,SAN,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_SAN_at_NEW.html
-2025-05-09,DEN,IND,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_IND_at_DEN.html
-2025-05-09,ALB,BOS,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_BOS_at_ALB.html
-2025-05-09,PHI,EL ,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-09_EL _at_PHI.html
-2025-05-10,SAN2,LOU,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_LOU_at_SAN2.html
-2025-05-10,WAS,SAN1,12-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_SAN1_at_WAS.html
-2025-05-10,BAL,SAN3,15-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_SAN3_at_BAL.html
-2025-05-10,DEN,LAS,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_LAS_at_DEN.html
-2025-05-10,NEW,BOS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_BOS_at_NEW.html
-2025-05-10,PHI,IND,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_IND_at_PHI.html
-2025-05-10,ALB,EL ,3-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-10_EL _at_ALB.html
-2025-05-11,LOU,SAN1,10-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_SAN1_at_LOU.html
-2025-05-11,BAL,SAN2,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_SAN2_at_BAL.html
-2025-05-11,WAS,SAN,0-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_SAN_at_WAS.html
-2025-05-11,DEN,SAN3,6-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_SAN3_at_DEN.html
-2025-05-11,PHI,LAS,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_LAS_at_PHI.html
-2025-05-11,NEW,EL ,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_EL _at_NEW.html
-2025-05-11,ALB,IND,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-11_IND_at_ALB.html
-2025-05-12,BAL,LOU,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_LOU_at_BAL.html
-2025-05-12,SAN1,SAN,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_SAN_at_SAN1.html
-2025-05-12,DEN,SAN2,10-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_SAN2_at_DEN.html
-2025-05-12,WAS,BOS,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_BOS_at_WAS.html
-2025-05-12,PHI,SAN3,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_SAN3_at_PHI.html
-2025-05-12,ALB,LAS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_LAS_at_ALB.html
-2025-05-12,NEW,IND,4-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-12_IND_at_NEW.html
-2025-05-13,LOU,SAN,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_SAN_at_LOU.html
-2025-05-13,DEN,BAL,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_BAL_at_DEN.html
-2025-05-13,SAN1,BOS,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_BOS_at_SAN1.html
-2025-05-13,PHI,SAN2,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_SAN2_at_PHI.html
-2025-05-13,WAS,EL ,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_EL _at_WAS.html
-2025-05-13,ALB,SAN3,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_SAN3_at_ALB.html
-2025-05-13,NEW,LAS,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-13_LAS_at_NEW.html
-2025-05-14,DEN,LOU,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_LOU_at_DEN.html
-2025-05-14,SAN,BOS,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_BOS_at_SAN.html
-2025-05-14,PHI,BAL,0-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_BAL_at_PHI.html
-2025-05-14,SAN1,EL ,2-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_EL _at_SAN1.html
-2025-05-14,ALB,SAN2,1-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_SAN2_at_ALB.html
-2025-05-14,WAS,IND,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_IND_at_WAS.html
-2025-05-14,NEW,SAN3,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-14_SAN3_at_NEW.html
-2025-05-15,LOU,BOS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_BOS_at_LOU.html
-2025-05-15,PHI,DEN,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_DEN_at_PHI.html
-2025-05-15,SAN,EL ,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_EL _at_SAN.html
-2025-05-15,ALB,BAL,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_BAL_at_ALB.html
-2025-05-15,SAN1,IND,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_IND_at_SAN1.html
-2025-05-15,NEW,SAN2,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_SAN2_at_NEW.html
-2025-05-15,WAS,LAS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-15_LAS_at_WAS.html
-2025-05-16,PHI,LOU,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_LOU_at_PHI.html
-2025-05-16,BOS,EL ,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_EL _at_BOS.html
-2025-05-16,ALB,DEN,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_DEN_at_ALB.html
-2025-05-16,SAN,IND,7-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_IND_at_SAN.html
-2025-05-16,NEW,BAL,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_BAL_at_NEW.html
-2025-05-16,SAN1,LAS,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_LAS_at_SAN1.html
-2025-05-16,WAS,SAN3,8-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-16_SAN3_at_WAS.html
-2025-05-17,LOU,EL ,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_EL _at_LOU.html
-2025-05-17,ALB,PHI,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_PHI_at_ALB.html
-2025-05-17,BOS,IND,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_IND_at_BOS.html
-2025-05-17,NEW,DEN,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_DEN_at_NEW.html
-2025-05-17,SAN,LAS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_LAS_at_SAN.html
-2025-05-17,SAN1,SAN3,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_SAN3_at_SAN1.html
-2025-05-17,WAS,SAN2,4-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-17_SAN2_at_WAS.html
-2025-05-18,ALB,LOU,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_LOU_at_ALB.html
-2025-05-18,EL ,IND,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_IND_at_EL .html
-2025-05-18,NEW,PHI,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_PHI_at_NEW.html
-2025-05-18,BOS,LAS,1-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_LAS_at_BOS.html
-2025-05-18,SAN,SAN3,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_SAN3_at_SAN.html
-2025-05-18,WAS,BAL,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_BAL_at_WAS.html
-2025-05-18,SAN1,SAN2,14-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-18_SAN2_at_SAN1.html
-2025-05-19,LOU,IND,10-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_IND_at_LOU.html
-2025-05-19,NEW,ALB,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_ALB_at_NEW.html
-2025-05-19,EL ,LAS,8-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_LAS_at_EL .html
-2025-05-19,BOS,SAN3,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_SAN3_at_BOS.html
-2025-05-19,WAS,DEN,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_DEN_at_WAS.html
-2025-05-19,SAN,SAN2,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_SAN2_at_SAN.html
-2025-05-19,SAN1,BAL,8-16,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-19_BAL_at_SAN1.html
-2025-05-20,NEW,LOU,4-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_LOU_at_NEW.html
-2025-05-20,IND,LAS,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_LAS_at_IND.html
-2025-05-20,EL ,SAN3,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_SAN3_at_EL .html
-2025-05-20,WAS,PHI,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_PHI_at_WAS.html
-2025-05-20,BOS,SAN2,15-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_SAN2_at_BOS.html
-2025-05-20,SAN1,DEN,0-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_DEN_at_SAN1.html
-2025-05-20,SAN,BAL,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-20_BAL_at_SAN.html
-2025-05-21,LOU,LAS,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_LAS_at_LOU.html
-2025-05-21,IND,SAN3,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_SAN3_at_IND.html
-2025-05-21,WAS,ALB,6-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_ALB_at_WAS.html
-2025-05-21,EL ,SAN2,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_SAN2_at_EL .html
-2025-05-21,SAN1,PHI,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_PHI_at_SAN1.html
-2025-05-21,BOS,BAL,13-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_BAL_at_BOS.html
-2025-05-21,SAN,DEN,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-21_DEN_at_SAN.html
-2025-05-28,LAS,SAN3,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_SAN3_at_LAS.html
-2025-05-28,WAS,NEW,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_NEW_at_WAS.html
-2025-05-28,IND,SAN2,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_SAN2_at_IND.html
-2025-05-28,SAN1,ALB,4-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_ALB_at_SAN1.html
-2025-05-28,EL ,BAL,8-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_BAL_at_EL .html
-2025-05-28,SAN,PHI,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_PHI_at_SAN.html
-2025-05-28,BOS,DEN,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-28_DEN_at_BOS.html
-2025-05-29,LOU,SAN3,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_SAN3_at_LOU.html
-2025-05-29,LAS,SAN2,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_SAN2_at_LAS.html
-2025-05-29,SAN1,NEW,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_NEW_at_SAN1.html
-2025-05-29,IND,BAL,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_BAL_at_IND.html
-2025-05-29,SAN,ALB,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_ALB_at_SAN.html
-2025-05-29,EL ,DEN,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_DEN_at_EL .html
-2025-05-29,BOS,PHI,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-29_PHI_at_BOS.html
-2025-05-30,WAS,LOU,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_LOU_at_WAS.html
-2025-05-30,SAN3,SAN2,2-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_SAN2_at_SAN3.html
-2025-05-30,LAS,BAL,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_BAL_at_LAS.html
-2025-05-30,SAN,NEW,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_NEW_at_SAN.html
-2025-05-30,IND,DEN,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_DEN_at_IND.html
-2025-05-30,BOS,ALB,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_ALB_at_BOS.html
-2025-05-30,EL ,PHI,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-30_PHI_at_EL .html
-2025-05-31,LOU,SAN2,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_SAN2_at_LOU.html
-2025-05-31,SAN1,WAS,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_WAS_at_SAN1.html
-2025-05-31,SAN3,BAL,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_BAL_at_SAN3.html
-2025-05-31,LAS,DEN,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_DEN_at_LAS.html
-2025-05-31,BOS,NEW,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_NEW_at_BOS.html
-2025-05-31,IND,PHI,2-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_PHI_at_IND.html
-2025-05-31,EL ,ALB,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-05-31_ALB_at_EL .html
-2025-06-01,SAN1,LOU,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_LOU_at_SAN1.html
-2025-06-01,SAN2,BAL,11-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_BAL_at_SAN2.html
-2025-06-01,SAN,WAS,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_WAS_at_SAN.html
-2025-06-01,SAN3,DEN,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_DEN_at_SAN3.html
-2025-06-01,LAS,PHI,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_PHI_at_LAS.html
-2025-06-01,EL ,NEW,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_NEW_at_EL .html
-2025-06-01,IND,ALB,10-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-01_ALB_at_IND.html
-2025-06-02,LOU,BAL,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_BAL_at_LOU.html
-2025-06-02,SAN,SAN1,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_SAN1_at_SAN.html
-2025-06-02,SAN2,DEN,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_DEN_at_SAN2.html
-2025-06-02,BOS,WAS,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_WAS_at_BOS.html
-2025-06-02,SAN3,PHI,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_PHI_at_SAN3.html
-2025-06-02,LAS,ALB,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_ALB_at_LAS.html
-2025-06-02,IND,NEW,0-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-02_NEW_at_IND.html
-2025-06-03,SAN,LOU,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_LOU_at_SAN.html
-2025-06-03,BAL,DEN,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_DEN_at_BAL.html
-2025-06-03,BOS,SAN1,10-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_SAN1_at_BOS.html
-2025-06-03,SAN2,PHI,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_PHI_at_SAN2.html
-2025-06-03,EL ,WAS,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_WAS_at_EL .html
-2025-06-03,SAN3,ALB,3-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_ALB_at_SAN3.html
-2025-06-03,LAS,NEW,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-03_NEW_at_LAS.html
-2025-06-04,LOU,DEN,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_DEN_at_LOU.html
-2025-06-04,BOS,SAN,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_SAN_at_BOS.html
-2025-06-04,BAL,PHI,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_PHI_at_BAL.html
-2025-06-04,EL ,SAN1,10-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_SAN1_at_EL .html
-2025-06-04,SAN2,ALB,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_ALB_at_SAN2.html
-2025-06-04,IND,WAS,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_WAS_at_IND.html
-2025-06-04,SAN3,NEW,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-04_NEW_at_SAN3.html
-2025-06-05,BOS,LOU,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_LOU_at_BOS.html
-2025-06-05,DEN,PHI,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_PHI_at_DEN.html
-2025-06-05,EL ,SAN,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_SAN_at_EL .html
-2025-06-05,BAL,ALB,2-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_ALB_at_BAL.html
-2025-06-05,IND,SAN1,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_SAN1_at_IND.html
-2025-06-05,SAN2,NEW,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_NEW_at_SAN2.html
-2025-06-05,LAS,WAS,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-05_WAS_at_LAS.html
-2025-06-06,LOU,PHI,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_PHI_at_LOU.html
-2025-06-06,EL ,BOS,0-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_BOS_at_EL .html
-2025-06-06,DEN,ALB,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_ALB_at_DEN.html
-2025-06-06,IND,SAN,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_SAN_at_IND.html
-2025-06-06,BAL,NEW,8-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_NEW_at_BAL.html
-2025-06-06,LAS,SAN1,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_SAN1_at_LAS.html
-2025-06-06,SAN3,WAS,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-06_WAS_at_SAN3.html
-2025-06-07,EL ,LOU,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_LOU_at_EL .html
-2025-06-07,PHI,ALB,16-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_ALB_at_PHI.html
-2025-06-07,IND,BOS,12-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_BOS_at_IND.html
-2025-06-07,DEN,NEW,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_NEW_at_DEN.html
-2025-06-07,LAS,SAN,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_SAN_at_LAS.html
-2025-06-07,SAN3,SAN1,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_SAN1_at_SAN3.html
-2025-06-07,SAN2,WAS,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-07_WAS_at_SAN2.html
-2025-06-08,LOU,ALB,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_ALB_at_LOU.html
-2025-06-08,IND,EL ,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_EL _at_IND.html
-2025-06-08,PHI,NEW,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_NEW_at_PHI.html
-2025-06-08,LAS,BOS,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_BOS_at_LAS.html
-2025-06-08,SAN3,SAN,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_SAN_at_SAN3.html
-2025-06-08,BAL,WAS,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_WAS_at_BAL.html
-2025-06-08,SAN2,SAN1,12-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-08_SAN1_at_SAN2.html
-2025-06-09,IND,LOU,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_LOU_at_IND.html
-2025-06-09,ALB,NEW,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_NEW_at_ALB.html
-2025-06-09,LAS,EL ,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_EL _at_LAS.html
-2025-06-09,SAN3,BOS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_BOS_at_SAN3.html
-2025-06-09,DEN,WAS,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_WAS_at_DEN.html
-2025-06-09,SAN2,SAN,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_SAN_at_SAN2.html
-2025-06-09,BAL,SAN1,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-09_SAN1_at_BAL.html
-2025-06-10,LOU,NEW,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_NEW_at_LOU.html
-2025-06-10,LAS,IND,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_IND_at_LAS.html
-2025-06-10,SAN3,EL ,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_EL _at_SAN3.html
-2025-06-10,PHI,WAS,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_WAS_at_PHI.html
-2025-06-10,SAN2,BOS,10-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_BOS_at_SAN2.html
-2025-06-10,DEN,SAN1,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_SAN1_at_DEN.html
-2025-06-10,BAL,SAN,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-10_SAN_at_BAL.html
-2025-06-11,LAS,LOU,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_LOU_at_LAS.html
-2025-06-11,SAN3,IND,14-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_IND_at_SAN3.html
-2025-06-11,ALB,WAS,1-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_WAS_at_ALB.html
-2025-06-11,SAN2,EL ,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_EL _at_SAN2.html
-2025-06-11,PHI,SAN1,10-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_SAN1_at_PHI.html
-2025-06-11,BAL,BOS,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_BOS_at_BAL.html
-2025-06-11,DEN,SAN,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-11_SAN_at_DEN.html
-2025-06-12,SAN3,LAS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_LAS_at_SAN3.html
-2025-06-12,NEW,WAS,10-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_WAS_at_NEW.html
-2025-06-12,SAN2,IND,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_IND_at_SAN2.html
-2025-06-12,ALB,SAN1,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_SAN1_at_ALB.html
-2025-06-12,BAL,EL ,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_EL _at_BAL.html
-2025-06-12,PHI,SAN,13-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_SAN_at_PHI.html
-2025-06-12,DEN,BOS,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-12_BOS_at_DEN.html
-2025-06-13,SAN3,LOU,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_LOU_at_SAN3.html
-2025-06-13,SAN2,LAS,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_LAS_at_SAN2.html
-2025-06-13,NEW,SAN1,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_SAN1_at_NEW.html
-2025-06-13,BAL,IND,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_IND_at_BAL.html
-2025-06-13,ALB,SAN,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_SAN_at_ALB.html
-2025-06-13,DEN,EL ,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_EL _at_DEN.html
-2025-06-13,PHI,BOS,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-13_BOS_at_PHI.html
-2025-06-14,LOU,WAS,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_WAS_at_LOU.html
-2025-06-14,SAN2,SAN3,10-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_SAN3_at_SAN2.html
-2025-06-14,BAL,LAS,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_LAS_at_BAL.html
-2025-06-14,NEW,SAN,6-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_SAN_at_NEW.html
-2025-06-14,DEN,IND,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_IND_at_DEN.html
-2025-06-14,ALB,BOS,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_BOS_at_ALB.html
-2025-06-14,PHI,EL ,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-14_EL _at_PHI.html
-2025-06-15,SAN2,LOU,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_LOU_at_SAN2.html
-2025-06-15,WAS,SAN1,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_SAN1_at_WAS.html
-2025-06-15,BAL,SAN3,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_SAN3_at_BAL.html
-2025-06-15,DEN,LAS,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_LAS_at_DEN.html
-2025-06-15,NEW,BOS,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_BOS_at_NEW.html
-2025-06-15,PHI,IND,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_IND_at_PHI.html
-2025-06-15,ALB,EL ,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-15_EL _at_ALB.html
-2025-06-16,LOU,SAN1,0-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_SAN1_at_LOU.html
-2025-06-16,BAL,SAN2,5-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_SAN2_at_BAL.html
-2025-06-16,WAS,SAN,9-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_SAN_at_WAS.html
-2025-06-16,DEN,SAN3,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_SAN3_at_DEN.html
-2025-06-16,PHI,LAS,8-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_LAS_at_PHI.html
-2025-06-16,NEW,EL ,10-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_EL _at_NEW.html
-2025-06-16,ALB,IND,20-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-16_IND_at_ALB.html
-2025-06-17,BAL,LOU,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_LOU_at_BAL.html
-2025-06-17,SAN1,SAN,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_SAN_at_SAN1.html
-2025-06-17,DEN,SAN2,14-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_SAN2_at_DEN.html
-2025-06-17,WAS,BOS,11-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_BOS_at_WAS.html
-2025-06-17,PHI,SAN3,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_SAN3_at_PHI.html
-2025-06-17,ALB,LAS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_LAS_at_ALB.html
-2025-06-17,NEW,IND,13-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-17_IND_at_NEW.html
-2025-06-18,LOU,SAN,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_SAN_at_LOU.html
-2025-06-18,DEN,BAL,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_BAL_at_DEN.html
-2025-06-18,SAN1,BOS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_BOS_at_SAN1.html
-2025-06-18,PHI,SAN2,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_SAN2_at_PHI.html
-2025-06-18,WAS,EL ,5-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_EL _at_WAS.html
-2025-06-18,ALB,SAN3,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_SAN3_at_ALB.html
-2025-06-18,NEW,LAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-18_LAS_at_NEW.html
-2025-06-19,DEN,LOU,12-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_LOU_at_DEN.html
-2025-06-19,SAN,BOS,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_BOS_at_SAN.html
-2025-06-19,PHI,BAL,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_BAL_at_PHI.html
-2025-06-19,SAN1,EL ,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_EL _at_SAN1.html
-2025-06-19,ALB,SAN2,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_SAN2_at_ALB.html
-2025-06-19,WAS,IND,0-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_IND_at_WAS.html
-2025-06-19,NEW,SAN3,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-19_SAN3_at_NEW.html
-2025-06-20,LOU,BOS,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_BOS_at_LOU.html
-2025-06-20,PHI,DEN,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_DEN_at_PHI.html
-2025-06-20,SAN,EL ,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_EL _at_SAN.html
-2025-06-20,ALB,BAL,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_BAL_at_ALB.html
-2025-06-20,SAN1,IND,9-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_IND_at_SAN1.html
-2025-06-20,NEW,SAN2,8-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_SAN2_at_NEW.html
-2025-06-20,WAS,LAS,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-20_LAS_at_WAS.html
-2025-06-21,PHI,LOU,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_LOU_at_PHI.html
-2025-06-21,BOS,EL ,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_EL _at_BOS.html
-2025-06-21,ALB,DEN,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_DEN_at_ALB.html
-2025-06-21,SAN,IND,6-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_IND_at_SAN.html
-2025-06-21,NEW,BAL,16-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_BAL_at_NEW.html
-2025-06-21,SAN1,LAS,5-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_LAS_at_SAN1.html
-2025-06-21,WAS,SAN3,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-21_SAN3_at_WAS.html
-2025-06-22,LOU,EL ,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_EL _at_LOU.html
-2025-06-22,ALB,PHI,6-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_PHI_at_ALB.html
-2025-06-22,BOS,IND,3-16,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_IND_at_BOS.html
-2025-06-22,NEW,DEN,0-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_DEN_at_NEW.html
-2025-06-22,SAN,LAS,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_LAS_at_SAN.html
-2025-06-22,SAN1,SAN3,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_SAN3_at_SAN1.html
-2025-06-22,WAS,SAN2,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-22_SAN2_at_WAS.html
-2025-06-23,ALB,LOU,1-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_LOU_at_ALB.html
-2025-06-23,EL ,IND,11-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_IND_at_EL .html
-2025-06-23,NEW,PHI,11-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_PHI_at_NEW.html
-2025-06-23,BOS,LAS,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_LAS_at_BOS.html
-2025-06-23,SAN,SAN3,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_SAN3_at_SAN.html
-2025-06-23,WAS,BAL,8-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_BAL_at_WAS.html
-2025-06-23,SAN1,SAN2,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-23_SAN2_at_SAN1.html
-2025-06-24,LOU,IND,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_IND_at_LOU.html
-2025-06-24,NEW,ALB,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_ALB_at_NEW.html
-2025-06-24,EL ,LAS,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_LAS_at_EL .html
-2025-06-24,BOS,SAN3,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_SAN3_at_BOS.html
-2025-06-24,WAS,DEN,9-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_DEN_at_WAS.html
-2025-06-24,SAN,SAN2,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_SAN2_at_SAN.html
-2025-06-24,SAN1,BAL,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-24_BAL_at_SAN1.html
-2025-06-25,NEW,LOU,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_LOU_at_NEW.html
-2025-06-25,IND,LAS,4-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_LAS_at_IND.html
-2025-06-25,EL ,SAN3,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_SAN3_at_EL .html
-2025-06-25,WAS,PHI,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_PHI_at_WAS.html
-2025-06-25,BOS,SAN2,1-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_SAN2_at_BOS.html
-2025-06-25,SAN1,DEN,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_DEN_at_SAN1.html
-2025-06-25,SAN,BAL,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-25_BAL_at_SAN.html
-2025-06-26,LOU,LAS,10-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_LAS_at_LOU.html
-2025-06-26,IND,SAN3,10-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_SAN3_at_IND.html
-2025-06-26,WAS,ALB,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_ALB_at_WAS.html
-2025-06-26,EL ,SAN2,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_SAN2_at_EL .html
-2025-06-26,SAN1,PHI,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_PHI_at_SAN1.html
-2025-06-26,BOS,BAL,7-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_BAL_at_BOS.html
-2025-06-26,SAN,DEN,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-06-26_DEN_at_SAN.html
-2025-07-03,LAS,SAN3,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_SAN3_at_LAS.html
-2025-07-03,WAS,NEW,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_NEW_at_WAS.html
-2025-07-03,IND,SAN2,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_SAN2_at_IND.html
-2025-07-03,SAN1,ALB,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_ALB_at_SAN1.html
-2025-07-03,EL ,BAL,15-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_BAL_at_EL .html
-2025-07-03,SAN,PHI,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_PHI_at_SAN.html
-2025-07-03,BOS,DEN,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-03_DEN_at_BOS.html
-2025-07-04,LOU,SAN3,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_SAN3_at_LOU.html
-2025-07-04,LAS,SAN2,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_SAN2_at_LAS.html
-2025-07-04,SAN1,NEW,1-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_NEW_at_SAN1.html
-2025-07-04,IND,BAL,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_BAL_at_IND.html
-2025-07-04,SAN,ALB,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_ALB_at_SAN.html
-2025-07-04,EL ,DEN,9-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_DEN_at_EL .html
-2025-07-04,BOS,PHI,6-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-04_PHI_at_BOS.html
-2025-07-05,WAS,LOU,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_LOU_at_WAS.html
-2025-07-05,SAN3,SAN2,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_SAN2_at_SAN3.html
-2025-07-05,LAS,BAL,7-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_BAL_at_LAS.html
-2025-07-05,SAN,NEW,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_NEW_at_SAN.html
-2025-07-05,IND,DEN,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_DEN_at_IND.html
-2025-07-05,BOS,ALB,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_ALB_at_BOS.html
-2025-07-05,EL ,PHI,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-05_PHI_at_EL .html
-2025-07-06,LOU,SAN2,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_SAN2_at_LOU.html
-2025-07-06,SAN1,WAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_WAS_at_SAN1.html
-2025-07-06,SAN3,BAL,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_BAL_at_SAN3.html
-2025-07-06,LAS,DEN,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_DEN_at_LAS.html
-2025-07-06,BOS,NEW,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_NEW_at_BOS.html
-2025-07-06,IND,PHI,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_PHI_at_IND.html
-2025-07-06,EL ,ALB,8-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-06_ALB_at_EL .html
-2025-07-07,SAN1,LOU,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_LOU_at_SAN1.html
-2025-07-07,SAN2,BAL,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_BAL_at_SAN2.html
-2025-07-07,SAN,WAS,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_WAS_at_SAN.html
-2025-07-07,SAN3,DEN,8-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_DEN_at_SAN3.html
-2025-07-07,LAS,PHI,0-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_PHI_at_LAS.html
-2025-07-07,EL ,NEW,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_NEW_at_EL .html
-2025-07-07,IND,ALB,10-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-07_ALB_at_IND.html
-2025-07-08,LOU,BAL,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_BAL_at_LOU.html
-2025-07-08,SAN,SAN1,6-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_SAN1_at_SAN.html
-2025-07-08,SAN2,DEN,6-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_DEN_at_SAN2.html
-2025-07-08,BOS,WAS,11-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_WAS_at_BOS.html
-2025-07-08,SAN3,PHI,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_PHI_at_SAN3.html
-2025-07-08,LAS,ALB,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_ALB_at_LAS.html
-2025-07-08,IND,NEW,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-08_NEW_at_IND.html
-2025-07-09,SAN,LOU,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_LOU_at_SAN.html
-2025-07-09,BAL,DEN,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_DEN_at_BAL.html
-2025-07-09,BOS,SAN1,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_SAN1_at_BOS.html
-2025-07-09,SAN2,PHI,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_PHI_at_SAN2.html
-2025-07-09,EL ,WAS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_WAS_at_EL .html
-2025-07-09,SAN3,ALB,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_ALB_at_SAN3.html
-2025-07-09,LAS,NEW,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-09_NEW_at_LAS.html
-2025-07-10,LOU,DEN,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_DEN_at_LOU.html
-2025-07-10,BOS,SAN,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_SAN_at_BOS.html
-2025-07-10,BAL,PHI,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_PHI_at_BAL.html
-2025-07-10,EL ,SAN1,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_SAN1_at_EL .html
-2025-07-10,SAN2,ALB,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_ALB_at_SAN2.html
-2025-07-10,IND,WAS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_WAS_at_IND.html
-2025-07-10,SAN3,NEW,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-10_NEW_at_SAN3.html
-2025-07-11,BOS,LOU,3-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_LOU_at_BOS.html
-2025-07-11,DEN,PHI,10-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_PHI_at_DEN.html
-2025-07-11,EL ,SAN,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_SAN_at_EL .html
-2025-07-11,BAL,ALB,1-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_ALB_at_BAL.html
-2025-07-11,IND,SAN1,6-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_SAN1_at_IND.html
-2025-07-11,SAN2,NEW,10-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_NEW_at_SAN2.html
-2025-07-11,LAS,WAS,5-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-11_WAS_at_LAS.html
-2025-07-12,LOU,PHI,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_PHI_at_LOU.html
-2025-07-12,EL ,BOS,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_BOS_at_EL .html
-2025-07-12,DEN,ALB,8-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_ALB_at_DEN.html
-2025-07-12,IND,SAN,5-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_SAN_at_IND.html
-2025-07-12,BAL,NEW,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_NEW_at_BAL.html
-2025-07-12,LAS,SAN1,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_SAN1_at_LAS.html
-2025-07-12,SAN3,WAS,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-12_WAS_at_SAN3.html
-2025-07-13,EL ,LOU,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_LOU_at_EL .html
-2025-07-13,PHI,ALB,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_ALB_at_PHI.html
-2025-07-13,IND,BOS,6-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_BOS_at_IND.html
-2025-07-13,DEN,NEW,5-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_NEW_at_DEN.html
-2025-07-13,LAS,SAN,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_SAN_at_LAS.html
-2025-07-13,SAN3,SAN1,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_SAN1_at_SAN3.html
-2025-07-13,SAN2,WAS,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-13_WAS_at_SAN2.html
-2025-07-14,LOU,ALB,8-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_ALB_at_LOU.html
-2025-07-14,IND,EL ,9-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_EL _at_IND.html
-2025-07-14,PHI,NEW,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_NEW_at_PHI.html
-2025-07-14,LAS,BOS,16-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_BOS_at_LAS.html
-2025-07-14,SAN3,SAN,9-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_SAN_at_SAN3.html
-2025-07-14,BAL,WAS,3-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_WAS_at_BAL.html
-2025-07-14,SAN2,SAN1,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-14_SAN1_at_SAN2.html
-2025-07-15,IND,LOU,16-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_LOU_at_IND.html
-2025-07-15,ALB,NEW,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_NEW_at_ALB.html
-2025-07-15,LAS,EL ,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_EL _at_LAS.html
-2025-07-15,SAN3,BOS,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_BOS_at_SAN3.html
-2025-07-15,DEN,WAS,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_WAS_at_DEN.html
-2025-07-15,SAN2,SAN,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_SAN_at_SAN2.html
-2025-07-15,BAL,SAN1,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-15_SAN1_at_BAL.html
-2025-07-16,LOU,NEW,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_NEW_at_LOU.html
-2025-07-16,LAS,IND,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_IND_at_LAS.html
-2025-07-16,SAN3,EL ,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_EL _at_SAN3.html
-2025-07-16,PHI,WAS,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_WAS_at_PHI.html
-2025-07-16,SAN2,BOS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_BOS_at_SAN2.html
-2025-07-16,DEN,SAN1,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_SAN1_at_DEN.html
-2025-07-16,BAL,SAN,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-16_SAN_at_BAL.html
-2025-07-17,LAS,LOU,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_LOU_at_LAS.html
-2025-07-17,SAN3,IND,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_IND_at_SAN3.html
-2025-07-17,ALB,WAS,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_WAS_at_ALB.html
-2025-07-17,SAN2,EL ,4-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_EL _at_SAN2.html
-2025-07-17,PHI,SAN1,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_SAN1_at_PHI.html
-2025-07-17,BAL,BOS,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_BOS_at_BAL.html
-2025-07-17,DEN,SAN,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-17_SAN_at_DEN.html
-2025-07-18,SAN3,LAS,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_LAS_at_SAN3.html
-2025-07-18,NEW,WAS,1-16,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_WAS_at_NEW.html
-2025-07-18,SAN2,IND,4-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_IND_at_SAN2.html
-2025-07-18,ALB,SAN1,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_SAN1_at_ALB.html
-2025-07-18,BAL,EL ,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_EL _at_BAL.html
-2025-07-18,PHI,SAN,1-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_SAN_at_PHI.html
-2025-07-18,DEN,BOS,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-18_BOS_at_DEN.html
-2025-07-19,SAN3,LOU,11-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_LOU_at_SAN3.html
-2025-07-19,SAN2,LAS,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_LAS_at_SAN2.html
-2025-07-19,NEW,SAN1,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_SAN1_at_NEW.html
-2025-07-19,BAL,IND,10-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_IND_at_BAL.html
-2025-07-19,ALB,SAN,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_SAN_at_ALB.html
-2025-07-19,DEN,EL ,7-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_EL _at_DEN.html
-2025-07-19,PHI,BOS,11-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-19_BOS_at_PHI.html
-2025-07-20,LOU,WAS,11-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_WAS_at_LOU.html
-2025-07-20,SAN2,SAN3,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_SAN3_at_SAN2.html
-2025-07-20,BAL,LAS,2-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_LAS_at_BAL.html
-2025-07-20,NEW,SAN,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_SAN_at_NEW.html
-2025-07-20,DEN,IND,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_IND_at_DEN.html
-2025-07-20,ALB,BOS,10-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_BOS_at_ALB.html
-2025-07-20,PHI,EL ,1-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-20_EL _at_PHI.html
-2025-07-21,SAN2,LOU,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_LOU_at_SAN2.html
-2025-07-21,WAS,SAN1,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_SAN1_at_WAS.html
-2025-07-21,BAL,SAN3,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_SAN3_at_BAL.html
-2025-07-21,DEN,LAS,9-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_LAS_at_DEN.html
-2025-07-21,NEW,BOS,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_BOS_at_NEW.html
-2025-07-21,PHI,IND,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_IND_at_PHI.html
-2025-07-21,ALB,EL ,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-21_EL _at_ALB.html
-2025-07-22,LOU,SAN1,10-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_SAN1_at_LOU.html
-2025-07-22,BAL,SAN2,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_SAN2_at_BAL.html
-2025-07-22,WAS,SAN,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_SAN_at_WAS.html
-2025-07-22,DEN,SAN3,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_SAN3_at_DEN.html
-2025-07-22,PHI,LAS,12-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_LAS_at_PHI.html
-2025-07-22,NEW,EL ,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_EL _at_NEW.html
-2025-07-22,ALB,IND,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-22_IND_at_ALB.html
-2025-07-23,BAL,LOU,11-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_LOU_at_BAL.html
-2025-07-23,SAN1,SAN,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_SAN_at_SAN1.html
-2025-07-23,DEN,SAN2,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_SAN2_at_DEN.html
-2025-07-23,WAS,BOS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_BOS_at_WAS.html
-2025-07-23,PHI,SAN3,13-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_SAN3_at_PHI.html
-2025-07-23,ALB,LAS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_LAS_at_ALB.html
-2025-07-23,NEW,IND,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-23_IND_at_NEW.html
-2025-07-24,LOU,SAN,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_SAN_at_LOU.html
-2025-07-24,DEN,BAL,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_BAL_at_DEN.html
-2025-07-24,SAN1,BOS,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_BOS_at_SAN1.html
-2025-07-24,PHI,SAN2,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_SAN2_at_PHI.html
-2025-07-24,WAS,EL ,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_EL _at_WAS.html
-2025-07-24,ALB,SAN3,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_SAN3_at_ALB.html
-2025-07-24,NEW,LAS,10-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-24_LAS_at_NEW.html
-2025-07-25,DEN,LOU,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_LOU_at_DEN.html
-2025-07-25,SAN,BOS,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_BOS_at_SAN.html
-2025-07-25,PHI,BAL,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_BAL_at_PHI.html
-2025-07-25,SAN1,EL ,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_EL _at_SAN1.html
-2025-07-25,ALB,SAN2,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_SAN2_at_ALB.html
-2025-07-25,WAS,IND,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_IND_at_WAS.html
-2025-07-25,NEW,SAN3,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-25_SAN3_at_NEW.html
-2025-07-26,LOU,BOS,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_BOS_at_LOU.html
-2025-07-26,PHI,DEN,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_DEN_at_PHI.html
-2025-07-26,SAN,EL ,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_EL _at_SAN.html
-2025-07-26,ALB,BAL,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_BAL_at_ALB.html
-2025-07-26,SAN1,IND,12-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_IND_at_SAN1.html
-2025-07-26,NEW,SAN2,8-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_SAN2_at_NEW.html
-2025-07-26,WAS,LAS,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-26_LAS_at_WAS.html
-2025-07-27,PHI,LOU,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_LOU_at_PHI.html
-2025-07-27,BOS,EL ,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_EL _at_BOS.html
-2025-07-27,ALB,DEN,10-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_DEN_at_ALB.html
-2025-07-27,SAN,IND,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_IND_at_SAN.html
-2025-07-27,NEW,BAL,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_BAL_at_NEW.html
-2025-07-27,SAN1,LAS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_LAS_at_SAN1.html
-2025-07-27,WAS,SAN3,3-16,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-27_SAN3_at_WAS.html
-2025-07-28,LOU,EL ,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_EL _at_LOU.html
-2025-07-28,ALB,PHI,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_PHI_at_ALB.html
-2025-07-28,BOS,IND,3-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_IND_at_BOS.html
-2025-07-28,NEW,DEN,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_DEN_at_NEW.html
-2025-07-28,SAN,LAS,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_LAS_at_SAN.html
-2025-07-28,SAN1,SAN3,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_SAN3_at_SAN1.html
-2025-07-28,WAS,SAN2,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-28_SAN2_at_WAS.html
-2025-07-29,ALB,LOU,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_LOU_at_ALB.html
-2025-07-29,EL ,IND,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_IND_at_EL .html
-2025-07-29,NEW,PHI,10-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_PHI_at_NEW.html
-2025-07-29,BOS,LAS,6-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_LAS_at_BOS.html
-2025-07-29,SAN,SAN3,11-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_SAN3_at_SAN.html
-2025-07-29,WAS,BAL,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_BAL_at_WAS.html
-2025-07-29,SAN1,SAN2,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-29_SAN2_at_SAN1.html
-2025-07-30,LOU,IND,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_IND_at_LOU.html
-2025-07-30,NEW,ALB,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_ALB_at_NEW.html
-2025-07-30,EL ,LAS,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_LAS_at_EL .html
-2025-07-30,BOS,SAN3,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_SAN3_at_BOS.html
-2025-07-30,WAS,DEN,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_DEN_at_WAS.html
-2025-07-30,SAN,SAN2,6-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_SAN2_at_SAN.html
-2025-07-30,SAN1,BAL,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-30_BAL_at_SAN1.html
-2025-07-31,NEW,LOU,6-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_LOU_at_NEW.html
-2025-07-31,IND,LAS,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_LAS_at_IND.html
-2025-07-31,EL ,SAN3,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_SAN3_at_EL .html
-2025-07-31,WAS,PHI,8-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_PHI_at_WAS.html
-2025-07-31,BOS,SAN2,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_SAN2_at_BOS.html
-2025-07-31,SAN1,DEN,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_DEN_at_SAN1.html
-2025-07-31,SAN,BAL,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-07-31_BAL_at_SAN.html
-2025-08-01,LOU,LAS,4-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_LAS_at_LOU.html
-2025-08-01,IND,SAN3,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_SAN3_at_IND.html
-2025-08-01,WAS,ALB,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_ALB_at_WAS.html
-2025-08-01,EL ,SAN2,9-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_SAN2_at_EL .html
-2025-08-01,SAN1,PHI,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_PHI_at_SAN1.html
-2025-08-01,BOS,BAL,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_BAL_at_BOS.html
-2025-08-01,SAN,DEN,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-01_DEN_at_SAN.html
-2025-08-08,LAS,SAN3,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_SAN3_at_LAS.html
-2025-08-08,WAS,NEW,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_NEW_at_WAS.html
-2025-08-08,IND,SAN2,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_SAN2_at_IND.html
-2025-08-08,SAN1,ALB,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_ALB_at_SAN1.html
-2025-08-08,EL ,BAL,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_BAL_at_EL .html
-2025-08-08,SAN,PHI,6-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_PHI_at_SAN.html
-2025-08-08,BOS,DEN,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-08_DEN_at_BOS.html
-2025-08-09,LOU,SAN3,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_SAN3_at_LOU.html
-2025-08-09,LAS,SAN2,9-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_SAN2_at_LAS.html
-2025-08-09,SAN1,NEW,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_NEW_at_SAN1.html
-2025-08-09,IND,BAL,10-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_BAL_at_IND.html
-2025-08-09,SAN,ALB,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_ALB_at_SAN.html
-2025-08-09,EL ,DEN,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_DEN_at_EL .html
-2025-08-09,BOS,PHI,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-09_PHI_at_BOS.html
-2025-08-10,WAS,LOU,2-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_LOU_at_WAS.html
-2025-08-10,SAN3,SAN2,12-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_SAN2_at_SAN3.html
-2025-08-10,LAS,BAL,5-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_BAL_at_LAS.html
-2025-08-10,SAN,NEW,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_NEW_at_SAN.html
-2025-08-10,IND,DEN,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_DEN_at_IND.html
-2025-08-10,BOS,ALB,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_ALB_at_BOS.html
-2025-08-10,EL ,PHI,10-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-10_PHI_at_EL .html
-2025-08-11,LOU,SAN2,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_SAN2_at_LOU.html
-2025-08-11,SAN1,WAS,11-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_WAS_at_SAN1.html
-2025-08-11,SAN3,BAL,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_BAL_at_SAN3.html
-2025-08-11,LAS,DEN,11-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_DEN_at_LAS.html
-2025-08-11,BOS,NEW,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_NEW_at_BOS.html
-2025-08-11,IND,PHI,3-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_PHI_at_IND.html
-2025-08-11,EL ,ALB,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-11_ALB_at_EL .html
-2025-08-12,SAN1,LOU,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_LOU_at_SAN1.html
-2025-08-12,SAN2,BAL,4-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_BAL_at_SAN2.html
-2025-08-12,SAN,WAS,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_WAS_at_SAN.html
-2025-08-12,SAN3,DEN,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_DEN_at_SAN3.html
-2025-08-12,LAS,PHI,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_PHI_at_LAS.html
-2025-08-12,EL ,NEW,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_NEW_at_EL .html
-2025-08-12,IND,ALB,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-12_ALB_at_IND.html
-2025-08-13,LOU,BAL,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_BAL_at_LOU.html
-2025-08-13,SAN,SAN1,6-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_SAN1_at_SAN.html
-2025-08-13,SAN2,DEN,11-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_DEN_at_SAN2.html
-2025-08-13,BOS,WAS,6-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_WAS_at_BOS.html
-2025-08-13,SAN3,PHI,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_PHI_at_SAN3.html
-2025-08-13,LAS,ALB,1-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_ALB_at_LAS.html
-2025-08-13,IND,NEW,14-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-13_NEW_at_IND.html
-2025-08-14,SAN,LOU,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_LOU_at_SAN.html
-2025-08-14,BAL,DEN,7-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_DEN_at_BAL.html
-2025-08-14,BOS,SAN1,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_SAN1_at_BOS.html
-2025-08-14,SAN2,PHI,9-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_PHI_at_SAN2.html
-2025-08-14,EL ,WAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_WAS_at_EL .html
-2025-08-14,SAN3,ALB,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_ALB_at_SAN3.html
-2025-08-14,LAS,NEW,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-14_NEW_at_LAS.html
-2025-08-15,LOU,DEN,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_DEN_at_LOU.html
-2025-08-15,BOS,SAN,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_SAN_at_BOS.html
-2025-08-15,BAL,PHI,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_PHI_at_BAL.html
-2025-08-15,EL ,SAN1,9-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_SAN1_at_EL .html
-2025-08-15,SAN2,ALB,9-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_ALB_at_SAN2.html
-2025-08-15,IND,WAS,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_WAS_at_IND.html
-2025-08-15,SAN3,NEW,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-15_NEW_at_SAN3.html
-2025-08-16,BOS,LOU,19-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_LOU_at_BOS.html
-2025-08-16,DEN,PHI,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_PHI_at_DEN.html
-2025-08-16,EL ,SAN,12-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_SAN_at_EL .html
-2025-08-16,BAL,ALB,8-19,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_ALB_at_BAL.html
-2025-08-16,IND,SAN1,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_SAN1_at_IND.html
-2025-08-16,SAN2,NEW,8-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_NEW_at_SAN2.html
-2025-08-16,LAS,WAS,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-16_WAS_at_LAS.html
-2025-08-17,LOU,PHI,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_PHI_at_LOU.html
-2025-08-17,EL ,BOS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_BOS_at_EL .html
-2025-08-17,DEN,ALB,8-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_ALB_at_DEN.html
-2025-08-17,IND,SAN,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_SAN_at_IND.html
-2025-08-17,BAL,NEW,10-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_NEW_at_BAL.html
-2025-08-17,LAS,SAN1,1-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_SAN1_at_LAS.html
-2025-08-17,SAN3,WAS,1-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-17_WAS_at_SAN3.html
-2025-08-18,EL ,LOU,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_LOU_at_EL .html
-2025-08-18,PHI,ALB,5-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_ALB_at_PHI.html
-2025-08-18,IND,BOS,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_BOS_at_IND.html
-2025-08-18,DEN,NEW,2-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_NEW_at_DEN.html
-2025-08-18,LAS,SAN,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_SAN_at_LAS.html
-2025-08-18,SAN3,SAN1,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_SAN1_at_SAN3.html
-2025-08-18,SAN2,WAS,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-18_WAS_at_SAN2.html
-2025-08-19,LOU,ALB,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_ALB_at_LOU.html
-2025-08-19,IND,EL ,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_EL _at_IND.html
-2025-08-19,PHI,NEW,12-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_NEW_at_PHI.html
-2025-08-19,LAS,BOS,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_BOS_at_LAS.html
-2025-08-19,SAN3,SAN,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_SAN_at_SAN3.html
-2025-08-19,BAL,WAS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_WAS_at_BAL.html
-2025-08-19,SAN2,SAN1,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-19_SAN1_at_SAN2.html
-2025-08-20,IND,LOU,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_LOU_at_IND.html
-2025-08-20,ALB,NEW,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_NEW_at_ALB.html
-2025-08-20,LAS,EL ,1-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_EL _at_LAS.html
-2025-08-20,SAN3,BOS,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_BOS_at_SAN3.html
-2025-08-20,DEN,WAS,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_WAS_at_DEN.html
-2025-08-20,SAN2,SAN,7-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_SAN_at_SAN2.html
-2025-08-20,BAL,SAN1,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-20_SAN1_at_BAL.html
-2025-08-21,LOU,NEW,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_NEW_at_LOU.html
-2025-08-21,LAS,IND,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_IND_at_LAS.html
-2025-08-21,SAN3,EL ,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_EL _at_SAN3.html
-2025-08-21,PHI,WAS,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_WAS_at_PHI.html
-2025-08-21,SAN2,BOS,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_BOS_at_SAN2.html
-2025-08-21,DEN,SAN1,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_SAN1_at_DEN.html
-2025-08-21,BAL,SAN,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-21_SAN_at_BAL.html
-2025-08-22,LAS,LOU,2-17,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_LOU_at_LAS.html
-2025-08-22,SAN3,IND,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_IND_at_SAN3.html
-2025-08-22,ALB,WAS,8-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_WAS_at_ALB.html
-2025-08-22,SAN2,EL ,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_EL _at_SAN2.html
-2025-08-22,PHI,SAN1,10-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_SAN1_at_PHI.html
-2025-08-22,BAL,BOS,13-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_BOS_at_BAL.html
-2025-08-22,DEN,SAN,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-22_SAN_at_DEN.html
-2025-08-23,SAN3,LAS,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_LAS_at_SAN3.html
-2025-08-23,NEW,WAS,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_WAS_at_NEW.html
-2025-08-23,SAN2,IND,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_IND_at_SAN2.html
-2025-08-23,ALB,SAN1,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_SAN1_at_ALB.html
-2025-08-23,BAL,EL ,7-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_EL _at_BAL.html
-2025-08-23,PHI,SAN,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_SAN_at_PHI.html
-2025-08-23,DEN,BOS,11-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-23_BOS_at_DEN.html
-2025-08-24,SAN3,LOU,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_LOU_at_SAN3.html
-2025-08-24,SAN2,LAS,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_LAS_at_SAN2.html
-2025-08-24,NEW,SAN1,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_SAN1_at_NEW.html
-2025-08-24,BAL,IND,0-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_IND_at_BAL.html
-2025-08-24,ALB,SAN,2-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_SAN_at_ALB.html
-2025-08-24,DEN,EL ,9-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_EL _at_DEN.html
-2025-08-24,PHI,BOS,7-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-24_BOS_at_PHI.html
-2025-08-25,LOU,WAS,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_WAS_at_LOU.html
-2025-08-25,SAN2,SAN3,6-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_SAN3_at_SAN2.html
-2025-08-25,BAL,LAS,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_LAS_at_BAL.html
-2025-08-25,NEW,SAN,10-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_SAN_at_NEW.html
-2025-08-25,DEN,IND,5-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_IND_at_DEN.html
-2025-08-25,ALB,BOS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_BOS_at_ALB.html
-2025-08-25,PHI,EL ,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-25_EL _at_PHI.html
-2025-08-26,SAN2,LOU,0-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_LOU_at_SAN2.html
-2025-08-26,WAS,SAN1,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_SAN1_at_WAS.html
-2025-08-26,BAL,SAN3,9-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_SAN3_at_BAL.html
-2025-08-26,DEN,LAS,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_LAS_at_DEN.html
-2025-08-26,NEW,BOS,0-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_BOS_at_NEW.html
-2025-08-26,PHI,IND,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_IND_at_PHI.html
-2025-08-26,ALB,EL ,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-26_EL _at_ALB.html
-2025-08-27,LOU,SAN1,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_SAN1_at_LOU.html
-2025-08-27,BAL,SAN2,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_SAN2_at_BAL.html
-2025-08-27,WAS,SAN,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_SAN_at_WAS.html
-2025-08-27,DEN,SAN3,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_SAN3_at_DEN.html
-2025-08-27,PHI,LAS,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_LAS_at_PHI.html
-2025-08-27,NEW,EL ,11-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_EL _at_NEW.html
-2025-08-27,ALB,IND,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-27_IND_at_ALB.html
-2025-08-28,BAL,LOU,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_LOU_at_BAL.html
-2025-08-28,SAN1,SAN,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_SAN_at_SAN1.html
-2025-08-28,DEN,SAN2,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_SAN2_at_DEN.html
-2025-08-28,WAS,BOS,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_BOS_at_WAS.html
-2025-08-28,PHI,SAN3,5-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_SAN3_at_PHI.html
-2025-08-28,ALB,LAS,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_LAS_at_ALB.html
-2025-08-28,NEW,IND,0-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-28_IND_at_NEW.html
-2025-08-29,LOU,SAN,12-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_SAN_at_LOU.html
-2025-08-29,DEN,BAL,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_BAL_at_DEN.html
-2025-08-29,SAN1,BOS,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_BOS_at_SAN1.html
-2025-08-29,PHI,SAN2,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_SAN2_at_PHI.html
-2025-08-29,WAS,EL ,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_EL _at_WAS.html
-2025-08-29,ALB,SAN3,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_SAN3_at_ALB.html
-2025-08-29,NEW,LAS,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-29_LAS_at_NEW.html
-2025-08-30,DEN,LOU,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_LOU_at_DEN.html
-2025-08-30,SAN,BOS,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_BOS_at_SAN.html
-2025-08-30,PHI,BAL,6-16,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_BAL_at_PHI.html
-2025-08-30,SAN1,EL ,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_EL _at_SAN1.html
-2025-08-30,ALB,SAN2,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_SAN2_at_ALB.html
-2025-08-30,WAS,IND,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_IND_at_WAS.html
-2025-08-30,NEW,SAN3,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-30_SAN3_at_NEW.html
-2025-08-31,LOU,BOS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_BOS_at_LOU.html
-2025-08-31,PHI,DEN,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_DEN_at_PHI.html
-2025-08-31,SAN,EL ,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_EL _at_SAN.html
-2025-08-31,ALB,BAL,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_BAL_at_ALB.html
-2025-08-31,SAN1,IND,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_IND_at_SAN1.html
-2025-08-31,NEW,SAN2,10-15,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_SAN2_at_NEW.html
-2025-08-31,WAS,LAS,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-08-31_LAS_at_WAS.html
-2025-09-01,PHI,LOU,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_LOU_at_PHI.html
-2025-09-01,BOS,EL ,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_EL _at_BOS.html
-2025-09-01,ALB,DEN,4-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_DEN_at_ALB.html
-2025-09-01,SAN,IND,15-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_IND_at_SAN.html
-2025-09-01,NEW,BAL,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_BAL_at_NEW.html
-2025-09-01,SAN1,LAS,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_LAS_at_SAN1.html
-2025-09-01,WAS,SAN3,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-01_SAN3_at_WAS.html
-2025-09-02,LOU,EL ,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_EL _at_LOU.html
-2025-09-02,ALB,PHI,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_PHI_at_ALB.html
-2025-09-02,BOS,IND,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_IND_at_BOS.html
-2025-09-02,NEW,DEN,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_DEN_at_NEW.html
-2025-09-02,SAN,LAS,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_LAS_at_SAN.html
-2025-09-02,SAN1,SAN3,2-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_SAN3_at_SAN1.html
-2025-09-02,WAS,SAN2,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-02_SAN2_at_WAS.html
-2025-09-03,ALB,LOU,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_LOU_at_ALB.html
-2025-09-03,EL ,IND,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_IND_at_EL .html
-2025-09-03,NEW,PHI,1-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_PHI_at_NEW.html
-2025-09-03,BOS,LAS,1-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_LAS_at_BOS.html
-2025-09-03,SAN,SAN3,0-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_SAN3_at_SAN.html
-2025-09-03,WAS,BAL,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_BAL_at_WAS.html
-2025-09-03,SAN1,SAN2,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-03_SAN2_at_SAN1.html
-2025-09-04,LOU,IND,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_IND_at_LOU.html
-2025-09-04,NEW,ALB,5-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_ALB_at_NEW.html
-2025-09-04,EL ,LAS,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_LAS_at_EL .html
-2025-09-04,BOS,SAN3,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_SAN3_at_BOS.html
-2025-09-04,WAS,DEN,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_DEN_at_WAS.html
-2025-09-04,SAN,SAN2,5-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_SAN2_at_SAN.html
-2025-09-04,SAN1,BAL,2-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-04_BAL_at_SAN1.html
-2025-09-05,NEW,LOU,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_LOU_at_NEW.html
-2025-09-05,IND,LAS,0-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_LAS_at_IND.html
-2025-09-05,EL ,SAN3,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_SAN3_at_EL .html
-2025-09-05,WAS,PHI,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_PHI_at_WAS.html
-2025-09-05,BOS,SAN2,12-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_SAN2_at_BOS.html
-2025-09-05,SAN1,DEN,5-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_DEN_at_SAN1.html
-2025-09-05,SAN,BAL,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-05_BAL_at_SAN.html
-2025-09-06,LOU,LAS,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_LAS_at_LOU.html
-2025-09-06,IND,SAN3,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_SAN3_at_IND.html
-2025-09-06,WAS,ALB,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_ALB_at_WAS.html
-2025-09-06,EL ,SAN2,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_SAN2_at_EL .html
-2025-09-06,SAN1,PHI,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_PHI_at_SAN1.html
-2025-09-06,BOS,BAL,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_BAL_at_BOS.html
-2025-09-06,SAN,DEN,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-06_DEN_at_SAN.html
-2025-09-13,LAS,SAN3,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_SAN3_at_LAS.html
-2025-09-13,WAS,NEW,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_NEW_at_WAS.html
-2025-09-13,IND,SAN2,1-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_SAN2_at_IND.html
-2025-09-13,SAN1,ALB,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_ALB_at_SAN1.html
-2025-09-13,EL ,BAL,7-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_BAL_at_EL .html
-2025-09-13,SAN,PHI,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_PHI_at_SAN.html
-2025-09-13,BOS,DEN,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-13_DEN_at_BOS.html
-2025-09-14,LOU,SAN3,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_SAN3_at_LOU.html
-2025-09-14,LAS,SAN2,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_SAN2_at_LAS.html
-2025-09-14,SAN1,NEW,2-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_NEW_at_SAN1.html
-2025-09-14,IND,BAL,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_BAL_at_IND.html
-2025-09-14,SAN,ALB,6-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_ALB_at_SAN.html
-2025-09-14,EL ,DEN,9-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_DEN_at_EL .html
-2025-09-14,BOS,PHI,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-14_PHI_at_BOS.html
-2025-09-15,WAS,LOU,7-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_LOU_at_WAS.html
-2025-09-15,SAN3,SAN2,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_SAN2_at_SAN3.html
-2025-09-15,LAS,BAL,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_BAL_at_LAS.html
-2025-09-15,SAN,NEW,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_NEW_at_SAN.html
-2025-09-15,IND,DEN,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_DEN_at_IND.html
-2025-09-15,BOS,ALB,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_ALB_at_BOS.html
-2025-09-15,EL ,PHI,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-15_PHI_at_EL .html
-2025-09-16,LOU,SAN2,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_SAN2_at_LOU.html
-2025-09-16,SAN1,WAS,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_WAS_at_SAN1.html
-2025-09-16,SAN3,BAL,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_BAL_at_SAN3.html
-2025-09-16,LAS,DEN,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_DEN_at_LAS.html
-2025-09-16,BOS,NEW,9-16,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_NEW_at_BOS.html
-2025-09-16,IND,PHI,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_PHI_at_IND.html
-2025-09-16,EL ,ALB,5-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-16_ALB_at_EL .html
-2025-09-17,SAN1,LOU,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_LOU_at_SAN1.html
-2025-09-17,SAN2,BAL,13-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_BAL_at_SAN2.html
-2025-09-17,SAN,WAS,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_WAS_at_SAN.html
-2025-09-17,SAN3,DEN,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_DEN_at_SAN3.html
-2025-09-17,LAS,PHI,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_PHI_at_LAS.html
-2025-09-17,EL ,NEW,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_NEW_at_EL .html
-2025-09-17,IND,ALB,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-17_ALB_at_IND.html
-2025-09-18,LOU,BAL,11-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_BAL_at_LOU.html
-2025-09-18,SAN,SAN1,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_SAN1_at_SAN.html
-2025-09-18,SAN2,DEN,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_DEN_at_SAN2.html
-2025-09-18,BOS,WAS,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_WAS_at_BOS.html
-2025-09-18,SAN3,PHI,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_PHI_at_SAN3.html
-2025-09-18,LAS,ALB,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_ALB_at_LAS.html
-2025-09-18,IND,NEW,12-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-18_NEW_at_IND.html
-2025-09-19,SAN,LOU,12-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_LOU_at_SAN.html
-2025-09-19,BAL,DEN,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_DEN_at_BAL.html
-2025-09-19,BOS,SAN1,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_SAN1_at_BOS.html
-2025-09-19,SAN2,PHI,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_PHI_at_SAN2.html
-2025-09-19,EL ,WAS,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_WAS_at_EL .html
-2025-09-19,SAN3,ALB,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_ALB_at_SAN3.html
-2025-09-19,LAS,NEW,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-19_NEW_at_LAS.html
-2025-09-20,LOU,DEN,8-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_DEN_at_LOU.html
-2025-09-20,BOS,SAN,4-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_SAN_at_BOS.html
-2025-09-20,BAL,PHI,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_PHI_at_BAL.html
-2025-09-20,EL ,SAN1,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_SAN1_at_EL .html
-2025-09-20,SAN2,ALB,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_ALB_at_SAN2.html
-2025-09-20,IND,WAS,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_WAS_at_IND.html
-2025-09-20,SAN3,NEW,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-20_NEW_at_SAN3.html
-2025-09-21,BOS,LOU,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_LOU_at_BOS.html
-2025-09-21,DEN,PHI,7-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_PHI_at_DEN.html
-2025-09-21,EL ,SAN,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_SAN_at_EL .html
-2025-09-21,BAL,ALB,4-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_ALB_at_BAL.html
-2025-09-21,IND,SAN1,11-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_SAN1_at_IND.html
-2025-09-21,SAN2,NEW,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_NEW_at_SAN2.html
-2025-09-21,LAS,WAS,11-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-21_WAS_at_LAS.html
-2025-09-22,LOU,PHI,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_PHI_at_LOU.html
-2025-09-22,EL ,BOS,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_BOS_at_EL .html
-2025-09-22,DEN,ALB,12-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_ALB_at_DEN.html
-2025-09-22,IND,SAN,11-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_SAN_at_IND.html
-2025-09-22,BAL,NEW,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_NEW_at_BAL.html
-2025-09-22,LAS,SAN1,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_SAN1_at_LAS.html
-2025-09-22,SAN3,WAS,12-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-22_WAS_at_SAN3.html
-2025-09-23,EL ,LOU,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_LOU_at_EL .html
-2025-09-23,PHI,ALB,9-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_ALB_at_PHI.html
-2025-09-23,IND,BOS,13-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_BOS_at_IND.html
-2025-09-23,DEN,NEW,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_NEW_at_DEN.html
-2025-09-23,LAS,SAN,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_SAN_at_LAS.html
-2025-09-23,SAN3,SAN1,8-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_SAN1_at_SAN3.html
-2025-09-23,SAN2,WAS,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-23_WAS_at_SAN2.html
-2025-09-24,LOU,ALB,10-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_ALB_at_LOU.html
-2025-09-24,IND,EL ,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_EL _at_IND.html
-2025-09-24,PHI,NEW,9-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_NEW_at_PHI.html
-2025-09-24,LAS,BOS,2-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_BOS_at_LAS.html
-2025-09-24,SAN3,SAN,7-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_SAN_at_SAN3.html
-2025-09-24,BAL,WAS,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_WAS_at_BAL.html
-2025-09-24,SAN2,SAN1,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-24_SAN1_at_SAN2.html
-2025-09-25,IND,LOU,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_LOU_at_IND.html
-2025-09-25,ALB,NEW,1-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_NEW_at_ALB.html
-2025-09-25,LAS,EL ,14-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_EL _at_LAS.html
-2025-09-25,SAN3,BOS,9-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_BOS_at_SAN3.html
-2025-09-25,DEN,WAS,1-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_WAS_at_DEN.html
-2025-09-25,SAN2,SAN,7-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_SAN_at_SAN2.html
-2025-09-25,BAL,SAN1,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-25_SAN1_at_BAL.html
-2025-09-26,LOU,NEW,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_NEW_at_LOU.html
-2025-09-26,LAS,IND,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_IND_at_LAS.html
-2025-09-26,SAN3,EL ,7-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_EL _at_SAN3.html
-2025-09-26,PHI,WAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_WAS_at_PHI.html
-2025-09-26,SAN2,BOS,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_BOS_at_SAN2.html
-2025-09-26,DEN,SAN1,1-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_SAN1_at_DEN.html
-2025-09-26,BAL,SAN,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-26_SAN_at_BAL.html
-2025-09-27,LAS,LOU,8-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_LOU_at_LAS.html
-2025-09-27,SAN3,IND,1-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_IND_at_SAN3.html
-2025-09-27,ALB,WAS,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_WAS_at_ALB.html
-2025-09-27,SAN2,EL ,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_EL _at_SAN2.html
-2025-09-27,PHI,SAN1,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_SAN1_at_PHI.html
-2025-09-27,BAL,BOS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_BOS_at_BAL.html
-2025-09-27,DEN,SAN,2-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-27_SAN_at_DEN.html
-2025-09-28,SAN3,LAS,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_LAS_at_SAN3.html
-2025-09-28,NEW,WAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_WAS_at_NEW.html
-2025-09-28,SAN2,IND,2-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_IND_at_SAN2.html
-2025-09-28,ALB,SAN1,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_SAN1_at_ALB.html
-2025-09-28,BAL,EL ,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_EL _at_BAL.html
-2025-09-28,PHI,SAN,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_SAN_at_PHI.html
-2025-09-28,DEN,BOS,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-28_BOS_at_DEN.html
-2025-09-29,SAN3,LOU,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_LOU_at_SAN3.html
-2025-09-29,SAN2,LAS,12-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_LAS_at_SAN2.html
-2025-09-29,NEW,SAN1,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_SAN1_at_NEW.html
-2025-09-29,BAL,IND,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_IND_at_BAL.html
-2025-09-29,ALB,SAN,10-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_SAN_at_ALB.html
-2025-09-29,DEN,EL ,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_EL _at_DEN.html
-2025-09-29,PHI,BOS,14-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-29_BOS_at_PHI.html
-2025-09-30,LOU,WAS,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_WAS_at_LOU.html
-2025-09-30,SAN2,SAN3,2-14,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_SAN3_at_SAN2.html
-2025-09-30,BAL,LAS,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_LAS_at_BAL.html
-2025-09-30,NEW,SAN,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_SAN_at_NEW.html
-2025-09-30,DEN,IND,11-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_IND_at_DEN.html
-2025-09-30,ALB,BOS,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_BOS_at_ALB.html
-2025-09-30,PHI,EL ,12-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-09-30_EL _at_PHI.html
-2025-10-01,SAN2,LOU,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_LOU_at_SAN2.html
-2025-10-01,WAS,SAN1,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_SAN1_at_WAS.html
-2025-10-01,BAL,SAN3,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_SAN3_at_BAL.html
-2025-10-01,DEN,LAS,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_LAS_at_DEN.html
-2025-10-01,NEW,BOS,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_BOS_at_NEW.html
-2025-10-01,PHI,IND,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_IND_at_PHI.html
-2025-10-01,ALB,EL ,9-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-01_EL _at_ALB.html
-2025-10-02,LOU,SAN1,0-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_SAN1_at_LOU.html
-2025-10-02,BAL,SAN2,8-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_SAN2_at_BAL.html
-2025-10-02,WAS,SAN,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_SAN_at_WAS.html
-2025-10-02,DEN,SAN3,0-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_SAN3_at_DEN.html
-2025-10-02,PHI,LAS,8-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_LAS_at_PHI.html
-2025-10-02,NEW,EL ,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_EL _at_NEW.html
-2025-10-02,ALB,IND,0-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-02_IND_at_ALB.html
-2025-10-03,BAL,LOU,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_LOU_at_BAL.html
-2025-10-03,SAN1,SAN,5-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_SAN_at_SAN1.html
-2025-10-03,DEN,SAN2,9-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_SAN2_at_DEN.html
-2025-10-03,WAS,BOS,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_BOS_at_WAS.html
-2025-10-03,PHI,SAN3,8-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_SAN3_at_PHI.html
-2025-10-03,ALB,LAS,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_LAS_at_ALB.html
-2025-10-03,NEW,IND,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-03_IND_at_NEW.html
-2025-10-04,LOU,SAN,6-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_SAN_at_LOU.html
-2025-10-04,DEN,BAL,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_BAL_at_DEN.html
-2025-10-04,SAN1,BOS,7-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_BOS_at_SAN1.html
-2025-10-04,PHI,SAN2,14-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_SAN2_at_PHI.html
-2025-10-04,WAS,EL ,5-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_EL _at_WAS.html
-2025-10-04,ALB,SAN3,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_SAN3_at_ALB.html
-2025-10-04,NEW,LAS,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-04_LAS_at_NEW.html
-2025-10-05,DEN,LOU,13-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_LOU_at_DEN.html
-2025-10-05,SAN,BOS,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_BOS_at_SAN.html
-2025-10-05,PHI,BAL,9-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_BAL_at_PHI.html
-2025-10-05,SAN1,EL ,0-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_EL _at_SAN1.html
-2025-10-05,ALB,SAN2,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_SAN2_at_ALB.html
-2025-10-05,WAS,IND,4-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_IND_at_WAS.html
-2025-10-05,NEW,SAN3,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-05_SAN3_at_NEW.html
-2025-10-06,LOU,BOS,5-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_BOS_at_LOU.html
-2025-10-06,PHI,DEN,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_DEN_at_PHI.html
-2025-10-06,SAN,EL ,6-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_EL _at_SAN.html
-2025-10-06,ALB,BAL,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_BAL_at_ALB.html
-2025-10-06,SAN1,IND,6-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_IND_at_SAN1.html
-2025-10-06,NEW,SAN2,1-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_SAN2_at_NEW.html
-2025-10-06,WAS,LAS,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-06_LAS_at_WAS.html
-2025-10-07,PHI,LOU,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_LOU_at_PHI.html
-2025-10-07,BOS,EL ,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_EL _at_BOS.html
-2025-10-07,ALB,DEN,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_DEN_at_ALB.html
-2025-10-07,SAN,IND,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_IND_at_SAN.html
-2025-10-07,NEW,BAL,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_BAL_at_NEW.html
-2025-10-07,SAN1,LAS,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_LAS_at_SAN1.html
-2025-10-07,WAS,SAN3,10-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-07_SAN3_at_WAS.html
-2025-10-08,LOU,EL ,3-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_EL _at_LOU.html
-2025-10-08,ALB,PHI,8-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_PHI_at_ALB.html
-2025-10-08,BOS,IND,13-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_IND_at_BOS.html
-2025-10-08,NEW,DEN,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_DEN_at_NEW.html
-2025-10-08,SAN,LAS,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_LAS_at_SAN.html
-2025-10-08,SAN1,SAN3,3-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_SAN3_at_SAN1.html
-2025-10-08,WAS,SAN2,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-08_SAN2_at_WAS.html
-2025-10-09,ALB,LOU,7-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_LOU_at_ALB.html
-2025-10-09,EL ,IND,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_IND_at_EL .html
-2025-10-09,NEW,PHI,12-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_PHI_at_NEW.html
-2025-10-09,BOS,LAS,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_LAS_at_BOS.html
-2025-10-09,SAN,SAN3,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_SAN3_at_SAN.html
-2025-10-09,WAS,BAL,2-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_BAL_at_WAS.html
-2025-10-09,SAN1,SAN2,4-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-09_SAN2_at_SAN1.html
-2025-10-10,LOU,IND,3-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_IND_at_LOU.html
-2025-10-10,NEW,ALB,2-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_ALB_at_NEW.html
-2025-10-10,EL ,LAS,11-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_LAS_at_EL .html
-2025-10-10,BOS,SAN3,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_SAN3_at_BOS.html
-2025-10-10,WAS,DEN,8-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_DEN_at_WAS.html
-2025-10-10,SAN,SAN2,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_SAN2_at_SAN.html
-2025-10-10,SAN1,BAL,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-10_BAL_at_SAN1.html
-2025-10-11,NEW,LOU,1-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_LOU_at_NEW.html
-2025-10-11,IND,LAS,2-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_LAS_at_IND.html
-2025-10-11,EL ,SAN3,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_SAN3_at_EL .html
-2025-10-11,WAS,PHI,7-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_PHI_at_WAS.html
-2025-10-11,BOS,SAN2,3-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_SAN2_at_BOS.html
-2025-10-11,SAN1,DEN,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_DEN_at_SAN1.html
-2025-10-11,SAN,BAL,14-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-11_BAL_at_SAN.html
-2025-10-12,LOU,LAS,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_LAS_at_LOU.html
-2025-10-12,IND,SAN3,5-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_SAN3_at_IND.html
-2025-10-12,WAS,ALB,6-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_ALB_at_WAS.html
-2025-10-12,EL ,SAN2,9-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_SAN2_at_EL .html
-2025-10-12,SAN1,PHI,4-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_PHI_at_SAN1.html
-2025-10-12,BOS,BAL,3-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_BAL_at_BOS.html
-2025-10-12,SAN,DEN,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-12_DEN_at_SAN.html
-2025-10-19,LAS,SAN3,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_SAN3_at_LAS.html
-2025-10-19,WAS,NEW,1-0,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_NEW_at_WAS.html
-2025-10-19,IND,SAN2,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_SAN2_at_IND.html
-2025-10-19,SAN1,ALB,3-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_ALB_at_SAN1.html
-2025-10-19,EL ,BAL,15-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_BAL_at_EL .html
-2025-10-19,SAN,PHI,6-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_PHI_at_SAN.html
-2025-10-19,BOS,DEN,11-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-19_DEN_at_BOS.html
-2025-10-20,LOU,SAN3,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_SAN3_at_LOU.html
-2025-10-20,LAS,SAN2,0-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_SAN2_at_LAS.html
-2025-10-20,SAN1,NEW,5-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_NEW_at_SAN1.html
-2025-10-20,IND,BAL,8-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_BAL_at_IND.html
-2025-10-20,SAN,ALB,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_ALB_at_SAN.html
-2025-10-20,EL ,DEN,6-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_DEN_at_EL .html
-2025-10-20,BOS,PHI,4-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-20_PHI_at_BOS.html
-2025-10-21,WAS,LOU,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_LOU_at_WAS.html
-2025-10-21,SAN3,SAN2,4-12,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_SAN2_at_SAN3.html
-2025-10-21,LAS,BAL,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_BAL_at_LAS.html
-2025-10-21,SAN,NEW,13-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_NEW_at_SAN.html
-2025-10-21,IND,DEN,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_DEN_at_IND.html
-2025-10-21,BOS,ALB,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_ALB_at_BOS.html
-2025-10-21,EL ,PHI,4-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-21_PHI_at_EL .html
-2025-10-22,LOU,SAN2,13-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_SAN2_at_LOU.html
-2025-10-22,SAN1,WAS,2-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_WAS_at_SAN1.html
-2025-10-22,SAN3,BAL,5-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_BAL_at_SAN3.html
-2025-10-22,LAS,DEN,3-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_DEN_at_LAS.html
-2025-10-22,BOS,NEW,9-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_NEW_at_BOS.html
-2025-10-22,IND,PHI,5-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_PHI_at_IND.html
-2025-10-22,EL ,ALB,8-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-22_ALB_at_EL .html
-2025-10-23,SAN1,LOU,8-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_LOU_at_SAN1.html
-2025-10-23,SAN2,BAL,3-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_BAL_at_SAN2.html
-2025-10-23,SAN,WAS,5-7,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_WAS_at_SAN.html
-2025-10-23,SAN3,DEN,9-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_DEN_at_SAN3.html
-2025-10-23,LAS,PHI,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_PHI_at_LAS.html
-2025-10-23,EL ,NEW,5-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_NEW_at_EL .html
-2025-10-23,IND,ALB,1-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-23_ALB_at_IND.html
-2025-10-24,LOU,BAL,6-5,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_BAL_at_LOU.html
-2025-10-24,SAN,SAN1,1-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_SAN1_at_SAN.html
-2025-10-24,SAN2,DEN,7-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_DEN_at_SAN2.html
-2025-10-24,BOS,WAS,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_WAS_at_BOS.html
-2025-10-24,SAN3,PHI,9-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_PHI_at_SAN3.html
-2025-10-24,LAS,ALB,6-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_ALB_at_LAS.html
-2025-10-24,IND,NEW,4-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-24_NEW_at_IND.html
-2025-10-25,SAN,LOU,6-8,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_LOU_at_SAN.html
-2025-10-25,BAL,DEN,4-9,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_DEN_at_BAL.html
-2025-10-25,BOS,SAN1,0-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_SAN1_at_BOS.html
-2025-10-25,SAN2,PHI,2-1,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_PHI_at_SAN2.html
-2025-10-25,EL ,WAS,7-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_WAS_at_EL .html
-2025-10-25,SAN3,ALB,7-10,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_ALB_at_SAN3.html
-2025-10-25,LAS,NEW,4-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-25_NEW_at_LAS.html
-2025-10-26,LOU,DEN,10-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_DEN_at_LOU.html
-2025-10-26,BOS,SAN,6-11,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_SAN_at_BOS.html
-2025-10-26,BAL,PHI,3-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_PHI_at_BAL.html
-2025-10-26,EL ,SAN1,6-4,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_SAN1_at_EL .html
-2025-10-26,SAN2,ALB,5-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_ALB_at_SAN2.html
-2025-10-26,IND,WAS,8-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_WAS_at_IND.html
-2025-10-26,SAN3,NEW,10-13,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-26_NEW_at_SAN3.html
-2025-10-27,BOS,LOU,3-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-27_LOU_at_BOS.html
-2025-10-27,EL ,SAN,4-6,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-27_SAN_at_EL .html
-2025-10-27,IND,SAN1,13-2,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-27_SAN1_at_IND.html
-2025-10-27,LAS,WAS,2-3,1,/home/james/dev/NexGen-BBPro/data/boxscores/season/2025-10-27_WAS_at_LAS.html
+2025-04-01,A,B,,,
+2025-04-08,B,A,,,
+2025-04-09,A,B,,,
+2025-04-16,B,A,,,
+2025-04-17,A,B,,,
+2025-04-24,B,A,,,
+2025-04-25,A,B,,,
+2025-05-02,B,A,,,
+2025-05-03,A,B,,,
+2025-05-10,B,A,,,
+2025-05-11,A,B,,,
+2025-05-18,B,A,,,
+2025-05-19,A,B,,,
+2025-05-26,B,A,,,
+2025-05-27,A,B,,,
+2025-06-03,B,A,,,
+2025-06-04,A,B,,,
+2025-06-11,B,A,,,
+2025-06-12,A,B,,,
+2025-06-19,B,A,,,
+2025-06-20,A,B,,,
+2025-06-27,B,A,,,
+2025-06-28,A,B,,,
+2025-07-05,B,A,,,
+2025-07-06,A,B,,,
+2025-07-13,B,A,,,
+2025-07-14,A,B,,,
+2025-07-21,B,A,,,
+2025-07-22,A,B,,,
+2025-07-29,B,A,,,
+2025-07-30,A,B,,,
+2025-08-06,B,A,,,
+2025-08-07,A,B,,,
+2025-08-14,B,A,,,
+2025-08-15,A,B,,,
+2025-08-22,B,A,,,
+2025-08-23,A,B,,,
+2025-08-30,B,A,,,
+2025-08-31,A,B,,,
+2025-09-07,B,A,,,
+2025-09-08,A,B,,,
+2025-09-15,B,A,,,
+2025-09-16,A,B,,,
+2025-09-23,B,A,,,
+2025-09-24,A,B,,,
+2025-10-01,B,A,,,
+2025-10-02,A,B,,,
+2025-10-09,B,A,,,
+2025-10-10,A,B,,,
+2025-10-17,B,A,,,
+2025-10-18,A,B,,,
+2025-10-25,B,A,,,
+2025-10-26,A,B,,,
+2025-11-02,B,A,,,
+2025-11-03,A,B,,,
+2025-11-10,B,A,,,
+2025-11-11,A,B,,,
+2025-11-18,B,A,,,
+2025-11-19,A,B,,,
+2025-11-26,B,A,,,
+2025-11-27,A,B,,,
+2025-12-04,B,A,,,
+2025-12-05,A,B,,,
+2025-12-12,B,A,,,
+2025-12-13,A,B,,,
+2025-12-20,B,A,,,
+2025-12-21,A,B,,,
+2025-12-28,B,A,,,
+2025-12-29,A,B,,,
+2026-01-05,B,A,,,
+2026-01-06,A,B,,,
+2026-01-13,B,A,,,
+2026-01-14,A,B,,,
+2026-01-21,B,A,,,
+2026-01-22,A,B,,,
+2026-01-29,B,A,,,
+2026-01-30,A,B,,,
+2026-02-06,B,A,,,
+2026-02-07,A,B,,,
+2026-02-14,B,A,,,
+2026-02-15,A,B,,,
+2026-02-22,B,A,,,
+2026-02-23,A,B,,,
+2026-03-02,B,A,,,
+2026-03-03,A,B,,,
+2026-03-10,B,A,,,
+2026-03-11,A,B,,,
+2026-03-18,B,A,,,
+2026-03-19,A,B,,,
+2026-03-26,B,A,,,
+2026-03-27,A,B,,,
+2026-04-03,B,A,,,
+2026-04-04,A,B,,,
+2026-04-11,B,A,,,
+2026-04-12,A,B,,,
+2026-04-19,B,A,,,
+2026-04-20,A,B,,,
+2026-04-27,B,A,,,
+2026-04-28,A,B,,,
+2026-05-05,B,A,,,
+2026-05-06,A,B,,,
+2026-05-13,B,A,,,
+2026-05-14,A,B,,,
+2026-05-21,B,A,,,
+2026-05-22,A,B,,,
+2026-05-29,B,A,,,
+2026-05-30,A,B,,,
+2026-06-06,B,A,,,
+2026-06-07,A,B,,,
+2026-06-14,B,A,,,
+2026-06-15,A,B,,,
+2026-06-22,B,A,,,
+2026-06-23,A,B,,,
+2026-06-30,B,A,,,
+2026-07-01,A,B,,,
+2026-07-08,B,A,,,
+2026-07-09,A,B,,,
+2026-07-16,B,A,,,
+2026-07-17,A,B,,,
+2026-07-24,B,A,,,
+2026-07-25,A,B,,,
+2026-08-01,B,A,,,
+2026-08-02,A,B,,,
+2026-08-09,B,A,,,
+2026-08-10,A,B,,,
+2026-08-17,B,A,,,
+2026-08-18,A,B,,,
+2026-08-25,B,A,,,
+2026-08-26,A,B,,,
+2026-09-02,B,A,,,
+2026-09-03,A,B,,,
+2026-09-10,B,A,,,
+2026-09-11,A,B,,,
+2026-09-18,B,A,,,
+2026-09-19,A,B,,,
+2026-09-26,B,A,,,
+2026-09-27,A,B,,,
+2026-10-04,B,A,,,
+2026-10-05,A,B,,,
+2026-10-12,B,A,,,
+2026-10-13,A,B,,,
+2026-10-20,B,A,,,
+2026-10-21,A,B,,,
+2026-10-28,B,A,,,
+2026-10-29,A,B,,,
+2026-11-05,B,A,,,
+2026-11-06,A,B,,,
+2026-11-13,B,A,,,
+2026-11-14,A,B,,,
+2026-11-21,B,A,,,
+2026-11-22,A,B,,,
+2026-11-29,B,A,,,
+2026-11-30,A,B,,,
+2026-12-07,B,A,,,
+2026-12-08,A,B,,,
+2026-12-15,B,A,,,
+2026-12-16,A,B,,,
+2026-12-23,B,A,,,
+2026-12-24,A,B,,,
+2026-12-31,B,A,,,
+2027-01-01,A,B,,,
+2027-01-08,B,A,,,

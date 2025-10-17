@@ -78,6 +78,7 @@ from utils.player_loader import load_players_from_csv
 from utils.team_loader import load_teams
 from utils.path_utils import get_base_dir
 from utils.sim_date import get_current_sim_date
+from ui.version_badge import enable_version_badge
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +91,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
+        enable_version_badge(self)
         self.setWindowTitle("Admin Dashboard")
         self.resize(1000, 700)
 

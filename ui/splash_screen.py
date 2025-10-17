@@ -21,6 +21,7 @@ except Exception as exc:  # pragma: no cover - optional dependency
 from ui.login_window import LoginWindow
 from utils.path_utils import get_base_dir
 from ui.window_utils import show_on_top, set_all_on_top
+from ui.version_badge import enable_version_badge
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ class SplashScreen(QWidget):
         layout.addStretch(2)
 
         self.setLayout(layout)
+        enable_version_badge(self)
         self.login_window = None
 
         # Keyboard shortcut: Enter/Return triggers Start Game

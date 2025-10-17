@@ -58,6 +58,7 @@ from utils.sim_date import get_current_sim_date
 from ui.analytics import gather_owner_quick_metrics
 from ui.dashboard_core import DashboardContext, NavigationController, PageRegistry
 from ui.window_utils import show_on_top
+from ui.version_badge import enable_version_badge
 from ui.sim_date_bus import sim_date_bus
 
 
@@ -66,6 +67,7 @@ class OwnerDashboard(QMainWindow):
 
     def __init__(self, team_id: str):
         super().__init__()
+        enable_version_badge(self)
         self.team_id = team_id
         self.players: Dict[str, object] = {
             p.player_id: p for p in load_players_from_csv("data/players.csv")

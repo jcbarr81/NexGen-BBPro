@@ -179,3 +179,6 @@ timestamp,season_date,team_id,player_id,player_name,action,from_level,to_level,c
 2025-10-17 00:20:38,2025-07-15,WAS,D20250044,Roberto Rodriguez,draft,,LOW,,Drafted in 2025 Amateur Draft
 2025-10-17 00:20:38,2025-07-15,LOU,D20250013,Cristopher Ginoza,draft,,LOW,,Drafted in 2025 Amateur Draft
 2025-10-17 00:20:38,2025-07-15,SAN,D20250025,Rufus Washington,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-17 09:13:17,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft (AAA: LOW roster exceeds 10 players (fix before resuming).)
+2025-10-17 09:13:17,2025-07-15,AAA,d100,Casey Draftpick,draft,,LOW,,Drafted in 2025 Amateur Draft
+2025-10-17 09:13:17,2025-10-27,BBB,c001,c001,cut,AAA,FA,,Released to free agency

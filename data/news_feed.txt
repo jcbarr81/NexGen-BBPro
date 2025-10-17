@@ -8,3 +8,21 @@
 [2025-10-17 00:19:12] Purged saved season boxscores
 [2025-10-17 00:20:23] Amateur Draft 2025 committed: 8 players added; 45 roster assignments
 [2025-10-17 00:20:38] Amateur Draft 2025 committed: 0 players added; 45 roster assignments
+[2025-10-17 09:13:21] [progress] Simulated a regular season day; 1 days until Midseason (K% 0.224, BB% 0.080)
+[2025-10-17 09:13:21] [progress] Simulated a regular season day; 2 days until Season End (K% 0.220, BB% 0.083)
+[2025-10-17 09:13:21] [progress] Simulated a regular season day; 1 days until Season End (K% 0.218, BB% 0.082)
+[2025-10-17 09:13:21] [progress] Simulated a regular season day; regular season complete (K% 0.222, BB% 0.081)
+[2025-10-17 09:13:21] [progress] Simulated week; 3 days until Midseason (K% 0.220, BB% 0.080)
+[2025-10-17 09:13:22] [progress] Simulated week; 3 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-17 09:13:22] [progress] Simulated week; regular season complete (K% 0.220, BB% 0.081)
+[2025-10-17 09:13:24] [progress] Simulated month; 10 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-17 09:13:26] [progress] Simulated month; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-17 09:13:26] [progress] Simulated midseason; 5 days until Draft (K% 0.217, BB% 0.077)
+[2025-10-17 09:13:27] [progress] Simulated draft; 1 days until Season End (K% 0.216, BB% 0.082)
+[2025-10-17 09:13:27] Simulated playoffs; championship decided. Champion: LOU
+[2025-10-17 09:13:27] Season advanced to Preseason
+[2025-10-17 09:13:27] No unsigned players available
+[2025-10-17 09:13:27] Training camp completed; players marked ready
+[2025-10-17 09:13:27] Generated regular season schedule with 162 games
+[2025-10-17 09:13:27] Generated regular season schedule with 162 games
+[2025-10-17 09:13:27] No unsigned players available
