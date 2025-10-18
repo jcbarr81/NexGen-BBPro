@@ -2,7 +2,13 @@ import logging
 import os
 from typing import Optional
 
-from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QGraphicsOpacityEffect
+from PyQt6.QtWidgets import (
+    QWidget,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QGraphicsOpacityEffect,
+)
 from PyQt6.QtGui import QPixmap, QFont, QKeySequence, QShortcut
 from PyQt6.QtCore import Qt, QEvent, QPropertyAnimation, QEasingCurve, QTimer, QUrl
 try:  # Multimedia may not be available on all platforms

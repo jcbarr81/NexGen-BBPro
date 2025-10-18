@@ -21,6 +21,29 @@ except Exception:  # pragma: no cover
     OpenAI = None  # type: ignore
 
 
+CLIENT_STATUS_OK = "ok"
+CLIENT_STATUS_MISSING_DEPENDENCY = "missing_dependency"
+CLIENT_STATUS_MISSING_KEY = "missing_key"
+CLIENT_STATUS_INIT_FAILED = "init_failed"
+
+
+_CLIENT_STATUS_MESSAGES = {
+    CLIENT_STATUS_MISSING_DEPENDENCY: (
+        "Python package 'openai' is not installed. Install it with "
+        "'pip install openai' to enable AI-generated logos."
+    ),
+    CLIENT_STATUS_MISSING_KEY: (
+        "OpenAI API key was not found. Add it to the "
+        "OPENAI_API_KEY environment variable or the [OpenAIkey] "
+        "section in config.ini."
+    ),
+    CLIENT_STATUS_INIT_FAILED: (
+        "OpenAI client initialization failed. Check the API key and network "
+        "configuration."
+    ),
+}
+
+
 def _read_api_key() -> Optional[str]:
     """Return the OpenAI API key from environment or ``config.ini``."""
 
@@ -28,7 +51,8 @@ def _read_api_key() -> Optional[str]:
     if env_key:
         return env_key
 
-    base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+    base_root = Path(__file__).resolve().parent.parent
+    base_dir = Path(getattr(sys, "_MEIPASS", base_root))
     config_path = base_dir / "config.ini"
     parser = configparser.ConfigParser()
     try:
@@ -87,9 +111,52 @@ _api_key = _read_api_key()
 
 # Exposed, reusable OpenAI client instance. ``None`` if not configured.
 client: Optional[OpenAI]
-if OpenAI is not None and _api_key:
-    client = OpenAI(api_key=_api_key)
-else:  # pragma: no cover - executed when dependency missing
-    client = None
+CLIENT_STATUS: str
+CLIENT_ERROR: Optional[str]
 
-__all__ = ["client"]
+if OpenAI is None:  # pragma: no cover - executed when dependency missing
+    client = None
+    CLIENT_STATUS = CLIENT_STATUS_MISSING_DEPENDENCY
+    CLIENT_ERROR = _CLIENT_STATUS_MESSAGES[CLIENT_STATUS_MISSING_DEPENDENCY]
+elif not _api_key:
+    client = None
+    CLIENT_STATUS = CLIENT_STATUS_MISSING_KEY
+    CLIENT_ERROR = _CLIENT_STATUS_MESSAGES[CLIENT_STATUS_MISSING_KEY]
+else:
+    try:
+        client = OpenAI(api_key=_api_key)
+    except Exception as exc:  # pragma: no cover - protect against init errors
+        client = None
+        CLIENT_STATUS = CLIENT_STATUS_INIT_FAILED
+        CLIENT_ERROR = f"OpenAI client initialization failed: {exc}"
+    else:
+        CLIENT_STATUS = CLIENT_STATUS_OK
+        CLIENT_ERROR = None
+
+
+def get_client_status_message() -> Optional[str]:
+    """Return a human friendly explanation for the current client status."""
+
+    if CLIENT_STATUS == CLIENT_STATUS_OK:
+        return None
+    if CLIENT_ERROR:
+        return CLIENT_ERROR
+    return _CLIENT_STATUS_MESSAGES.get(CLIENT_STATUS)
+
+
+def get_client_status() -> str:
+    """Return the symbolic status string for the configured client."""
+
+    return CLIENT_STATUS
+
+
+__all__ = [
+    "client",
+    "CLIENT_STATUS",
+    "CLIENT_STATUS_OK",
+    "CLIENT_STATUS_MISSING_DEPENDENCY",
+    "CLIENT_STATUS_MISSING_KEY",
+    "CLIENT_STATUS_INIT_FAILED",
+    "get_client_status",
+    "get_client_status_message",
+]

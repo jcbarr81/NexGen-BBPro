@@ -3,17 +3,49 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import QMessageBox, QWidget, QProgressDialog
+from PyQt6.QtCore import QObject, Qt, QTimer, pyqtSignal
+from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget, QProgressDialog
 
 from utils.avatar_generator import generate_player_avatars
 from utils.logo_generator import generate_team_logos
+from utils.openai_client import (
+    CLIENT_STATUS_INIT_FAILED,
+    CLIENT_STATUS_MISSING_DEPENDENCY,
+    get_client_status,
+    get_client_status_message,
+)
 
 from ..context import DashboardContext
 
 
+class _UiDispatcher(QObject):
+    """Thread-safe bridge to queue callables on the GUI thread."""
+
+    trigger = pyqtSignal(object)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.trigger.connect(self._run, Qt.ConnectionType.QueuedConnection)
+
+    def _run(self, callback: object) -> None:
+        try:
+            if callable(callback):
+                callback()
+        except Exception:
+            # Swallow exceptions to avoid crashing the GUI thread.
+            pass
+
+
+_DISPATCHER = _UiDispatcher()
+
+
 def _schedule(callback) -> None:
-    QTimer.singleShot(0, callback)
+    app = QApplication.instance()
+    if app is None:
+        if callable(callback):
+            callback()
+        return
+    _DISPATCHER.trigger.emit(callback)
 
 
 def generate_team_logos_action(
@@ -21,6 +53,31 @@ def generate_team_logos_action(
     parent: Optional[QWidget] = None,
 ) -> None:
     """Generate team logos on a background worker."""
+
+    status_code = get_client_status()
+    status_message = get_client_status_message()
+
+    if status_code in (
+        CLIENT_STATUS_MISSING_DEPENDENCY,
+        CLIENT_STATUS_INIT_FAILED,
+    ):
+        message = status_message or (
+            "OpenAI image generation is unavailable because the OpenAI "
+            "Python package is not installed."
+            if status_code == CLIENT_STATUS_MISSING_DEPENDENCY
+            else "OpenAI client could not be initialised. Check your API key "
+            "and network connection."
+        )
+        if context.show_toast:
+            context.show_toast("error", message)
+        target_parent = parent or QApplication.activeWindow()
+        if target_parent is not None:
+            QMessageBox.warning(
+                target_parent,
+                "OpenAI Not Available",
+                message,
+            )
+        return
 
     if context.show_toast:
         context.show_toast("info", "Generating team logos in background...")
@@ -30,16 +87,20 @@ def generate_team_logos_action(
         "done": 0,
         "total": 0,
         "status": "openai",
+        "completed": False,
+        "status_message": None,
     }
 
     if parent is not None:
-        dialog = QProgressDialog("Generating team logos...", None, 0, 1, parent)
+        dialog = QProgressDialog(
+            "Generating team logos...", None, 0, 1, parent
+        )
         dialog.setWindowTitle("Generating Team Logos")
         dialog.setWindowModality(Qt.WindowModality.WindowModal)
         dialog.setCancelButton(None)
         dialog.setMinimumDuration(0)
-        dialog.setAutoClose(True)
-        dialog.setAutoReset(True)
+        dialog.setAutoClose(False)
+        dialog.setAutoReset(False)
         dialog.setValue(0)
         dialog.show()
         progress_state["dialog"] = dialog
@@ -50,12 +111,36 @@ def generate_team_logos_action(
             return
         done = int(progress_state.get("done", 0) or 0)
         total = int(progress_state.get("total", 0) or 0)
+        completed = bool(progress_state.get("completed"))
         status = progress_state.get("status", "openai")
         label = "Generating team logos..."
+        clamped_done = done
+        if total > 0:
+            clamped_done = max(0, min(done, total))
+            percent = int(round(clamped_done / total * 100))
+            if completed:
+                percent = 100
+            status_text = (
+                "Team logos generated!"
+                if completed
+                else "Generating team logos..."
+            )
+            label = f"{status_text} ({clamped_done}/{total} - {percent}%)"
         if total:
-            label = f"Generating team logos... ({done}/{total})"
+            label = label.strip()
+        elif completed:
+            label = "Team logos generated!"
         if status == "auto_logo":
-            label = f"{label}\nLegacy auto-logo generator in use"
+            status_message = progress_state.get("status_message")
+            detail = (
+                str(status_message).strip()
+                if isinstance(status_message, str)
+                else None
+            )
+            if detail:
+                label = f"{label}\n{detail}"
+            else:
+                label = f"{label}\nLegacy auto-logo generator in use"
         dialog.setLabelText(label)
 
     def close_progress() -> None:
@@ -64,28 +149,40 @@ def generate_team_logos_action(
             dialog.reset()
             dialog.close()
         progress_state["dialog"] = None
+        progress_state["completed"] = False
+        progress_state["status_message"] = None
 
     def progress_cb(done: int, total: int) -> None:
-        if progress_state.get("dialog") is None:
-            return
+        progress_state["done"] = done
+        progress_state["total"] = total
+        progress_state["completed"] = total > 0 and done >= total
 
         def update() -> None:
             dialog = progress_state.get("dialog")
-            if dialog is None:
-                return
-            progress_state["done"] = done
-            progress_state["total"] = total
-            maximum = total if total > 0 else 1
-            if dialog.maximum() != maximum:
-                dialog.setMaximum(maximum)
-            value = max(0, min(done, maximum))
-            dialog.setValue(value)
+            if dialog is not None:
+                if total > 0:
+                    clamped_total = max(1, total)
+                    clamped_done = max(0, min(done, clamped_total))
+                    if (
+                        dialog.minimum() != 0
+                        or dialog.maximum() != clamped_total
+                    ):
+                        dialog.setRange(0, clamped_total)
+                    dialog.setValue(clamped_done)
+                else:
+                    if dialog.minimum() != 0 or dialog.maximum() != 0:
+                        dialog.setRange(0, 0)
+                    dialog.setValue(0)
             update_label()
 
         _schedule(update)
 
     def status_cb(mode: str) -> None:
         progress_state["status"] = mode
+        if mode == "auto_logo":
+            progress_state["status_message"] = get_client_status_message()
+        else:
+            progress_state["status_message"] = None
 
         def update() -> None:
             update_label()
@@ -102,30 +199,72 @@ def generate_team_logos_action(
             def fail() -> None:
                 close_progress()
                 if parent is not None:
-                    QMessageBox.warning(parent, "Logo Generation Failed", str(exc))
+                    QMessageBox.warning(
+                        parent,
+                        "Logo Generation Failed",
+                        str(exc),
+                    )
                 if context.show_toast:
-                    context.show_toast("error", f"Logo generation failed: {exc}")
+                    context.show_toast(
+                        "error",
+                        f"Logo generation failed: {exc}",
+                    )
 
             _schedule(fail)
         else:
             def success() -> None:
-                close_progress()
-                note = None
-                if progress_state.get("status") == "auto_logo":
-                    note = (
-                        "OpenAI client is not configured, so the legacy auto-logo "
-                        "generator was used for these logos."
+                progress_state["completed"] = True
+                dialog = progress_state.get("dialog")
+                if dialog is not None:
+                    total = int(
+                        progress_state.get("total", dialog.maximum()) or 0
                     )
+                    progress_state["done"] = max(
+                        total, int(progress_state.get("done", total) or 0)
+                    )
+                    if total > 0:
+                        dialog.setRange(0, max(1, total))
+                        dialog.setValue(max(1, total))
+                    else:
+                        dialog.setRange(0, 0)
+                        dialog.setValue(0)
+                    update_label()
+                    QTimer.singleShot(1200, close_progress)
+                else:
+                    close_progress()
+                fallback_reason = None
+                if progress_state.get("status") == "auto_logo":
+                    raw_reason = progress_state.get("status_message")
+                    if isinstance(raw_reason, str) and raw_reason.strip():
+                        fallback_reason = raw_reason.strip()
+                    else:
+                        message_hint = get_client_status_message()
+                        if message_hint:
+                            fallback_reason = message_hint
+                        else:
+                            fallback_reason = (
+                                "OpenAI client is not configured, "
+                                "so the legacy auto-logo "
+                                "generator was used for these logos."
+                            )
                 lines = [f"Team logos saved to {out_dir}"]
-                if note:
-                    lines.append(note)
+                if fallback_reason:
+                    lines.append(fallback_reason)
                 message = "\n\n".join(lines)
-                if parent is not None:
-                    QMessageBox.information(parent, "Logos Generated", message)
+                target_parent = parent or QApplication.activeWindow()
+                if target_parent is not None:
+                    QMessageBox.information(
+                        target_parent,
+                        "Logos Generated",
+                        message,
+                    )
                 if context.show_toast:
                     toast_msg = "Team logos generated."
-                    if note:
-                        toast_msg = "Team logos generated using legacy auto-logo fallback."
+                    if fallback_reason:
+                        toast_msg = (
+                            "Team logos generated via fallback: "
+                            f"{fallback_reason}"
+                        )
                     context.show_toast("success", toast_msg)
 
             _schedule(success)
@@ -154,7 +293,10 @@ def generate_player_avatars_action(
         )
 
     if context.show_toast:
-        context.show_toast("info", "Generating player avatars in background...")
+        context.show_toast(
+            "info",
+            "Generating player avatars in background...",
+        )
 
     def worker() -> None:
         try:
@@ -165,15 +307,26 @@ def generate_player_avatars_action(
         except Exception as exc:
             def fail() -> None:
                 if parent is not None:
-                    QMessageBox.warning(parent, "Avatar Generation Failed", str(exc))
+                    QMessageBox.warning(
+                        parent,
+                        "Avatar Generation Failed",
+                        str(exc),
+                    )
                 if context.show_toast:
-                    context.show_toast("error", f"Avatar generation failed: {exc}")
+                    context.show_toast(
+                        "error",
+                        f"Avatar generation failed: {exc}",
+                    )
 
             _schedule(fail)
         else:
             def success() -> None:
                 if parent is not None:
-                    QMessageBox.information(parent, "Avatars Generated", f"Player avatars saved to {out_dir}")
+                    QMessageBox.information(
+                        parent,
+                        "Avatars Generated",
+                        f"Player avatars saved to {out_dir}",
+                    )
                 if context.show_toast:
                     context.show_toast("success", "Player avatars generated.")
 

@@ -90,7 +90,12 @@ def _auto_logo_fallback(
         img = generate_logo(spec, size=1024)
         if size != 1024:
             img = img.resize((size, size), Image.LANCZOS)
-        filename = f"{(spec.abbrev or (spec.location + ' ' + spec.mascot)).replace(' ', '_').lower()}.png"
+        filename = (
+            f"{spec.abbrev or (spec.location + ' ' + spec.mascot)}"
+            .replace(" ", "_")
+            .lower()
+            + ".png"
+        )
         path = out_dir / filename
         save_logo(img, str(path))
         completed += 1
@@ -103,36 +108,50 @@ def _build_openai_prompt(team: object) -> str:
 
     city = getattr(team, "city", "") or ""
     name = getattr(team, "name", "") or ""
-    abbrev = getattr(team, "abbreviation", "") or getattr(team, "team_id", "") or ""
+    abbrev = (
+        getattr(team, "abbreviation", "")
+        or getattr(team, "team_id", "")
+        or ""
+    )
     primary = getattr(team, "primary_color", "")
     secondary = getattr(team, "secondary_color", "")
 
     parts = [
         (
-            "Design a professional baseball team logo for the "
+            "Design a professional illustrated baseball team logo for the "
             f"{city} {name}."
         ),
         (
-            f"Feature the {name} mascot as the hero element with dynamic sports "
-            "energy and incorporate baseball iconography such as a ball, bat, or "
-            "diamond."
+            f"Depict the {name} mascot as a detailed character "
+            "in an energetic baseball action pose, conveying motion and "
+            "intensity."
         ),
         (
-            f"Include a subtle nod to {city} and weave the team initials "
-            f"{abbrev.upper()} into the badge or monogram."
+            "Integrate baseball equipment such as a ball, bat, glove, or "
+            "diamond to reinforce the sport."
         ),
         (
-            "Use modern sports-brand styling with clean vector shapes, bold outlines, "
-            "layered shading, and a balanced composition suitable for merchandise "
-            "and digital use."
+            f"Include a subtle visual nod to {city} and weave the team "
+            f"initials {abbrev.upper()} into the emblem as a supporting "
+            "element."
         ),
         (
-            f"The primary color must be {primary} and the secondary accent color must "
-            f"be {secondary}."
+            "Use modern sports-brand styling with clean vector shapes, bold "
+            "outlines, layered shading, and dramatic lighting suitable for "
+            "merch and digital use."
         ),
         (
-            "Avoid photo-realistic details or busy backgrounds; deliver a polished "
-            "emblem with transparent background aesthetics."
+            f"Apply {primary} as the dominant color with {secondary} accents "
+            "and harmonious contrast."
+        ),
+        (
+            "Avoid typography-first or wordmark-only designs. Do not output "
+            "plain text logos; lettering should remain secondary to the "
+            "illustrated mascot emblem."
+        ),
+        (
+            "Provide a polished emblem with a transparent background "
+            "aesthetic and no busy scenery."
         ),
     ]
     return " ".join(part.strip() for part in parts if part.strip())
@@ -204,6 +223,7 @@ def generate_team_logos(
             model="gpt-image-1",
             prompt=prompt,
             size="1024x1024",
+            background="transparent",
         )
         b64 = result.data[0].b64_json
         image_bytes = base64.b64decode(b64)

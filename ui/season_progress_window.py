@@ -41,7 +41,7 @@ except ImportError:  # pragma: no cover - test stubs
             pass
 
 try:
-    from PyQt6.QtCore import pyqtSignal, QTimer, QThread
+    from PyQt6.QtCore import pyqtSignal, QTimer, QThread, QMetaObject, Qt, Q_ARG
 except Exception:  # pragma: no cover - fallback for headless tests
     class _DummySignal:
         def __init__(self, *args, **kwargs):
@@ -60,6 +60,17 @@ except Exception:  # pragma: no cover - fallback for headless tests
         def singleShot(ms: int, callback: Callable[[], None]) -> None:
             callback()
     QThread = None  # type: ignore
+    class QMetaObject:  # type: ignore
+        @staticmethod
+        def invokeMethod(*args, **kwargs):
+            pass
+
+    class Qt:  # type: ignore
+        class ConnectionType:
+            QueuedConnection = None
+
+    def Q_ARG(_type, value):  # type: ignore
+        return value
 
 try:  # pragma: no cover - fallback for environments without PyQt6
     from PyQt6.QtWidgets import QApplication
@@ -107,6 +118,25 @@ TEAMS_FILE = DATA_DIR / "teams.csv"
 SCHEDULE_FILE = DATA_DIR / "schedule.csv"
 PROGRESS_FILE = DATA_DIR / "season_progress.json"
 
+BUTTON_STYLE = """
+QPushButton {
+    background-color: #5c3b18;
+    color: #f6e8d3;
+    border: 2px solid #d4a76a;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+QPushButton:pressed {
+    background-color: #4a2f12;
+}
+QPushButton:disabled {
+    background-color: #2f2315;
+    color: #a68d6b;
+    border: 2px solid #523d24;
+}
+"""
+
 
 class SeasonProgressWindow(QDialog):
     """Dialog displaying the current season phase and progress notes."""
@@ -129,7 +159,8 @@ class SeasonProgressWindow(QDialog):
         super().__init__(parent)
         try:
             self.setWindowTitle("Season Progress")
-            self.setMinimumSize(320, 280)
+            self.setMinimumSize(420, 640)
+            self.resize(420, 640)
         except Exception:  # pragma: no cover - harmless in headless tests
             pass
 
@@ -268,23 +299,38 @@ class SeasonProgressWindow(QDialog):
         self.simulate_month_button.clicked.connect(self._simulate_month)
         layout.addWidget(self.simulate_month_button)
 
-        self.cancel_sim_button = QPushButton("Cancel Simulation")
-        self.cancel_sim_button.setEnabled(False)
-        self.cancel_sim_button.clicked.connect(self._request_cancel_simulation)
-        layout.addWidget(self.cancel_sim_button)
+        self.simulate_to_draft_button = QPushButton("Simulate to Draft Day")
+        self.simulate_to_draft_button.clicked.connect(self._simulate_to_draft)
+        layout.addWidget(self.simulate_to_draft_button)
+
+        self.simulate_to_playoffs_button = QPushButton("Simulate to Playoffs")
+        self.simulate_to_playoffs_button.clicked.connect(self._simulate_to_playoffs)
+        layout.addWidget(self.simulate_to_playoffs_button)
 
         # Maintenance tool: repair/auto-fill lineups
         self.repair_lineups_button = QPushButton("Repair Lineups")
         self.repair_lineups_button.clicked.connect(self._repair_lineups)
         layout.addWidget(self.repair_lineups_button)
 
-        self.simulate_phase_button = QPushButton("Simulate to Next Phase")
-        self.simulate_phase_button.clicked.connect(self._simulate_to_next_phase)
-        layout.addWidget(self.simulate_phase_button)
-
         self.next_button = QPushButton("Next Phase")
         self.next_button.clicked.connect(self._next_phase)
         layout.addWidget(self.next_button)
+
+        self.cancel_sim_button = QPushButton("Cancel Simulation")
+        self.cancel_sim_button.clicked.connect(self._request_cancel_simulation)
+        layout.addWidget(self.cancel_sim_button)
+
+        self.done_button = QPushButton("Done")
+        self.done_button.clicked.connect(self.close)
+        layout.addWidget(self.done_button)
+
+        self._apply_button_styles()
+        self._set_button_state(
+            self.cancel_sim_button,
+            False,
+            "No simulation is currently running.",
+        )
+        self._set_button_state(self.done_button, True, "")
 
         self._sim_status_text: Optional[str] = None
         try:
@@ -415,6 +461,117 @@ class SeasonProgressWindow(QDialog):
         pending = len(dates) - index
         return pending if pending > 0 else 0
 
+    def _apply_button_styles(self) -> None:
+        buttons = [
+            getattr(self, "free_agency_button", None),
+            getattr(self, "training_camp_button", None),
+            getattr(self, "generate_schedule_button", None),
+            getattr(self, "simulate_day_button", None),
+            getattr(self, "simulate_week_button", None),
+            getattr(self, "simulate_month_button", None),
+            getattr(self, "simulate_to_draft_button", None),
+            getattr(self, "simulate_to_playoffs_button", None),
+            getattr(self, "repair_lineups_button", None),
+            getattr(self, "next_button", None),
+            getattr(self, "cancel_sim_button", None),
+            getattr(self, "done_button", None),
+        ]
+        for btn in buttons:
+            if btn is None:
+                continue
+            try:
+                btn.setStyleSheet(BUTTON_STYLE)
+            except Exception:
+                pass
+
+    def _set_button_state(
+        self,
+        button,
+        enabled: bool,
+        tooltip_disabled: str = "",
+    ) -> None:
+        if button is None:
+            return
+        gui_thread = None
+        current_thread = None
+        if QThread is not None:
+            try:
+                gui_thread = self.thread()
+                current_thread = QThread.currentThread()
+            except Exception:
+                gui_thread = None
+                current_thread = None
+        if (
+            gui_thread is not None
+            and current_thread is not None
+            and gui_thread != current_thread
+        ):
+            tooltip_text = "" if enabled else (tooltip_disabled or "")
+            try:
+                conn_parent = getattr(Qt, "ConnectionType", Qt)
+                conn = getattr(conn_parent, "QueuedConnection", None)
+                if conn is None:
+                    raise AttributeError
+                QMetaObject.invokeMethod(
+                    button,
+                    "setEnabled",
+                    conn,
+                    Q_ARG(bool, bool(enabled)),
+                )
+                QMetaObject.invokeMethod(
+                    button,
+                    "setToolTip",
+                    conn,
+                    Q_ARG(str, tooltip_text),
+                )
+                return
+            except Exception:
+                try:
+                    QTimer.singleShot(
+                        0, lambda: self._set_button_state(button, enabled, tooltip_disabled)
+                    )
+                except Exception:
+                    pass
+                return
+        try:
+            button.setEnabled(enabled)
+            if enabled:
+                button.setToolTip("")
+            else:
+                button.setToolTip(tooltip_disabled or "")
+        except Exception:
+            pass
+
+    def _draft_completed_for_current_year(self) -> bool:
+        """Return True when the current season's draft is recorded complete."""
+        draft_date = getattr(self, "_draft_date", None)
+        if not draft_date:
+            return True
+        try:
+            draft_year = int(str(draft_date).split("-")[0])
+        except Exception:
+            draft_year = None
+
+        if getattr(self.simulator, "_draft_triggered", False):
+            return True
+
+        if draft_year is None:
+            return False
+
+        try:
+            if PROGRESS_FILE.exists():
+                progress = json.loads(PROGRESS_FILE.read_text(encoding="utf-8") or "{}")
+            else:
+                progress = {}
+        except Exception:
+            return False
+        completed = progress.get("draft_completed_years", [])
+        try:
+            completed_years = {int(year) for year in completed}
+        except Exception:
+            completed_years = set()
+        return draft_year in completed_years
+
     def _on_draft_day(self, date_str: str) -> None:
         """Handle Draft Day and block further simulation until committed.
 
@@ -506,10 +663,11 @@ class SeasonProgressWindow(QDialog):
                 self._active_future.cancel()
             except Exception:
                 pass
-        try:
-            self.cancel_sim_button.setEnabled(False)
-        except Exception:
-            pass
+        self._set_button_state(
+            self.cancel_sim_button,
+            False,
+            "No simulation is currently running.",
+        )
         if self._executor is not None:
             try:
                 self._executor.shutdown(wait=False)
@@ -566,7 +724,8 @@ class SeasonProgressWindow(QDialog):
         self.simulate_day_button.setVisible(is_regular)
         self.simulate_week_button.setVisible(is_regular)
         self.simulate_month_button.setVisible(is_regular)
-        self.simulate_phase_button.setVisible(is_regular or is_playoffs)
+        self.simulate_to_draft_button.setVisible(is_regular)
+        self.simulate_to_playoffs_button.setVisible(is_regular or is_playoffs)
         self.repair_lineups_button.setVisible(is_regular)
         playoffs_bracket = bracket
         if is_regular:
@@ -578,6 +737,12 @@ class SeasonProgressWindow(QDialog):
                 draft_remaining = 0
             total_remaining = self._remaining_regular_days()
             calendar_remaining = self._pending_calendar_days()
+            draft_pending = (
+                calendar_remaining > 0
+                and getattr(self.simulator, "draft_date", None)
+                and not getattr(self.simulator, "_draft_triggered", False)
+            )
+            draft_done = self._draft_completed_for_current_year()
             if total_remaining > 0:
                 if mid_remaining > 0:
                     label_text = f"Days until Midseason: {mid_remaining}"
@@ -596,36 +761,116 @@ class SeasonProgressWindow(QDialog):
             phase_pending = has_games or (
                 self._show_calendar_countdown and calendar_remaining > 0
             )
-            self.simulate_day_button.setEnabled(has_games)
-            self.simulate_week_button.setEnabled(has_games)
-            self.simulate_month_button.setEnabled(has_games)
-            self.simulate_phase_button.setEnabled(phase_pending)
-            if has_games:
-                if mid_remaining > 0:
-                    self.simulate_phase_button.setText("Simulate to Midseason")
-                elif draft_remaining > 0:
-                    self.simulate_phase_button.setText("Simulate to Draft")
-                else:
-                    self.simulate_phase_button.setText("Simulate to Playoffs")
-            else:
-                self.simulate_phase_button.setText("Simulate to Playoffs")
-            season_done = not phase_pending
-            self.next_button.setEnabled(season_done)
-        elif is_preseason:
-            self.free_agency_button.setEnabled(
-                not self._preseason_done["free_agency"]
+            no_games_reason = (
+                "No regular season games remain."
+                if not has_games and calendar_remaining <= 0
+                else "No games are scheduled before the next phase."
             )
-            self.training_camp_button.setEnabled(
+            draft_lock_reason = "Draft Day is underway; complete the draft before continuing."
+            draft_locked = bool(
+                getattr(self.simulator, "_draft_triggered", False)
+                and not draft_done
+            )
+            self._set_button_state(
+                self.simulate_day_button,
+                has_games and not draft_locked,
+                draft_lock_reason if draft_locked else no_games_reason,
+            )
+            self._set_button_state(
+                self.simulate_week_button,
+                has_games and not draft_locked,
+                draft_lock_reason if draft_locked else no_games_reason,
+            )
+            self._set_button_state(
+                self.simulate_month_button,
+                has_games and not draft_locked,
+                draft_lock_reason if draft_locked else no_games_reason,
+            )
+            draft_available = (draft_remaining > 0 or draft_pending) and not draft_done
+            if not draft_available:
+                if draft_done:
+                    draft_reason = "Draft Day already completed for this season."
+                elif getattr(self.simulator, "draft_date", None) is None:
+                    draft_reason = "No Draft Day is scheduled on the calendar."
+                else:
+                    draft_reason = "No remaining schedule before Draft Day."
+            else:
+                draft_reason = ""
+            self._set_button_state(
+                self.simulate_to_draft_button,
+                draft_available and not draft_locked,
+                draft_lock_reason if draft_locked else draft_reason,
+            )
+            self.simulate_to_playoffs_button.setText("Simulate to Playoffs")
+            playoffs_blocked = (
+                getattr(self.simulator, "draft_date", None) is not None and not draft_done
+            )
+            playoffs_available = (has_games or calendar_remaining > 0) and not playoffs_blocked
+            if playoffs_blocked:
+                playoffs_reason = "Complete Draft Day before simulating to the playoffs."
+            elif not (has_games or calendar_remaining > 0):
+                playoffs_reason = "There is no remaining schedule to simulate."
+            else:
+                playoffs_reason = ""
+            self._set_button_state(
+                self.simulate_to_playoffs_button,
+                playoffs_available and has_any and not draft_locked,
+                draft_lock_reason if draft_locked else playoffs_reason,
+            )
+            season_done = (not phase_pending) and not draft_locked
+            self._set_button_state(
+                self.next_button,
+                season_done,
+                "Finish the current phase before advancing.",
+            )
+        elif is_preseason:
+            free_agency_enabled = not self._preseason_done["free_agency"]
+            self._set_button_state(
+                self.free_agency_button,
+                free_agency_enabled,
+                "Free agency review already completed.",
+            )
+            training_enabled = (
                 self._preseason_done["free_agency"]
                 and not self._preseason_done["training_camp"]
             )
-            self.generate_schedule_button.setEnabled(
+            training_reason = (
+                "Complete free agency tasks before running training camp."
+                if not self._preseason_done["free_agency"]
+                else "Training camp already completed."
+            )
+            self._set_button_state(
+                self.training_camp_button,
+                training_enabled,
+                training_reason,
+            )
+            schedule_enabled = (
                 self._preseason_done["training_camp"]
                 and not self._preseason_done["schedule"]
             )
-            self.simulate_phase_button.setEnabled(False)
-            self.next_button.setEnabled(self._preseason_done["schedule"])
+            if not self._preseason_done["training_camp"]:
+                schedule_reason = "Finish training camp before generating the schedule."
+            elif self._preseason_done["schedule"]:
+                schedule_reason = "Schedule generation already completed."
+            else:
+                schedule_reason = ""
+            self._set_button_state(
+                self.generate_schedule_button,
+                schedule_enabled,
+                schedule_reason,
+            )
+            self._set_button_state(
+                self.next_button,
+                self._preseason_done["schedule"],
+                "Finish preseason setup before advancing.",
+            )
         elif is_playoffs:
+            self.simulate_day_button.setVisible(False)
+            self.simulate_week_button.setVisible(False)
+            self.simulate_month_button.setVisible(False)
+            self.simulate_to_draft_button.setVisible(False)
+            self.repair_lineups_button.setVisible(False)
+            self.simulate_to_playoffs_button.setVisible(True)
             # If a completed bracket already exists (e.g., simulated via Playoffs Viewer),
             # recognize it and flip the playoffs-done flag so the UI advances without
             # requiring another simulation pass here. If no explicit champion is stored
@@ -675,24 +920,42 @@ class SeasonProgressWindow(QDialog):
             playoffs_done_effective = self._playoffs_done or self._playoffs_override_done
             if playoffs_done_effective:
                 self.remaining_label.setText("Playoffs complete.")
+                playoffs_reason = "Playoff bracket already completed."
             else:
                 self.remaining_label.setText("Playoffs underway; simulate to continue.")
-            self.simulate_phase_button.setText("Simulate Playoffs")
-            self.simulate_phase_button.setEnabled(not playoffs_done_effective)
-            self.next_button.setEnabled(playoffs_done_effective)
+                playoffs_reason = ""
+            self.simulate_to_playoffs_button.setText("Simulate Playoffs")
+            self.simulate_to_playoffs_button.setVisible(True)
+            self._set_button_state(
+                self.simulate_to_playoffs_button,
+                not playoffs_done_effective,
+                playoffs_reason or "Playoff bracket results already recorded.",
+            )
+            self._set_button_state(
+                self.next_button,
+                playoffs_done_effective,
+                "Complete the playoffs before advancing.",
+            )
         elif is_draft:
             # During draft, hide simulation controls; user manages the draft via Draft Console
             self.remaining_label.setVisible(False)
-            self.simulate_phase_button.setVisible(False)
             self.simulate_day_button.setVisible(False)
             self.simulate_week_button.setVisible(False)
             self.simulate_month_button.setVisible(False)
             self.repair_lineups_button.setVisible(False)
-            self.next_button.setEnabled(False)
+            self._set_button_state(
+                self.next_button,
+                False,
+                "Draft operations must finish before advancing.",
+            )
         else:
             self.remaining_label.setVisible(False)
-            self.simulate_phase_button.setVisible(False)
-            self.next_button.setEnabled(True)
+            self._set_button_state(self.next_button, True)
+        self._set_button_state(
+            self.done_button,
+            self._active_future is None,
+            "Simulation is running; wait for it to finish.",
+        )
         # Timeline reflects updated status after any UI refresh.
         self._refresh_timeline(bracket=playoffs_bracket)
 
@@ -1091,7 +1354,11 @@ class SeasonProgressWindow(QDialog):
             self.notes_label.setText("No unsigned players available.")
             log_news_event("No unsigned players available")
 
-        self.free_agency_button.setEnabled(False)
+        self._set_button_state(
+            self.free_agency_button,
+            False,
+            "Free agency review already completed.",
+        )
         self._preseason_done["free_agency"] = True
         message = (
             f"Unsigned Players: {names}" if agents else "No unsigned players available."
@@ -1113,7 +1380,11 @@ class SeasonProgressWindow(QDialog):
         run_training_camp(players.values())
         self.notes_label.setText("Training camp completed. Players marked ready.")
         log_news_event("Training camp completed; players marked ready")
-        self.training_camp_button.setEnabled(False)
+        self._set_button_state(
+            self.training_camp_button,
+            False,
+            "Training camp already completed.",
+        )
         self._preseason_done["training_camp"] = True
         self._save_progress()
         self._update_ui("Training camp completed. Players marked ready.")
@@ -1159,7 +1430,11 @@ class SeasonProgressWindow(QDialog):
             )
         message = f"Schedule generated with {len(schedule)} games."
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
-        self.generate_schedule_button.setEnabled(False)
+        self._set_button_state(
+            self.generate_schedule_button,
+            False,
+            "Schedule generation already completed.",
+        )
         self._preseason_done["schedule"] = True
         self._save_progress()
         self._update_ui(message)
@@ -1261,10 +1536,16 @@ class SeasonProgressWindow(QDialog):
             return
         self._cancel_requested = True
         self._set_simulation_status("Cancelling simulation in progress...")
-        try:
-            self.cancel_sim_button.setEnabled(False)
-        except Exception:
-            pass
+        self._set_button_state(
+            self.cancel_sim_button,
+            False,
+            "Cancellation request sent; waiting for simulation to stop.",
+        )
+        self._set_button_state(
+            self.done_button,
+            False,
+            "Wait for the simulation to stop before closing.",
+        )
         if hasattr(self._active_future, "cancel"):
             try:
                 self._active_future.cancel()
@@ -1275,6 +1556,12 @@ class SeasonProgressWindow(QDialog):
 
     def _simulate_span_async(self, days: int, label: str) -> None:
         if self._remaining_regular_days() <= 0:
+            return
+        if (
+            getattr(self.simulator, "_draft_triggered", False)
+            and not self._draft_completed_for_current_year()
+        ):
+            self._set_simulation_status("Draft Day in progress. Complete the draft before continuing.")
             return
         if not self._ensure_valid_schedule_teams():
             return
@@ -1302,10 +1589,20 @@ class SeasonProgressWindow(QDialog):
             return
 
         self._set_sim_buttons_enabled(False)
+        self._set_button_state(
+            self.cancel_sim_button,
+            True,
+            "",
+        )
         try:
-            self.cancel_sim_button.setEnabled(True)
+            self.cancel_sim_button.setToolTip("Cancel the simulation currently in progress.")
         except Exception:
             pass
+        self._set_button_state(
+            self.done_button,
+            False,
+            "A simulation is running; wait for it to finish.",
+        )
 
         def publish_progress(done: int, *, cancelling: bool = False) -> None:
             text = self._format_simulation_progress(label, done, total_goal)
@@ -1392,10 +1689,16 @@ class SeasonProgressWindow(QDialog):
                 result = ("error", str(exc))
 
             def finish() -> None:
-                try:
-                    self.cancel_sim_button.setEnabled(False)
-                except Exception:
-                    pass
+                self._set_button_state(
+                    self.cancel_sim_button,
+                    False,
+                    "No simulation is currently running.",
+                )
+                self._set_button_state(
+                    self.done_button,
+                    True,
+                    "",
+                )
                 kind, payload = result
                 if kind == "error":
                     error_text = str(payload)
@@ -1420,20 +1723,6 @@ class SeasonProgressWindow(QDialog):
                         payload.get("upcoming", []),
                         was_cancelled,
                     )
-                try:
-                    has_games = self._remaining_regular_days() > 0
-                except Exception:
-                    has_games = True
-                try:
-                    has_any = self._pending_calendar_days() > 0
-                except Exception:
-                    has_any = has_games
-                self._set_sim_buttons_enabled(has_games)
-                if has_any and not has_games:
-                    try:
-                        self.simulate_phase_button.setEnabled(True)
-                    except Exception:
-                        pass
                 if self._show_toast:
                     if warning is not None:
                         toast_kind = "error"
@@ -1443,6 +1732,10 @@ class SeasonProgressWindow(QDialog):
                         toast_kind = "success"
                     self._show_toast(toast_kind, message)
                 self._active_future = None
+                try:
+                    self._set_button_state(self.done_button, True, "")
+                except Exception:
+                    pass
 
             if QThread is None:
                 finish()
@@ -1465,16 +1758,18 @@ class SeasonProgressWindow(QDialog):
             handle_result(type("_Immediate", (), {"result": lambda self: future})())
 
     def _set_sim_buttons_enabled(self, enabled: bool) -> None:
+        reason = "A simulation is already running. Please wait for it to finish."
         for btn in (
             self.simulate_day_button,
             self.simulate_week_button,
             self.simulate_month_button,
-            self.simulate_phase_button,
+            self.simulate_to_draft_button,
+            self.simulate_to_playoffs_button,
+            self.repair_lineups_button,
         ):
-            try:
-                btn.setEnabled(enabled)
-            except Exception:
-                pass
+            self._set_button_state(btn, enabled, reason)
+        if not enabled:
+            self._set_button_state(self.next_button, False, reason)
 
     def _finalize_span(
         self,
@@ -1576,6 +1871,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
+        self._set_button_state(self.done_button, True, "")
         if force_season_end and total_remaining > 0:
             try:
                 self.remaining_label.setText(
@@ -1589,25 +1885,12 @@ class SeasonProgressWindow(QDialog):
         except Exception:
             pass
         try:
-            self.simulate_phase_button.setEnabled(
-                total_remaining > 0
-                or (self._show_calendar_countdown and calendar_remaining > 0)
+            has_remaining = total_remaining > 0 or (self._show_calendar_countdown and calendar_remaining > 0)
+            self._set_button_state(
+                self.next_button,
+                not has_remaining,
+                "Finish the current phase before advancing.",
             )
-        except Exception:
-            pass
-        try:
-            if total_remaining > 0 or (self._show_calendar_countdown and calendar_remaining > 0):
-                self.next_button.setEnabled(False)
-            else:
-                self.next_button.setEnabled(True)
-        except Exception:
-            pass
-        try:
-            self.simulate_week_button.setEnabled(total_remaining > 0)
-        except Exception:
-            pass
-        try:
-            self.simulate_month_button.setEnabled(total_remaining > 0)
         except Exception:
             pass
 
@@ -1671,48 +1954,99 @@ class SeasonProgressWindow(QDialog):
         )
         log_news_event(msg, category="game_recap")
 
-    def _simulate_to_next_phase(self) -> None:
-        """Simulate games until the current phase can advance."""
+    def _simulate_to_draft(self) -> None:
+        """Simulate until Draft Day arrives."""
+        self._simulate_to_next_phase(target="draft")
+
+    def _simulate_to_playoffs(self) -> None:
+        """Simulate the remainder of the regular season or playoffs bracket."""
+        if self.manager.phase == SeasonPhase.PLAYOFFS:
+            self._simulate_playoffs()
+            return
+        self._simulate_to_next_phase(target="playoffs")
+
+    def _simulate_to_next_phase(self, target: str | None = None) -> None:
+        """Simulate games until the requested phase can advance."""
         if self.manager.phase == SeasonPhase.REGULAR_SEASON:
-            mid_remaining = self.simulator.remaining_days()
-            if mid_remaining > 0:
-                self._simulate_span(mid_remaining, "Midseason")
-                return
-            draft_remaining = self._days_until_draft()
-            total_remaining = self._remaining_regular_days()
-            calendar_remaining = self._pending_calendar_days()
-            draft_pending = (
-                calendar_remaining > 0
-                and getattr(self.simulator, "draft_date", None)
-                and not getattr(self.simulator, "_draft_triggered", False)
-            )
-            if draft_remaining > 0 or draft_pending:
-                span = draft_remaining if draft_remaining > 0 else calendar_remaining
-                if span > 0:
-                    self._simulate_span(span, "Draft")
-                    if (
-                        draft_remaining == 0
-                        and self._remaining_regular_days() <= 0
-                        and self._pending_calendar_days() > 0
-                    ):
-                        try:
-                            setattr(self.simulator, "_draft_triggered", True)
-                            if hasattr(self.simulator, "dates"):
-                                self.simulator._index = len(self.simulator.dates)
-                        except Exception:
-                            pass
-                        self._show_calendar_countdown = False
-                        try:
-                            self._save_progress()
-                        except Exception:
-                            pass
-                        self._update_ui()
-                return
-            if total_remaining <= 0:
-                return
-            self._simulate_span(total_remaining, "Regular Season")
+            self._simulate_regular_season(target)
         elif self.manager.phase == SeasonPhase.PLAYOFFS:
             self._simulate_playoffs()
+
+    def _simulate_regular_season(self, target: str | None) -> None:
+        mid_remaining = self.simulator.remaining_days()
+        draft_remaining = self._days_until_draft()
+        total_remaining = self._remaining_regular_days()
+        calendar_remaining = self._pending_calendar_days()
+        draft_pending = (
+            calendar_remaining > 0
+            and getattr(self.simulator, "draft_date", None)
+            and not getattr(self.simulator, "_draft_triggered", False)
+        )
+
+        if target == "draft":
+            self._simulate_until_draft(draft_remaining, draft_pending)
+            return
+
+        if target == "playoffs":
+            self._simulate_until_playoffs(total_remaining, calendar_remaining)
+            return
+
+        if mid_remaining > 0:
+            self._simulate_span(mid_remaining, "Midseason")
+            return
+        if draft_remaining > 0 or draft_pending:
+            self._simulate_until_draft(draft_remaining, draft_pending)
+            return
+        if total_remaining <= 0:
+            return
+        self._simulate_until_playoffs(total_remaining, calendar_remaining)
+
+    def _simulate_until_draft(
+        self,
+        draft_remaining: int,
+        draft_pending: bool,
+    ) -> None:
+        if draft_remaining <= 0 and not draft_pending:
+            return
+        if draft_remaining > 0:
+            span = draft_remaining + 1
+        elif draft_pending:
+            span = 1
+        else:
+            span = 0
+        if span <= 0:
+            return
+        self._simulate_span(span, "Draft")
+        if (
+            draft_pending
+            and draft_remaining == 0
+            and self._remaining_regular_days() <= 0
+            and self._pending_calendar_days() > 0
+        ):
+            try:
+                setattr(self.simulator, "_draft_triggered", True)
+                if hasattr(self.simulator, "dates"):
+                    self.simulator._index = len(self.simulator.dates)
+            except Exception:
+                pass
+            self._show_calendar_countdown = False
+            try:
+                self._save_progress()
+            except Exception:
+                pass
+            self._update_ui()
+
+    def _simulate_until_playoffs(
+        self,
+        total_remaining: int,
+        calendar_remaining: int,
+    ) -> None:
+        if total_remaining <= 0 and calendar_remaining <= 0:
+            return
+        span = total_remaining if total_remaining > 0 else calendar_remaining
+        if span <= 0:
+            return
+        self._simulate_span(span, "Regular Season")
 
     def _simulate_week(self) -> None:
         """Simulate the next seven days or until the break."""
@@ -1906,7 +2240,7 @@ class SeasonProgressWindow(QDialog):
                 self._save_progress()
             except Exception:
                 pass
-            self.next_button.setEnabled(True)
+            self._set_button_state(self.next_button, True)
             self._set_simulation_status(f"Playoffs simulation failed: {message}")
             if self._show_toast:
                 self._show_toast("error", message)
@@ -1915,20 +2249,13 @@ class SeasonProgressWindow(QDialog):
                 self.remaining_label.setText("Playoffs complete.")
             except Exception:
                 pass
-            try:
-                self.simulate_phase_button.setEnabled(False)
-            except Exception:
-                pass
-            try:
-                self.next_button.setEnabled(True)
-            except Exception:
-                pass
+            self._set_button_state(self.next_button, True)
             return
 
         if status == "engine_missing":
             QMessageBox.information(self, "Playoffs Simulation", message)
             self._set_playoff_controls_enabled(False)
-            self.next_button.setEnabled(True)
+            self._set_button_state(self.next_button, True)
             log_news_event(message)
             self._set_simulation_status(message)
             if self._show_toast:
@@ -1938,7 +2265,7 @@ class SeasonProgressWindow(QDialog):
 
         if status == "already_complete":
             self._set_playoff_controls_enabled(False)
-            self.next_button.setEnabled(True)
+            self._set_button_state(self.next_button, True)
             log_news_event(message)
             self._set_simulation_status(message)
             if self._show_toast:
@@ -1957,7 +2284,7 @@ class SeasonProgressWindow(QDialog):
             self._write_champions_record(bracket, series_result)
 
         self._set_playoff_controls_enabled(False)
-        self.next_button.setEnabled(True)
+        self._set_button_state(self.next_button, True)
         log_news_event(message)
         if self._show_toast:
             self._show_toast("success", message)
@@ -1965,15 +2292,10 @@ class SeasonProgressWindow(QDialog):
         self._update_ui(message, bracket=bracket)
 
     def _set_playoff_controls_enabled(self, enabled: bool) -> None:
-        try:
-            self.simulate_phase_button.setEnabled(enabled)
-        except Exception:
-            pass
+        reason = "Playoff simulation already running. Please wait for it to finish."
+        self._set_button_state(self.simulate_to_playoffs_button, enabled, reason)
         if not enabled:
-            try:
-                self.next_button.setEnabled(False)
-            except Exception:
-                pass
+            self._set_button_state(self.next_button, False, "Playoffs must complete before advancing.")
 
     def _write_champions_record(self, bracket, series_result: str) -> None:
         try:
