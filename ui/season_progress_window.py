@@ -62,8 +62,13 @@ except Exception:  # pragma: no cover - fallback for headless tests
     QThread = None  # type: ignore
     class QMetaObject:  # type: ignore
         @staticmethod
-        def invokeMethod(*args, **kwargs):
-            pass
+        def invokeMethod(obj, method, connection=None, *args):
+            fn = getattr(obj, method, None)
+            if callable(fn):
+                try:
+                    fn(*args)
+                except Exception:
+                    pass
 
     class Qt:  # type: ignore
         class ConnectionType:
@@ -80,6 +85,7 @@ except ImportError:  # pragma: no cover - simple stub for tests
         def processEvents() -> None:  # pragma: no cover - no-op
             pass
 from datetime import date
+from threading import Event
 import csv
 import json
 from pathlib import Path
@@ -340,7 +346,9 @@ class SeasonProgressWindow(QDialog):
             pass
         self._show_calendar_countdown = False
         self._playoffs_override_done = False
+        self._draft_blocked = False
         self._set_simulation_status(None)
+        self._draft_pause_requested = False
         self._update_ui()
 
     # ------------------------------------------------------------------
@@ -484,6 +492,42 @@ class SeasonProgressWindow(QDialog):
             except Exception:
                 pass
 
+    def _invoke_on_gui_thread(self, fn) -> None:
+        if fn is None:
+            return
+        if QThread is None:
+            fn()
+            return
+        try:
+            gui_thread = self.thread()
+            current_thread = QThread.currentThread()
+        except Exception:
+            gui_thread = None
+            current_thread = None
+        if gui_thread is None or current_thread is None or gui_thread == current_thread:
+            fn()
+            return
+        try:
+            conn_parent = getattr(Qt, "ConnectionType", Qt)
+            connection = getattr(conn_parent, "QueuedConnection", None)
+            if connection is None:
+                raise AttributeError
+            QMetaObject.invokeMethod(
+                self,
+                "_execute_callable",
+                connection,
+                Q_ARG(object, fn),
+            )
+        except Exception:
+            QTimer.singleShot(0, fn)
+
+    def _execute_callable(self, fn) -> None:  # pragma: no cover - GUI thread helper
+        try:
+            if callable(fn):
+                fn()
+        except Exception:
+            pass
+
     def _set_button_state(
         self,
         button,
@@ -492,55 +536,16 @@ class SeasonProgressWindow(QDialog):
     ) -> None:
         if button is None:
             return
-        gui_thread = None
-        current_thread = None
-        if QThread is not None:
+        tooltip_text = "" if enabled else (tooltip_disabled or "")
+
+        def apply() -> None:
             try:
-                gui_thread = self.thread()
-                current_thread = QThread.currentThread()
+                button.setEnabled(enabled)
+                button.setToolTip(tooltip_text)
             except Exception:
-                gui_thread = None
-                current_thread = None
-        if (
-            gui_thread is not None
-            and current_thread is not None
-            and gui_thread != current_thread
-        ):
-            tooltip_text = "" if enabled else (tooltip_disabled or "")
-            try:
-                conn_parent = getattr(Qt, "ConnectionType", Qt)
-                conn = getattr(conn_parent, "QueuedConnection", None)
-                if conn is None:
-                    raise AttributeError
-                QMetaObject.invokeMethod(
-                    button,
-                    "setEnabled",
-                    conn,
-                    Q_ARG(bool, bool(enabled)),
-                )
-                QMetaObject.invokeMethod(
-                    button,
-                    "setToolTip",
-                    conn,
-                    Q_ARG(str, tooltip_text),
-                )
-                return
-            except Exception:
-                try:
-                    QTimer.singleShot(
-                        0, lambda: self._set_button_state(button, enabled, tooltip_disabled)
-                    )
-                except Exception:
-                    pass
-                return
-        try:
-            button.setEnabled(enabled)
-            if enabled:
-                button.setToolTip("")
-            else:
-                button.setToolTip(tooltip_disabled or "")
-        except Exception:
-            pass
+                pass
+
+        self._invoke_on_gui_thread(apply)
 
     def _draft_completed_for_current_year(self) -> bool:
         """Return True when the current season's draft is recorded complete."""
@@ -570,7 +575,10 @@ class SeasonProgressWindow(QDialog):
             completed_years = {int(year) for year in completed}
         except Exception:
             completed_years = set()
-        return draft_year in completed_years
+        if draft_year in completed_years:
+            self._draft_blocked = False
+            return True
+        return False
 
     def _on_draft_day(self, date_str: str) -> None:
         """Handle Draft Day and block further simulation until committed.
@@ -598,57 +606,63 @@ class SeasonProgressWindow(QDialog):
                 progress = {}
         completed = set(progress.get("draft_completed_years", []))
         if year in completed:
+            self._draft_blocked = False
             return
 
-        # Enter Amateur Draft phase in the manager/UI
-        try:
-            self.manager.phase = SeasonPhase.AMATEUR_DRAFT
-            self.manager.save()
-            self._update_ui("Amateur Draft Day: paused for draft operations.")
-        except Exception:
-            # Even if UI update fails, still enforce blocking via exception
-            pass
+        self._draft_blocked = True
 
-        # Open Draft Console and require commit before resuming
-        try:
-            dlg = DraftConsole(date_str, self)
-            dlg.exec()
-            summary = dict(getattr(dlg, "assignment_summary", {}) or {})
-            failures = list(summary.get("failures") or [])
-            # If no commit occurred, require it before resuming
-            if not summary:
-                failures = [
-                    "Draft results must be committed before resuming the season."
-                ]
-            # Only hard failures block the season. Compliance issues are surfaced
-            # as warnings but do not prevent marking the draft complete.
-            if failures:
-                raise DraftRosterError(failures, summary)
+        result: dict[str, object] = {}
+        finished = Event()
 
-            # Mark draft completed for the year and return to regular season
-            completed.add(year)
-            progress["draft_completed_years"] = sorted(completed)
+        def run_console() -> None:
             try:
-                PROGRESS_FILE.write_text(
-                    _json.dumps(progress, indent=2), encoding="utf-8"
-                )
-            except Exception:
-                # If persistence fails, block progression to avoid skipping the draft
-                raise DraftRosterError(["Failed to persist draft completion."], summary)
-            try:
-                self.manager.phase = SeasonPhase.REGULAR_SEASON
-                self.manager.save()
+                try:
+                    self.manager.phase = SeasonPhase.AMATEUR_DRAFT
+                    self.manager.save()
+                except Exception:
+                    pass
+                self._draft_pause_requested = True
+                self._update_ui("Amateur Draft Day: paused for draft operations.")
+
+                dlg = DraftConsole(date_str, self)
+                dlg.exec()
+                summary = dict(getattr(dlg, "assignment_summary", {}) or {})
+                failures = list(summary.get("failures") or [])
+                if not summary:
+                    failures = [
+                        "Draft results must be committed before resuming the season."
+                    ]
+                if failures:
+                    raise DraftRosterError(failures, summary)
+
+                completed.add(year)
+                progress["draft_completed_years"] = sorted(completed)
+                try:
+                    PROGRESS_FILE.write_text(
+                        _json.dumps(progress, indent=2), encoding="utf-8"
+                    )
+                except Exception:
+                    raise DraftRosterError(["Failed to persist draft completion."], summary)
+                try:
+                    self.manager.phase = SeasonPhase.REGULAR_SEASON
+                    self.manager.save()
+                except Exception:
+                    pass
+                self._draft_blocked = False
                 self._update_ui("Draft committed. Returning to Regular Season.")
-            except Exception:
-                # Even if UI update fails, the draft is complete; continue
-                pass
-        except DraftRosterError:
-            # Remain in draft phase when assignments are incomplete
-            raise
-        except Exception as exc:
-            # Any error initializing or running the console should block
-            # season progression to ensure the draft is not skipped.
-            raise DraftRosterError([f"Draft Console error: {exc}"] , {})
+                result["error"] = None
+            except DraftRosterError as exc:
+                result["error"] = exc
+            except Exception as exc:
+                result["error"] = DraftRosterError([f"Draft Console error: {exc}"], {})
+            finally:
+                finished.set()
+
+        self._invoke_on_gui_thread(run_console)
+        finished.wait()
+        error = result.get("error")
+        if error:
+            raise error
 
     # ------------------------------------------------------------------
     # UI lifecycle
@@ -728,6 +742,7 @@ class SeasonProgressWindow(QDialog):
         self.simulate_to_playoffs_button.setVisible(is_regular or is_playoffs)
         self.repair_lineups_button.setVisible(is_regular)
         playoffs_bracket = bracket
+        draft_locked = bool(self._draft_blocked)
         if is_regular:
             mid_remaining = self.simulator.remaining_days()
             # Draft milestone: only if not yet completed for the season
@@ -743,6 +758,10 @@ class SeasonProgressWindow(QDialog):
                 and not getattr(self.simulator, "_draft_triggered", False)
             )
             draft_done = self._draft_completed_for_current_year()
+            draft_locked = draft_locked or bool(
+                getattr(self.simulator, "_draft_triggered", False)
+                and not draft_done
+            )
             if total_remaining > 0:
                 if mid_remaining > 0:
                     label_text = f"Days until Midseason: {mid_remaining}"
@@ -1557,6 +1576,7 @@ class SeasonProgressWindow(QDialog):
     def _simulate_span_async(self, days: int, label: str) -> None:
         if self._remaining_regular_days() <= 0:
             return
+        self._draft_pause_requested = False
         if (
             getattr(self.simulator, "_draft_triggered", False)
             and not self._draft_completed_for_current_year()
@@ -1653,6 +1673,11 @@ class SeasonProgressWindow(QDialog):
                         break
                     simulated_days += 1
                     publish_progress(simulated_days, cancelling=self._cancel_requested)
+                    if self._draft_pause_requested:
+                        if not self._draft_blocked:
+                            self._draft_pause_requested = False
+                            continue
+                        break
                     if self._cancel_requested:
                         break
                 was_cancelled = bool(self._cancel_requested and simulated_days < total_goal)
@@ -1689,6 +1714,9 @@ class SeasonProgressWindow(QDialog):
                 result = ("error", str(exc))
 
             def finish() -> None:
+                paused_for_draft = bool(self._draft_pause_requested)
+                if paused_for_draft:
+                    self._draft_blocked = True
                 self._set_button_state(
                     self.cancel_sim_button,
                     False,
@@ -1715,14 +1743,18 @@ class SeasonProgressWindow(QDialog):
                 was_cancelled = payload.get("was_cancelled", False)
                 if payload.get("pre_finalized"):
                     message = payload.get("pre_message") or ""
+                    if paused_for_draft:
+                        self._draft_pause_requested = False
                 else:
                     message = self._finalize_span(
                         payload.get("simulated_days", 0),
                         days,
                         label,
                         payload.get("upcoming", []),
-                        was_cancelled,
+                        was_cancelled or paused_for_draft,
                     )
+                if paused_for_draft and not was_cancelled:
+                    message = "Draft Day reached; simulation paused until draft completes."
                 if self._show_toast:
                     if warning is not None:
                         toast_kind = "error"
@@ -1779,6 +1811,7 @@ class SeasonProgressWindow(QDialog):
         upcoming: list,
         was_cancelled: bool,
     ) -> str:
+        self._draft_pause_requested = False
         total_goal = len(upcoming) or days
         total_goal = max(total_goal, 1)
         mid_remaining = self.simulator.remaining_days()
@@ -1814,7 +1847,13 @@ class SeasonProgressWindow(QDialog):
                     f"Days until Season End: {total_remaining}"
                 )
                 remaining_msg = f"{total_remaining} days until Season End"
-            elif calendar_remaining > 0:
+            elif (
+                calendar_remaining > 0
+                and (
+                    getattr(self.simulator, "_draft_triggered", False)
+                    or self._draft_blocked
+                )
+            ):
                 self.remaining_label.setText(
                     f"Days until Season End: {calendar_remaining}"
                 )
@@ -2010,6 +2049,9 @@ class SeasonProgressWindow(QDialog):
             return
         if draft_remaining > 0:
             span = draft_remaining + 1
+            pending = self._pending_calendar_days()
+            if pending > 0:
+                span = min(span, pending)
         elif draft_pending:
             span = 1
         else:
