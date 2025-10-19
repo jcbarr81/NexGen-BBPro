@@ -202,6 +202,7 @@ from services.draft_state import (
     save_state,
     append_result,
 )
+from services.season_progress_flags import ProgressUpdateError, mark_draft_completed
 from utils.news_logger import log_news_event
 from utils.team_loader import load_teams
 from utils.exceptions import DraftRosterError
@@ -656,54 +657,41 @@ class DraftConsole(QDialog):
             summary.setdefault("roster_assigned", 0)
             failures = list(summary.get("failures") or [])
             compliance = list(summary.get("compliance_issues") or [])
-            if not failures and exc.failures:
-                failures = list(exc.failures)
+            if not compliance and not failures and exc.failures:
+                # Older payloads may only populate ``exc.failures`` for compliance details.
+                compliance = list(exc.failures)
             summary["failures"] = failures
-            summary.setdefault("compliance_issues", compliance)
+            summary["compliance_issues"] = compliance
             self.last_assignment_error = exc
         except Exception as exc:
             QMessageBox.warning(self, "Commit Failed", str(exc))
             return
 
-        self.assignment_summary = summary
-        combined_issues = [*failures, *[msg for msg in compliance if msg not in failures]]
-        self.assignment_failures = combined_issues
-
-        # If there are no hard failures, mark the draft completed for this year
-        # so season simulation does not pause again on Draft Day when started
-        # from the Admin page (outside of SeasonProgressWindow's hook).
+        progress_error: str | None = None
         if not failures:
             try:
-                import json as _json
-                from utils.path_utils import get_base_dir as _gb
-                from playbalance.season_manager import SeasonManager, SeasonPhase
+                mark_draft_completed(int(self.year))
+            except ProgressUpdateError as exc:
+                progress_error = str(exc)
+                failures.append(progress_error)
+                summary["failures"] = failures
 
-                base = _gb() / "data"
-                prog = base / "season_progress.json"
-                progress = {}
-                if prog.exists():
-                    try:
-                        progress = _json.loads(prog.read_text(encoding="utf-8"))
-                    except Exception:
-                        progress = {}
-                completed = set(progress.get("draft_completed_years", []))
-                completed.add(int(self.year))
-                progress["draft_completed_years"] = sorted(completed)
+            if not progress_error:
                 try:
-                    prog.write_text(_json.dumps(progress, indent=2), encoding="utf-8")
-                except Exception:
-                    pass
+                    from playbalance.season_manager import SeasonManager, SeasonPhase
 
-                # Also ensure the season phase returns to Regular Season
-                try:
                     mgr = SeasonManager()
                     mgr.phase = SeasonPhase.REGULAR_SEASON
                     mgr.save()
                 except Exception:
                     pass
-            except Exception:
-                # Best-effort only; do not block the UI on progress writes
-                pass
+
+        all_issues = [*failures, *[msg for msg in compliance if msg not in failures]]
+        if progress_error and progress_error not in all_issues:
+            all_issues.append(progress_error)
+
+        self.assignment_summary = summary
+        self.assignment_failures = all_issues
 
         try:
             log_news_event(
@@ -728,8 +716,8 @@ class DraftConsole(QDialog):
             f"Players added: {int(summary.get('players_added', 0))}\n"
             f"Roster assignments: {int(summary.get('roster_assigned', 0))}"
         )
-        if combined_issues:
-            detail_lines = "\n".join(combined_issues)
+        if all_issues:
+            detail_lines = "\n".join(all_issues)
             try:
                 msg = QMessageBox(self)
                 icon = None

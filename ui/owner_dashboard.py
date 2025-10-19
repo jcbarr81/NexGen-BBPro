@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 try:
     from PyQt6.QtGui import QAction, QFont, QPixmap, QIcon
 except ImportError:  # pragma: no cover - support test stubs
@@ -48,6 +48,7 @@ from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
 from .news_window import NewsWindow
 from .player_browser_dialog import PlayerBrowserDialog
+from .ui_template import _load_baseball_pixmap, _load_nav_icon
 from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.free_agent_finder import find_free_agents
@@ -117,9 +118,26 @@ class OwnerDashboard(QMainWindow):
             logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             side.addWidget(logo_label)
 
-        brand = QLabel(f"⚾  {team_id} Owner")
-        brand.setStyleSheet("font-weight:900; font-size:16px;")
-        side.addWidget(brand)
+        brand_icon = QLabel()
+        brand_icon_size = 40
+        baseball = _load_baseball_pixmap(brand_icon_size)
+        if not baseball.isNull():
+            brand_icon.setPixmap(baseball)
+        brand_icon.setFixedSize(brand_icon_size, brand_icon_size)
+
+        brand_text = QLabel(f"{team_id} Owner")
+        brand_text.setStyleSheet("font-weight:900; font-size:16px;")
+
+        brand_row = QHBoxLayout()
+        brand_row.setContentsMargins(2, 0, 2, 0)
+        brand_row.setSpacing(8)
+        brand_row.addWidget(brand_icon, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addWidget(brand_text, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addStretch()
+
+        brand_container = QWidget()
+        brand_container.setLayout(brand_row)
+        side.addWidget(brand_container)
 
         self.btn_home = NavButton("  Dashboard")
         self.btn_roster = NavButton("  Roster")
@@ -138,29 +156,38 @@ class OwnerDashboard(QMainWindow):
             "league": self.btn_league,
         }
 
+        icon_size = QSize(24, 24)
+        icon_sources = {
+            "home": "nav_dashboard.svg",
+            "roster": "nav_roster.svg",
+            "team": "nav_team.svg",
+            "transactions": "nav_transactions.svg",
+            "league": "nav_league.svg",
+        }
+        tooltips = {
+            "home": "Overview and quick actions",
+            "roster": "Roster management and player tools",
+            "team": "Team schedule and stats",
+            "transactions": "Transactions, trades, and movement",
+            "league": "League schedule, standings, and stats",
+        }
+        for key, button in self.nav_buttons.items():
+            icon_name = icon_sources.get(key)
+            if not icon_name:
+                continue
+            icon = _load_nav_icon(icon_name, icon_size.width())
+            if not icon.isNull():
+                button.setIcon(icon)
+                button.setIconSize(icon_size)
+                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            tip = tooltips.get(key)
+            if tip:
+                button.setToolTip(tip)
+
         side.addStretch()
         self.btn_settings = NavButton("  Toggle Theme")
         self.btn_settings.clicked.connect(lambda: _toggle_theme(self.statusBar()))
         side.addWidget(self.btn_settings)
-
-        # Nav icons and tooltips (best-effort)
-        try:
-            icon_dir = Path(__file__).resolve().parent / "icons"
-            def _set(btn, name: str, tip: str) -> None:
-                try:
-                    if QIcon is not None:
-                        btn.setIcon(QIcon(str(icon_dir / name)))
-                        btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-                except Exception:
-                    pass
-                btn.setToolTip(tip)
-            _set(self.btn_home, "team_dashboard.svg", "Overview and quick actions")
-            _set(self.btn_roster, "team_dashboard.svg", "Roster and player tools")
-            _set(self.btn_team, "season_progress.svg", "Team schedule and stats")
-            _set(self.btn_transactions, "review_trades.svg", "Transactions and trades")
-            _set(self.btn_league, "season_progress.svg", "League schedule, standings, stats")
-        except Exception:
-            pass
 
         # Header
         header = QFrame()

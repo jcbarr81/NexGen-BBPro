@@ -163,6 +163,7 @@ sys.modules["PyQt6.QtGui"] = qtgui
 
 # ---- Import window after stubs ----
 from playbalance.season_manager import SeasonPhase
+import services.season_progress_flags as spf
 import ui.season_progress_window as spw
 
 
@@ -363,6 +364,7 @@ def test_simulate_month_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Days until Season End: 10"
     assert win.simulate_month_button.isEnabled()
     assert not win.next_button.isEnabled()
+    assert win.done_button.isEnabled()
 
     win.simulate_month_button.clicked.emit()
     _wait_for_future(win)
@@ -370,6 +372,7 @@ def test_simulate_month_until_midseason(tmp_path, monkeypatch):
     assert win.remaining_label.text() == "Regular season complete."
     assert not win.simulate_month_button.isEnabled()
     assert win.next_button.isEnabled()
+    assert win.done_button.isEnabled()
 
 
 
@@ -386,6 +389,7 @@ def test_regular_season_simulation_controls(tmp_path, monkeypatch):
         games.append((home, away))
 
     monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    monkeypatch.setattr(spf, "PROGRESS_PATH", tmp_path / "progress.json")
     win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
     assert "simulate_phase_button" not in win.__dict__
     assert win.remaining_label.text() == "Days until Midseason: 5"
@@ -438,6 +442,42 @@ def test_simulate_to_playoffs_requires_draft_completion(tmp_path, monkeypatch):
     _wait_for_future(win)
     assert len(games) == len(schedule)
     assert not win.simulate_to_playoffs_button.isEnabled()
+    assert win.done_button.isEnabled()
+
+
+def test_simulate_to_draft_stops_before_draft_day(tmp_path, monkeypatch):
+    spw.SeasonManager = DummyManager
+    schedule = [
+        {"date": "2024-07-14", "home": "A", "away": "B"},
+        {"date": "2024-07-15", "home": "A", "away": "B"},
+        {"date": "2024-07-17", "home": "A", "away": "B"},
+    ]
+
+    games = []
+
+    def fake_sim(home, away):
+        games.append((home, away))
+
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow(schedule=schedule, simulate_game=fake_sim)
+    draft_idx = win.simulator.dates.index(win.simulator.draft_date)
+
+    win.simulate_to_draft_button.clicked.emit()
+    _wait_for_future(win)
+
+    assert win.simulator._index == draft_idx
+    assert not getattr(win.simulator, "_draft_triggered", False)
+    assert win.done_button.isEnabled()
+
+
+def test_done_button_enabled_once_progress_complete(tmp_path, monkeypatch):
+    spw.SeasonManager = DummyManager
+    monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
+    win = spw.SeasonProgressWindow()
+    win._active_future = object()
+    win._allow_done_early = True
+    win._update_ui()
+    assert win.done_button.isEnabled()
 
 
 def test_playoffs_require_simulation(tmp_path, monkeypatch):

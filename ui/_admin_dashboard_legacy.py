@@ -18,7 +18,7 @@ from typing import Callable, Dict
 
 from concurrent.futures import ThreadPoolExecutor
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QSize
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -40,6 +40,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .components import NavButton
+from .ui_template import _load_baseball_pixmap, _NAV_ICON_MAP, _load_nav_icon
 from .admin_dashboard.navigation import NavigationController, PageRegistry
 from .admin_dashboard.context import DashboardContext
 from .admin_dashboard.actions import (
@@ -115,7 +116,26 @@ class MainWindow(QMainWindow):
         side.setContentsMargins(10, 12, 10, 12)
         side.setSpacing(6)
 
-        side.addWidget(QLabel("?  Commissioner"))
+        brand_icon = QLabel()
+        icon_size = 40
+        baseball = _load_baseball_pixmap(icon_size)
+        if not baseball.isNull():
+            brand_icon.setPixmap(baseball)
+        brand_icon.setFixedSize(icon_size, icon_size)
+
+        brand_text = QLabel("Commissioner")
+        brand_text.setStyleSheet("font-weight:900; font-size:16px;")
+
+        brand_row = QHBoxLayout()
+        brand_row.setContentsMargins(2, 0, 2, 0)
+        brand_row.setSpacing(8)
+        brand_row.addWidget(brand_icon, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addWidget(brand_text, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addStretch()
+
+        brand_container = QWidget()
+        brand_container.setLayout(brand_row)
+        side.addWidget(brand_container)
 
         self.btn_dashboard = NavButton("  Dashboard")
         self.btn_league = NavButton("  League")
@@ -142,54 +162,25 @@ class MainWindow(QMainWindow):
             "utils": self.btn_utils,
             "draft": self.btn_draft,
         }
-        # Nav icons and tooltips
-        try:
-            from pathlib import Path
-
-            icon_dir = Path(__file__).resolve().parent / "icons"
-
-            def _set(btn, name: str, tip: str) -> None:
-                try:
-                    btn.setIcon(QIcon(str(icon_dir / name)))
-                    btn.setToolButtonStyle(
-                        Qt.ToolButtonStyle.ToolButtonTextBesideIcon
-                    )
-                except Exception:
-                    pass
-                btn.setToolTip(tip)
-
-            _set(
-                self.btn_dashboard,
-                "team_dashboard.svg",
-                "League overview and quick actions",
-            )
-            _set(
-                self.btn_league,
-                "season_progress.svg",
-                "Season control and operations",
-            )
-            _set(
-                self.btn_teams,
-                "team_dashboard.svg",
-                "Open team dashboards and bulk actions",
-            )
-            _set(
-                self.btn_users,
-                "edit_user.svg",
-                "Manage accounts and roles",
-            )
-            _set(
-                self.btn_utils,
-                "generate_logos.svg",
-                "Logos/avatars and data tools",
-            )
-            _set(
-                self.btn_draft,
-                "play_balance.svg",
-                "Amateur Draft console and settings",
-            )
-        except Exception:
-            pass
+        icon_size = QSize(24, 24)
+        nav_tooltips = {
+            "dashboard": "League overview and quick actions",
+            "league": "Season control and operations",
+            "teams": "Open team dashboards and bulk actions",
+            "users": "Manage accounts and roles",
+            "utils": "Logos, avatars, and data tools",
+            "draft": "Amateur Draft console and settings",
+        }
+        for key, button in self.nav_buttons.items():
+            icon_name = _NAV_ICON_MAP.get(key)
+            icon = _load_nav_icon(icon_name, icon_size.width()) if icon_name else QIcon()
+            if not icon.isNull():
+                button.setIcon(icon)
+                button.setIconSize(icon_size)
+                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            tooltip = nav_tooltips.get(key)
+            if tooltip:
+                button.setToolTip(tooltip)
 
         # header + stacked pages -----------------------------------------
         header = QWidget(objectName="Header")

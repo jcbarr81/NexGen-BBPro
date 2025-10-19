@@ -41,7 +41,7 @@ except ImportError:  # pragma: no cover - test stubs
             pass
 
 try:
-    from PyQt6.QtCore import pyqtSignal, QTimer, QThread, QMetaObject, Qt, Q_ARG
+    from PyQt6.QtCore import pyqtSignal, pyqtSlot, QTimer, QThread, QMetaObject, Qt, Q_ARG
 except Exception:  # pragma: no cover - fallback for headless tests
     class _DummySignal:
         def __init__(self, *args, **kwargs):
@@ -55,6 +55,12 @@ except Exception:  # pragma: no cover - fallback for headless tests
 
     def pyqtSignal(*args, **kwargs):  # type: ignore
         return _DummySignal()
+
+    def pyqtSlot(*args, **kwargs):  # type: ignore
+        def decorator(fn):
+            return fn
+
+        return decorator
     class QTimer:  # type: ignore
         @staticmethod
         def singleShot(ms: int, callback: Callable[[], None]) -> None:
@@ -95,6 +101,10 @@ from playbalance.aging_model import age_and_retire
 from playbalance.season_manager import SeasonManager, SeasonPhase
 from playbalance.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
+from services.season_progress_flags import (
+    ProgressUpdateError,
+    mark_draft_completed,
+)
 from playbalance.season_simulator import SeasonSimulator
 from ui.draft_console import DraftConsole
 from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
@@ -349,6 +359,7 @@ class SeasonProgressWindow(QDialog):
         self._draft_blocked = False
         self._set_simulation_status(None)
         self._draft_pause_requested = False
+        self._allow_done_early = False
         self._update_ui()
 
     # ------------------------------------------------------------------
@@ -521,6 +532,7 @@ class SeasonProgressWindow(QDialog):
         except Exception:
             QTimer.singleShot(0, fn)
 
+    @pyqtSlot(object)
     def _execute_callable(self, fn) -> None:  # pragma: no cover - GUI thread helper
         try:
             if callable(fn):
@@ -635,14 +647,13 @@ class SeasonProgressWindow(QDialog):
                 if failures:
                     raise DraftRosterError(failures, summary)
 
+                try:
+                    mark_draft_completed(year, progress_path=PROGRESS_FILE)
+                except ProgressUpdateError as exc:
+                    raise DraftRosterError([str(exc)], summary)
+
                 completed.add(year)
                 progress["draft_completed_years"] = sorted(completed)
-                try:
-                    PROGRESS_FILE.write_text(
-                        _json.dumps(progress, indent=2), encoding="utf-8"
-                    )
-                except Exception:
-                    raise DraftRosterError(["Failed to persist draft completion."], summary)
                 try:
                     self.manager.phase = SeasonPhase.REGULAR_SEASON
                     self.manager.save()
@@ -970,10 +981,12 @@ class SeasonProgressWindow(QDialog):
         else:
             self.remaining_label.setVisible(False)
             self._set_button_state(self.next_button, True)
+        done_enabled = self._active_future is None or self._allow_done_early
+        tooltip = "" if done_enabled else "Simulation is running; wait for it to finish."
         self._set_button_state(
             self.done_button,
-            self._active_future is None,
-            "Simulation is running; wait for it to finish.",
+            done_enabled,
+            tooltip,
         )
         # Timeline reflects updated status after any UI refresh.
         self._refresh_timeline(bracket=playoffs_bracket)
@@ -1577,6 +1590,7 @@ class SeasonProgressWindow(QDialog):
         if self._remaining_regular_days() <= 0:
             return
         self._draft_pause_requested = False
+        self._allow_done_early = False
         if (
             getattr(self.simulator, "_draft_triggered", False)
             and not self._draft_completed_for_current_year()
@@ -1606,6 +1620,14 @@ class SeasonProgressWindow(QDialog):
             self._set_simulation_status(
                 f"No games available for the selected {label.lower()} span."
             )
+            self._set_sim_buttons_enabled(True)
+            self._set_button_state(
+                self.cancel_sim_button,
+                False,
+                "No simulation is currently running.",
+            )
+            self._set_button_state(self.done_button, True, "")
+            self._allow_done_early = False
             return
 
         self._set_sim_buttons_enabled(False)
@@ -1630,6 +1652,14 @@ class SeasonProgressWindow(QDialog):
                 text = f"{text} - cancelling..."
 
             self._set_simulation_status(text)
+            if done >= total_goal and not cancelling:
+                self._allow_done_early = True
+                self._set_button_state(self.done_button, True, "")
+                self._set_button_state(
+                    self.cancel_sim_button,
+                    False,
+                    "Simulation finished; nothing to cancel.",
+                )
 
         publish_progress(0)
 
@@ -1717,6 +1747,8 @@ class SeasonProgressWindow(QDialog):
                 paused_for_draft = bool(self._draft_pause_requested)
                 if paused_for_draft:
                     self._draft_blocked = True
+                self._active_future = None
+                self._allow_done_early = False
                 self._set_button_state(
                     self.cancel_sim_button,
                     False,
@@ -1763,7 +1795,6 @@ class SeasonProgressWindow(QDialog):
                     else:
                         toast_kind = "success"
                     self._show_toast(toast_kind, message)
-                self._active_future = None
                 try:
                     self._set_button_state(self.done_button, True, "")
                 except Exception:
@@ -2048,7 +2079,7 @@ class SeasonProgressWindow(QDialog):
         if draft_remaining <= 0 and not draft_pending:
             return
         if draft_remaining > 0:
-            span = draft_remaining + 1
+            span = draft_remaining
             pending = self._pending_calendar_days()
             if pending > 0:
                 span = min(span, pending)
@@ -2085,7 +2116,21 @@ class SeasonProgressWindow(QDialog):
     ) -> None:
         if total_remaining <= 0 and calendar_remaining <= 0:
             return
-        span = total_remaining if total_remaining > 0 else calendar_remaining
+        if total_remaining > 0:
+            span = total_remaining
+            draft_pending = (
+                getattr(self.simulator, "draft_date", None)
+                and not getattr(self.simulator, "_draft_triggered", False)
+            )
+            if draft_pending:
+                extra_calendar = max(calendar_remaining - total_remaining, 0)
+                if extra_calendar > 0:
+                    span += extra_calendar
+                pending = self._pending_calendar_days()
+                if pending > 0:
+                    span = min(span, pending)
+        else:
+            span = calendar_remaining
         if span <= 0:
             return
         self._simulate_span(span, "Regular Season")

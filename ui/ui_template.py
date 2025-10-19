@@ -1,6 +1,7 @@
 import sys
+from pathlib import Path
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QFont
+from PyQt6.QtGui import QAction, QFont, QPixmap, QPainter, QColor, QPen, QPainterPath, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -17,6 +18,136 @@ from PyQt6.QtWidgets import (
 from .components import Card, NavButton, section_title
 from .theme import DARK_QSS, _toggle_theme
 from .version_badge import install_version_badge
+
+# ------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------
+
+_ICON_DIR = Path(__file__).resolve().parent / "icons"
+_NAV_ICON_MAP = {
+    "dashboard": "nav_dashboard.svg",
+    "league": "nav_league.svg",
+    "teams": "nav_teams.svg",
+    "users": "nav_users.svg",
+    "utils": "nav_utilities.svg",
+    "draft": "nav_draft.svg",
+}
+
+
+def _load_baseball_pixmap(size: int = 20) -> QPixmap:
+    """Load the baseball icon, scaling to the desired size."""
+    source = _ICON_DIR / "baseball.png"
+    pixmap = QPixmap(str(source))
+    if pixmap.isNull():
+        pixmap = _draw_baseball_pixmap(size)
+        return pixmap
+    if size > 0:
+        pixmap = pixmap.scaled(
+            size,
+            size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+    return pixmap
+
+
+def _load_nav_icon(name: str, size: int = 22) -> QIcon:
+    """Load a sidebar navigation icon by filename."""
+    source = _ICON_DIR / name
+    icon = QIcon(str(source))
+    if icon.isNull():
+        placeholder = QPixmap(size, size)
+        placeholder.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(placeholder)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
+        painter.setBrush(QColor("#3b2810"))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawRoundedRect(0, 0, size, size, size * 0.3, size * 0.3)
+        painter.setPen(QColor("#fffdf0"))
+        font = QFont()
+        font.setPointSize(int(size * 0.4))
+        font.setBold(True)
+        painter.setFont(font)
+        label = name
+        if label.lower().startswith("nav_"):
+            label = label[4:]
+        label = label.split(".", 1)[0]
+        painter.drawText(
+            placeholder.rect(),
+            Qt.AlignmentFlag.AlignCenter,
+            label[:1].upper(),
+        )
+        painter.end()
+        icon = QIcon(placeholder)
+    else:
+        base_pixmap = icon.pixmap(size, size)
+        if not base_pixmap.isNull():
+            tinted = QPixmap(base_pixmap.size())
+            tinted.setDevicePixelRatio(base_pixmap.devicePixelRatio())
+            tinted.fill(Qt.GlobalColor.transparent)
+            painter = QPainter(tinted)
+            painter.drawPixmap(0, 0, base_pixmap)
+            composition_mode = getattr(
+                QPainter.CompositionMode,
+                "SourceIn",
+                getattr(QPainter.CompositionMode, "CompositionMode_SourceIn", None),
+            )
+            if composition_mode is not None:
+                painter.setCompositionMode(composition_mode)
+            painter.fillRect(tinted.rect(), QColor("#ffffff"))
+            painter.end()
+            bright = QIcon()
+            bright.addPixmap(tinted, QIcon.Mode.Normal, QIcon.State.Off)
+            bright.addPixmap(tinted, QIcon.Mode.Active, QIcon.State.Off)
+            bright.addPixmap(tinted, QIcon.Mode.Selected, QIcon.State.Off)
+            icon = bright
+    return icon
+
+
+def _draw_baseball_pixmap(size: int) -> QPixmap:
+    """Fallback painter when the external asset is unavailable."""
+    diameter = max(14, size)
+    pixmap = QPixmap(diameter, diameter)
+    pixmap.fill(Qt.GlobalColor.transparent)
+
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, on=True)
+
+    border_pen = QPen(QColor("#1c1c1c"))
+    border_pen.setWidthF(max(1.0, diameter * 0.12))
+    painter.setPen(border_pen)
+    painter.setBrush(QColor("#fcfcfc"))
+    inset = border_pen.widthF() / 2
+    painter.drawEllipse(pixmap.rect().adjusted(int(inset), int(inset), -int(inset), -int(inset)))
+
+    shade = QColor("#e8e8e8")
+    painter.setBrush(shade)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.drawEllipse(pixmap.rect().adjusted(int(diameter * 0.15), int(diameter * 0.04), -int(diameter * 0.02), -int(diameter * 0.04)))
+
+    stitch_pen = QPen(QColor("#c64545"))
+    stitch_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    stitch_pen.setWidthF(max(1.0, diameter * 0.14))
+    painter.setPen(stitch_pen)
+
+    left_curve = QPainterPath()
+    left_curve.moveTo(diameter * 0.32, diameter * 0.12)
+    left_curve.quadTo(diameter * 0.12, diameter * 0.5, diameter * 0.32, diameter * 0.88)
+    painter.drawPath(left_curve)
+
+    right_curve = QPainterPath()
+    right_curve.moveTo(diameter * 0.68, diameter * 0.12)
+    right_curve.quadTo(diameter * 0.88, diameter * 0.5, diameter * 0.68, diameter * 0.88)
+    painter.drawPath(right_curve)
+
+    painter.end()
+
+    return pixmap.scaled(
+        size,
+        size,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation,
+    )
 
 # ------------------------------------------------------------
 # Pages
@@ -141,9 +272,26 @@ class MainWindow(QMainWindow):
         side.setContentsMargins(10, 12, 10, 12)
         side.setSpacing(6)
 
-        brand = QLabel("⚾  Commissioner")
-        brand.setStyleSheet("font-weight:900; font-size:16px;")
-        side.addWidget(brand)
+        brand_icon = QLabel()
+        icon_size = 40
+        baseball = _load_baseball_pixmap(icon_size)
+        if not baseball.isNull():
+            brand_icon.setPixmap(baseball)
+        brand_icon.setFixedSize(icon_size, icon_size)
+
+        brand_text = QLabel("Commissioner")
+        brand_text.setStyleSheet("font-weight:900; font-size:16px;")
+
+        brand_row = QHBoxLayout()
+        brand_row.setContentsMargins(2, 0, 2, 0)
+        brand_row.setSpacing(8)
+        brand_row.addWidget(brand_icon, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addWidget(brand_text, alignment=Qt.AlignmentFlag.AlignVCenter)
+        brand_row.addStretch()
+
+        brand_container = QWidget()
+        brand_container.setLayout(brand_row)
+        side.addWidget(brand_container)
 
         self.btn_dashboard = NavButton("  Dashboard")
         self.btn_league = NavButton("  League")
@@ -162,6 +310,16 @@ class MainWindow(QMainWindow):
             "users": self.btn_users,
             "utils": self.btn_utils,
         }
+        icon_size = QSize(24, 24)
+        for key, button in self.nav_buttons.items():
+            icon_name = _NAV_ICON_MAP.get(key)
+            if not icon_name:
+                continue
+            icon = _load_nav_icon(icon_name, icon_size.width())
+            if not icon.isNull():
+                button.setIcon(icon)
+                button.setIconSize(icon_size)
+                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
         side.addStretch()
         side.addWidget(QLabel("  Settings"))
