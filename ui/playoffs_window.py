@@ -10,6 +10,11 @@ is read-only and provides a Refresh button to reload state from disk. Control
 actions (simulate round/remaining) are handled from Season Progress for now.
 """
 
+from services.season_progress_flags import (
+    ProgressUpdateError,
+    mark_playoffs_completed,
+)
+
 try:
     from PyQt6.QtWidgets import (
         QDialog,
@@ -565,6 +570,16 @@ class PlayoffsWindow(QDialog):
         bracket = result.get("bracket")
         if bracket is not None:
             self._bracket = bracket
+            champion = getattr(bracket, "champion", None)
+            if champion:
+                try:
+                    mark_playoffs_completed()
+                except ProgressUpdateError as exc:
+                    if self._show_toast:
+                        self._show_toast(
+                            "warning",
+                            f"Playoffs completed but progress file could not be updated: {exc}",
+                        )
         self.refresh(bracket=bracket)
 
     def _set_sim_buttons_enabled(self, enabled: bool) -> None:

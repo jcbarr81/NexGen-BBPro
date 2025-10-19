@@ -33,3 +33,24 @@ def test_mark_draft_completed_retries_on_replace_error(tmp_path, monkeypatch):
     payload = json.loads(target.read_text())
     assert payload["draft_completed_years"] == [2030]
     assert call_count["count"] >= 2
+
+
+def test_mark_playoffs_completed_sets_flag(tmp_path):
+    target = tmp_path / "progress.json"
+    target.write_text(json.dumps({"draft_completed_years": [2024]}))
+
+    spf.mark_playoffs_completed(progress_path=target, retries=2, delay=0)
+
+    payload = json.loads(target.read_text())
+    assert payload["playoffs_done"] is True
+    assert payload["draft_completed_years"] == [2024]
+
+
+def test_mark_playoffs_completed_idempotent(tmp_path):
+    target = tmp_path / "progress.json"
+    target.write_text(json.dumps({"playoffs_done": True}))
+
+    spf.mark_playoffs_completed(progress_path=target, retries=2, delay=0)
+
+    payload = json.loads(target.read_text())
+    assert payload["playoffs_done"] is True

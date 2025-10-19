@@ -206,6 +206,7 @@ class SeasonProgressWindow(QDialog):
         # Compute Draft Day from schedule (third Tuesday in July)
         draft_date = self._compute_draft_date((schedule or [{}])[0].get("date") if schedule else None)
         self._draft_date = draft_date
+        self._season_year_hint: Optional[int] = None
         if simulate_game is not None:
             self.simulator = SeasonSimulator(
                 schedule or [],
@@ -221,6 +222,7 @@ class SeasonProgressWindow(QDialog):
                 draft_date=draft_date,
                 after_game=self._record_game,
             )
+        self._season_year_hint = self._infer_schedule_year()
         self._cancel_requested = False
         # Track season standings with detailed splits so that schedule and
         # standings windows can display rich statistics.
@@ -559,6 +561,54 @@ class SeasonProgressWindow(QDialog):
 
         self._invoke_on_gui_thread(apply)
 
+    def _infer_schedule_year(self) -> Optional[int]:
+        """Best-effort inference of the active season year from schedule data."""
+
+        simulator = getattr(self, "simulator", None)
+        if simulator is None:
+            return None
+        try:
+            dates = list(getattr(simulator, "dates", []) or [])
+        except Exception:
+            dates = []
+        for value in dates:
+            if not value:
+                continue
+            try:
+                return int(str(value).split("-")[0])
+            except Exception:
+                continue
+        try:
+            schedule = list(getattr(simulator, "schedule", []) or [])
+        except Exception:
+            schedule = []
+        for game in schedule:
+            try:
+                date_value = game.get("date")
+            except Exception:
+                date_value = None
+            if not date_value:
+                continue
+            try:
+                return int(str(date_value).split("-")[0])
+            except Exception:
+                continue
+        return None
+
+    def _sync_playoffs_flag_from_disk(self) -> None:
+        """Refresh the in-memory playoffs flag if the progress file changed."""
+
+        try:
+            if not PROGRESS_FILE.exists():
+                return
+            payload = json.loads(PROGRESS_FILE.read_text(encoding="utf-8") or "{}")
+        except Exception:
+            return
+        flag = bool(payload.get("playoffs_done"))
+        if flag != self._playoffs_done or flag != self._loaded_playoffs_done:
+            self._playoffs_done = flag
+            self._loaded_playoffs_done = flag
+
     def _draft_completed_for_current_year(self) -> bool:
         """Return True when the current season's draft is recorded complete."""
         draft_date = getattr(self, "_draft_date", None)
@@ -717,6 +767,7 @@ class SeasonProgressWindow(QDialog):
         """
         phase_name = self.manager.phase.name.replace("_", " ").title()
         self.phase_label.setText(f"Current Phase: {phase_name}")
+        self._sync_playoffs_flag_from_disk()
         # Update current date indicator from simulator schedule
         try:
             if self.simulator and getattr(self.simulator, "dates", None):
@@ -906,45 +957,68 @@ class SeasonProgressWindow(QDialog):
             # requiring another simulation pass here. If no explicit champion is stored
             # but the championship round has winners decided, infer and persist it.
             if not self._playoffs_done:
-                progress_exists = False
-                try:
-                    progress_exists = PROGRESS_FILE.exists()
-                except Exception:
-                    progress_exists = False
                 try:
                     from playbalance.playoffs import load_bracket as _lb, save_bracket as _sb
+
                     b = playoffs_bracket or _lb()
                     playoffs_bracket = b
+
                     def _is_final_round(name: str) -> bool:
-                        tokens = [t.lower() for t in str(name or "").replace("-", " ").replace("_", " ").split() if t]
+                        tokens = [
+                            t.lower()
+                            for t in str(name or "").replace("-", " ").replace("_", " ").split()
+                            if t
+                        ]
                         final_tokens = {"ws", "world", "worlds", "final", "finals", "championship"}
                         return any(t in final_tokens for t in tokens)
+
                     def _final_round(br) -> object | None:
                         rounds = list(getattr(br, "rounds", []) or [])
                         finals = [r for r in rounds if _is_final_round(getattr(r, "name", ""))]
                         if finals:
                             return finals[-1]
                         return rounds[-1] if rounds else None
-                    if b and progress_exists and self._loaded_playoffs_done:
-                        if getattr(b, "champion", None):
-                            self._playoffs_done = True
-                            self._save_progress()
+
+                    if b:
+                        season_year = self._season_year_hint or self._infer_schedule_year()
+                        try:
+                            raw_year = getattr(b, "year", None)
+                            bracket_year = int(raw_year) if raw_year else None
+                        except Exception:
+                            bracket_year = None
+                        if (
+                            season_year is not None
+                            and bracket_year is not None
+                            and season_year != bracket_year
+                        ):
+                            pass
                         else:
-                            fr = _final_round(b)
-                            matchups = list(getattr(fr, "matchups", []) or []) if fr else []
-                            if matchups and all(getattr(m, "winner", None) for m in matchups):
-                                champ = getattr(matchups[0], "winner", None)
-                                if champ:
-                                    try:
-                                        # Persist inferred champion for consistency across windows
-                                        b.champion = champ
-                                        m = matchups[0]
-                                        b.runner_up = m.low.team_id if champ == m.high.team_id else m.high.team_id
-                                        _sb(b)
-                                    except Exception:
-                                        pass
-                                    self._playoffs_done = True
-                                    self._save_progress()
+                            flag_changed = False
+                            champion = getattr(b, "champion", None)
+                            if champion and not self._playoffs_done:
+                                self._playoffs_done = True
+                                flag_changed = True
+                            elif champion is None:
+                                fr = _final_round(b)
+                                matchups = list(getattr(fr, "matchups", []) or []) if fr else []
+                                if matchups and all(getattr(m, "winner", None) for m in matchups):
+                                    champ = getattr(matchups[0], "winner", None)
+                                    if champ:
+                                        try:
+                                            b.champion = champ
+                                            m = matchups[0]
+                                            b.runner_up = (
+                                                m.low.team_id if champ == m.high.team_id else m.high.team_id
+                                            )
+                                            _sb(b)
+                                        except Exception:
+                                            pass
+                                        if not self._playoffs_done:
+                                            self._playoffs_done = True
+                                            flag_changed = True
+                            if flag_changed:
+                                self._loaded_playoffs_done = True
+                                self._save_progress()
                 except Exception:
                     pass
             playoffs_done_effective = self._playoffs_done or self._playoffs_override_done
@@ -1316,6 +1390,7 @@ class SeasonProgressWindow(QDialog):
                 self.simulator = SeasonSimulator([], self._simulate_game)
             else:
                 self.simulator = SeasonSimulator([])
+            self._season_year_hint = self._infer_schedule_year()
             note = f"Retired Players: {len(retired)}"
         elif self.manager.phase == SeasonPhase.REGULAR_SEASON:
             # If the regular season is complete, skip the Amateur Draft phase
@@ -1460,6 +1535,7 @@ class SeasonProgressWindow(QDialog):
             self.simulator = SeasonSimulator(
                 schedule, after_game=self._record_game
             )
+        self._season_year_hint = self._infer_schedule_year()
         message = f"Schedule generated with {len(schedule)} games."
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
         self._set_button_state(

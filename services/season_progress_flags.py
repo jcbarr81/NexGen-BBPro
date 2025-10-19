@@ -49,6 +49,28 @@ def mark_draft_completed(
             raise ProgressUpdateError(f"Unable to write {path.name}: {exc}") from exc
 
 
+def mark_playoffs_completed(
+    *,
+    progress_path: Path | None = None,
+    retries: int = 6,
+    delay: float = 0.05,
+) -> None:
+    """Ensure the ``playoffs_done`` flag in ``season_progress.json`` is set."""
+
+    path = Path(progress_path) if progress_path is not None else PROGRESS_PATH
+    try:
+        progress = _load_progress(path, retries=retries, delay=delay)
+    except Exception as exc:
+        raise ProgressUpdateError(f"Unable to read {path.name}: {exc}") from exc
+
+    if not progress.get("playoffs_done"):
+        progress["playoffs_done"] = True
+    try:
+        _write_progress(path, progress, retries=retries, delay=delay)
+    except Exception as exc:
+        raise ProgressUpdateError(f"Unable to write {path.name}: {exc}") from exc
+
+
 def _load_progress(path: Path, *, retries: int, delay: float) -> dict[str, Any]:
     last_exc: Exception | None = None
     attempts = max(int(retries), 1)
@@ -112,4 +134,9 @@ def _normalized_years(values: list[Any]) -> set[int]:
     return years
 
 
-__all__ = ["mark_draft_completed", "ProgressUpdateError", "PROGRESS_PATH"]
+__all__ = [
+    "mark_draft_completed",
+    "mark_playoffs_completed",
+    "ProgressUpdateError",
+    "PROGRESS_PATH",
+]

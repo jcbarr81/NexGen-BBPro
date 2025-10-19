@@ -518,6 +518,46 @@ def test_playoffs_require_simulation(tmp_path, monkeypatch):
     spw.SeasonManager = DummyManager
 
 
+def test_playoffs_flag_inferred_from_completed_bracket(tmp_path, monkeypatch):
+    import json
+
+    class PlayoffManager:
+        def __init__(self):
+            self.phase = SeasonPhase.PLAYOFFS
+
+        def handle_phase(self):
+            return "Playoffs"
+
+        def advance_phase(self):
+            self.phase = self.phase.next()
+
+        def save(self):
+            pass
+
+    progress_path = tmp_path / "progress.json"
+    progress_path.write_text(json.dumps({"playoffs_done": False}))
+    monkeypatch.setattr(spw, "PROGRESS_FILE", progress_path)
+
+    bracket = types.SimpleNamespace(
+        year=2025,
+        champion="AAA",
+        runner_up="BBB",
+        rounds=[],
+    )
+
+    monkeypatch.setattr(spw, "SeasonManager", PlayoffManager)
+    monkeypatch.setattr("playbalance.playoffs.load_bracket", lambda: bracket)
+    monkeypatch.setattr("playbalance.playoffs.save_bracket", lambda br: None)
+
+    schedule = [{"date": "2025-09-30", "home": "A", "away": "B"}]
+    win = spw.SeasonProgressWindow(schedule=schedule)
+
+    assert win._playoffs_done is True
+    assert win.next_button.isEnabled()
+
+    spw.SeasonManager = DummyManager
+
+
 from datetime import date
 from models.player import Player
 

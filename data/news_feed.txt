@@ -666,3 +666,20 @@
 [2025-10-18 21:27:20] League reset to Opening Day
 [2025-10-18 21:27:20] Purged saved season boxscores
 [2025-10-18 21:28:21] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-18 22:23:19] League reset to Opening Day
+[2025-10-18 22:23:19] Purged saved season boxscores
+[2025-10-18 22:25:45] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-18 22:27:18] Season advanced to Playoffs
+[2025-10-18 22:55:43] League reset to Opening Day
+[2025-10-18 22:55:43] Purged saved season boxscores
+[2025-10-18 23:04:22] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-18 23:05:40] Season advanced to Playoffs
+[2025-10-18 23:06:13] Season advanced to Offseason
+[2025-10-18 23:06:20] Season advanced to Preseason
+[2025-10-18 23:06:39] No unsigned players available
+[2025-10-18 23:06:41] Training camp completed; players marked ready
+[2025-10-18 23:06:43] Generated regular season schedule with 972 games
+[2025-10-18 23:06:47] Season advanced to Regular Season
+[2025-10-18 23:08:49] Amateur Draft 2025 committed: 0 players added; 72 roster assignments
+[2025-10-18 23:11:44] League reset to Opening Day
+[2025-10-18 23:11:44] Purged saved season boxscores

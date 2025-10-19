@@ -1,0 +1,15 @@
+{
+  "awards": {
+    "MVP": {
+      "player_id": "P4662",
+      "player_name": "Rafael Gonzalez",
+      "metric": 0.9350911900189167
+    },
+    "CY_YOUNG": {
+      "player_id": "P3698",
+      "player_name": "Lucius Schwien",
+      "metric": 2.854984894259819
+    }
+  },
+  "generated_at": "2025-10-19T03:06:13Z"
+}
