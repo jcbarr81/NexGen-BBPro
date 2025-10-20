@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional
 from types import SimpleNamespace
 
 try:
@@ -117,6 +117,14 @@ class OwnerHomePage(QWidget):
         )
         self.metrics_card.layout().addWidget(self.metrics_row)
 
+        self._batting_leaders = self._default_batting_leaders()
+        self.batting_row = build_metric_row(self._batting_leaders, columns=3)
+        self.metrics_card.layout().addWidget(self.batting_row)
+
+        self._pitching_leaders = self._default_pitching_leaders()
+        self.pitching_row = build_metric_row(self._pitching_leaders, columns=3)
+        self.metrics_card.layout().addWidget(self.pitching_row)
+
         # Readiness & matchup card ---------------------------------
         self.readiness_card = Card()
         self.readiness_card.setMinimumHeight(180)
@@ -152,7 +160,9 @@ class OwnerHomePage(QWidget):
             ("Team Settings", self._dashboard.open_team_settings_dialog),
             ("Reassign Players", self._dashboard.open_reassign_players_dialog),
             ("Team Stats", lambda: self._dashboard.open_team_stats_window("team")),
+            ("League Leaders", self._dashboard.open_league_leaders_window),
             ("League Standings", self._dashboard.open_standings_window),
+            ("Team Schedule", self._dashboard.open_team_schedule_window),
             ("Full Roster", self._dashboard.open_player_browser_dialog),
         ]
         for idx, (label, callback) in enumerate(button_data):
@@ -267,6 +277,16 @@ class OwnerHomePage(QWidget):
         )
         self.metrics_card.layout().insertWidget(1, self.metrics_row)
 
+        batting_entries = self._format_batting_leaders(
+            m.get("batting_leaders") if m else None
+        )
+        self._set_batting_leader_row(batting_entries)
+
+        pitching_entries = self._format_pitching_leaders(
+            m.get("pitching_leaders") if m else None
+        )
+        self._set_pitching_leader_row(pitching_entries)
+
         bullpen_data = m.get("bullpen", {}) if m else {}
         self.bullpen_widget.update_data(bullpen_data)
         matchup_data = m.get("matchup", {}) if m else {}
@@ -329,6 +349,56 @@ class OwnerHomePage(QWidget):
         )
         btn.clicked.connect(callback)
         return btn
+
+    def _default_batting_leaders(self) -> list[tuple[str, str]]:
+        return [
+            ("AVG Leader", "--"),
+            ("HR Leader", "--"),
+            ("RBI Leader", "--"),
+        ]
+
+    def _default_pitching_leaders(self) -> list[tuple[str, str]]:
+        return [
+            ("Wins Leader", "--"),
+            ("SO Leader", "--"),
+            ("Saves Leader", "--"),
+        ]
+
+    def _format_batting_leaders(
+        self,
+        leaders: Mapping[str, str] | None,
+    ) -> list[tuple[str, str]]:
+        formatted = dict(self._default_batting_leaders())
+        if leaders:
+            formatted["AVG Leader"] = leaders.get("avg") or formatted["AVG Leader"]
+            formatted["HR Leader"] = leaders.get("hr") or formatted["HR Leader"]
+            formatted["RBI Leader"] = leaders.get("rbi") or formatted["RBI Leader"]
+        return list(formatted.items())
+
+    def _format_pitching_leaders(
+        self,
+        leaders: Mapping[str, str] | None,
+    ) -> list[tuple[str, str]]:
+        formatted = dict(self._default_pitching_leaders())
+        if leaders:
+            formatted["Wins Leader"] = leaders.get("wins") or formatted["Wins Leader"]
+            formatted["SO Leader"] = leaders.get("so") or formatted["SO Leader"]
+            formatted["Saves Leader"] = leaders.get("saves") or formatted["Saves Leader"]
+        return list(formatted.items())
+
+    def _set_batting_leader_row(self, entries: list[tuple[str, str]]) -> None:
+        self.metrics_card.layout().removeWidget(self.batting_row)
+        self.batting_row.setParent(None)
+        self._batting_leaders = entries
+        self.batting_row = build_metric_row(self._batting_leaders, columns=3)
+        self.metrics_card.layout().insertWidget(2, self.batting_row)
+
+    def _set_pitching_leader_row(self, entries: list[tuple[str, str]]) -> None:
+        self.metrics_card.layout().removeWidget(self.pitching_row)
+        self.pitching_row.setParent(None)
+        self._pitching_leaders = entries
+        self.pitching_row = build_metric_row(self._pitching_leaders, columns=3)
+        self.metrics_card.layout().insertWidget(3, self.pitching_row)
 
     def _toggle_news(self, checked: bool) -> None:
         if not self.news_toggle.isEnabled():

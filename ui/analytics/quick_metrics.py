@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -12,6 +13,7 @@ from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.pitcher_role import get_role
 from utils.sim_date import get_current_sim_date
 from utils.standings_utils import normalize_record
+from utils.stats_persistence import load_stats as _load_season_stats
 
 DATE_FMT = "%Y-%m-%d"
 
@@ -95,6 +97,12 @@ def gather_owner_quick_metrics(
         "trends": trend_data,
         "last_game": last_game_played,
     }
+
+    batting_leaders, pitching_leaders = _collect_team_leaders(
+        base_dir, roster, players
+    )
+    metrics["batting_leaders"] = batting_leaders
+    metrics["pitching_leaders"] = pitching_leaders
     return metrics
 
 
@@ -466,6 +474,193 @@ def _collect_trend_data(
             "win_pct": [p["win_pct"] for p in trend_points],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Team leader helpers
+
+
+def _collect_team_leaders(
+    base_dir: Path,
+    roster: Any | None,
+    players: Mapping[str, Any] | None,
+) -> tuple[Dict[str, str], Dict[str, str]]:
+    batting = {"avg": "--", "hr": "--", "rbi": "--"}
+    pitching = {"wins": "--", "so": "--", "saves": "--"}
+    if roster is None or not players:
+        return batting, pitching
+
+    candidate_ids: list[str] = []
+    seen: set[str] = set()
+    for attr in ("act", "dl", "ir"):
+        try:
+            ids = getattr(roster, attr, []) or []
+        except Exception:
+            ids = []
+        for pid in ids:
+            if not pid:
+                continue
+            pid_str = str(pid)
+            if pid_str in seen:
+                continue
+            candidate_ids.append(pid_str)
+            seen.add(pid_str)
+    if not candidate_ids:
+        return batting, pitching
+
+    try:
+        stats_payload = _load_season_stats(base_dir / "data" / "season_stats.json")
+    except Exception:
+        stats_payload = {}
+    raw_player_stats = (
+        stats_payload.get("players", {}) if isinstance(stats_payload, Mapping) else {}
+    )
+
+    hitters: list[tuple[Any, Mapping[str, Any]]] = []
+    pitchers: list[tuple[Any, Mapping[str, Any]]] = []
+    for pid in candidate_ids:
+        player = players.get(pid)
+        if player is None:
+            continue
+        stats = raw_player_stats.get(pid, {})
+        if not isinstance(stats, Mapping):
+            stats = {}
+        if not stats:
+            local_stats = getattr(player, "season_stats", None)
+            if isinstance(local_stats, Mapping):
+                stats = local_stats
+        if _is_pitcher_type(player):
+            if _has_pitcher_sample(stats):
+                pitchers.append((player, stats))
+        else:
+            if _has_batter_sample(stats):
+                hitters.append((player, stats))
+
+    avg_leader = _find_avg_leader(hitters)
+    hr_leader = _find_stat_leader(hitters, ("hr", "HR"))
+    rbi_leader = _find_stat_leader(hitters, ("rbi", "RBI"))
+    win_leader = _find_stat_leader(pitchers, ("w", "wins", "W"))
+    so_leader = _find_stat_leader(pitchers, ("so", "SO", "k", "K"))
+    save_leader = _find_stat_leader(pitchers, ("sv", "SV", "saves", "S"))
+
+    batting["avg"] = _format_leader_entry(avg_leader, stat="avg")
+    batting["hr"] = _format_leader_entry(hr_leader, stat="int")
+    batting["rbi"] = _format_leader_entry(rbi_leader, stat="int")
+    pitching["wins"] = _format_leader_entry(win_leader, stat="int")
+    pitching["so"] = _format_leader_entry(so_leader, stat="int")
+    pitching["saves"] = _format_leader_entry(save_leader, stat="int")
+    return batting, pitching
+
+
+def _has_batter_sample(stats: Mapping[str, Any]) -> bool:
+    ab = _safe_float(_first_value(stats, ("ab", "AB")))
+    pa = _safe_float(_first_value(stats, ("pa", "PA")))
+    sample = ab if ab is not None else pa
+    return sample is not None and sample > 0
+
+
+def _has_pitcher_sample(stats: Mapping[str, Any]) -> bool:
+    outs = _safe_float(_first_value(stats, ("outs", "OUTS")))
+    if outs is None:
+        ip_val = _safe_float(_first_value(stats, ("ip", "IP")))
+        if ip_val is not None:
+            outs = ip_val * 3.0
+    return outs is not None and outs > 0
+
+
+def _find_avg_leader(
+    hitters: Sequence[tuple[Any, Mapping[str, Any]]],
+) -> Optional[tuple[Any, float]]:
+    leader: Optional[tuple[Any, float]] = None
+    for player, stats in hitters:
+        avg_val = _safe_float(_first_value(stats, ("avg", "AVG")))
+        if avg_val is None:
+            hits = _safe_float(_first_value(stats, ("h", "H"))) or 0.0
+            ab = _safe_float(_first_value(stats, ("ab", "AB")))
+            if ab is not None and ab > 0:
+                avg_val = hits / ab
+        ab_sample = _safe_float(_first_value(stats, ("ab", "AB")))
+        if avg_val is None or ab_sample is None or ab_sample <= 0:
+            continue
+        if leader is None or avg_val > leader[1]:
+            leader = (player, avg_val)
+    return leader
+
+
+def _find_stat_leader(
+    candidates: Sequence[tuple[Any, Mapping[str, Any]]],
+    keys: Sequence[str],
+) -> Optional[tuple[Any, float]]:
+    leader: Optional[tuple[Any, float]] = None
+    for player, stats in candidates:
+        value = _safe_float(_first_value(stats, keys))
+        if value is None:
+            continue
+        if leader is None or value > leader[1]:
+            leader = (player, value)
+    return leader
+
+
+def _format_leader_entry(
+    leader: Optional[tuple[Any, float]],
+    *,
+    stat: str,
+) -> str:
+    if leader is None:
+        return "--"
+    player, value = leader
+    name = _format_player_name(player)
+    if name == "--":
+        return "--"
+    if stat == "avg":
+        if not math.isfinite(value):
+            return "--"
+        formatted = f"{value:.3f}"
+        if value < 1:
+            formatted = formatted.lstrip("0")
+        return f"{name} {formatted}".strip()
+    if not math.isfinite(value):
+        return "--"
+    count = int(round(value))
+    return f"{name} {count}".strip()
+
+
+def _is_pitcher_type(player: Any) -> bool:
+    if player is None:
+        return False
+    if bool(getattr(player, "is_pitcher", False)):
+        return True
+    primary = str(getattr(player, "primary_position", "")).upper()
+    return primary in {"P", "SP", "RP", "CL"}
+
+
+def _safe_float(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        result = float(value)
+        if not math.isfinite(result):
+            return None
+        return result
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped or stripped in {"--", "NA", "N/A"}:
+            return None
+        try:
+            result = float(stripped)
+        except ValueError:
+            return None
+        if not math.isfinite(result):
+            return None
+        return result
+    return None
+
+
+def _first_value(stats: Mapping[str, Any], keys: Sequence[str]) -> Any:
+    for key in keys:
+        if key in stats:
+            return stats[key]
+    return None
 
 
 # ---------------------------------------------------------------------------

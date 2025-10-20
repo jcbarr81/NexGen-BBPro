@@ -4,3 +4,5 @@
 [2025-10-19 23:10:49] Season advanced to Regular Season
 [2025-10-19 23:41:34] Admin regenerated regular season schedule (972 games)
 [2025-10-19 23:54:25] Amateur Draft 2025 committed: 36 players added; 36 roster assignments
+[2025-10-20 02:30:44] League reset to Opening Day
+[2025-10-20 02:30:44] Purged saved season boxscores
