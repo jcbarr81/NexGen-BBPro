@@ -8,15 +8,19 @@ try:
 except ImportError:  # pragma: no cover - test stubs
     Qt = SimpleNamespace(
         AlignmentFlag=SimpleNamespace(
-            AlignCenter=None,
-            AlignHCenter=None,
-            AlignVCenter=None,
-            AlignLeft=None,
-            AlignRight=None,
-            AlignTop=None,
-            AlignBottom=None,
+            AlignCenter=0x0004,
+            AlignHCenter=0x0004,
+            AlignVCenter=0x0080,
+            AlignLeft=0x0001,
+            AlignRight=0x0002,
+            AlignTop=0x0020,
+            AlignBottom=0x0040,
         ),
         ToolButtonStyle=SimpleNamespace(ToolButtonTextBesideIcon=None),
+        ScrollBarPolicy=SimpleNamespace(
+            ScrollBarAlwaysOff=0,
+            ScrollBarAsNeeded=1,
+        ),
     )
 
     class QPointF:  # type: ignore[too-many-ancestors]
@@ -49,6 +53,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QToolButton,
     QVBoxLayout,
@@ -139,6 +144,7 @@ class OwnerHomePage(QWidget):
         self.quick_grid.setHorizontalSpacing(24)
         self.quick_grid.setVerticalSpacing(18)
         self.quick_buttons: list[QPushButton] = []
+        self._wide_button_width = 160
         button_data = [
             ("Lineups", self._dashboard.open_lineup_editor),
             ("Pitching Staff", self._dashboard.open_pitching_editor),
@@ -154,6 +160,12 @@ class OwnerHomePage(QWidget):
             row, col = divmod(idx, 2)
             self.quick_grid.addWidget(btn, row, col)
             self.quick_buttons.append(btn)
+        if self.quick_buttons:
+            self._wide_button_width = max(
+                getattr(btn, "_preferred_width", 160) for btn in self.quick_buttons
+            )
+        else:
+            self._wide_button_width = 160
         self.quick_actions_card.layout().addLayout(self.quick_grid)
 
         # Trendlines card -----------------------------------------------
@@ -191,8 +203,25 @@ class OwnerHomePage(QWidget):
         self.news_full = QLabel("No recent items.")
         self.news_full.setWordWrap(True)
         self.news_full.setObjectName("NewsFull")
-        self.news_full.setVisible(False)
-        self.news_card.layout().addWidget(self.news_full)
+        self.news_full.setAlignment(
+            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
+        )
+        self.news_full_area = QScrollArea()
+        self.news_full_area.setWidgetResizable(True)
+        self.news_full_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.news_full_area.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+        self.news_full_area.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        self.news_full_area.setMaximumHeight(240)
+        self.news_full_area.setVisible(False)
+        self.news_full_area.setWidget(self.news_full)
+        self.news_card.layout().addWidget(self.news_full_area)
 
         self._news_lines: list[str] = []
 
@@ -277,10 +306,25 @@ class OwnerHomePage(QWidget):
     def _make_action_button(self, label: str, callback: Callable[[], None]) -> QPushButton:
         btn = QPushButton(label, objectName="Primary")
         btn.setMinimumHeight(64)
-        btn.setMinimumWidth(150)
-        btn.setMaximumWidth(200)
+        if hasattr(btn, "setWordWrap"):
+            btn.setWordWrap(True)
+        hint_width = btn.sizeHint().width()
+        metrics = btn.fontMetrics() if hasattr(btn, "fontMetrics") else None
+        if metrics is not None:
+            horizontal_advance = getattr(metrics, "horizontalAdvance", None)
+            if callable(horizontal_advance):
+                text_width = horizontal_advance(label)
+            else:
+                text_width = metrics.boundingRect(label).width()
+        else:
+            text_width = len(label) * 9
+        padding = 32  # matches 16px horizontal padding in the theme
+        preferred_width = max(160, hint_width, text_width + padding)
+        btn._preferred_width = preferred_width  # type: ignore[attr-defined]
+        btn.setMinimumWidth(preferred_width)
+        btn.setMaximumWidth(preferred_width)
         btn.setSizePolicy(
-            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Fixed,
             QSizePolicy.Policy.Expanding,
         )
         btn.clicked.connect(callback)
@@ -290,7 +334,12 @@ class OwnerHomePage(QWidget):
         if not self.news_toggle.isEnabled():
             self.news_toggle.setChecked(False)
             return
-        self.news_full.setVisible(checked)
+        self.news_full_area.setVisible(checked)
+        if checked:
+            try:
+                self.news_full_area.verticalScrollBar().setValue(0)
+            except AttributeError:
+                pass
         self.news_toggle.setText("Hide full feed" if checked else "View all")
 
     def _update_news_display(self) -> None:
@@ -300,7 +349,7 @@ class OwnerHomePage(QWidget):
             self.news_toggle.setEnabled(False)
             self.news_toggle.setChecked(False)
             self.news_toggle.setText("View all")
-            self.news_full.setVisible(False)
+            self.news_full_area.setVisible(False)
             return
 
         preview_lines = list(reversed(self._news_lines[-3:]))
@@ -312,9 +361,9 @@ class OwnerHomePage(QWidget):
         if not has_extra:
             self.news_toggle.setChecked(False)
             self.news_toggle.setText("View all")
-            self.news_full.setVisible(False)
+            self.news_full_area.setVisible(False)
         else:
-            self.news_full.setVisible(self.news_toggle.isChecked())
+            self.news_full_area.setVisible(self.news_toggle.isChecked())
             self.news_toggle.setText(
                 "Hide full feed" if self.news_toggle.isChecked() else "View all"
             )
@@ -326,6 +375,7 @@ class OwnerHomePage(QWidget):
                 item.widget().setParent(None)
 
         narrow = columns == 1
+        wide_width = getattr(self, "_wide_button_width", 160)
         for btn in self.quick_buttons:
             if narrow:
                 btn.setMinimumWidth(0)
@@ -335,10 +385,11 @@ class OwnerHomePage(QWidget):
                     QSizePolicy.Policy.Expanding,
                 )
             else:
-                btn.setMinimumWidth(150)
-                btn.setMaximumWidth(200)
+                preferred_width = getattr(btn, "_preferred_width", wide_width)
+                btn.setMinimumWidth(preferred_width)
+                btn.setMaximumWidth(preferred_width)
                 btn.setSizePolicy(
-                    QSizePolicy.Policy.Preferred,
+                    QSizePolicy.Policy.Fixed,
                     QSizePolicy.Policy.Expanding,
                 )
         for idx, btn in enumerate(self.quick_buttons):
@@ -350,7 +401,7 @@ class OwnerHomePage(QWidget):
             stretch = 1 if narrow else 0
             self.quick_grid.setColumnStretch(idx, stretch)
             if not narrow:
-                self.quick_grid.setColumnMinimumWidth(idx, 160)
+                self.quick_grid.setColumnMinimumWidth(idx, wide_width)
 
     def _apply_layout_mode(self, mode: str) -> None:
         if self._layout_mode == mode:

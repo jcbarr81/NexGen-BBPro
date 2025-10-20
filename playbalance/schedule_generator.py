@@ -17,12 +17,23 @@ number of teams a bye is automatically inserted each round and games
 involving the bye are skipped.
 """
 
+from collections import defaultdict, deque
+from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Iterable, List, Dict
 import csv
 
 __all__ = ["generate_schedule", "generate_mlb_schedule", "save_schedule"]
+
+
+@dataclass
+class Series:
+    """Representation of a multi-game series."""
+
+    home: str
+    away: str
+    length: int
 
 
 def _round_robin_pairs(teams: List[str]) -> List[List[tuple[str, str]]]:
@@ -143,48 +154,212 @@ def generate_mlb_schedule(
         and ``away`` team keys representing a single game.
     """
 
-    teams_list = list(teams)
+    teams_list = [team for team in teams if team]
     if not teams_list:
         return []
 
-    base_cycle = generate_schedule(teams_list, start_date)
-    first = date.fromisoformat(base_cycle[0]["date"])
-    last = date.fromisoformat(base_cycle[-1]["date"])
-    cycle_span = (last - first).days + 1
-    games_per_cycle_per_team = 2 * (len(teams_list) - 1)
+    series_plan = _build_series_plan(teams_list, games_per_team)
+    return _build_series_schedule(teams_list, series_plan, start_date)
 
-    full_cycles, remainder = divmod(games_per_team, games_per_cycle_per_team)
 
-    schedule: List[Dict[str, str]] = []
-    offset = 0
+def _series_order(teams: List[str]) -> List[tuple[str, str]]:
+    """Return the deterministic ordering of series pairings."""
 
-    # Add complete cycles
-    for _ in range(full_cycles):
-        for game in base_cycle:
-            adjusted_date = (
-                date.fromisoformat(game["date"]) + timedelta(days=offset)
-            ).isoformat()
-            schedule.append(
-                {"date": adjusted_date, "home": game["home"], "away": game["away"]}
+    order: List[tuple[str, str]] = []
+    rounds = _round_robin_pairs(teams)
+    for round_games in rounds:
+        order.extend(round_games)
+    for round_games in rounds:
+        order.extend((away, home) for home, away in round_games)
+    return order
+
+
+def _required_cycles(team_count: int, games_per_team: int) -> int:
+    """Return the number of home/away series cycles needed to hit the target."""
+
+    if team_count < 2:
+        return 0
+
+    base_min = 4 * (team_count - 1)
+    if games_per_team < base_min:
+        raise ValueError(
+            f"games_per_team={games_per_team} is smaller than the "
+            f"minimum achievable total of {base_min} for {team_count} teams"
+        )
+
+    cycles = 1
+    while True:
+        min_possible = cycles * base_min
+        max_possible = cycles * 8 * (team_count - 1)
+        if min_possible <= games_per_team <= max_possible:
+            return cycles
+        if games_per_team < min_possible:
+            raise ValueError(
+                f"games_per_team={games_per_team} is too small for any "
+                f"configuration with {team_count} teams"
             )
-        offset += cycle_span
+        cycles += 1
 
-    if remainder:
-        extra_counts = {t: 0 for t in teams_list}
-        for game in base_cycle:
-            home = game["home"]
-            away = game["away"]
-            if extra_counts[home] >= remainder or extra_counts[away] >= remainder:
-                continue
-            adjusted_date = (
-                date.fromisoformat(game["date"]) + timedelta(days=offset)
-            ).isoformat()
-            schedule.append({"date": adjusted_date, "home": home, "away": away})
-            extra_counts[home] += 1
-            extra_counts[away] += 1
-            if all(c >= remainder for c in extra_counts.values()):
-                break
 
+def _build_series_plan(teams: List[str], games_per_team: int) -> List[Series]:
+    """Construct the series list required to satisfy *games_per_team*."""
+
+    team_count = len(teams)
+    if team_count < 2:
+        return []
+
+    cycles = _required_cycles(team_count, games_per_team)
+    order = _series_order(teams)
+
+    plan: List[Series] = []
+    for _ in range(cycles):
+        for home, away in order:
+            plan.append(Series(home=home, away=away, length=3))
+
+    totals: Dict[str, int] = defaultdict(int)
+    for series in plan:
+        totals[series.home] += series.length
+        totals[series.away] += series.length
+
+    expected = next(iter(totals.values()))
+    if any(total != expected for total in totals.values()):
+        raise ValueError("Internal series generation imbalance detected.")
+
+    delta = expected - games_per_team
+    if delta > 0:
+        reductions = {team: delta for team in teams}
+        for series in plan:
+            while (
+                series.length > 2
+                and reductions[series.home] > 0
+                and reductions[series.away] > 0
+            ):
+                series.length -= 1
+                reductions[series.home] -= 1
+                reductions[series.away] -= 1
+        if any(value > 0 for value in reductions.values()):
+            raise ValueError(
+                "Unable to reach the requested games_per_team by "
+                "shortening series lengths."
+            )
+    elif delta < 0:
+        additions = {team: -delta for team in teams}
+        for series in plan:
+            while (
+                series.length < 4
+                and additions[series.home] > 0
+                and additions[series.away] > 0
+            ):
+                series.length += 1
+                additions[series.home] -= 1
+                additions[series.away] -= 1
+        if any(value > 0 for value in additions.values()):
+            raise ValueError(
+                "Unable to reach the requested games_per_team by "
+                "extending series lengths."
+            )
+
+    _validate_plan(plan, teams, games_per_team)
+    return plan
+
+
+def _validate_plan(plan: List[Series], teams: List[str], games_per_team: int) -> None:
+    """Ensure the plan yields the expected number of games for each team."""
+
+    totals: Dict[str, int] = defaultdict(int)
+    for series in plan:
+        totals[series.home] += series.length
+        totals[series.away] += series.length
+    for team in teams:
+        if totals[team] != games_per_team:
+            raise ValueError(
+                f"Series plan imbalance detected for {team!r}: "
+                f"{totals[team]} games vs expected {games_per_team}"
+            )
+
+
+def _series_remaining(
+    queues: Dict[tuple[str, str], deque[Series]]
+) -> bool:
+    """Return True if any series still exists."""
+
+    return any(queue for queue in queues.values())
+
+
+def _build_series_schedule(
+    teams: List[str],
+    plan: List[Series],
+    start_date: date,
+) -> List[Dict[str, str]]:
+    """Expand a series plan into a day-by-day schedule."""
+
+    if not plan:
+        return []
+
+    rounds = _round_robin_pairs(teams)
+    if not rounds:
+        return []
+
+    reverse_rounds = [
+        [(away, home) for home, away in round_games] for round_games in rounds
+    ]
+
+    if len(rounds) <= 1:
+        patterns = rounds + reverse_rounds
+    else:
+        patterns = []
+        total_rounds = len(rounds)
+        for idx in range(total_rounds):
+            patterns.append(rounds[idx])
+            patterns.append(reverse_rounds[(idx + 1) % total_rounds])
+
+    queues: Dict[tuple[str, str], deque[Series]] = defaultdict(deque)
+    for series in plan:
+        queues[(series.home, series.away)].append(series)
+
+    total_games = sum(series.length for series in plan)
+    schedule: List[Dict[str, str]] = []
+    current = start_date
+    games_scheduled = 0
+    pattern_index = 0
+    all_star_inserted = False
+
+    while _series_remaining(queues):
+        round_games = patterns[pattern_index % len(patterns)]
+        pattern_index += 1
+
+        assignments: List[Series] = []
+        for home, away in round_games:
+            queue = queues[(home, away)]
+            if queue:
+                assignments.append(queue.popleft())
+
+        if not assignments:
+            continue
+
+        for series in assignments:
+            for offset in range(series.length):
+                date_value = (current + timedelta(days=offset)).isoformat()
+                schedule.append(
+                    {"date": date_value, "home": series.home, "away": series.away}
+                )
+                games_scheduled += 1
+
+        round_length = max(series.length for series in assignments)
+        current += timedelta(days=round_length)
+
+        if (
+            not all_star_inserted
+            and games_scheduled >= total_games / 2
+            and _series_remaining(queues)
+        ):
+            current += timedelta(days=6)
+            all_star_inserted = True
+
+        if _series_remaining(queues):
+            current += timedelta(days=1)
+
+    schedule.sort(key=lambda g: (g["date"], g["home"], g["away"]))
     return schedule
 
 

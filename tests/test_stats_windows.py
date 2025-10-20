@@ -69,3 +69,71 @@ def test_league_stats_window_instantiates():
 def test_league_leaders_window_instantiates():
     players = _sample_players()
     LeagueLeadersWindow(players.values())
+
+
+def test_leader_fallback_includes_relief_pitchers():
+    window = LeagueLeadersWindow.__new__(LeagueLeadersWindow)
+    qualified = [
+        SimpleNamespace(
+            player_id="starter",
+            first_name="Ace",
+            last_name="Starter",
+            is_pitcher=True,
+            season_stats={"sv": 0},
+        )
+    ]
+    fallback = qualified + [
+        SimpleNamespace(
+            player_id=f"closer{i}",
+            first_name="Closer",
+            last_name=str(i),
+            is_pitcher=True,
+            season_stats={"sv": 10 - i},
+        )
+        for i in range(5)
+    ]
+
+    leaders = window._leaders_for_category(
+        qualified,
+        fallback,
+        "sv",
+        pitcher_only=True,
+        descending=True,
+        limit=5,
+    )
+
+    ids = {player.player_id for player, _ in leaders}
+    assert ids == {f"closer{i}" for i in range(5)}
+
+
+def test_leader_fallback_skips_pitchers_without_samples():
+    window = LeagueLeadersWindow.__new__(LeagueLeadersWindow)
+    qualified = []
+    fallback = [
+        SimpleNamespace(
+            player_id="no_stats",
+            first_name="Bullpen",
+            last_name="Ghost",
+            is_pitcher=True,
+            season_stats={"sv": 8},
+        ),
+        SimpleNamespace(
+            player_id="with_stats",
+            first_name="Relief",
+            last_name="Ace",
+            is_pitcher=True,
+            season_stats={"sv": 7, "ip": 12.1, "era": 2.5},
+        ),
+    ]
+
+    leaders = window._leaders_for_category(
+        qualified,
+        fallback,
+        "era",
+        pitcher_only=True,
+        descending=False,
+        limit=5,
+    )
+
+    ids = {player.player_id for player, _ in leaders}
+    assert ids == {"with_stats"}

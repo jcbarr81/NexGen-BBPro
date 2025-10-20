@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import json
 import shutil
+from datetime import date
 from typing import Callable, Iterable, Optional, Tuple
 
 from PyQt6.QtCore import QTimer
@@ -15,6 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from playbalance.league_creator import create_league
+from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
 from playbalance.season_manager import SeasonManager, SeasonPhase
 
 from ui.team_entry_dialog import TeamEntryDialog
@@ -22,6 +24,7 @@ from ui.window_utils import ensure_on_top
 from utils.news_logger import log_news_event
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
+from utils.team_loader import load_teams
 
 from ..context import DashboardContext
 
@@ -376,5 +379,90 @@ def reset_season_to_opening_day(
         handle_result(_Immediate(result))
 
 
-__all__ = ["create_league_action", "reset_season_to_opening_day"]
+def regenerate_schedule_action(
+    context: DashboardContext,
+    parent: Optional[QWidget] = None,
+) -> None:
+    """Generate a fresh regular-season schedule and overwrite schedule.csv."""
+
+    if parent is None:
+        return
+
+    confirm = QMessageBox.question(
+        parent,
+        "Regenerate Regular Season Schedule",
+        (
+            "This will overwrite the existing regular-season schedule and clear "
+            "any recorded results. Continue?"
+        ),
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+    )
+    if confirm != QMessageBox.StandardButton.Yes:
+        return
+
+    data_root = get_base_dir() / "data"
+    teams_path = data_root / "teams.csv"
+    try:
+        teams = [team.team_id for team in load_teams(teams_path)]
+    except Exception as exc:
+        QMessageBox.critical(
+            parent,
+            "Unable to Load Teams",
+            f"Failed reading teams from {teams_path}:\n{exc}",
+        )
+        return
+
+    if not teams:
+        QMessageBox.warning(parent, "No Teams", "No teams found to schedule.")
+        return
+
+    start = date(date.today().year, 4, 1)
+    schedule_path = data_root / "schedule.csv"
+
+    try:
+        schedule = generate_mlb_schedule(teams, start)
+        save_schedule(schedule, schedule_path)
+    except Exception as exc:
+        QMessageBox.critical(parent, "Schedule Generation Failed", str(exc))
+        return
+
+    try:
+        from playbalance.season_context import SeasonContext as _SeasonContext
+
+        if schedule:
+            first_date = str(schedule[0].get("date", "")).strip()
+            if first_date:
+                try:
+                    year = int(first_date.split("-")[0])
+                except Exception:
+                    year = None
+                ctx = _SeasonContext.load()
+                ctx.ensure_current_season(league_year=year, started_on=first_date)
+    except Exception:
+        pass
+
+    try:
+        log_news_event(
+            f"Admin regenerated regular season schedule ({len(schedule)} games)"
+        )
+    except Exception:
+        pass
+
+    message = (
+        f"Schedule regenerated with {len(schedule)} games.\n"
+        "All previous results have been cleared."
+    )
+    QMessageBox.information(parent, "Schedule Regenerated", message)
+    if context.show_toast:
+        try:
+            context.show_toast("success", message)
+        except Exception:
+            pass
+
+
+__all__ = [
+    "create_league_action",
+    "regenerate_schedule_action",
+    "reset_season_to_opening_day",
+]
 

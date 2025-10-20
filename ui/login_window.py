@@ -8,14 +8,6 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 from PyQt6.QtCore import Qt
-try:  # Qt timer is optional under our test stubs
-    from PyQt6.QtCore import QTimer
-except ImportError:  # pragma: no cover - exercised via stubbed tests
-    class QTimer:  # type: ignore[override]
-        @staticmethod
-        def singleShot(_msec, callback):
-            if callable(callback):
-                callback()
 import sys
 import importlib
 
@@ -50,34 +42,17 @@ class LoginWindow(QWidget):
         self.login_button.setDefault(True)
         self.login_button.clicked.connect(self.handle_login)
 
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Username:"))
-        layout.addWidget(self.username_input)
-        layout.addWidget(QLabel("Password:"))
-        layout.addWidget(self.password_input)
-        layout.addWidget(self.login_button)
-        self.setLayout(layout)
+        self._build_layout()
 
         # Connect returnPressed signal to login
         self.username_input.returnPressed.connect(self.handle_login)
         self.password_input.returnPressed.connect(self.handle_login)
 
         self.dashboard = None
-        self._center_pending = True
-        self._center_scheduled = False
 
     def showEvent(self, event):
         super().showEvent(event)
-        self._center_pending = True
-        self._center_on_screen()
-        for delay in (20, 80, 160):
-            QTimer.singleShot(delay, self._center_on_screen)
-
-    def moveEvent(self, event):
-        super().moveEvent(event)
-        if self._center_pending and not self._center_scheduled:
-            self._center_scheduled = True
-            QTimer.singleShot(0, self._center_on_screen)
+        self._ensure_maximized()
 
     def handle_login(self):
         username = self.username_input.text()
@@ -166,99 +141,57 @@ class LoginWindow(QWidget):
             self.splash.login_button.setEnabled(True)
         event.accept()
 
-    def _center_on_screen(self) -> None:
-        """Center the login window on the active screen."""
-        self._center_scheduled = False
-        screen = None
+    def _ensure_maximized(self) -> None:
+        """Ensure the login window is maximized."""
+        state_enum = getattr(Qt, "WindowState", None)
+        window_state = getattr(self, "windowState", None)
+        set_state = getattr(self, "setWindowState", None)
+        show_max = getattr(self, "showMaximized", None)
 
-        handle_fn = getattr(self, "windowHandle", None)
-        if callable(handle_fn):
-            handle = handle_fn()
-            screen_fn = getattr(handle, "screen", None) if handle is not None else None
-            if callable(screen_fn):
-                screen = screen_fn()
-
-        if screen is None:
-            screen_fn = getattr(self, "screen", None)
-            if callable(screen_fn):
-                screen = screen_fn()
-
-        if screen is None:
-            instance_fn = getattr(QApplication, "instance", None)
-            if callable(instance_fn):
-                app = instance_fn()
-                if app is not None:
-                    primary_fn = getattr(app, "primaryScreen", None)
-                    if callable(primary_fn):
-                        screen = primary_fn()
-
-        if screen is None:
+        if state_enum is not None and callable(window_state) and callable(set_state):
             try:
-                from PyQt6.QtGui import QGuiApplication  # type: ignore
-            except ImportError:
-                QGuiApplication = None  # type: ignore[assignment]
-            if QGuiApplication is not None:
-                screen = QGuiApplication.primaryScreen()
-
-        if screen is None:
-            return
-
-        available = getattr(screen, "availableGeometry", lambda: None)()
-        if available is None:
-            return
-        avail_center = getattr(available, "center", lambda: None)()
-
-        is_visible = getattr(self, "isVisible", lambda: False)()
-        if is_visible:
-            frame = getattr(self, "frameGeometry", lambda: None)()
-            if frame is not None and getattr(frame, "isValid", lambda: False)():
-                width = getattr(frame, "width", lambda: 0)()
-                height = getattr(frame, "height", lambda: 0)()
-                if width > 0 and height > 0 and avail_center is not None:
-                    target_x = int(getattr(avail_center, "x", lambda: 0)() - width / 2)
-                    target_y = int(getattr(avail_center, "y", lambda: 0)() - height / 2)
-                    current_top_left = getattr(frame, "topLeft", lambda: None)()
-                    current_x = getattr(current_top_left, "x", lambda: target_x)()
-                    current_y = getattr(current_top_left, "y", lambda: target_y)()
-                    if abs(current_x - target_x) <= 1 and abs(current_y - target_y) <= 1:
-                        self._center_pending = False
-                        return
-                    self.move(target_x, target_y)
+                current_state = window_state()
+                desired = getattr(state_enum, "WindowMaximized", None)
+                if desired is not None and current_state is not None:
+                    set_state(current_state | desired)
+                    activate = getattr(self, "activateWindow", None)
+                    if callable(activate):
+                        activate()
                     return
+            except Exception:
+                pass
 
-        hint = getattr(self, "sizeHint", lambda: None)()
-        if hint is None or not getattr(hint, "isValid", lambda: False)():
-            adjust = getattr(self, "adjustSize", None)
-            if callable(adjust):
-                adjust()
-            hint = getattr(self, "sizeHint", lambda: None)()
+        if callable(show_max):
+            try:
+                show_max()
+            except Exception:
+                pass
 
-        if hint is None:
-            return
+    def _build_layout(self) -> None:
+        """Build a maximized layout with centered login controls."""
+        root = QVBoxLayout()
+        root.setContentsMargins(80, 80, 80, 80)
+        root.setSpacing(24)
 
-        width = getattr(hint, "width", lambda: 0)()
-        height = getattr(hint, "height", lambda: 0)()
-        if width <= 0 or height <= 0:
-            return
+        form_panel = QWidget()
+        form_panel.setObjectName("LoginPanel")
+        form = QVBoxLayout(form_panel)
+        form.setSpacing(12)
+        form.setContentsMargins(32, 32, 32, 32)
 
-        avail_x = getattr(available, "x", lambda: 0)()
-        avail_y = getattr(available, "y", lambda: 0)()
-        avail_w = getattr(available, "width", lambda: width)()
-        avail_h = getattr(available, "height", lambda: height)()
+        title_user = QLabel("Username:")
+        title_pass = QLabel("Password:")
+        form.addWidget(title_user, alignment=Qt.AlignmentFlag.AlignLeft)
+        form.addWidget(self.username_input)
+        form.addWidget(title_pass, alignment=Qt.AlignmentFlag.AlignLeft)
+        form.addWidget(self.password_input)
+        form.addWidget(self.login_button, alignment=Qt.AlignmentFlag.AlignRight)
 
-        x = int(avail_x + max(0, (avail_w - width) / 2))
-        y = int(avail_y + max(0, (avail_h - height) / 2))
+        root.addStretch(3)
+        root.addWidget(form_panel, alignment=Qt.AlignmentFlag.AlignCenter)
+        root.addStretch(4)
 
-        set_geometry = getattr(self, "setGeometry", None)
-        if callable(set_geometry):
-            set_geometry(x, y, width, height)
-        else:
-            move = getattr(self, "move", None)
-            resize = getattr(self, "resize", None)
-            if callable(resize):
-                resize(width, height)
-            if callable(move):
-                move(x, y)
+        self.setLayout(root)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -12,12 +12,15 @@ _tracked_windows: "weakref.WeakSet" = weakref.WeakSet()
 
 def _apply_flag(window, enable: bool) -> None:
     """Apply or remove the WindowStaysOnTopHint flag for *window*."""
-    flags = window.windowFlags()
-    if enable:
-        window.setWindowFlags(flags | Qt.WindowType.WindowStaysOnTopHint)
-    else:
-        window.setWindowFlags(flags & ~Qt.WindowType.WindowStaysOnTopHint)
-    # Re-show to ensure the new flags take effect
+    try:
+        window.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, enable)
+    except AttributeError:  # pragma: no cover - legacy fallback
+        flags = window.windowFlags()
+        if enable:
+            window.setWindowFlags(flags | Qt.WindowType.WindowStaysOnTopHint)
+        else:
+            window.setWindowFlags(flags & ~Qt.WindowType.WindowStaysOnTopHint)
+
     window.show()
 
 

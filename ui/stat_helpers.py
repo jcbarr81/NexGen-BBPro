@@ -37,6 +37,22 @@ def _ensure_stats(player: BasePlayer) -> Dict[str, Any]:
     return stats or {}
 
 
+def _is_outlier_stat_line(stats: Dict[str, Any]) -> bool:
+    try:
+        games = float(stats.get('g', 0) or 0)
+        plate_appearances = float(stats.get('pa', 0) or 0)
+        at_bats = float(stats.get('ab', 0) or 0)
+    except (TypeError, ValueError):
+        return False
+    if games > 200:
+        return True
+    if plate_appearances > 900:
+        return True
+    if at_bats > 800:
+        return True
+    return False
+
+
 def batting_summary(players: Iterable[BasePlayer]) -> List[Tuple[str, str]]:
     hitters = list(players)
     totals = dict(ab=0.0, h=0.0, bb=0.0, hbp=0.0, sf=0.0, hr=0.0, r=0.0, sb=0.0, b2=0.0, b3=0.0)
@@ -108,13 +124,18 @@ def pitching_summary(players: Iterable[BasePlayer]) -> List[Tuple[str, str]]:
 
 
 def top_players(players: Iterable[BasePlayer], key: str, *, pitcher_only: bool, descending: bool = True, limit: int = 5) -> List[Tuple[BasePlayer, Any]]:
-    pool: List[BasePlayer] = [p for p in players if getattr(p, 'is_pitcher', False) == pitcher_only]
-    def _value(player: BasePlayer) -> Any:
-        return _ensure_stats(player).get(key, 0)
-    pool.sort(key=_value, reverse=descending)
+    eligible: List[Tuple[BasePlayer, Any]] = []
+    for player in players:
+        if getattr(player, 'is_pitcher', False) != pitcher_only:
+            continue
+        stats = _ensure_stats(player)
+        if _is_outlier_stat_line(stats):
+            continue
+        value = stats.get(key, 0)
+        eligible.append((player, value))
+    eligible.sort(key=lambda item: item[1], reverse=descending)
     results: List[Tuple[BasePlayer, Any]] = []
-    for player in pool:
-        value = _value(player)
+    for player, value in eligible:
         if descending and (value is None or value == 0):
             continue
         if value is None:

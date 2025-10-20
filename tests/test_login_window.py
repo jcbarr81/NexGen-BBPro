@@ -20,6 +20,8 @@ class QWidget:
         pass
     def setGeometry(self, *args, **kwargs):
         pass
+    def setObjectName(self, *args, **kwargs):
+        pass
     def close(self):
         pass
     def show(self):
@@ -27,6 +29,8 @@ class QWidget:
     def raise_(self):
         pass
     def activateWindow(self):
+        pass
+    def showMaximized(self):
         pass
 
 class QLabel:
@@ -59,7 +63,17 @@ class QPushButton:
         pass
 
 class QVBoxLayout:
+    def __init__(self, *args, **kwargs):
+        pass
     def addWidget(self, *args, **kwargs):
+        pass
+    def addStretch(self, *args, **kwargs):
+        pass
+    def addLayout(self, *args, **kwargs):
+        pass
+    def setContentsMargins(self, *args, **kwargs):
+        pass
+    def setSpacing(self, *args, **kwargs):
         pass
 
 class QMessageBox:
@@ -89,6 +103,8 @@ qtcore = types.ModuleType("PyQt6.QtCore")
 class Qt:
     class AlignmentFlag:
         AlignCenter = 0
+        AlignLeft = 1
+        AlignRight = 2
 qtcore.Qt = Qt
 sys.modules['PyQt6.QtCore'] = qtcore
 

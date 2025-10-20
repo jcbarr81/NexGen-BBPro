@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Tuple, Dict, Any
+from typing import Iterable, List, Tuple, Dict, Any, Optional
 
 from types import SimpleNamespace
 
@@ -124,14 +124,33 @@ class LeagueLeadersWindow(QDialog):
 
         tabs = QTabWidget()
         layout.addWidget(tabs)
-        tabs.addTab(self._build_leader_tab("Batting Leaders", self._qualified_batters(hitters), _BATTING_CATEGORIES), "Batting")
-        tabs.addTab(self._build_leader_tab("Pitching Leaders", self._qualified_pitchers(pitchers), _PITCHING_CATEGORIES), "Pitching")
+        tabs.addTab(
+            self._build_leader_tab(
+                "Batting Leaders",
+                self._qualified_batters(hitters),
+                _BATTING_CATEGORIES,
+                fallback_players=hitters,
+            ),
+            "Batting",
+        )
+        tabs.addTab(
+            self._build_leader_tab(
+                "Pitching Leaders",
+                self._qualified_pitchers(pitchers),
+                _PITCHING_CATEGORIES,
+                fallback_players=pitchers,
+            ),
+            "Pitching",
+        )
 
     def _build_leader_tab(
         self,
         title: str,
         players: List[BasePlayer],
         categories: List[Tuple[str, str, bool, bool, int]],
+        *,
+        fallback_players: Optional[Iterable[BasePlayer]] = None,
+        limit: int = 5,
     ) -> Card:
         card = Card()
         layout = ensure_layout(card)
@@ -141,8 +160,16 @@ class LeagueLeadersWindow(QDialog):
             grid.setContentsMargins(0, 0, 0, 0)
         if callable(getattr(grid, "setSpacing", None)):
             grid.setSpacing(16)
+        fallback_pool = list(fallback_players) if fallback_players is not None else list(players)
         for idx, (label, key, descending, pitcher_only, decimals) in enumerate(categories):
-            leaders = top_players(players, key, pitcher_only=pitcher_only, descending=descending, limit=5)
+            leaders = self._leaders_for_category(
+                players,
+                fallback_pool,
+                key,
+                pitcher_only=pitcher_only,
+                descending=descending,
+                limit=limit,
+            )
             table = QTableWidget(len(leaders), 3)
             try:
                 table.setHorizontalHeaderLabels([label, "Player", "Value"])
@@ -183,6 +210,83 @@ class LeagueLeadersWindow(QDialog):
             _call_if_exists(grid, "addWidget", table, idx // 2, idx % 2)
         _call_if_exists(layout, "addLayout", grid)
         return card
+
+    def _leaders_for_category(
+        self,
+        players: Iterable[BasePlayer],
+        fallback_players: Iterable[BasePlayer],
+        key: str,
+        *,
+        pitcher_only: bool,
+        descending: bool,
+        limit: int,
+    ) -> List[Tuple[BasePlayer, Any]]:
+        leaders = [
+            (player, value)
+            for player, value in top_players(
+                players,
+                key,
+                pitcher_only=pitcher_only,
+                descending=descending,
+                limit=limit,
+            )
+            if self._has_stat_sample(player, key)
+        ]
+        if len(leaders) >= limit:
+            return leaders
+        fallback_list = list(fallback_players)
+        if not fallback_list:
+            return leaders
+        existing = {
+            getattr(player, "player_id", None) or id(player) for player, _ in leaders
+        }
+        for candidate, value in top_players(
+            fallback_list,
+            key,
+            pitcher_only=pitcher_only,
+            descending=descending,
+            limit=limit * 2,
+        ):
+            if not self._has_stat_sample(candidate, key):
+                continue
+            identifier = getattr(candidate, "player_id", None) or id(candidate)
+            if identifier in existing:
+                continue
+            leaders.append((candidate, value))
+            existing.add(identifier)
+            if len(leaders) >= limit:
+                break
+        return leaders
+
+    def _has_stat_sample(self, player: BasePlayer, key: str) -> bool:
+        stats = getattr(player, "season_stats", {}) or {}
+        if key in {"era", "whip"}:
+            ip = stats.get("ip")
+            if ip is None:
+                outs = stats.get("outs")
+                try:
+                    ip = (outs or 0) / 3.0
+                except Exception:
+                    ip = 0.0
+            try:
+                return float(ip or 0) > 0.0
+            except Exception:
+                return False
+        if key == "avg":
+            try:
+                return int(stats.get("ab", 0) or 0) > 0
+            except Exception:
+                return False
+        if key == "obp":
+            try:
+                ab = float(stats.get("ab", 0) or 0)
+                bb = float(stats.get("bb", 0) or 0)
+                hbp = float(stats.get("hbp", 0) or 0)
+                sf = float(stats.get("sf", 0) or 0)
+            except Exception:
+                return False
+            return (ab + bb + hbp + sf) > 0
+        return True
 
     # Load players merged with season stats so leaders reflect current file
     def _load_players_with_stats(self) -> List[BasePlayer]:
