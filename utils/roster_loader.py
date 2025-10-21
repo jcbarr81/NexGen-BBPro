@@ -16,6 +16,7 @@ ACTIVE_ROSTER_SIZE = 25
 _PLACEHOLDER_PLAYERS_FILE = "data/players.csv"
 _PLACEHOLDER_HITTERS = 17
 _PLACEHOLDER_PITCHERS = 8
+_PLACEHOLDER_LOAD_WARNING_EMITTED = False
 
 
 def _placeholder_registry_path() -> Path:
@@ -33,9 +34,22 @@ class _PlaceholderPool:
         self._loaded = False
 
     def _ensure_loaded(self) -> None:
+        global _PLACEHOLDER_LOAD_WARNING_EMITTED
         if self._loaded:
             return
-        players = load_players_from_csv(_PLACEHOLDER_PLAYERS_FILE)
+        try:
+            players = load_players_from_csv(_PLACEHOLDER_PLAYERS_FILE)
+        except Exception as exc:
+            if not _PLACEHOLDER_LOAD_WARNING_EMITTED:
+                warnings.warn(
+                    f"Unable to load placeholder players: {exc}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                _PLACEHOLDER_LOAD_WARNING_EMITTED = True
+            players = []
+        else:
+            _PLACEHOLDER_LOAD_WARNING_EMITTED = False
         hitters = [
             p for p in players if not getattr(p, "is_pitcher", False)
         ]

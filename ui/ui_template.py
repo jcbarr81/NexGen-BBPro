@@ -1,7 +1,69 @@
 import sys
 from pathlib import Path
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QFont, QPixmap, QPainter, QColor, QPen, QPainterPath, QIcon
+from types import SimpleNamespace
+
+try:
+    from PyQt6.QtCore import Qt, QSize
+except ImportError:  # pragma: no cover - test stubs
+    Qt = SimpleNamespace(
+        AspectRatioMode=SimpleNamespace(KeepAspectRatio=None),
+        TransformationMode=SimpleNamespace(SmoothTransformation=None),
+        AlignmentFlag=SimpleNamespace(
+            AlignCenter=None,
+            AlignVCenter=None,
+            AlignRight=None,
+        ),
+        GlobalColor=SimpleNamespace(transparent=None),
+        PenStyle=SimpleNamespace(NoPen=None),
+        PenCapStyle=SimpleNamespace(RoundCap=None),
+        ToolButtonStyle=SimpleNamespace(ToolButtonTextBesideIcon=None),
+    )
+
+    class QSize:  # type: ignore[too-many-ancestors]
+        def __init__(self, width: int = 0, height: int = 0) -> None:
+            self._width = width
+            self._height = height
+
+        def width(self) -> int:
+            return self._width
+
+        def height(self) -> int:
+            return self._height
+else:  # pragma: no branch - normalize stub attributes
+    if not hasattr(Qt, "AspectRatioMode"):
+        Qt.AspectRatioMode = SimpleNamespace(KeepAspectRatio=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "TransformationMode"):
+        Qt.TransformationMode = SimpleNamespace(SmoothTransformation=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "AlignmentFlag"):
+        Qt.AlignmentFlag = SimpleNamespace(  # type: ignore[attr-defined]
+            AlignCenter=None,
+            AlignVCenter=None,
+            AlignRight=None,
+        )
+    if not hasattr(Qt, "GlobalColor"):
+        Qt.GlobalColor = SimpleNamespace(transparent=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "PenStyle"):
+        Qt.PenStyle = SimpleNamespace(NoPen=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "PenCapStyle"):
+        Qt.PenCapStyle = SimpleNamespace(RoundCap=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "ToolButtonStyle"):
+        Qt.ToolButtonStyle = SimpleNamespace(ToolButtonTextBesideIcon=None)  # type: ignore[attr-defined]
+
+try:
+    from PyQt6.QtGui import QAction, QFont, QPixmap, QPainter, QColor, QPen, QPainterPath, QIcon
+except ImportError:  # pragma: no cover - test stubs
+    class _Dummy:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __getattr__(self, name: str):
+            def _noop(*_args, **_kwargs):
+                return None
+
+            return _noop
+
+    QAction = QFont = QPixmap = QPainter = QColor = QPen = QPainterPath = QIcon = _Dummy  # type: ignore[assignment]
+
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,

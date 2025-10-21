@@ -256,7 +256,15 @@ class LeagueLeadersWindow(QDialog):
             existing.add(identifier)
             if len(leaders) >= limit:
                 break
-        return leaders
+        leaders.sort(key=lambda item: self._stat_sort_key(item[1]), reverse=descending)
+        return leaders[:limit]
+
+    @staticmethod
+    def _stat_sort_key(value: Any) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
 
     def _has_stat_sample(self, player: BasePlayer, key: str) -> bool:
         stats = getattr(player, "season_stats", {}) or {}

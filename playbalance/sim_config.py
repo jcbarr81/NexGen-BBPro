@@ -12,7 +12,8 @@ from utils.path_utils import get_base_dir
 # batting average on balls in play (BABIP). Values below ``1`` decrease outs
 # and raise BABIP, values above ``1`` increase outs and lower BABIP. ``1.0``
 # uses the MLB averages without additional adjustment.
-_BABIP_OUT_ADJUST = 0.92
+# Factor tuned so default ``babipScale`` of ``1.05`` yields MLB BABIP (~.291).
+_BABIP_OUT_ADJUST = 1.142857
 
 
 def apply_league_benchmarks(
@@ -37,7 +38,7 @@ def apply_league_benchmarks(
     # calculation.
     cfg.hitProbBase = benchmarks["babip"] * 1.50
     pip_pct = benchmarks["pitches_put_in_play_pct"]
-    cfg.ballInPlayPitchPct = int(round(pip_pct * 100 * 0.82)) - 1
+    cfg.ballInPlayPitchPct = max(0, int(round(pip_pct * 100)) - 1)
     pitches_per_pa = benchmarks["pitches_per_pa"]
     if pitches_per_pa:
         cfg.swingProbScale = round(4.0 / pitches_per_pa, 2)

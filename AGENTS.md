@@ -2,6 +2,7 @@
 
 ## Testing
 - Run targeted tests using `pytest` before commits
+- Virtual envrionment exists in .venv, use this interpreter
 
 ## Development guidelines
 - Use `rg` for searching the repository.

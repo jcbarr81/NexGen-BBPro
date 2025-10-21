@@ -7,8 +7,9 @@ from datetime import datetime
 from pathlib import Path
 import sys
 import csv
+import math
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 try:
     from PyQt6.QtCore import Qt, QPointF, QRectF
@@ -81,6 +82,7 @@ try:
         QListWidget,
         QListWidgetItem,
         QSizePolicy,
+        QAbstractItemView,
     )
 except ImportError:  # pragma: no cover - test stubs
     class _QtDummy:
@@ -154,8 +156,8 @@ except ImportError:  # pragma: no cover - test stubs
         def setProperty(self, *args, **kwargs) -> None:
             pass
 
-        def setData(self, *args, **kwargs) -> None:
-            pass
+    def setData(self, *args, **kwargs) -> None:
+        pass
 
         def setTextAlignment(self, *args, **kwargs) -> None:
             pass
@@ -187,7 +189,18 @@ except ImportError:  # pragma: no cover - test stubs
         def setSectionResizeMode(self, *args, **kwargs) -> None:
             pass
 
-    QDialog = QLabel = QVBoxLayout = QHBoxLayout = QFrame = QGridLayout = QTabWidget = QTableWidget = QWidget = _QtDummy
+    (
+        QDialog,
+        QLabel,
+        QVBoxLayout,
+        QHBoxLayout,
+        QFrame,
+        QGridLayout,
+        QTabWidget,
+        QTableWidget,
+        QWidget,
+        QAbstractItemView,
+    ) = (_QtDummy,) * 10
 
     class QTableWidgetItem(_QtDummy):
         pass
@@ -236,6 +249,84 @@ def _safe_set_margins(layout: Any, *values: int) -> None:
 
 def _safe_set_spacing(layout: Any, value: int) -> None:
     _safe_call(layout, "setSpacing", value)
+
+
+def _year_from_token(token: Any) -> int | None:
+    if token is None:
+        return None
+    text = str(token).strip()
+    if not text:
+        return None
+    try:
+        tail = text.rsplit("-", 1)[-1]
+        return int(tail)
+    except (ValueError, TypeError):
+        pass
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) >= 4:
+        try:
+            return int(digits[-4:])
+        except ValueError:
+            return None
+    if digits:
+        try:
+            return int(digits)
+        except ValueError:
+            return None
+    return None
+
+
+def _year_from_entry(entry: Dict[str, Any]) -> tuple[int | None, str]:
+    date_token = str(entry.get("date") or "").strip()
+    year_val = _year_from_token(entry.get("year") or entry.get("season_id"))
+    if year_val is None and date_token:
+        try:
+            year_val = int(date_token.split("-", 1)[0])
+        except (ValueError, TypeError):
+            year_val = None
+    return year_val, date_token
+
+
+def _aggregate_history_rows(
+    dialog: "PlayerProfileDialog",
+    entries: Iterable[Dict[str, Any]],
+    *,
+    is_pitcher: bool,
+) -> List[Tuple[str, Dict[str, Any]]]:
+    aggregated: dict[str, tuple[int, str, Dict[str, Any]]] = {}
+    unknown_counter = 0
+    player_id = getattr(dialog.player, "player_id", "")
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        players_block = entry.get("players", {})
+        if not isinstance(players_block, dict):
+            continue
+        player_data = players_block.get(player_id)
+        if not player_data:
+            continue
+        snapshot = player_data.get("stats", player_data)
+        data = dialog._stats_to_dict(snapshot, is_pitcher)
+        if not data:
+            continue
+        year_val, date_token = _year_from_entry(entry)
+        if year_val is None:
+            unknown_counter += 1
+            label = f"Year {unknown_counter}"
+            order_key = -unknown_counter
+        else:
+            label = f"{year_val:04d}"
+            order_key = year_val
+        stored = aggregated.get(label)
+        if stored is None or (date_token and date_token > stored[1]):
+            aggregated[label] = (order_key, date_token, data)
+
+    ordered = sorted(
+        aggregated.items(),
+        key=lambda item: (item[1][0], item[1][1]),
+        reverse=True,
+    )
+    return [(label, payload[2]) for label, payload in ordered]
 
 
 def _safe_set_hspacing(layout: Any, value: int) -> None:
@@ -302,6 +393,8 @@ def _layout_add_stretch(layout: Any, *args: Any) -> None:
 
 
 _BATTING_STATS: List[str] = [
+    "age",
+    "team",
     "g",
     "ab",
     "r",
@@ -311,27 +404,118 @@ _BATTING_STATS: List[str] = [
     "hr",
     "rbi",
     "bb",
-    "so",
+    "ibb",
+    "k",
     "sb",
+    "cs",
+    "sh",
+    "hbp",
+    "gidp",
     "avg",
     "obp",
     "slg",
+    "ops",
 ]
 
 _PITCHING_STATS: List[str] = [
-    "w",
-    "l",
-    "era",
+    "age",
+    "team",
     "g",
     "gs",
-    "sv",
+    "w",
+    "l",
+    "pct",
+    "era",
     "ip",
-    "h",
+    "r",
     "er",
+    "h",
+    "hr",
     "bb",
-    "so",
-    "whip",
+    "k",
+    "oba",
+    "hbp",
+    "wp",
+    "cg",
+    "sho",
+    "sv",
+    "bs",
+    "dera",
 ]
+
+_STAT_LABELS: Dict[str, str] = {
+    "age": "Age",
+    "team": "Team",
+    "g": "G",
+    "ab": "AB",
+    "r": "R",
+    "h": "H",
+    "2b": "2B",
+    "3b": "3B",
+    "hr": "HR",
+    "rbi": "RBI",
+    "bb": "BB",
+    "ibb": "IBB",
+    "k": "K",
+    "sb": "SB",
+    "cs": "CS",
+    "sh": "SH",
+    "hbp": "HBP",
+    "gidp": "GDP",
+    "avg": "AVG",
+    "obp": "OBP",
+    "slg": "SLG",
+    "ops": "OPS",
+    "gs": "GS",
+    "w": "W",
+    "l": "L",
+    "pct": "Pct.",
+    "era": "ERA",
+    "ip": "IP",
+    "r": "R",
+    "er": "ER",
+    "h": "H",
+    "hr": "HR",
+    "bb": "BB",
+    "oba": "OBA",
+    "wp": "WP",
+    "cg": "CG",
+    "sho": "SHO",
+    "sv": "SV",
+    "bs": "BS",
+    "dera": "dERA",
+    "k9": "K/9",
+    "bb9": "BB/9",
+}
+
+_STAT_ALIASES: Dict[str, Tuple[str, ...]] = {
+    "2b": ("b2",),
+    "3b": ("b3",),
+    "k": ("so",),
+    "gidp": ("gdp", "dp"),
+    "pct": ("win_pct",),
+    "dera": ("fip",),
+}
+
+_LEFT_ALIGN_STATS: set[str] = {"team"}
+_SUMMARY_KEYS: Dict[bool, List[str]] = {
+    False: ["g", "ab", "h", "hr", "rbi", "avg"],
+    True: ["g", "gs", "ip", "era", "k", "sv"],
+}
+
+_STAT_ROUNDING: Dict[str, int] = {
+    "avg": 3,
+    "obp": 3,
+    "slg": 3,
+    "ops": 3,
+    "pct": 3,
+    "oba": 3,
+    "ip": 2,
+    "era": 2,
+    "whip": 2,
+    "fip": 2,
+    "dera": 2,
+}
 
 _PITCHER_RATING_LABELS: Dict[str, str] = {
     "endurance": "EN",
@@ -946,27 +1130,7 @@ class PlayerProfileDialog(QDialog):
         return str(getattr(player, metric_id, "--"))
 
     def _build_insights_section(self) -> Card | None:
-        spray_points = self._compute_spray_points()
-        rolling = self._compute_rolling_stats()
-        if not spray_points and not rolling.get("dates"):
-            return None
-
-        card = Card()
-        layout = card.layout()
-        _layout_add_widget(layout, section_title("Advanced Insights"))
-
-        tabs = QTabWidget()
-        self._spray_chart_widget = SprayChartWidget()
-        self._spray_chart_widget.set_points(spray_points)
-        tabs.addTab(self._spray_chart_widget, "Spray Chart")
-
-        self._rolling_stats_widget = RollingStatsWidget()
-        self._rolling_stats_widget.update_series(rolling)
-        tabs.addTab(self._rolling_stats_widget, "Rolling Stats")
-
-        _layout_add_widget(layout, tabs)
-        _layout_add_stretch(layout)
-        return card
+        return None
 
     def _compute_spray_points(self) -> List[Dict[str, float]]:
         stats = self._player_stats(self.player)
@@ -1431,23 +1595,50 @@ class ComparisonSelectorDialog(QDialog):
     def _create_stats_table(self, rows: List[Tuple[str, Dict[str, Any]]], columns: List[str]) -> QTableWidget:
         table = QTableWidget(len(rows), len(columns) + 1)
         _safe_call(table, "setObjectName", "StatsTable")
+        try:
+            font = table.font()
+            if hasattr(font, "setPointSize"):
+                point = font.pointSize()
+                if point > 0:
+                    font.setPointSize(max(10, point - 1))
+                    table.setFont(font)
+            header_font = table.horizontalHeader().font() if hasattr(table.horizontalHeader(), "font") else None
+            if header_font and hasattr(header_font, "setPointSize"):
+                point = header_font.pointSize()
+                if point > 0:
+                    header_font.setPointSize(max(10, point - 1))
+                    table.horizontalHeader().setFont(header_font)
+        except Exception:
+            pass
         headers = ["Year"] + [c.upper() for c in columns]
         table.setHorizontalHeaderLabels(headers)
         table.verticalHeader().setVisible(False)
         table.setAlternatingRowColors(True)
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        # Make the first column (Year/range labels) fit its text while the
-        # remaining columns stretch to fill the available space.
+        try:
+            table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+            table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            table.setSizeAdjustPolicy(QAbstractItemView.SizeAdjustPolicy.AdjustToContents)
+        except Exception:
+            pass
+
         header = table.horizontalHeader()
         try:
-            header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-            header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+            header.setStretchLastSection(False)
+            for idx in range(len(headers)):
+                header.setSectionResizeMode(idx, QHeaderView.ResizeMode.ResizeToContents)
         except Exception:
             pass
 
         for row_idx, (year, data) in enumerate(rows):
-            label_lower = str(year).lower()
+            label_text = str(year)
+            if isinstance(year, str) and year.strip().lower() in {"season", "current"}:
+                try:
+                    label_text = f"{self._current_season_year():04d}"
+                except Exception:
+                    label_text = year
+            label_lower = label_text.lower()
             if "career" in label_lower:
                 row_role = "career"
             elif "current" in label_lower:
@@ -1455,7 +1646,7 @@ class ComparisonSelectorDialog(QDialog):
             else:
                 row_role = "history"
 
-            year_item = self._stat_item(year, align_left=True)
+            year_item = self._stat_item(label_text, align_left=True)
             year_item.setData(Qt.ItemDataRole.UserRole, row_role)
             table.setItem(row_idx, 0, year_item)
 
@@ -1465,6 +1656,17 @@ class ComparisonSelectorDialog(QDialog):
                 item.setData(Qt.ItemDataRole.UserRole, row_role)
                 table.setItem(row_idx, col_idx, item)
         table.setSortingEnabled(True)
+        try:
+            table.resizeColumnsToContents()
+            total_width = table.verticalHeader().width()
+            for idx in range(len(headers)):
+                total_width += table.columnWidth(idx)
+            total_width += (table.frameWidth() * 2) + 24
+            table.setMinimumWidth(total_width)
+            if hasattr(table.horizontalHeader(), "setStretchLastSection"):
+                table.horizontalHeader().setStretchLastSection(False)
+        except Exception:
+            pass
         return table
 
     def _create_stats_summary(self, rows: List[Tuple[str, Dict[str, Any]]], columns: List[str]) -> QWidget | None:
@@ -1596,7 +1798,8 @@ class ComparisonSelectorDialog(QDialog):
         layout = card.layout()
         _layout_add_widget(layout, section_title("Stats"))
         try:
-            year_label = QLabel(f"Season Year: {self._current_season_year():04d}")
+            year_label = QLabel(f"{self._current_season_year():04d}")
+            _safe_call(year_label, "setObjectName", "SeasonYearLabel")
             _layout_add_widget(layout, year_label)
         except Exception:
             pass
@@ -1738,30 +1941,30 @@ class ComparisonSelectorDialog(QDialog):
             rows.append(("Career", career))
         if rows:
             return rows
-        # Fallback: recent snapshots either from preloaded history or canonical store.
-        history_entries = list(self._history_override)[-5:] if self._history_override else []
-        print("DEBUG history entries override", history_entries)
-        rating_fields = getattr(type(self.player), "_rating_fields", set())
-        if history_entries:
-            for idx, entry in enumerate(history_entries, start=1):
-                print("DEBUG entry", entry)
-                player_data = entry.get("players", {}).get(self.player.player_id)
-                if not player_data:
-                    print("DEBUG missing player data", self.player.player_id)
-                    continue
-                snapshot = player_data.get("stats", player_data)
-                data = self._stats_to_dict(snapshot, is_pitcher)
-                if data:
-                    label = entry.get("year")
-                    rows.append((str(label) if label is not None else f"Year {idx}", data))
-            if rows:
-                return rows
-        for label, _ratings, stats in self._load_history():
-            is_pitcher = getattr(self.player, "is_pitcher", False)
-            data = self._stats_to_dict(stats, is_pitcher)
-            if data:
-                rows.append((label, data))
-        return rows
+
+        history_entries = list(self._history_override or [])
+        aggregated = _aggregate_history_rows(self, history_entries, is_pitcher=is_pitcher)
+        if aggregated:
+            return aggregated
+
+        fallback_entries: list[Dict[str, Any]] = []
+        loader = getattr(self, "_load_history", None)
+        iterable_history: Iterable[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+        if callable(loader):
+            try:
+                candidate = loader()
+                if isinstance(candidate, Iterable):
+                    iterable_history = candidate
+            except Exception:
+                iterable_history = []
+        for entry_label, _ratings, stats in iterable_history:
+            fallback_entries.append(
+                {
+                    "players": {self.player.player_id: stats},
+                    "year": entry_label,
+                }
+            )
+        return _aggregate_history_rows(self, fallback_entries, is_pitcher=is_pitcher)
 
     def _load_history(self) -> List[Tuple[str, Dict[str, Any], Dict[str, Any]]]:
         loader = getattr(sys.modules[__name__], "load_stats")
@@ -1883,12 +2086,15 @@ class ComparisonSelectorDialog(QDialog):
             return {}
 
         if is_pitcher:
-            return self._normalize_pitching_stats(data)
+            data = self._normalize_pitching_stats(data)
+            _round_stat_values(data)
+            return data
 
         if "b2" in data and "2b" not in data:
             data["2b"] = data.get("b2", 0)
         if "b3" in data and "3b" not in data:
             data["3b"] = data.get("b3", 0)
+        _round_stat_values(data)
         return data
 
     def _normalize_pitching_stats(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1904,6 +2110,7 @@ class ComparisonSelectorDialog(QDialog):
             result.setdefault("whip", walks_hits / ip if ip else 0.0)
         result.setdefault("w", result.get("wins", result.get("w", 0)))
         result.setdefault("l", result.get("losses", result.get("l", 0)))
+        _round_stat_values(result)
         return result
 
     def _stat_item(self, value: Any, *, align_left: bool = False) -> QTableWidgetItem:
@@ -1945,6 +2152,512 @@ class ComparisonSelectorDialog(QDialog):
             )
         except Exception:
             return "?"
+
+
+# ---------------------------------------------------------------------------
+# Enhanced stat helpers
+# ---------------------------------------------------------------------------
+
+_PLAYER_TEAM_CACHE: Dict[str, str] | None = None
+_ORIGINAL_METHODS: Dict[str, Any] = {}
+
+
+def _original(name: str) -> Any:
+    func = _ORIGINAL_METHODS.get(name)
+    if func is None:
+        func = getattr(PlayerProfileDialog, name)
+        _ORIGINAL_METHODS[name] = func
+    return func
+
+
+def _lookup_player_team(player_id: str) -> Optional[str]:
+    global _PLAYER_TEAM_CACHE
+    if _PLAYER_TEAM_CACHE is None:
+        mapping: Dict[str, str] = {}
+        roster_dir = get_base_dir() / "data" / "rosters"
+        if roster_dir.exists():
+            for path in sorted(roster_dir.glob("*.csv")):
+                stem = path.stem
+                if not stem or "_" in stem:
+                    continue
+                team_id = stem.upper()
+                try:
+                    with path.open("r", encoding="utf-8", newline="") as fh:
+                        reader = csv.reader(fh)
+                        for row in reader:
+                            if not row:
+                                continue
+                            pid = str(row[0]).strip()
+                            if pid and pid not in mapping:
+                                mapping[pid] = team_id
+                except OSError:
+                    continue
+        _PLAYER_TEAM_CACHE = mapping
+    return _PLAYER_TEAM_CACHE.get(player_id)
+
+
+def _extract_year_from_label(label: Any) -> Optional[int]:
+    if isinstance(label, (int, float)):
+        year_val = int(label)
+        return year_val if 1900 <= year_val <= 3000 else None
+    try:
+        text = str(label)
+    except Exception:
+        return None
+    normalized = (
+        text.replace("(", " ")
+        .replace(")", " ")
+        .replace("/", " ")
+        .replace("-", " ")
+    )
+    for token in normalized.split():
+        if len(token) == 4 and token.isdigit():
+            year_val = int(token)
+            if 1900 <= year_val <= 3000:
+                return year_val
+    return None
+
+
+def _age_for_year(dialog: PlayerProfileDialog, year: Optional[int]) -> Optional[int]:
+    if year is None:
+        return None
+    try:
+        birthdate = datetime.strptime(dialog.player.birthdate, "%Y-%m-%d").date()
+    except Exception:
+        return None
+    try:
+        pivot = datetime(year, 7, 1).date()
+    except Exception:
+        return None
+    age = pivot.year - birthdate.year - (
+        (pivot.month, pivot.day) < (birthdate.month, birthdate.day)
+    )
+    return age if age >= 0 else None
+
+
+def _compute_ops(stats: Dict[str, Any]) -> Optional[float]:
+    try:
+        obp = float(stats.get("obp"))
+        slg = float(stats.get("slg"))
+    except (TypeError, ValueError):
+        return None
+    return obp + slg
+
+
+def _compute_win_pct(stats: Dict[str, Any]) -> Optional[float]:
+    wins = stats.get("w", stats.get("wins"))
+    losses = stats.get("l", stats.get("losses"))
+    try:
+        wins_val = float(wins)
+        losses_val = float(losses)
+    except (TypeError, ValueError):
+        return None
+    total = wins_val + losses_val
+    if total <= 0:
+        return None
+    return wins_val / total
+
+
+def _compute_oba(stats: Dict[str, Any]) -> Optional[float]:
+    hits = stats.get("h")
+    batters_faced = stats.get("bf")
+    try:
+        hits_val = float(hits)
+        bf_val = float(batters_faced)
+    except (TypeError, ValueError):
+        return None
+    walks = stats.get("bb", 0)
+    hbp = stats.get("hbp", 0)
+    sf = stats.get("sf", 0)
+    sh = stats.get("sh", 0)
+    ci = stats.get("ci", 0)
+    try:
+        adjustments = sum(float(v or 0) for v in (walks, hbp, sf, sh, ci))
+    except (TypeError, ValueError):
+        adjustments = 0.0
+    at_bats_against = bf_val - adjustments
+    if at_bats_against <= 0:
+        return None
+    return hits_val / at_bats_against
+
+
+def _current_season_year_value(dialog: PlayerProfileDialog) -> Optional[int]:
+    try:
+        data_dir = Path(__file__).resolve().parents[1] / "data"
+        sched = data_dir / "schedule.csv"
+        prog = data_dir / "season_progress.json"
+        if not sched.exists():
+            return None
+        with sched.open("r", encoding="utf-8", newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        if not rows:
+            return None
+        idx = 0
+        if prog.exists():
+            try:
+                import json as _json
+
+                data = _json.loads(prog.read_text(encoding="utf-8"))
+                raw_idx = int(data.get("sim_index", 0) or 0)
+                idx = max(0, min(raw_idx, len(rows) - 1))
+            except Exception:
+                idx = 0
+        cur_date = str(rows[idx].get("date") or "").strip()
+        if cur_date:
+            try:
+                return int(cur_date.split("-")[0])
+            except Exception:
+                pass
+        first_date = str(rows[0].get("date") or "").strip()
+        if first_date:
+            try:
+                return int(first_date.split("-")[0])
+            except Exception:
+                pass
+    except Exception:
+        return None
+    return None
+
+
+def _prepare_stat_row(
+    dialog: PlayerProfileDialog,
+    label: str,
+    data: Dict[str, Any],
+) -> Dict[str, Any]:
+    prepared = dict(data)
+    player_id = getattr(dialog.player, "player_id", "")
+    if not prepared.get("team"):
+        team_id = _lookup_player_team(player_id)
+        if team_id:
+            prepared["team"] = team_id
+
+    year_hint = _extract_year_from_label(label)
+    if year_hint is None and str(label).strip().lower() in {"season", "current"}:
+        year_hint = _current_season_year_value(dialog)
+    age = _age_for_year(dialog, year_hint)
+    if age is not None:
+        prepared["age"] = age
+
+    if "k" not in prepared and "so" in prepared:
+        prepared["k"] = prepared["so"]
+    if "gidp" not in prepared:
+        for alias in _STAT_ALIASES.get("gidp", ()):  # type: ignore[arg-type]
+            if alias in prepared:
+                prepared["gidp"] = prepared[alias]
+                break
+
+    if "ops" not in prepared:
+        ops = _compute_ops(prepared)
+        if ops is not None:
+            prepared["ops"] = ops
+
+    if dialog._is_pitcher:
+        if "pct" not in prepared:
+            pct = _compute_win_pct(prepared)
+            if pct is not None:
+                prepared["pct"] = pct
+        if "oba" not in prepared:
+            oba = _compute_oba(prepared)
+            if oba is not None:
+                prepared["oba"] = oba
+        if "dera" not in prepared and "fip" in prepared:
+            prepared["dera"] = prepared["fip"]
+        _round_stat_values(prepared)
+
+    label_lower = str(label).strip().lower()
+    label_lower = str(label).strip().lower()
+    if "career" in label_lower:
+        prepared.pop("team", None)
+        prepared.pop("age", None)
+    return prepared
+
+
+def _resolve_stat_value(data: Dict[str, Any], key: str) -> Any:
+    if key in data:
+        return data[key]
+    for alias in _STAT_ALIASES.get(key, ()):  # type: ignore[arg-type]
+        if alias in data:
+            return data[alias]
+    return ""
+
+
+def _round_stat_values(data: Dict[str, Any]) -> None:
+    for key, decimals in _STAT_ROUNDING.items():
+        value = data.get(key)
+        if isinstance(value, (int, float)):
+            data[key] = round(float(value), decimals)
+
+
+def _stat_item(self: PlayerProfileDialog, value: Any, *, align_left: bool = False, key: Optional[str] = None) -> "QTableWidgetItem":
+    item = QTableWidgetItem()
+    names = ["AlignLeft" if align_left else "AlignRight", "AlignVCenter"]
+    _set_text_alignment(item, *names)
+    if isinstance(value, (int, float)):
+        text, numeric = _format_stat(value, key=key)
+        item.setData(Qt.ItemDataRole.DisplayRole, text)
+        item.setData(Qt.ItemDataRole.EditRole, numeric if numeric is not None else value)
+        return item
+    text, numeric = _format_stat(value, key=key)
+    item.setData(Qt.ItemDataRole.DisplayRole, text)
+    if numeric is not None:
+        item.setData(Qt.ItemDataRole.EditRole, numeric)
+    return item
+
+
+def _format_stat(value: Any, *, key: Optional[str] = None) -> tuple[str, Optional[float]]:
+    if value is None:
+        return "", None
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return "-", None
+        if key == "ip":
+            text = f"{value:.2f}"
+            return text, float(value)
+        if key in {"avg", "obp", "slg", "ops", "pct", "oba"}:
+            text = f"{value:.3f}"
+            text = text.replace("-0.", "-.")
+            return text, float(value)
+        if key in {"era", "whip", "fip", "dera"}:
+            return f"{value:.2f}", float(value)
+        if value.is_integer():
+            return str(int(value)), float(value)
+        formatted = f"{value:.3f}".rstrip("0").rstrip(".")
+        text = formatted if formatted else f"{value:.3f}"
+        return text, float(value)
+    if isinstance(value, (int, float)):
+        return str(value), float(value)
+    return str(value), None
+
+
+def _row_role(label: Any) -> str:
+    text = str(label).strip().lower()
+    if "career" in text:
+        return "career"
+    if "current" in text:
+        return "current"
+    return "history"
+
+
+def _create_stats_table(self: PlayerProfileDialog, rows: List[Tuple[str, Dict[str, Any]]], columns: List[str]) -> "QTableWidget":
+    table = QTableWidget(len(rows), len(columns) + 1)
+    _safe_call(table, "setObjectName", "StatsTable")
+    try:
+        font = table.font()
+        if hasattr(font, "setPointSize"):
+            point = font.pointSize()
+            if point > 0:
+                font.setPointSize(max(10, point - 1))
+                table.setFont(font)
+        header_widget = table.horizontalHeader()
+        if header_widget is not None and hasattr(header_widget, "font"):
+            header_font = header_widget.font()
+            if hasattr(header_font, "setPointSize"):
+                point = header_font.pointSize()
+                if point > 0:
+                    header_font.setPointSize(max(10, point - 1))
+                    header_widget.setFont(header_font)
+    except Exception:
+        pass
+
+    headers = ["Year"] + [_STAT_LABELS.get(col, col.upper()) for col in columns]
+    table.setHorizontalHeaderLabels(headers)
+    table.verticalHeader().setVisible(False)
+    table.setAlternatingRowColors(True)
+    table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+    table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+    try:
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        table.setSizeAdjustPolicy(QAbstractItemView.SizeAdjustPolicy.AdjustToContents)
+    except Exception:
+        pass
+
+    header = table.horizontalHeader()
+    try:
+        header.setStretchLastSection(False)
+        for idx in range(len(headers)):
+            header.setSectionResizeMode(idx, QHeaderView.ResizeMode.ResizeToContents)
+    except Exception:
+        pass
+
+    current_year = _current_season_year_value(self)
+    normalized_year = f"{current_year:04d}" if isinstance(current_year, int) else None
+
+    for row_idx, (label, data) in enumerate(rows):
+        raw_label = str(label)
+        label_lower = raw_label.strip().lower()
+        if normalized_year and label_lower in {"season", "current"}:
+            display_label = normalized_year
+        else:
+            display_label = raw_label
+        row_role = _row_role(raw_label)
+
+        year_item = _stat_item(self, display_label, align_left=True)
+        year_item.setData(Qt.ItemDataRole.UserRole, row_role)
+        table.setItem(row_idx, 0, year_item)
+
+        for col_idx, key in enumerate(columns, start=1):
+            value = _resolve_stat_value(data, key)
+            item = _stat_item(self, value, align_left=key in _LEFT_ALIGN_STATS, key=key)
+            item.setData(Qt.ItemDataRole.UserRole, row_role)
+            table.setItem(row_idx, col_idx, item)
+
+    table.setSortingEnabled(True)
+    try:
+        table.resizeColumnsToContents()
+        total_width = table.verticalHeader().width() + (table.frameWidth() * 2) + 24
+        for idx in range(len(headers)):
+            total_width += table.columnWidth(idx)
+        table.setMinimumWidth(total_width)
+        if hasattr(table.horizontalHeader(), "setStretchLastSection"):
+            table.horizontalHeader().setStretchLastSection(False)
+    except Exception:
+        pass
+    return table
+
+
+def _create_stats_summary(
+    self: PlayerProfileDialog,
+    rows: List[Tuple[str, Dict[str, Any]]],
+    columns: List[str],
+    summary_keys: Optional[List[str]] = None,
+) -> Optional["QWidget"]:
+    target = None
+    for label, data in rows:
+        if label.lower() == "career" and data:
+            target = data
+            break
+    if target is None and rows:
+        target = rows[-1][1]
+    if not target:
+        return None
+
+    panel = QWidget()
+    grid = QGridLayout(panel)
+    _safe_set_margins(grid, 12, 12, 12, 12)
+    _safe_set_hspacing(grid, 18)
+    _safe_set_vspacing(grid, 8)
+
+    key_sequence = summary_keys or columns[:6]
+    for idx, key in enumerate(key_sequence):
+        label_widget = QLabel(_STAT_LABELS.get(key, key.upper()))
+        _set_alignment(label_widget, "AlignLeft", "AlignVCenter")
+        raw_value = _resolve_stat_value(target, key)
+        display, _numeric = _format_stat(raw_value, key=key)
+        value_widget = QLabel(display)
+        _set_alignment(value_widget, "AlignRight", "AlignVCenter")
+        _layout_add_widget(grid, label_widget, idx, 0)
+        _layout_add_widget(grid, value_widget, idx, 1)
+    return panel
+
+
+def _build_stats_section(self: PlayerProfileDialog, rows: List[Tuple[str, Dict[str, Any]]]) -> "Card":
+    card = Card()
+    layout = card.layout()
+    _layout_add_widget(layout, section_title("Stats"))
+    current_year = _current_season_year_value(self)
+    if current_year is not None:
+        try:
+            year_label = QLabel(f"{current_year:04d}")
+            _safe_call(year_label, "setObjectName", "SeasonYearLabel")
+            _layout_add_widget(layout, year_label)
+        except Exception:
+            pass
+
+    if not rows:
+        _layout_add_widget(layout, QLabel("No stats available"))
+        return card
+
+    columns = _PITCHING_STATS if self._is_pitcher else _BATTING_STATS
+    summary_keys = _SUMMARY_KEYS[self._is_pitcher]
+
+    tabs = QTabWidget()
+    _safe_call(tabs, "setObjectName", "StatsTabs")
+    primary_label = "Pitching" if self._is_pitcher else "Batting"
+    tabs.addTab(_create_stats_table(self, rows, columns), primary_label)
+
+    summary = _create_stats_summary(self, rows, columns, summary_keys)
+    if summary is not None:
+        tabs.addTab(summary, "Summary")
+
+    spray_points = self._compute_spray_points()
+    if spray_points:
+        self._spray_chart_widget = SprayChartWidget()
+        self._spray_chart_widget.set_points(spray_points)
+        tabs.addTab(self._spray_chart_widget, "Spray Chart")
+
+    rolling = self._compute_rolling_stats()
+    if rolling.get("dates"):
+        self._rolling_stats_widget = RollingStatsWidget()
+        self._rolling_stats_widget.update_series(rolling)
+        tabs.addTab(self._rolling_stats_widget, "Rolling Stats")
+
+    _layout_add_widget(layout, tabs)
+    try:
+        footer = _original("_build_stat_key_footer")(self)
+    except AttributeError:
+        footer = None
+    if footer is None:
+        footer = QWidget()
+        footer_layout = QHBoxLayout(footer)
+        _safe_set_margins(footer_layout, 0, 0, 0, 0)
+        _safe_set_spacing(footer_layout, 8)
+        _layout_add_widget(footer_layout, QLabel("Stat Key:"))
+        for text, variant in (
+            ("Current Season", "current"),
+            ("Career Totals", "career"),
+            ("History", "history"),
+        ):
+            chip = QLabel(text)
+            _safe_call(chip, "setObjectName", "StatChip")
+            _safe_call(chip, "setProperty", "variant", variant)
+            _set_alignment(chip, "AlignCenter")
+            chip.setMinimumWidth(90)
+            chip.setMargin(4)
+            _layout_add_widget(footer_layout, chip)
+        _layout_add_stretch(footer_layout)
+    _layout_add_widget(layout, footer)
+    return card
+
+
+def _stats_to_dict(self: PlayerProfileDialog, stats: Any, is_pitcher: bool) -> Dict[str, Any]:
+    data = _original("_stats_to_dict")(self, stats, is_pitcher)
+    if not isinstance(data, dict):
+        return {}
+    # Ensure double aliases present even if original mapping misses them.
+    if "b2" in data and "2b" not in data:
+        data["2b"] = data.get("b2", 0)
+    if "b3" in data and "3b" not in data:
+        data["3b"] = data.get("b3", 0)
+    _round_stat_values(data)
+    return data
+
+
+def _normalize_pitching_stats(self: PlayerProfileDialog, data: Dict[str, Any]) -> Dict[str, Any]:
+    result = _original("_normalize_pitching_stats")(self, data)
+    if "pct" not in result:
+        pct = _compute_win_pct(result)
+        if pct is not None:
+            result["pct"] = pct
+    if "oba" not in result:
+        oba = _compute_oba(result)
+        if oba is not None:
+            result["oba"] = oba
+    if "dera" not in result and "fip" in result:
+        result["dera"] = result["fip"]
+    _round_stat_values(result)
+    return result
+
+
+def _collect_stats_history(self: PlayerProfileDialog) -> List[Tuple[str, Dict[str, Any]]]:
+    base_rows = _original("_collect_stats_history")(self)
+    enriched: List[Tuple[str, Dict[str, Any]]] = []
+    for label, data in base_rows:
+        if isinstance(data, dict):
+            enriched.append((label, _prepare_stat_row(self, label, data)))
+        else:
+            enriched.append((label, data))
+    return enriched
 
 
 if not hasattr(PlayerProfileDialog, '_create_stats_table'):
@@ -2077,7 +2790,10 @@ if not hasattr(PlayerProfileDialog, '_stats_to_dict'):
         else:
             return {}
         if is_pitcher:
-            return self._normalize_pitching_stats(data)
+            data = self._normalize_pitching_stats(data)
+            _round_stat_values(data)
+            return data
+        _round_stat_values(data)
         return data
 
     PlayerProfileDialog._stats_to_dict = _fallback_stats_to_dict  # type: ignore[attr-defined]
@@ -2094,6 +2810,7 @@ if not hasattr(PlayerProfileDialog, '_normalize_pitching_stats'):
             result.setdefault("era", (er * 9) / ip if ip else 0.0)
             walks_hits = result.get("bb", 0) + result.get("h", 0)
             result.setdefault("whip", walks_hits / ip if ip else 0.0)
+        _round_stat_values(result)
         return result
 
     PlayerProfileDialog._normalize_pitching_stats = _fallback_normalize_pitching_stats  # type: ignore[attr-defined]
@@ -2166,18 +2883,67 @@ if not hasattr(PlayerProfileDialog, '_collect_stats_history'):
             except Exception:
                 year_label = "Season"
             rows.append((year_label, season))
+        if rows:
+            return rows
+
         history_entries = getattr(self, "_history_override", []) or []
-        for idx, entry in enumerate(history_entries, start=1):
-            player_data = entry.get("players", {}).get(self.player.player_id) or {}
-            snapshot = player_data.get("stats", player_data)
-            data = self._stats_to_dict(snapshot, is_pitcher)
-            if data:
-                year = entry.get("year")
-                label = str(year) if year is not None else f"Year {idx}"
-                rows.append((label, data))
+        aggregated = _aggregate_history_rows(self, history_entries, is_pitcher=is_pitcher)
+        if aggregated:
+            return aggregated
+
+        fallback_entries: list[Dict[str, Any]] = []
+        loader = getattr(self, "_load_history", None)
+        iterable_history: Iterable[Tuple[str, Dict[str, Any], Dict[str, Any]]] = []
+        if callable(loader):
+            try:
+                candidate = loader()
+                if isinstance(candidate, Iterable):
+                    iterable_history = candidate
+            except Exception:
+                iterable_history = []
+        for entry_label, _ratings, stats in iterable_history:
+            fallback_entries.append(
+                {
+                    "players": {self.player.player_id: stats},
+                    "year": entry_label,
+                }
+            )
+        aggregated = _aggregate_history_rows(self, fallback_entries, is_pitcher=is_pitcher)
+        if aggregated:
+            return aggregated
+
         career = self._stats_to_dict(getattr(self.player, "career_stats", {}), is_pitcher)
         if career:
             rows.append(("Career", career))
         return rows
 
     PlayerProfileDialog._collect_stats_history = _fallback_collect_stats_history  # type: ignore[attr-defined]
+
+
+# Prime original-method cache before overriding behaviour.
+for _method_name in (
+    "_collect_stats_history",
+    "_create_stats_table",
+    "_create_stats_summary",
+    "_build_stats_section",
+    "_stats_to_dict",
+    "_normalize_pitching_stats",
+    "_stat_item",
+    "_format_stat",
+    "_current_season_year",
+    "_build_stat_key_footer",
+):
+    try:
+        _original(_method_name)
+    except AttributeError:
+        pass
+
+# Override with enriched implementations (fallbacks above retain test support).
+PlayerProfileDialog._create_stats_table = _create_stats_table  # type: ignore[attr-defined]
+PlayerProfileDialog._create_stats_summary = _create_stats_summary  # type: ignore[attr-defined]
+PlayerProfileDialog._build_stats_section = _build_stats_section  # type: ignore[attr-defined]
+PlayerProfileDialog._collect_stats_history = _collect_stats_history  # type: ignore[attr-defined]
+PlayerProfileDialog._stats_to_dict = _stats_to_dict  # type: ignore[attr-defined]
+PlayerProfileDialog._normalize_pitching_stats = _normalize_pitching_stats  # type: ignore[attr-defined]
+PlayerProfileDialog._stat_item = _stat_item  # type: ignore[attr-defined]
+PlayerProfileDialog._format_stat = _format_stat  # type: ignore[attr-defined]

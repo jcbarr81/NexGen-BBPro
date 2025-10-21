@@ -15,8 +15,18 @@ importlib.reload(ppd)
 
 def test_player_profile_dialog_uses_history(monkeypatch):
     history = [
-        {"players": {"p1": {"ratings": {"ch": 40}, "stats": {"g": 10}}}},
-        {"players": {"p1": {"ratings": {"ch": 45}, "stats": {"g": 12}}}},
+        {
+            "date": "2024-09-30",
+            "players": {"p1": {"ratings": {"ch": 38}, "stats": {"g": 120}}},
+        },
+        {
+            "date": "2025-04-01",
+            "players": {"p1": {"ratings": {"ch": 40}, "stats": {"g": 10}}},
+        },
+        {
+            "date": "2025-10-05",
+            "players": {"p1": {"ratings": {"ch": 45}, "stats": {"g": 162}}},
+        },
     ]
     monkeypatch.setattr(
         ppd,
@@ -57,9 +67,10 @@ def test_player_profile_dialog_uses_history(monkeypatch):
 
     assert calls, "Stats table should be built"
     rows_seen, _cols = calls[0]
-    years = [r[0] for r in rows_seen]
-    assert "Year 1" in years
-    assert "Year 2" in years
+    assert rows_seen[0][0] == "2025"
+    assert rows_seen[0][1]["g"] == 162
+    assert rows_seen[1][0] == "2024"
+    assert rows_seen[1][1]["g"] == 120
 
 
 def test_player_profile_dialog_handles_missing_positions(monkeypatch):

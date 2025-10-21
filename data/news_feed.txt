@@ -6,3 +6,108 @@
 [2025-10-19 23:54:25] Amateur Draft 2025 committed: 36 players added; 36 roster assignments
 [2025-10-20 02:30:44] League reset to Opening Day
 [2025-10-20 02:30:44] Purged saved season boxscores
+[2025-10-20 08:44:12] Amateur Draft 2025 committed: 17 players added; 36 roster assignments
+[2025-10-20 09:03:53] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-20 09:03:54] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-20 09:03:54] [progress] Simulated a regular season day; 1 days until Season End
+[2025-10-20 09:03:54] [progress] Simulated a regular season day; regular season complete
+[2025-10-20 09:03:55] [progress] Simulated week; 3 days until Midseason (K% 0.220, BB% 0.080)
+[2025-10-20 09:03:55] [progress] Simulated week; 3 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:03:56] [progress] Simulated week; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:03:58] [progress] Simulated month; 10 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:04:00] [progress] Simulated month; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:04:01] [progress] Simulated draft; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:04:02] [progress] Simulated draft; 3 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:04:02] [progress] Simulated regular season; regular season complete
+[2025-10-20 09:04:02] [progress] Simulated draft; 1 days until Season End
+[2025-10-20 09:04:03] Simulated playoffs; championship decided. Champion: GRE
+[2025-10-20 09:04:03] Season advanced to Preseason
+[2025-10-20 09:04:03] No unsigned players available
+[2025-10-20 09:04:03] Training camp completed; players marked ready
+[2025-10-20 09:04:03] Generated regular season schedule with 162 games
+[2025-10-20 09:04:03] Generated regular season schedule with 162 games
+[2025-10-20 09:04:03] No unsigned players available
+[2025-10-20 09:07:40] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-20 09:07:41] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-20 09:07:41] [progress] Simulated a regular season day; 1 days until Season End
+[2025-10-20 09:07:41] [progress] Simulated a regular season day; regular season complete
+[2025-10-20 09:07:42] [progress] Simulated week; 3 days until Midseason (K% 0.220, BB% 0.080)
+[2025-10-20 09:07:42] [progress] Simulated week; 3 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:07:43] [progress] Simulated week; regular season complete (K% 0.219, BB% 0.079)
+[2025-10-20 09:07:45] [progress] Simulated month; 10 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:07:47] [progress] Simulated month; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:07:48] [progress] Simulated draft; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:07:48] [progress] Simulated draft; 3 days until Season End (K% 0.221, BB% 0.081)
+[2025-10-20 09:07:49] [progress] Simulated regular season; regular season complete
+[2025-10-20 09:07:49] [progress] Simulated draft; 1 days until Season End
+[2025-10-20 09:07:50] Simulated playoffs; championship decided. Champion: GRE
+[2025-10-20 09:07:50] Season advanced to Preseason
+[2025-10-20 09:07:50] No unsigned players available
+[2025-10-20 09:07:50] Training camp completed; players marked ready
+[2025-10-20 09:07:50] Generated regular season schedule with 162 games
+[2025-10-20 09:07:50] Generated regular season schedule with 162 games
+[2025-10-20 09:07:50] No unsigned players available
+[2025-10-20 09:13:46] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-20 09:13:46] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-20 09:13:46] [progress] Simulated a regular season day; 1 days until Season End
+[2025-10-20 09:13:46] [progress] Simulated a regular season day; regular season complete
+[2025-10-20 09:13:47] [progress] Simulated week; 3 days until Midseason (K% 0.220, BB% 0.080)
+[2025-10-20 09:13:47] [progress] Simulated week; 3 days until Season End (K% 0.221, BB% 0.080)
+[2025-10-20 09:13:48] [progress] Simulated week; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:13:50] [progress] Simulated month; 10 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:13:52] [progress] Simulated month; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:13:53] [progress] Simulated draft; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:13:54] [progress] Simulated draft; 3 days until Season End (K% 0.219, BB% 0.080)
+[2025-10-20 09:13:54] [progress] Simulated regular season; regular season complete
+[2025-10-20 09:13:54] [progress] Simulated draft; 1 days until Season End
+[2025-10-20 09:13:55] Simulated playoffs; championship decided. Champion: GRE
+[2025-10-20 09:13:55] Season advanced to Preseason
+[2025-10-20 09:13:55] No unsigned players available
+[2025-10-20 09:13:55] Training camp completed; players marked ready
+[2025-10-20 09:13:55] Generated regular season schedule with 162 games
+[2025-10-20 09:13:55] Generated regular season schedule with 162 games
+[2025-10-20 09:13:55] No unsigned players available
+[2025-10-20 09:18:15] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-20 09:18:15] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-20 09:18:15] [progress] Simulated a regular season day; 1 days until Season End
+[2025-10-20 09:18:16] [progress] Simulated a regular season day; regular season complete
+[2025-10-20 09:18:16] [progress] Simulated week; 3 days until Midseason (K% 0.220, BB% 0.080)
+[2025-10-20 09:18:17] [progress] Simulated week; 3 days until Season End (K% 0.221, BB% 0.080)
+[2025-10-20 09:18:17] [progress] Simulated week; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:18:19] [progress] Simulated month; 10 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:18:21] [progress] Simulated month; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:18:22] [progress] Simulated draft; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:18:23] [progress] Simulated draft; 3 days until Season End (K% 0.219, BB% 0.080)
+[2025-10-20 09:18:23] [progress] Simulated regular season; regular season complete
+[2025-10-20 09:18:23] [progress] Simulated draft; 1 days until Season End
+[2025-10-20 09:18:24] Simulated playoffs; championship decided. Champion: CIN
+[2025-10-20 09:18:24] Season advanced to Preseason
+[2025-10-20 09:18:24] No unsigned players available
+[2025-10-20 09:18:24] Training camp completed; players marked ready
+[2025-10-20 09:18:24] Generated regular season schedule with 162 games
+[2025-10-20 09:18:24] Generated regular season schedule with 162 games
+[2025-10-20 09:18:24] No unsigned players available
+[2025-10-20 09:20:24] [progress] Simulated a regular season day; 1 days until Midseason
+[2025-10-20 09:20:25] [progress] Simulated a regular season day; 2 days until Season End
+[2025-10-20 09:20:25] [progress] Simulated a regular season day; 1 days until Season End
+[2025-10-20 09:20:25] [progress] Simulated a regular season day; regular season complete
+[2025-10-20 09:20:26] [progress] Simulated week; 3 days until Midseason (K% 0.220, BB% 0.080)
+[2025-10-20 09:20:26] [progress] Simulated week; 3 days until Season End (K% 0.221, BB% 0.080)
+[2025-10-20 09:20:27] [progress] Simulated week; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:20:29] [progress] Simulated month; 10 days until Season End (K% 0.220, BB% 0.080)
+[2025-10-20 09:20:31] [progress] Simulated month; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:20:32] [progress] Simulated draft; regular season complete (K% 0.220, BB% 0.080)
+[2025-10-20 09:20:32] [progress] Simulated draft; 3 days until Season End (K% 0.219, BB% 0.080)
+[2025-10-20 09:20:33] [progress] Simulated regular season; regular season complete
+[2025-10-20 09:20:33] [progress] Simulated draft; 1 days until Season End
+[2025-10-20 09:20:34] Simulated playoffs; championship decided. Champion: CIN
+[2025-10-20 09:20:34] Season advanced to Preseason
+[2025-10-20 09:20:34] No unsigned players available
+[2025-10-20 09:20:34] Training camp completed; players marked ready
+[2025-10-20 09:20:34] Generated regular season schedule with 162 games
+[2025-10-20 09:20:34] Generated regular season schedule with 162 games
+[2025-10-20 09:20:34] No unsigned players available
+[2025-10-20 22:54:41] League reset to Opening Day
+[2025-10-20 22:54:41] Purged saved season boxscores
+[2025-10-21 07:47:41] Generated regular season schedule with 972 games
+[2025-10-21 07:49:25] Amateur Draft 2025 committed: 4 players added; 36 roster assignments

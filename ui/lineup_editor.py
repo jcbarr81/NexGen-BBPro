@@ -16,7 +16,7 @@ from PyQt6.QtCore import Qt, QPropertyAnimation
 import csv
 from pathlib import Path
 
-from utils.pitcher_role import get_role
+from utils.lineup_autofill import auto_fill_lineup_for_team
 from utils.path_utils import get_base_dir
 
 class LineupEditor(QDialog):
@@ -166,20 +166,19 @@ class LineupEditor(QDialog):
         self.update_bench_display()
 
     def autofill_lineup(self):
-        positions = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]
-        used_players = set()
+        try:
+            auto_fill_lineup_for_team(self.team_id)
+        except Exception as exc:
+            QMessageBox.warning(self, "Auto-Fill Failed", str(exc))
+            return
 
-        for i, position in enumerate(positions):
-            self.position_dropdowns[i].setCurrentText(position)
-            self.update_player_dropdown(i)
-            for index in range(self.player_dropdowns[i].count()):
-                player_id = self.player_dropdowns[i].itemData(index)
-                if player_id not in used_players:
-                    self.player_dropdowns[i].setCurrentIndex(index)
-                    used_players.add(player_id)
-                    if position in self.position_labels:
-                        self.position_labels[position].setText(self.players_dict.get(player_id, {}).get("name", ""))
-                    break
+        self.load_lineup()
+        self.update_bench_display()
+        QMessageBox.information(
+            self,
+            "Lineup Auto-Filled",
+            "Lineups updated using the league auto-fill logic.",
+        )
 
     def save_lineup(self):
         # Validate that each player is eligible for their selected position

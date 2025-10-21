@@ -1,12 +1,59 @@
 from __future__ import annotations
 
 import csv
+import importlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
+from types import SimpleNamespace
 
-from PyQt6.QtCore import Qt, QSize
+import bcrypt
+
+try:
+    from PyQt6.QtCore import Qt, QSize
+except ImportError:  # pragma: no cover - test stubs
+    Qt = SimpleNamespace(
+        AlignmentFlag=SimpleNamespace(
+            AlignCenter=0x0004,
+            AlignRight=0x0002,
+            AlignVCenter=0x0080,
+        ),
+        TransformationMode=SimpleNamespace(SmoothTransformation=None),
+        ToolButtonStyle=SimpleNamespace(ToolButtonTextBesideIcon=None),
+        WindowState=SimpleNamespace(WindowMaximized=None),
+        ItemDataRole=SimpleNamespace(
+            UserRole=0,
+            DisplayRole=1,
+            EditRole=2,
+        ),
+        ItemFlag=SimpleNamespace(ItemIsEditable=0x0002),
+    )
+
+    class QSize:  # type: ignore[too-many-ancestors]
+        def __init__(self, width: int = 0, height: int = 0) -> None:
+            self._width = width
+            self._height = height
+
+        def width(self) -> int:
+            return self._width
+
+        def height(self) -> int:
+            return self._height
+else:  # pragma: no branch - normalize stubs
+    if not hasattr(Qt, "AlignmentFlag"):
+        Qt.AlignmentFlag = SimpleNamespace(  # type: ignore[attr-defined]
+            AlignCenter=None,
+            AlignRight=None,
+            AlignVCenter=None,
+        )
+    if not hasattr(Qt, "TransformationMode"):
+        Qt.TransformationMode = SimpleNamespace(SmoothTransformation=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "ToolButtonStyle"):
+        Qt.ToolButtonStyle = SimpleNamespace(ToolButtonTextBesideIcon=None)  # type: ignore[attr-defined]
+    if not hasattr(Qt, "WindowState"):
+        Qt.WindowState = SimpleNamespace(WindowMaximized=None)  # type: ignore[attr-defined]
+
 try:
     from PyQt6.QtGui import QAction, QFont, QPixmap, QIcon
 except ImportError:  # pragma: no cover - support test stubs
@@ -19,7 +66,9 @@ from PyQt6.QtWidgets import (
     QLabel,
     QListWidgetItem,
     QMainWindow,
+    QInputDialog,
     QMessageBox,
+    QLineEdit,
     QStackedWidget,
     QStatusBar,
     QVBoxLayout,
@@ -95,6 +144,7 @@ class OwnerDashboard(QMainWindow):
 
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
         self.resize(1100, 720)
+        self._admin_window = None
 
         central = QWidget()
         root = QHBoxLayout(central)
@@ -252,6 +302,10 @@ class OwnerDashboard(QMainWindow):
 
     def _build_menu(self) -> None:
         file_menu = self.menuBar().addMenu("&File")
+        admin_action = QAction("Open Admin Dashboard", self)
+        admin_action.triggered.connect(self._prompt_admin_dashboard)
+        file_menu.addAction(admin_action)
+        file_menu.addSeparator()
         quit_action = QAction("Quit", self)
         quit_action.triggered.connect(self.close)
         file_menu.addAction(quit_action)
@@ -269,6 +323,108 @@ class OwnerDashboard(QMainWindow):
             view_menu.addAction(settings_action)
         except Exception:
             pass
+
+    def _prompt_admin_dashboard(self) -> None:
+        password, accepted = QInputDialog.getText(
+            self,
+            "Admin Access",
+            "Enter admin password:",
+            QLineEdit.EchoMode.Password,
+        )
+        if not accepted:
+            return
+
+        password = password.strip()
+        if not password:
+            QMessageBox.warning(
+                self,
+                "Admin Access",
+                "Password is required to open the admin dashboard.",
+            )
+            return
+
+        try:
+            if not self._validate_admin_password(password):
+                QMessageBox.warning(self, "Admin Access", "Incorrect admin password.")
+                return
+        except FileNotFoundError:
+            QMessageBox.critical(
+                self,
+                "Admin Access",
+                "User accounts file not found. Contact your administrator.",
+            )
+            return
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Admin Access",
+                f"Unable to verify password: {exc}",
+            )
+            return
+
+        self._open_admin_dashboard()
+
+    def _validate_admin_password(self, password: str) -> bool:
+        user_file = get_base_dir() / "data" / "users.txt"
+        if not user_file.exists():
+            raise FileNotFoundError(user_file)
+
+        try:
+            with user_file.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    parts = line.strip().split(",")
+                    if len(parts) != 4:
+                        continue
+                    _, stored_password, role, _ = parts
+                    if role != "admin":
+                        continue
+                    try:
+                        if bcrypt.checkpw(
+                            password.encode("utf-8"), stored_password.encode("utf-8")
+                        ):
+                            return True
+                    except ValueError:
+                        pass
+                    if stored_password == password:
+                        return True
+        except FileNotFoundError:
+            raise
+
+        return False
+
+    def _open_admin_dashboard(self) -> None:
+        try:
+            module = importlib.import_module("ui.admin_dashboard")
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Admin Access",
+                f"Unable to load admin dashboard module: {exc}",
+            )
+            return
+
+        dash_cls = getattr(module, "AdminDashboard", None) or getattr(
+            module, "MainWindow", None
+        )
+        if dash_cls is None:
+            QMessageBox.critical(
+                self,
+                "Admin Access",
+                "Admin dashboard is unavailable.",
+            )
+            return
+
+        try:
+            self._admin_window = dash_cls()
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Admin Access",
+                f"Unable to open admin dashboard: {exc}",
+            )
+            return
+
+        show_on_top(self._admin_window)
 
     def _register_pages(self) -> None:
         factories: Dict[str, Callable[[DashboardContext], QWidget]] = {
