@@ -17,7 +17,7 @@ _OVERRIDE_PATH = DATA_DIR / "playbalance_overrides.json"
 # These baseline percentages are tuned to yield roughly four pitches per
 # plate appearance, matching modern MLB norms.
 # Match test expectations for baseline foul rates per pitch
-_FOUL_PITCH_BASE_PCT = 16  # Percent of all pitches that are fouls
+_FOUL_PITCH_BASE_PCT = 18  # Percent of all pitches that are fouls
 # Percent of all pitches that are strikes.
 # Slightly reduced to encourage a few more walks across simulations.
 _LEAGUE_STRIKE_PCT = 60.0
@@ -147,10 +147,10 @@ _DEFAULTS: Dict[str, Any] = {
     # Exit velocity and launch characteristics tuned via physics helpers
     "exitVeloBase": 0,
     "exitVeloPHPct": 0,
-    "exitVeloSlope": 0.26476,
+    "exitVeloSlope": 0.275,
     # Exit velocity swing type percentages
-    "exitVeloPowerPct": 85,
-    "exitVeloNormalPct": 85,
+    "exitVeloPowerPct": 87,
+    "exitVeloNormalPct": 88,
     "exitVeloContactPct": 100,
     "vertAngleGFPct": 0,
     "sprayAnglePLPct": 0,
@@ -177,10 +177,10 @@ _DEFAULTS: Dict[str, Any] = {
     # ``0.12`` in the simulation.
     "hitProbBase": 1.35,
     # Boost contact to raise overall zone contact rate closer to MLB levels
-    "contactFactorBase": 1.78,
+    "contactFactorBase": 1.62,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
-    "contactFactorDiv": 108,
+    "contactFactorDiv": 120,
     "movementFactorMin": 0.18,
     "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
@@ -215,7 +215,7 @@ _DEFAULTS: Dict[str, Any] = {
     "foulStrikeBasePct": 31,
     "foulContactTrendPct": 2.0,
     # Target roughly 17% of all pitches being put into play
-    "ballInPlayPitchPct": 8,
+    "ballInPlayPitchPct": 9,
     "ballInPlayOuts": 0,
     "carryDistanceScale": 0.85,
     "carryExitVeloBaseline": 90.0,
@@ -224,10 +224,10 @@ _DEFAULTS: Dict[str, Any] = {
     # Baseline aggression for runners attempting extra bases
     "baserunningAggression": 0.42,
     # Baseline steal success rate (as percent, before arm/speed mods)
-    "stealSuccessBasePct": 80,
+    "stealSuccessBasePct": 88,
     # Hit by pitch avoidance ----------------------------------------
-    "hbpBatterStepOutChance": 18,
-    "hbpBaseChance": 0.0,
+    "hbpBatterStepOutChance": 10,
+    "hbpBaseChance": 0.12,
     "leagueHBPPerGame": 0.86,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,
@@ -251,8 +251,8 @@ _DEFAULTS: Dict[str, Any] = {
     # Baseline swing probabilities reflecting MLB averages
     "swingProbSureStrike": 0.43,
     "swingProbCloseStrike": 0.29,
-    "swingProbCloseBall": 0.48,
-    "swingProbSureBall": 0.24,
+    "swingProbCloseBall": 0.40,
+    "swingProbSureBall": 0.18,
     # Global swing probability scaling factors (tests expect base values only)
     "swingProbScale": 1.0,
     # Separate scaling factors for pitches in and out of the zone
@@ -264,7 +264,7 @@ _DEFAULTS: Dict[str, Any] = {
     # Bonus applied to close-ball swing probability per strike
     "closeBallStrikeBonus": 1,
     # Two-strike additive swing bonus (percent)
-    "twoStrikeSwingBonus": 4,
+    "twoStrikeSwingBonus": 6,
     # Count and location adjustments to swing probability
     "swingProb00CountAdjust": -0.03,
     "swingProb01CountAdjust": 0,
@@ -336,10 +336,11 @@ _DEFAULTS: Dict[str, Any] = {
     "minMisreadContact": 0.3,
     # Final contact multiplier applied to swing decisions
     # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
-    "contactQualityScale": 1.5,
+    "contactQualityScale": 1.34,
     # Scaling factors for batter skills impacting contact quality
     "contactAbilityScale": 0.4,
     "contactDisciplineScale": 0.3,
+    "missChanceScale": 2.05,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
@@ -382,11 +383,11 @@ _DEFAULTS: Dict[str, Any] = {
     "stealChance30Count": 15,
     "stealChance31Count": 15,
     "stealChance32Count": 20,
-    "offManStealChancePct": 80,
+    "offManStealChancePct": 45,
     # Minimum probability thresholds to gate steal attempts (0..1).
     # Defaults are 0 to avoid changing behaviour in tests unless overridden.
-    "stealAttemptMinProb": 0.25,
-    "stealMinSuccessProb": 0.55,
+    "stealAttemptMinProb": 0.4,
+    "stealMinSuccessProb": 0.65,
     "closeBallTakeBonus": 0.0,
     "sureBallTakeBonus": 0.0,
     "twoStrikeContactFloor": 0.0,
@@ -507,29 +508,29 @@ _DEFAULTS: Dict[str, Any] = {
     "pitchOutChanceInn8Adjust": 0,
     "pitchOutChanceInn9Adjust": 0,
     "pitchOutChanceHomeAdjust": 0,
-    "pitchAroundChanceNoInn": 0,
-    "pitchAroundChanceBase": 0,
-    "pitchAroundChanceInn7Adjust": 0,
-    "pitchAroundChanceInn9Adjust": 0,
-    "pitchAroundChancePH2BatAdjust": 0,
-    "pitchAroundChancePH1BatAdjust": 0,
-    "pitchAroundChancePHBatAdjust": 0,
-    "pitchAroundChancePHODAdjust": 0,
-    "pitchAroundChancePH1ODAdjust": 0,
-    "pitchAroundChancePH2ODAdjust": 0,
-    "pitchAroundChanceCH2BatAdjust": 0,
-    "pitchAroundChanceCH1BatAdjust": 0,
+    "pitchAroundChanceNoInn": 6,
+    "pitchAroundChanceBase": 12,
+    "pitchAroundChanceInn7Adjust": 3,
+    "pitchAroundChanceInn9Adjust": 6,
+    "pitchAroundChancePH2BatAdjust": 12,
+    "pitchAroundChancePH1BatAdjust": 5,
+    "pitchAroundChancePHBatAdjust": 3,
+    "pitchAroundChancePHODAdjust": -6,
+    "pitchAroundChancePH1ODAdjust": -12,
+    "pitchAroundChancePH2ODAdjust": -24,
+    "pitchAroundChanceCH2BatAdjust": 8,
+    "pitchAroundChanceCH1BatAdjust": 3,
     "pitchAroundChanceCHBatAdjust": 0,
-    "pitchAroundChanceCHODAdjust": 0,
-    "pitchAroundChanceCH1ODAdjust": 0,
-    "pitchAroundChanceCH2ODAdjust": 0,
-    "pitchAroundChanceLowGFThresh": 0,
-    "pitchAroundChanceLowGFAdjust": 0,
+    "pitchAroundChanceCHODAdjust": -3,
+    "pitchAroundChanceCH1ODAdjust": -8,
+    "pitchAroundChanceCH2ODAdjust": -15,
+    "pitchAroundChanceLowGFThresh": 45,
+    "pitchAroundChanceLowGFAdjust": 3,
     "pitchAroundChanceOut0": 0,
-    "pitchAroundChanceOut1": 0,
-    "pitchAroundChanceOut2": 0,
-    "pitchAroundChanceOn23": 0,
-    "defManPitchAroundToIBBPct": 0,
+    "pitchAroundChanceOut1": 3,
+    "pitchAroundChanceOut2": 5,
+    "pitchAroundChanceOn23": 3,
+    "defManPitchAroundToIBBPct": 35,
     # Substitution manager -------------------------------------------------
     "doubleSwitchPHAdjust": 0,
     "doubleSwitchBase": 0,
@@ -587,32 +588,94 @@ _DEFAULTS: Dict[str, Any] = {
     "warmupSecsPerMaintPitch": 120,
     "warmupSecsPerCoolPitch": 60,
     "warmupSecsBeforeCool": 1800,
+    # Emergency bullpen usage controls (Usage Model V2)
+    "emergencyOutsCap": 3,
+    "emergencyReliefTaxPitches": 20,
+    # Usage Model V2 (MLB-like bullpen usage & rest)
+    # Feature flag to gate the new usage model behavior
+    "enableUsageModelV2": 0,
+    # Rest curve thresholds (pitches thrown → minimum days of rest)
+    # Example: ≤ restDaysPitchesLvl0 ⇒ 0 days; ≤ Lvl1 ⇒ 1 day; …; above Lvl5 ⇒ 6 days
+    "restDaysPitchesLvl0": 10,
+    "restDaysPitchesLvl1": 20,
+    "restDaysPitchesLvl2": 35,
+    "restDaysPitchesLvl3": 50,
+    "restDaysPitchesLvl4": 70,
+    "restDaysPitchesLvl5": 95,
+    # Back-to-back and consecutive-day rules
+    "b2bMaxPriorPitches": 20,
+    "forbidThirdConsecutiveDay": 1,
+    # Rolling appearance caps by role (3-day and 7-day windows)
+    "maxApps3Day_CL": 2,
+    "maxApps3Day_SU": 2,
+    "maxApps3Day_MR": 3,
+    "maxApps3Day_LR": 2,
+    "maxApps7Day_CL": 4,
+    "maxApps7Day_SU": 4,
+    "maxApps7Day_MR": 5,
+    "maxApps7Day_LR": 4,
+    # Warmup tax (virtual pitches when a reliever warms and does not enter)
+    "warmupTaxPitches": 25,
+    # Role outing caps (outs per appearance) – advisory; enforced in SubstitutionManager
+    "maxOuts_CL": 4,
+    "maxOuts_SU": 4,
+    "maxOuts_MR": 6,
+    "maxOuts_LR": 9,
+    # Role priority helpers
+    "starterEarlyOutsThresh": 12,
+    "lrBlowoutMargin": 4,
+    # Pitch budget (endurance-driven) defaults
+    "pitchBudgetMultiplier_CL": 1.25,
+    "pitchBudgetMultiplier_SU": 1.35,
+    "pitchBudgetMultiplier_MR": 1.35,
+    "pitchBudgetMultiplier_LR": 1.55,
+    "pitchBudgetMultiplier_SP": 3.5,
+    "pitchBudgetRecoveryPct_CL": 0.32,
+    "pitchBudgetRecoveryPct_SU": 0.32,
+    "pitchBudgetRecoveryPct_MR": 0.28,
+    "pitchBudgetRecoveryPct_LR": 0.24,
+    "pitchBudgetRecoveryPct_SP": 0.24,
+    "pitchBudgetAvailThresh_CL": 0.65,
+    "pitchBudgetAvailThresh_SU": 0.65,
+    "pitchBudgetAvailThresh_MR": 0.68,
+    "pitchBudgetAvailThresh_LR": 0.7,
+    "pitchBudgetAvailThresh_SP": 0.7,
+    "warmupPitchBase_CL": 10,
+    "warmupPitchBase_SU": 12,
+    "warmupPitchBase_MR": 12,
+    "warmupPitchBase_LR": 18,
+    "warmupPitchBase_SP": 20,
+    "warmupAvailabilityExponent": 1.2,
+    "warmupAvailabilityFloor": 0.2,
+    "pitchBudgetExhaustionPenaltyScale": 0.4,
+    "pitchBudgetEmergencyLockoutDelta": 0.15,
     "pitcherTiredThresh": 0,
     # Pitcher substitution thresholds and scoring
-    "pitchScoringOut": 0,
-    "pitchScoringStrikeOut": 0,
-    "pitchScoringOffRun": 0,
-    "pitchScoringInnsAfter4": 0,
-    "pitchScoringWalk": 0,
-    "pitchScoringHit": 0,
-    "pitchScoringConsHit": 0,
-    "pitchScoringRun": 0,
-    "pitchScoringER": 0,
-    "pitchScoringHR": 0,
-    "pitchScoringWP": 0,
-    "starterToastThreshInn1": 0,
-    "starterToastThreshInn2": 0,
-    "starterToastThreshInn3": 0,
-    "starterToastThreshInn4": 0,
-    "starterToastThreshInn5": 0,
-    "starterToastThreshInn6": 0,
-    "starterToastThreshInn7": 0,
-    "starterToastThreshInn8": 0,
-    "starterToastThreshInn9": 0,
-    "starterToastThreshPerInn": 0,
-    "starterToastThreshAwayAdjust": 0,
-    "starterToastThreshFewBullpenPitchesAdjust": 0,
-    "starterToastThreshManyBullpenPitchesAdjust": 0,
+    "pitchScoringOut": 1,
+    "pitchScoringStrikeOut": 2,
+    "pitchScoringOffRun": 2,
+    "pitchScoringInnsAfter4": 2,
+    "pitchScoringWalk": -1,
+    "pitchScoringHit": -2,
+    "pitchScoringConsHit": -1,
+    "pitchScoringRun": -2,
+    "pitchScoringER": -2,
+    "pitchScoringHR": -3,
+    "pitchScoringWP": -2,
+    "pitchScoringCleanInning": 3,
+    "starterToastThreshInn1": -75,
+    "starterToastThreshInn2": -90,
+    "starterToastThreshInn3": -90,
+    "starterToastThreshInn4": -90,
+    "starterToastThreshInn5": -75,
+    "starterToastThreshInn6": -70,
+    "starterToastThreshInn7": -66,
+    "starterToastThreshInn8": -30,
+    "starterToastThreshInn9": -26,
+    "starterToastThreshPerInn": 6,
+    "starterToastThreshAwayAdjust": 2,
+    "starterToastThreshFewBullpenPitchesAdjust": -4,
+    "starterToastThreshManyBullpenPitchesAdjust": 4,
     "pitcherExhaustedThresh": 0,
     "tiredPitchRatPct": 100,
     "tiredASPct": 100,

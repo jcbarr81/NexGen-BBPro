@@ -194,7 +194,7 @@ def load_tuned_playbalance_config(
         # season simulations. Increasing the ease scale makes identifying pitches
         # easier which leads to more contact and fewer swinging strikes.
         cfg.idRatingEaseScale = min(max(cfg.idRatingEaseScale, 1.35), 1.75)
-        cfg.missChanceScale = max(getattr(cfg, "missChanceScale", 1.85), 1.85)
+        cfg.missChanceScale = max(getattr(cfg, "missChanceScale", 2.05), 2.05)
 
         # Clean up defensive miscues: bump accuracy/catch baselines and scale throws.
         cfg.catchBaseChance = min(max(cfg.get("catchBaseChance", 70), 78), 85)

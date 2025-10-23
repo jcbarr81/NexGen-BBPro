@@ -111,3 +111,31 @@
 [2025-10-20 22:54:41] Purged saved season boxscores
 [2025-10-21 07:47:41] Generated regular season schedule with 972 games
 [2025-10-21 07:49:25] Amateur Draft 2025 committed: 4 players added; 36 roster assignments
+[2025-10-21 08:32:35] League reset to Opening Day
+[2025-10-21 08:32:35] Purged saved season boxscores
+[2025-10-21 08:34:52] Amateur Draft 2025 committed: 3 players added; 36 roster assignments
+[2025-10-21 12:04:45] League reset to Opening Day
+[2025-10-21 12:04:45] Purged saved season boxscores
+[2025-10-21 12:06:52] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-21 12:38:27] League reset to Opening Day
+[2025-10-21 12:38:27] Purged saved season boxscores
+[2025-10-21 12:40:42] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-21 12:49:25] League reset to Opening Day
+[2025-10-21 12:49:25] Purged saved season boxscores
+[2025-10-21 12:58:54] League reset to Opening Day
+[2025-10-21 12:58:54] Purged saved season boxscores
+[2025-10-21 13:11:45] League reset to Opening Day
+[2025-10-21 13:11:45] Purged saved season boxscores
+[2025-10-21 13:12:25] League reset to Opening Day
+[2025-10-21 13:12:25] Purged saved season boxscores
+[2025-10-21 13:17:39] League reset to Opening Day
+[2025-10-21 13:17:39] Purged saved season boxscores
+[2025-10-21 13:26:06] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-22 03:01:32] League reset to Opening Day
+[2025-10-22 03:01:32] Purged saved season boxscores
+[2025-10-22 03:12:40] Amateur Draft 2025 committed: 0 players added; 36 roster assignments
+[2025-10-22 07:12:23] League reset to Opening Day
+[2025-10-22 07:12:23] Purged saved season boxscores
+[2025-10-22 07:26:30] League reset to Opening Day
+[2025-10-22 07:26:30] Purged saved season boxscores
+[2025-10-22 07:30:11] Amateur Draft 2025 committed: 0 players added; 36 roster assignments

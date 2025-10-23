@@ -78,6 +78,7 @@ class PitcherState:
     simulated_pitches: int = 0
     simulated_strikes: int = 0
     simulated_balls: int = 0
+    appearance_outs: int = 0
 
     def record_pitch(self, *, in_zone: bool, swung: bool, contact: bool) -> None:
         """Record a pitch outcome.

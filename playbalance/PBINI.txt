@@ -121,9 +121,9 @@ pitchOutChanceHomeAdjust=-5         ; Modifier for the home team
 ; PITCH AROUND A BATTER (INCLUDING INTENTIONAL WALKS)
 pitchAroundChanceNoInn=6            ; Do not pitch around until AFTER this
 ;                                      inning
-pitchAroundChanceBase=25            ; Base pitch around chance
-pitchAroundChanceInn7Adjust=5       ; Modifier for the 7th & 8th innings
-pitchAroundChanceInn9Adjust=10      ; Modifier for the 9th inning and beyond
+pitchAroundChanceBase=12            ; Base pitch around chance
+pitchAroundChanceInn7Adjust=3       ; Modifier for the 7th & 8th innings
+pitchAroundChanceInn9Adjust=6       ; Modifier for the 9th inning and beyond
 ;
 ; When deciding whether to pitch around a batter or not, the abilities of the
 ; batter are compared to those of the on-deck batter.  Both CH and PH are
@@ -132,29 +132,29 @@ pitchAroundChanceInn9Adjust=10      ; Modifier for the 9th inning and beyond
 ; compared and the difference is checked on this table to determine the
 ; modifier to apply to the pitch around chance.  
 ;
-pitchAroundChancePH2BatAdjust=25    ; Batter's PH is 2 levels higher than OD
-pitchAroundChancePH1BatAdjust=10    ; Batter's PH is 1 level higher than OD
-pitchAroundChancePHBatAdjust=5      ; Batter's PH is same level as OD, but
+pitchAroundChancePH2BatAdjust=12    ; Batter's PH is 2 levels higher than OD
+pitchAroundChancePH1BatAdjust=5     ; Batter's PH is 1 level higher than OD
+pitchAroundChancePHBatAdjust=3      ; Batter's PH is same level as OD, but
 ;                                      is actually a higher value
-pitchAroundChancePHODAdjust=-10     ; OD's PH is higher than batter's, but
+pitchAroundChancePHODAdjust=-6      ; OD's PH is higher than batter's, but
 ;                                      has a higher actual value
-pitchAroundChancePH1ODAdjust=-25    ; OD's PH is 1 level higher than batter's
-pitchAroundChancePH2ODAdjust=-50    ; OD's PH is 2 levels higher than batter's
-pitchAroundChanceCH2BatAdjust=15    ; Batter's CH is 2 levels higher than OD's
-pitchAroundChanceCH1BatAdjust=5     ; Batter's CH is 1 level higher than OD's
+pitchAroundChancePH1ODAdjust=-12    ; OD's PH is 1 level higher than batter's
+pitchAroundChancePH2ODAdjust=-24    ; OD's PH is 2 levels higher than batter's
+pitchAroundChanceCH2BatAdjust=8     ; Batter's CH is 2 levels higher than OD's
+pitchAroundChanceCH1BatAdjust=3     ; Batter's CH is 1 level higher than OD's
 pitchAroundChanceCHBatAdjust=0      ; Batter's CH is same level as OD's, but
 ;                                      has a higher actual value
-pitchAroundChanceCHODAdjust=-5      ; OD's CH is same level as batter's,, but
+pitchAroundChanceCHODAdjust=-3      ; OD's CH is same level as batter's,, but
 ;                                      has a higher actual value
-pitchAroundChanceCH1ODAdjust=-15    ; OD's CH is 1 level higher than batter's
-pitchAroundChanceCH2ODAdjust=-30    ; OD's CH is 2 levels higher than batter's
+pitchAroundChanceCH1ODAdjust=-8     ; OD's CH is 1 level higher than batter's
+pitchAroundChanceCH2ODAdjust=-15    ; OD's CH is 2 levels higher than batter's
 pitchAroundChanceLowGFThresh=45     ; Threshold to consider a G/F "low"
-pitchAroundChanceLowGFAdjust=5      ; Modifier for low G/F
+pitchAroundChanceLowGFAdjust=3      ; Modifier for low G/F
 pitchAroundChanceOut0=0             ; Modifier for 0 outs situations
-pitchAroundChanceOut1=5             ; Modifier for 1 out situations
-pitchAroundChanceOut2=10            ; Modifier for 2 out situations
-pitchAroundChanceOn23=5             ; Modifier for when runners are on 2nd & 3rd
-defManPitchAroundToIBBPct=100       ; IBB chance is this % of PitchAround chance
+pitchAroundChanceOut1=3             ; Modifier for 1 out situations
+pitchAroundChanceOut2=5             ; Modifier for 2 out situations
+pitchAroundChanceOn23=3             ; Modifier for when runners are on 2nd & 3rd
+defManPitchAroundToIBBPct=35        ; IBB chance is this % of PitchAround chance
 ;
 ;
 ; OUTFIELDER POSITIONING
@@ -289,7 +289,7 @@ stealChance22Count=0            ; Adjustment for 2-2 count
 stealChance30Count=15           ; Adjustment for 3-0 count
 stealChance31Count=15           ; Adjustment for 3-1 count
 stealChance32Count=20           ; Adjustment for 3-2 count
-offManStealChancePct=67         ; Percent modifier to final steal chance
+offManStealChancePct=45         ; Percent modifier to final steal chance
 ;
 ; Runner speed adjustments.  The threshold is the maximum SP value to place
 ; the runner in a specific classification grouping.

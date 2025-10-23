@@ -139,6 +139,15 @@ def _apply_bullpen_usage_order(
     if tracker is None or not date_token or not state.pitchers or len(state.pitchers) <= 1:
         return
     status_map = tracker.bullpen_game_status(team_id, date_token, players_file, roster_dir)
+    # Stash for in-game decision making (caps, b2b checks, etc.)
+    try:
+        state.usage_status = dict(status_map)
+    except Exception:
+        state.usage_status = {}
+    for pitcher in state.pitchers:
+        info = status_map.get(getattr(pitcher, "player_id", ""), {})
+        if info:
+            setattr(pitcher, "budget_available_pct", info.get("available_pct", 1.0))
     if not status_map:
         return
 
@@ -483,6 +492,40 @@ def run_single_game(
             players_file,
             roster_dir,
         )
+        # Apply warmup tax for relievers who were warmed but did not enter
+        try:
+            tracker.record_warmups(
+                home_id,
+                date_token,
+                home_state.bullpen_warmups,
+                players_file,
+                roster_dir,
+            )
+            tracker.record_warmups(
+                away_id,
+                date_token,
+                away_state.bullpen_warmups,
+                players_file,
+                roster_dir,
+            )
+            # Apply post-game penalties (e.g., emergency usage tax)
+            tracker.apply_penalties(
+                home_id,
+                date_token,
+                getattr(home_state, "postgame_recovery_penalties", {}),
+                players_file,
+                roster_dir,
+            )
+            tracker.apply_penalties(
+                away_id,
+                date_token,
+                getattr(away_state, "postgame_recovery_penalties", {}),
+                players_file,
+                roster_dir,
+            )
+        except Exception:
+            # Defensive: warmup tax is best-effort and should not break game flow
+            pass
     return home_state, away_state, box, html, meta
 
 

@@ -142,6 +142,38 @@ def _build_default_lists(team_id: str, players_file: str, roster_dir: str) -> Tu
                 derived = get_role(pitcher)
                 setattr(pitcher, "assigned_pitching_role", derived or "")
 
+    # Ensure a five-man rotation exists and starters do not clutter the bullpen.
+    rotation: List[Pitcher] = []
+    bullpen: List[Pitcher] = []
+    for pitcher in ordered_pitchers:
+        role = str(getattr(pitcher, "assigned_pitching_role", "") or "").upper()
+        if role.startswith("SP"):
+            rotation.append(pitcher)
+        else:
+            bullpen.append(pitcher)
+
+    if len(rotation) < 5:
+        bullpen_sorted = sorted(
+            bullpen, key=lambda p: getattr(p, "endurance", 0), reverse=True
+        )
+        while len(rotation) < 5 and bullpen_sorted:
+            promote = bullpen_sorted.pop(0)
+            if promote in bullpen:
+                bullpen.remove(promote)
+            rotation.append(promote)
+
+    # Keep exactly five rotation slots, push any extras to the bullpen group.
+    extra_rotation = rotation[5:]
+    if extra_rotation:
+        bullpen = extra_rotation + bullpen
+        rotation = rotation[:5]
+
+    # Label rotation spots consistently (SP1..SP5) for downstream consumers.
+    for idx, pitcher in enumerate(rotation, start=1):
+        setattr(pitcher, "assigned_pitching_role", f"SP{idx}")
+
+    ordered_pitchers = rotation + bullpen
+
     return lineup, bench, ordered_pitchers
 
 

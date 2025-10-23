@@ -30,8 +30,10 @@ def exit_velocity(
     """
 
     base = getattr(cfg, "exitVeloBase", 0.0)
-    ph_pct = getattr(cfg, "exitVeloPHPct", 0.0)
-    speed = base + ph_pct * power / 100.0
+    ph_pct = getattr(cfg, "exitVeloSlope", 0.0)
+    if not ph_pct:
+        ph_pct = getattr(cfg, "exitVeloPHPct", 0.0)
+    speed = base + ph_pct * power
 
     scale = {
         "power": getattr(cfg, "exitVeloPowerPct", 100.0),

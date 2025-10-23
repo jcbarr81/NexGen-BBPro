@@ -121,6 +121,12 @@ class TeamState:
     warming_reliever: bool = False
     bullpen_warmups: Dict[str, WarmupTracker] = field(default_factory=dict)
     current_pitcher_state: PitcherState | None = None
+    # Precomputed per-pitcher usage/rest status for the current date (optional)
+    usage_status: Dict[str, Dict[str, object]] = field(default_factory=dict)
+    # Emergency controls for reliever outing caps (pid -> outs cap)
+    forced_out_limit_by_pid: Dict[str, int] = field(default_factory=dict)
+    # Post-game recovery penalties to apply (pid -> virtual tax pitches)
+    postgame_recovery_penalties: Dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.pitchers:
@@ -131,6 +137,12 @@ class TeamState:
             self.current_pitcher_state = state
             state.g = getattr(state, "g", 0) + 1
             state.gs = getattr(state, "gs", 0) + 1
+            state.toast = 0.0
+            state.is_toast = False
+            state.consecutive_hits = 0
+            state.consecutive_baserunners = 0
+            state.allowed_hr = False
+            state.appearance_outs = 0
             fs = self.fielding_stats.setdefault(starter.player_id, FieldingState(starter))
             fs.g += 1
             fs.gs += 1
@@ -272,6 +284,17 @@ class GameSimulation:
         )
 
     # ------------------------------------------------------------------
+    # Pitcher helpers
+    # ------------------------------------------------------------------
+    def _credit_pitcher_outs(self, pitcher_state: PitcherState, outs: int) -> None:
+        """Increment recorded outs for the current pitcher and outing."""
+
+        if outs <= 0:
+            return
+        pitcher_state.outs += outs
+        pitcher_state.appearance_outs = getattr(pitcher_state, "appearance_outs", 0) + outs
+
+    # ------------------------------------------------------------------
     # Physics helper shims
     # ------------------------------------------------------------------
     def bat_impact(
@@ -324,6 +347,25 @@ class GameSimulation:
         scaled.arm = int(pitcher.arm * as_mult)
         scaled.control = int(pitcher.control * co_mult)
         scaled.movement = int(pitcher.movement * mo_mult)
+        penalty_scale = float(self.config.get("pitchBudgetExhaustionPenaltyScale", 0.0) or 0.0)
+        if penalty_scale:
+            budget_pct = getattr(pitcher, "budget_available_pct", 1.0)
+            try:
+                budget_pct = float(budget_pct)
+            except (TypeError, ValueError):
+                budget_pct = 1.0
+            start_pct = float(getattr(self.config, "pitchBudgetExhaustionPenaltyStartPct", 0.5) or 0.5)
+            # Clamp to sane bounds to avoid div-by-zero
+            start_pct = max(0.01, min(1.0, start_pct))
+            if budget_pct < start_pct:
+                # Normalize deficit to 0..1 over the configured window
+                deficit = (start_pct - budget_pct) / start_pct
+                factor = max(0.1, 1.0 - penalty_scale * deficit)
+                for attr in PITCH_RATINGS:
+                    setattr(scaled, attr, int(getattr(scaled, attr) * factor))
+                scaled.arm = int(scaled.arm * factor)
+                scaled.control = int(scaled.control * factor)
+                scaled.movement = int(scaled.movement * factor)
         return scaled
 
     # ------------------------------------------------------------------
@@ -597,6 +639,12 @@ class GameSimulation:
         was_trailing_or_tied = offense.runs <= defense.runs
         offense_key = "home" if offense is self.home else "away"
         offense.runs += 1
+        current_pitcher = defense.current_pitcher_state
+        if current_pitcher is not None and current_pitcher.in_save_situation:
+            lead = defense.runs - offense.runs
+            if lead <= 0:
+                current_pitcher.bs += 1
+                current_pitcher.in_save_situation = False
         if was_trailing_or_tied and offense.runs > defense.runs:
             self._pitcher_of_record[offense_key] = offense.current_pitcher_state
             self._losing_pitcher = defense.current_pitcher_state
@@ -801,6 +849,14 @@ class GameSimulation:
         max_pa = self.config.get("maxHalfInningPA", 0)
         max_runs = self.config.get("maxHalfInningRuns", 0)
         limits_enabled = bool(self.config.get("halfInningLimitEnabled", 1))
+        before_pitching: dict[str, tuple[int, int, int, int]] = {}
+        for pid, ps in defense.pitcher_stats.items():
+            before_pitching[pid] = (
+                getattr(ps, "outs", 0),
+                getattr(ps, "h", 0),
+                getattr(ps, "bb", 0),
+                getattr(ps, "hbp", 0),
+            )
         while outs < 3:
             if limits_enabled:
                 if max_pa and plate_appearances >= max_pa:
@@ -836,6 +892,20 @@ class GameSimulation:
             defense.current_pitcher_state.toast += self.config.get(
                 "pitchScoringInnsAfter4", 0
             )
+        clean_bonus = self.config.get("pitchScoringCleanInning", 0)
+        if clean_bonus:
+            for pid, ps in defense.pitcher_stats.items():
+                prev_outs, prev_h, prev_bb, prev_hbp = before_pitching.get(
+                    pid,
+                    (0, 0, 0, 0),
+                )
+                outs_diff = getattr(ps, "outs", 0) - prev_outs
+                hits_diff = getattr(ps, "h", 0) - prev_h
+                walks_diff = getattr(ps, "bb", 0) - prev_bb
+                hbp_diff = getattr(ps, "hbp", 0) - prev_hbp
+                if outs_diff >= 3 and (hits_diff + walks_diff + hbp_diff) == 0:
+                    frames = max(1, outs_diff // 3)
+                    ps.toast += clean_bonus * frames
 
     def play_at_bat(self, offense: TeamState, defense: TeamState) -> int:
         """Play a single at-bat.  Returns the number of outs recorded."""
@@ -1058,7 +1128,7 @@ class GameSimulation:
             self._add_stat(
                 batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
             )
-            pitcher_state.outs += outs
+            self._credit_pitcher_outs(pitcher_state, outs)
             return outs + outs_from_pick
 
         inning = len(offense.inning_runs) + 1
@@ -1170,7 +1240,7 @@ class GameSimulation:
                     self._add_stat(
                         batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                     )
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     return outs + outs_from_pick
             pre_pitch_out = False
             for runner_on in (1,):
@@ -1206,7 +1276,7 @@ class GameSimulation:
                     self._add_stat(
                         batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                     )
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     self.subs.maybe_warm_reliever(
                         defense,
                         inning=inning,
@@ -1237,7 +1307,7 @@ class GameSimulation:
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
-                pitcher_state.outs += outs
+                self._credit_pitcher_outs(pitcher_state, outs)
                 return outs + outs_from_pick
 
             target_pitches = self.config.get("targetPitchesPerPA", 0)
@@ -1385,7 +1455,7 @@ class GameSimulation:
                 start_pitches,
             ):
                 pitcher_state.record_pitch(in_zone=in_zone, swung=True, contact=False)
-                pitcher_state.outs += outs
+                self._credit_pitcher_outs(pitcher_state, outs)
                 return outs + outs_from_pick
 
             pitcher_state.record_pitch(in_zone=in_zone, swung=swing, contact=contact)
@@ -1410,7 +1480,7 @@ class GameSimulation:
                         "pitches",
                         pitcher_state.pitches_thrown - start_pitches,
                     )
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense,
@@ -1452,7 +1522,7 @@ class GameSimulation:
                             "pitches",
                             pitcher_state.pitches_thrown - start_pitches,
                         )
-                        pitcher_state.outs += outs
+                        self._credit_pitcher_outs(pitcher_state, outs)
                         run_diff = offense.runs - defense.runs
                         self.subs.maybe_warm_reliever(
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
@@ -1495,7 +1565,7 @@ class GameSimulation:
                         "pitches",
                         pitcher_state.pitches_thrown - start_pitches,
                     )
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
@@ -1516,7 +1586,7 @@ class GameSimulation:
                         "pitches",
                         pitcher_state.pitches_thrown - start_pitches,
                     )
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
@@ -1640,13 +1710,13 @@ class GameSimulation:
                         pitcher_state.pitches_thrown - start_pitches,
                     )
                     if runner_scored and outs == 0:
-                        pitcher_state.outs += outs
+                        self._credit_pitcher_outs(pitcher_state, outs)
                         run_diff = offense.runs - defense.runs
                         self.subs.maybe_warm_reliever(
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
                         return outs + outs_from_pick
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
@@ -1675,7 +1745,7 @@ class GameSimulation:
                             ) * outs_made
                             pitcher_state.consecutive_hits = 0
                             pitcher_state.consecutive_baserunners = 0
-                            pitcher_state.outs += outs_made
+                            self._credit_pitcher_outs(pitcher_state, outs_made)
                     else:
                         pitcher_state.h += 1
                         self._add_stat(batter_state, "h")
@@ -1711,13 +1781,13 @@ class GameSimulation:
                             ) * outs_made
                             pitcher_state.consecutive_hits = 0
                             pitcher_state.consecutive_baserunners = 0
-                            pitcher_state.outs += outs_made
+                            self._credit_pitcher_outs(pitcher_state, outs_made)
                     self._add_stat(
                         batter_state,
                         "pitches",
                         pitcher_state.pitches_thrown - start_pitches,
                     )
-                    pitcher_state.outs += outs
+                    self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
@@ -1751,7 +1821,7 @@ class GameSimulation:
                             "pitches",
                             pitcher_state.pitches_thrown - start_pitches,
                         )
-                        pitcher_state.outs += outs
+                        self._credit_pitcher_outs(pitcher_state, outs)
                         run_diff = offense.runs - defense.runs
                         self.subs.maybe_warm_reliever(
                             defense,
@@ -1783,22 +1853,18 @@ class GameSimulation:
                     league_hbp = self.config.get("leagueHBPPerGame", 0.86)
                     if league_hbp > 0:
                         hbp_dist = int(round(hbp_dist * 0.86 / league_hbp))
-                    if dist >= hbp_dist:
-                        base_hbp = self.config.get("hbpBaseChance", 0.0)
+                    base_hbp = self.config.get("hbpBaseChance", 0.0)
+                    if base_hbp and dist >= hbp_dist:
                         step_out_chance = (
                             self.config.get("hbpBatterStepOutChance", 0) / 100.0
                         )
                         roll = self.rng.random()
                         is_hbp = roll < base_hbp
-                        step_out_roll = self.rng.random()
-                        if is_hbp and step_out_roll < step_out_chance:
-                            is_hbp = False
-                        if not is_hbp:
-                            balls += 1
-                            self._record_ball(pitcher_state)
-                            self._skip_next_ball_count = True
-                            continue
-                        else:
+                        if is_hbp:
+                            step_out_roll = self.rng.random()
+                            if step_out_roll < step_out_chance:
+                                is_hbp = False
+                        if is_hbp:
                             self._add_stat(batter_state, "hbp")
                             pitcher_state.hbp += 1
                             pitcher_state.toast += self.config.get(
@@ -1812,7 +1878,8 @@ class GameSimulation:
                                 "pitches",
                                 pitcher_state.pitches_thrown - start_pitches,
                             )
-                            pitcher_state.outs += outs
+                            self._record_ball(pitcher_state)
+                            self._credit_pitcher_outs(pitcher_state, outs)
                             run_diff = offense.runs - defense.runs
                             self.subs.maybe_warm_reliever(
                                 defense,
@@ -1821,49 +1888,46 @@ class GameSimulation:
                                 home_team=home_team,
                             )
                             return outs + outs_from_pick
+                    if orig_swing and contact_quality <= 0:
+                        self._maybe_passed_ball(offense, defense, catcher_fs)
+                        pitcher_state.strikes_thrown += 1
+                        if first_pitch_this_pitch and strikes == 0:
+                            pitcher_state.first_pitch_strikes += 1
+                        strikes += 1
+                        if strikes >= 3:
+                            self.logged_strikeouts += 1
+                            self._add_stat(batter_state, "ab")
+                            self._add_stat(batter_state, "so")
+                            self._add_stat(batter_state, "so_swinging")
+                            pitcher_state.so += 1
+                            pitcher_state.so_swinging += 1
+                            outs += 1
+                            pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                            pitcher_state.toast += self.config.get("pitchScoringStrikeOut", 0)
+                            pitcher_state.consecutive_hits = 0
+                            pitcher_state.consecutive_baserunners = 0
+                            catcher_fs = self._get_fielder(defense, "C")
+                            if catcher_fs:
+                                self._add_fielding_stat(catcher_fs, "po", position="C")
+                            p_fs = defense.fielding_stats.get(pitcher_state.player.player_id)
+                            if p_fs:
+                                self._add_fielding_stat(p_fs, "a")
+                            self._add_stat(
+                                batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
+                            )
+                            self._credit_pitcher_outs(pitcher_state, outs)
+                            run_diff = offense.runs - defense.runs
+                            self.subs.maybe_warm_reliever(
+                                defense,
+                                inning=inning,
+                                run_diff=run_diff,
+                                home_team=home_team,
+                            )
+                            return outs + outs_from_pick
+                        continue
                     else:
-                        if orig_swing and contact_quality <= 0:
-                            self._maybe_passed_ball(offense, defense, catcher_fs)
-                            pitcher_state.strikes_thrown += 1
-                            if first_pitch_this_pitch and strikes == 0:
-                                pitcher_state.first_pitch_strikes += 1
-                            strikes += 1
-                            if strikes >= 3:
-                                self.logged_strikeouts += 1
-                                self._add_stat(batter_state, "ab")
-                                self._add_stat(batter_state, "so")
-                                self._add_stat(batter_state, "so_swinging")
-                                pitcher_state.so += 1
-                                pitcher_state.so_swinging += 1
-                                outs += 1
-                                pitcher_state.toast += self.config.get("pitchScoringOut", 0)
-                                pitcher_state.toast += self.config.get("pitchScoringStrikeOut", 0)
-                                pitcher_state.consecutive_hits = 0
-                                pitcher_state.consecutive_baserunners = 0
-                                catcher_fs = self._get_fielder(defense, "C")
-                                if catcher_fs:
-                                    self._add_fielding_stat(catcher_fs, "po", position="C")
-                                p_fs = defense.fielding_stats.get(pitcher_state.player.player_id)
-                                if p_fs:
-                                    self._add_fielding_stat(p_fs, "a")
-                                self._add_stat(
-                                    batter_state,
-                                    "pitches",
-                                    pitcher_state.pitches_thrown - start_pitches,
-                                )
-                                pitcher_state.outs += outs
-                                run_diff = offense.runs - defense.runs
-                                self.subs.maybe_warm_reliever(
-                                    defense,
-                                    inning=inning,
-                                    run_diff=run_diff,
-                                    home_team=home_team,
-                                )
-                                return outs + outs_from_pick
-                            continue
-                        else:
-                            balls += 1
-                            self._record_ball(pitcher_state)
+                        balls += 1
+                        self._record_ball(pitcher_state)
 
             self._maybe_passed_ball(offense, defense, catcher_fs)
 
@@ -1885,7 +1949,7 @@ class GameSimulation:
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
-                pitcher_state.outs += outs
+                self._credit_pitcher_outs(pitcher_state, outs)
                 run_diff = offense.runs - defense.runs
                 self.subs.maybe_warm_reliever(
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
@@ -1916,7 +1980,7 @@ class GameSimulation:
                 self._add_stat(
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
-                pitcher_state.outs += outs
+                self._credit_pitcher_outs(pitcher_state, outs)
                 run_diff = offense.runs - defense.runs
                 self.subs.maybe_warm_reliever(
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
