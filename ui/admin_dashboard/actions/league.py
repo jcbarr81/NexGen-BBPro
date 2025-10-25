@@ -24,6 +24,7 @@ from ui.window_utils import ensure_on_top
 from utils.news_logger import log_news_event
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
+from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.team_loader import load_teams
 
 from ..context import DashboardContext
@@ -136,6 +137,26 @@ def reset_season_to_opening_day(
             parent,
             "Purge Boxscores?",
             "Also delete saved season boxscores (data/boxscores/season)?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        == QMessageBox.StandardButton.Yes
+    )
+    clear_news = (
+        QMessageBox.question(
+            parent,
+            "Clear News Feed?",
+            "Also purge league news history (data/news_feed.txt and data/news_feed.jsonl)?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        == QMessageBox.StandardButton.Yes
+    )
+    clear_transactions = (
+        QMessageBox.question(
+            parent,
+            "Clear Transactions Log?",
+            "Also delete recorded transactions (data/transactions.csv)?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -318,9 +339,17 @@ def reset_season_to_opening_day(
             notes.append(f"State updated, but failed setting phase: {exc}")
 
         try:
-            log_news_event("League reset to Opening Day")
-        except Exception:
-            pass
+            tracker = PitcherRecoveryTracker.instance()
+            tracker.reset()
+        except Exception as exc:
+            notes.append(f"Failed resetting pitcher recovery data: {exc}")
+
+        logged_reset_event = not clear_news
+        if logged_reset_event:
+            try:
+                log_news_event("League reset to Opening Day")
+            except Exception:
+                pass
 
         if purge_box:
             try:
@@ -331,9 +360,35 @@ def reset_season_to_opening_day(
             except Exception as exc:
                 notes.append(f"Boxscore purge failed: {exc}")
 
+        news_cleared = False
+        if clear_news:
+            try:
+                news_txt = data_root / "news_feed.txt"
+                news_json = data_root / "news_feed.jsonl"
+                for path in (news_txt, news_json):
+                    if path.exists():
+                        path.unlink()
+                news_cleared = True
+            except Exception as exc:
+                notes.append(f"News feed purge failed: {exc}")
+
+        transactions_cleared = False
+        if clear_transactions:
+            try:
+                transactions = data_root / "transactions.csv"
+                if transactions.exists():
+                    transactions.unlink()
+                transactions_cleared = True
+            except Exception as exc:
+                notes.append(f"Transactions purge failed: {exc}")
+
         message = "League reset to Opening Day."
         if purge_box:
             message += " Season boxscores purged."
+        if news_cleared:
+            message += " News feed cleared."
+        if transactions_cleared:
+            message += " Transactions log cleared."
         if notes:
             message += " " + " ".join(notes)
         return "success", message

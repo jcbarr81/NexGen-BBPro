@@ -150,7 +150,13 @@ def _simulate_game(
     if away.pitchers:
         away.pitchers = away.pitchers[away_pitch_idx:] + away.pitchers[:away_pitch_idx]
     sim = GameSimulation(home, away, _CFG, random.Random(seed))
-    sim.simulate_game()
+    # Do not persist stats from these calibration runs. The orchestrator is
+    # used only to produce quick league-wide rate checks (K%, BB%, BABIP) for
+    # progress messages. Persisting would pollute the real season totals and
+    # distort leaders with extra appearances and wins. Season schedule
+    # simulation and persistence are handled elsewhere (SeasonSimulator /
+    # game_runner).
+    sim.simulate_game(persist_stats=False)
     box = generate_boxscore(home, away)
     totals: Counter[str] = Counter()
     for side in ("home", "away"):

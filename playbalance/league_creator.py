@@ -267,9 +267,20 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
         used_ids.add(pid)
         return player
 
-    def generate_roster(num_pitchers: int, num_hitters: int, age_range: Tuple[int, int], ensure_positions: bool = False):
+    def generate_roster(
+        num_pitchers: int,
+        num_hitters: int,
+        age_range: Tuple[int, int],
+        ensure_positions: bool = False,
+        closers: int = 0,
+    ):
         players = []
-        for _ in range(num_pitchers):
+        closer_quota = max(0, min(closers, num_pitchers))
+        for _ in range(closer_quota):
+            data = generate_player(is_pitcher=True, age_range=age_range, pitcher_archetype="closer")
+            data["is_pitcher"] = True
+            players.append(_ensure_unique_id(data))
+        for _ in range(num_pitchers - closer_quota):
             data = generate_player(is_pitcher=True, age_range=age_range)
             data["is_pitcher"] = True
             players.append(_ensure_unique_id(data))
@@ -306,10 +317,10 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
                 }
             )
 
-            act_players = generate_roster(11, 14, (21, 38), ensure_positions=True)
+            act_players = generate_roster(11, 14, (21, 38), ensure_positions=True, closers=1)
             _ensure_act_positions(act_players)
-            aaa_players = generate_roster(7, 8, (21, 38))
-            low_players = generate_roster(5, 5, (18, 21))
+            aaa_players = generate_roster(7, 8, (21, 38), closers=1)
+            low_players = generate_roster(5, 5, (18, 21), closers=1)
 
             roster_levels = {"ACT": act_players, "AAA": aaa_players, "LOW": low_players}
 

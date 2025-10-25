@@ -74,6 +74,7 @@ def set_all_pitching_roles(
                 "primary_position": row.get("primary_position", "").strip(),
                 "role": row.get("role", "").strip(),
                 "endurance": row.get("endurance", ""),
+                "preferred_pitching_role": (row.get("preferred_pitching_role") or "").strip(),
             }
 
     teams = load_teams(data_dir / "teams.csv")

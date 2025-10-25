@@ -97,6 +97,7 @@ def load_players_from_csv(file_path):
                 movement = _required_int(row, "movement")
                 hold_runner = _required_int(row, "hold_runner")
                 role = row.get("role", "")
+                preferred_role = row.get("preferred_pitching_role", "")
                 fb = _required_int(row, "fb")
                 cu = _required_int(row, "cu")
                 cb = _required_int(row, "cb")
@@ -122,6 +123,7 @@ def load_players_from_csv(file_path):
                     scb=scb,
                     kn=kn,
                     role=role,
+                    preferred_pitching_role=preferred_role,
                     arm=arm,
                     fa=fa,
                     potential={

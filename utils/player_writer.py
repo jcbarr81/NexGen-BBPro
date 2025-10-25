@@ -6,7 +6,7 @@ def save_players_to_csv(players, file_path):
     fieldnames = [
         "player_id", "first_name", "last_name", "birthdate", "height", "weight",
         "ethnicity", "skin_tone", "hair_color", "facial_hair", "bats",
-        "primary_position", "other_positions", "is_pitcher", "role",
+        "primary_position", "other_positions", "is_pitcher", "role", "preferred_pitching_role",
         "ch", "ph", "sp", "gf", "pl", "vl", "sc", "fa", "arm",
         "endurance", "control", "movement", "hold_runner",
         "fb", "cu", "cb", "sl", "si", "scb", "kn",
@@ -38,6 +38,7 @@ def save_players_to_csv(players, file_path):
                 "other_positions": "|".join(p.other_positions),
                 "is_pitcher": "1" if is_pitcher else "0",
                 "role": p.role if is_pitcher else "",
+                "preferred_pitching_role": getattr(p, "preferred_pitching_role", "") if is_pitcher else "",
                 "injured": str(p.injured),
                 "injury_description": p.injury_description or "",
                 "return_date": p.return_date or ""

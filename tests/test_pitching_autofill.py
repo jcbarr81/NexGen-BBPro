@@ -34,3 +34,73 @@ def test_autofill_prefers_sp_and_low_endurance_closer():
 
     # Ensure each pitcher is used only once
     assert len(set(assignments.values())) == len(assignments)
+
+
+def test_autofill_falls_back_to_starters_for_bullpen_roles():
+    # Only starters provided; bullpen slots should still be filled without duplicates.
+    players = [
+        (f"sp{i}", {"role": "SP", "endurance": 90 - i * 5})
+        for i in range(10)
+    ]
+
+    assignments = autofill_pitching_staff(players)
+
+    # Rotation should still consume five distinct starters.
+    assert len({assignments.get(f"SP{i}") for i in range(1, 6)}) == len(
+        [assignments.get(f"SP{i}") for i in range(1, 6) if assignments.get(f"SP{i}")]
+    )
+
+    # Bullpen roles should all be present and unique.
+    for role in ("LR", "MR", "SU", "CL"):
+        assert role in assignments and assignments[role]
+
+    values = list(assignments.values())
+    assert len(values) == len(set(values))
+
+
+def test_autofill_assigns_closer_when_relivers_insufficient():
+    players = [
+        ("sp1", {"role": "SP", "endurance": 85}),
+        ("sp2", {"role": "SP", "endurance": 80}),
+        ("sp3", {"role": "SP", "endurance": 75}),
+        ("sp4", {"role": "SP", "endurance": 70}),
+        ("sp5", {"role": "SP", "endurance": 65}),
+        ("sp6", {"role": "SP", "endurance": 60}),
+        ("rp1", {"role": "RP", "endurance": 55}),
+        ("rp2", {"role": "RP", "endurance": 50}),
+        ("rp3", {"role": "RP", "endurance": 45}),
+    ]
+
+    assignments = autofill_pitching_staff(players)
+
+    assert assignments["LR"] == "rp1"
+    assert assignments["MR"] == "rp2"
+    # Only one RP left, so SU should use rp3 and CL should fall back to a starter.
+    assert assignments["SU"] == "rp3"
+    assert assignments["CL"].startswith("sp")
+    assert len(set(assignments.values())) == len(assignments)
+
+
+def test_autofill_prefers_designated_closer():
+    players = [
+        ("sp1", {"role": "SP", "endurance": 90}),
+        ("sp2", {"role": "SP", "endurance": 85}),
+        ("sp3", {"role": "SP", "endurance": 80}),
+        ("sp4", {"role": "SP", "endurance": 78}),
+        ("sp5", {"role": "SP", "endurance": 76}),
+        ("rp1", {"role": "RP", "endurance": 70}),
+        ("rp2", {"role": "RP", "endurance": 65}),
+        (
+            "cl1",
+            {"role": "RP", "endurance": 45, "preferred_pitching_role": "CL"},
+        ),
+        (
+            "cl2",
+            {"role": "RP", "endurance": 42, "preferred_pitching_role": "CL"},
+        ),
+    ]
+
+    assignments = autofill_pitching_staff(players)
+
+    assert assignments["CL"] == "cl2"  # lower-endurance closer should finish games
+    assert assignments["CL"] not in {assignments["LR"], assignments["MR"], assignments["SU"]}

@@ -32,6 +32,7 @@ class Pitcher(BasePlayer):
     movement: int = 0
     hold_runner: int = 0
     role: str = ""
+    preferred_pitching_role: str = ""
     is_pitcher: bool = True
     fatigue: str = "fresh"
 

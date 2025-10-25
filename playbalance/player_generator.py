@@ -267,6 +267,8 @@ PRIMARY_POSITION_WEIGHTS = {
     "RF": 16,
 }
 
+DRAFT_CLOSER_RATE = 0.18
+
 # Weights used for distributing rating points among player attributes.  These
 # values were taken from the original ARR data file (lines 71-86) and represent
 # how many parts of a shared rating pool should be assigned to each attribute.
@@ -609,44 +611,90 @@ def _generate_hitter_ratings(primary_pos: str) -> Dict[str, int]:
     }
 
 
-def _generate_pitcher_core_ratings(throws: str) -> Dict[str, int]:
-    """Return core pitcher ratings with floors centered near league-average performance."""
+def _generate_pitcher_core_ratings(throws: str, *, archetype: str | None = None) -> Dict[str, int]:
+    """Return core pitcher ratings tailored to the requested archetype."""
+
+    if archetype == "closer":
+        endurance_center = 38
+        endurance_floor = 24
+        endurance_ceiling = 58
+        endurance_spread = 4.5
+        endurance_outliers = (55, 68)
+        control_center = 60
+        control_floor = 48
+        control_ceiling = 78
+        control_spread = 4.8
+        control_outliers = (72, 86)
+        movement_center = 72
+        movement_floor = 60
+        movement_ceiling = 92
+        movement_spread = 5.2
+        movement_outliers = (82, 95)
+        hold_center = 60
+        hold_floor = 48
+        hold_ceiling = 82
+        arm_center = 78
+        arm_floor = 62
+        arm_ceiling = 95
+    else:
+        endurance_center = 60
+        endurance_floor = 48
+        endurance_ceiling = 80
+        endurance_spread = 6.0
+        endurance_outliers = (78, 92)
+        control_center = 62
+        control_floor = 50
+        control_ceiling = 80
+        control_spread = 5.2
+        control_outliers = (76, 92)
+        movement_center = 64
+        movement_floor = 52
+        movement_ceiling = 82
+        movement_spread = 5.4
+        movement_outliers = (78, 94)
+        hold_center = 54
+        hold_floor = 42
+        hold_ceiling = 72
+        arm_center = 64
+        arm_floor = 50
+        arm_ceiling = 85
+
     endurance, _ = _sample_rating(
-        60,
-        floor=48,
-        ceiling=80,
-        spread=6.0,
-        outlier_bounds=(78, 92),
+        endurance_center,
+        floor=endurance_floor,
+        ceiling=endurance_ceiling,
+        spread=endurance_spread,
+        outlier_bounds=endurance_outliers,
     )
     endurance = _adjust_endurance(endurance)
     control, _ = _sample_rating(
-        62,
-        floor=50,
-        ceiling=80,
-        spread=5.2,
-        outlier_bounds=(76, 92),
+        control_center,
+        floor=control_floor,
+        ceiling=control_ceiling,
+        spread=control_spread,
+        outlier_bounds=control_outliers,
     )
     movement, _ = _sample_rating(
-        64,
-        floor=52,
-        ceiling=82,
-        spread=5.4,
-        outlier_bounds=(78, 94),
+        movement_center,
+        floor=movement_floor,
+        ceiling=movement_ceiling,
+        spread=movement_spread,
+        outlier_bounds=movement_outliers,
     )
     if throws == "L":
         movement = min(92, movement + 4)
         control = max(50, control - 4)
     hold_runner, _ = _sample_rating(
-        54,
-        floor=42,
-        ceiling=72,
+        hold_center,
+        floor=hold_floor,
+        ceiling=hold_ceiling,
         spread=5.0,
         outlier_bounds=(70, 86),
     )
     arm, _ = _sample_rating(
-        64,
-        floor=50,
-        ceiling=85,
+        arm_center,
+        floor=arm_floor,
+        ceiling=arm_ceiling,
         spread=5.8,
         outlier_bounds=(80, 94),
     )
@@ -801,6 +849,7 @@ def generate_player(
     age_range: Optional[Tuple[int, int]] = None,
     primary_position: Optional[str] = None,
     player_type: Optional[str] = None,
+    pitcher_archetype: Optional[str] = None,
 ) -> Dict:
     """Generate a single player record.
 
@@ -822,6 +871,10 @@ def generate_player(
         Explicit player type to select the age table from
         :data:`AGE_TABLES`.  If not supplied ``for_draft`` determines whether
         the ``"amateur"`` or ``"fictional"`` table is used.
+
+    pitcher_archetype: Optional[str]
+        When generating pitchers, optionally choose a specific archetype such
+        as ``\"closer\"`` to bias the ratings/traits toward that profile.
 
     Returns
     -------
@@ -861,7 +914,7 @@ def generate_player(
         # Allocate pitching related ratings from a shared pool using the ARR
         # derived weights.  A second pool is used to determine the pitcher's
         # fielding ability.
-        core_ratings = _generate_pitcher_core_ratings(throws)
+        core_ratings = _generate_pitcher_core_ratings(throws, archetype=pitcher_archetype)
         endurance = core_ratings["endurance"]
         control = core_ratings["control"]
         movement = core_ratings["movement"]
@@ -870,8 +923,18 @@ def generate_player(
         fa = core_ratings["fa"]
 
         role = "SP" if endurance > 55 else "RP"
+        preferred_pitching_role = ""
+        if pitcher_archetype == "closer":
+            role = "RP"
+            preferred_pitching_role = "CL"
+            endurance = min(endurance, 55)
         delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
         pitch_ratings, pitch_pots = generate_pitches(throws, delivery, age)
+        if pitcher_archetype == "closer":
+            pitch_ratings["fb"] = max(pitch_ratings.get("fb", 0), 85)
+            slider_floor = bounded_rating(65, 90)
+            pitch_ratings["sl"] = max(pitch_ratings.get("sl", 0), slider_floor)
+            pitch_ratings["si"] = max(pitch_ratings.get("si", 0), 60)
 
         player = {
             "first_name": first_name,
@@ -912,6 +975,7 @@ def generate_player(
             "pot_hold_runner": bounded_potential(hold_runner, age),
             "pot_arm": bounded_potential(arm, age),
             "pot_fa": bounded_potential(fa, age),
+            "preferred_pitching_role": preferred_pitching_role,
         }
         player.update(pitch_ratings)
         player.update(pitch_pots)
@@ -919,6 +983,9 @@ def generate_player(
             player.setdefault(key, 0)
         _maybe_add_hitting(player, age)
         player["pot_fielding"] = generate_fielding_potentials("P", player["other_positions"])
+        if pitcher_archetype == "closer":
+            player["cl"] = max(player["cl"], 65)
+            player["gf"] = max(player["gf"], 55)
         return player
 
     else:
@@ -1010,9 +1077,24 @@ def generate_draft_pool(num_players: int = 75) -> List[Dict]:
     pitcher_weight = hitter_weight * (PITCHER_RATE / (1 - PITCHER_RATE))
     # Derive pitcher probability from position weights
     pitcher_rate = pitcher_weight / (pitcher_weight + hitter_weight)
-    for _ in range(num_players):
-        is_pitcher = random.random() < pitcher_rate
-        players.append(generate_player(is_pitcher=is_pitcher, for_draft=True))
+    pitcher_slots = max(1, min(num_players, int(round(num_players * pitcher_rate))))
+    hitter_slots = max(0, num_players - pitcher_slots)
+    role_flags = ["pitcher"] * pitcher_slots + ["hitter"] * hitter_slots
+    random.shuffle(role_flags)
+    closer_quota = 0
+    if pitcher_slots > 0:
+        closer_quota = max(1, int(round(pitcher_slots * DRAFT_CLOSER_RATE)))
+        closer_quota = min(closer_quota, pitcher_slots)
+    pitcher_indices = [idx for idx, flag in enumerate(role_flags) if flag == "pitcher"]
+    closer_indices: set[int] = set()
+    if closer_quota and pitcher_indices:
+        closer_indices = set(random.sample(pitcher_indices, closer_quota))
+    for idx, flag in enumerate(role_flags):
+        if flag == "pitcher":
+            archetype = "closer" if idx in closer_indices else None
+            players.append(generate_player(is_pitcher=True, for_draft=True, pitcher_archetype=archetype))
+        else:
+            players.append(generate_player(is_pitcher=False, for_draft=True))
     # Ensure all players have all keys filled
     all_keys = set(k for player in players for k in player.keys())
     for player in players:

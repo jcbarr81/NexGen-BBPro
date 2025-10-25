@@ -90,3 +90,123 @@ def test_selects_setup_in_eighth_tie_and_respects_caps():
     assert idx is not None
     chosen = team.pitchers[idx]
     assert getattr(chosen, "assigned_pitching_role", "") == "SU"
+
+
+def test_closer_replaces_setup_for_ninth_inning_save():
+    cfg = _cfg()
+    cfg.enableUsageModelV2 = 1
+    sm = SubstitutionManager(cfg)
+    usage = {
+        "SU1": {"available": True, "apps3": 0, "apps7": 0, "consecutive_days": 0},
+        "CL1": {"available": True, "apps3": 0, "apps7": 0, "consecutive_days": 0},
+    }
+    team = _team_state_with_usage(usage)
+    # Recompose staff so the setup man is currently pitching with the closer ready.
+    su = next(p for p in team.pitchers if getattr(p, "assigned_pitching_role", "") == "SU")
+    cl = next(p for p in team.pitchers if getattr(p, "assigned_pitching_role", "") == "CL")
+    team.pitchers = [su, cl] + [p for p in team.pitchers if p is not su and p is not cl]
+    from playbalance.state import PitcherState  # local import to avoid circular import issues
+
+    su_state = PitcherState()
+    su_state.player = su
+    su_state.appearance_outs = 3  # finished the eighth
+    team.pitcher_stats = {su.player_id: su_state}
+    team.current_pitcher_state = su_state
+    team.bullpen_warmups.clear()
+
+    changed = sm.maybe_replace_pitcher(team, inning=9, run_diff=-1, home_team=True)
+    assert changed
+    assert team.pitchers[0].player_id == cl.player_id
+
+
+def test_starter_seventh_warms_setup_when_prob_hits():
+    cfg = _cfg()
+    cfg.enableUsageModelV2 = 1
+    cfg.starterSeventhWarmChance = 100
+    cfg.starterEighthWarmChance = 100
+    cfg.starterLateWarmLeadMax = 3
+    sm = SubstitutionManager(cfg)
+    sm.rng.random = lambda: 0.0
+    usage = {
+        "LR1": {"available": True},
+        "MR1": {"available": True},
+        "SU1": {"available": True},
+        "CL1": {"available": True},
+    }
+    team = _team_state_with_usage(usage)
+    starter = team.pitchers[0]
+    starter_state = team.pitcher_stats[starter.player_id]
+    starter_state.h = 3
+    team.pitcher_stats[starter.player_id] = starter_state
+    team.runs = 3  # defense has scored 3, leading 3-2
+    sm.maybe_warm_reliever(team, inning=7, run_diff=-1, home_team=True)
+    su = next(p for p in team.pitchers if getattr(p, "assigned_pitching_role", "") == "SU")
+    assert sm._preferred_warm_pid(team) == su.player_id
+    assert su.player_id in team.bullpen_warmups
+
+
+def test_starter_seventh_skips_when_no_hitter():
+    cfg = _cfg()
+    cfg.enableUsageModelV2 = 1
+    cfg.starterSeventhWarmChance = 100
+    cfg.starterLateWarmLeadMax = 3
+    sm = SubstitutionManager(cfg)
+    sm.rng.random = lambda: 0.0
+    usage = {
+        "LR1": {"available": True},
+        "MR1": {"available": True},
+        "SU1": {"available": True},
+        "CL1": {"available": True},
+    }
+    team = _team_state_with_usage(usage)
+    starter = team.pitchers[0]
+    starter_state = team.pitcher_stats[starter.player_id]
+    starter_state.h = 0  # no-hitter in progress
+    team.pitcher_stats[starter.player_id] = starter_state
+    team.runs = 3
+    su = next(p for p in team.pitchers if getattr(p, "assigned_pitching_role", "") == "SU")
+    sm.maybe_warm_reliever(team, inning=7, run_diff=-3, home_team=True)
+    assert sm._preferred_warm_pid(team) != su.player_id
+    assert su.player_id not in team.bullpen_warmups
+
+
+def test_closer_boost_limits_control():
+    cfg = _cfg()
+    cfg.closerBoostStuffFloor = 90
+    cfg.closerBoostControlFloor = 70
+    cfg.closerBoostControlCap = 82
+    cfg.closerBoostEnduranceFloor = 50
+    sm = SubstitutionManager(cfg)
+    pitcher = Pitcher(
+        player_id="PCL",
+        first_name="Test",
+        last_name="Closer",
+        birthdate="1995-01-01",
+        height=74,
+        weight=200,
+        bats="R",
+        primary_position="P",
+        other_positions=[],
+        gf=50,
+        role="RP",
+        endurance=35,
+        control=55,
+        movement=60,
+        hold_runner=40,
+        fb=65,
+        cu=40,
+        cb=45,
+        sl=50,
+        si=45,
+        scb=0,
+        kn=0,
+        arm=60,
+        fa=50,
+    )
+
+    sm._apply_closer_boost(pitcher)
+
+    assert pitcher.movement >= cfg.closerBoostStuffFloor
+    assert pitcher.fb >= cfg.closerBoostStuffFloor
+    assert cfg.closerBoostControlFloor <= pitcher.control <= cfg.closerBoostControlCap
+    assert pitcher.endurance >= cfg.closerBoostEnduranceFloor

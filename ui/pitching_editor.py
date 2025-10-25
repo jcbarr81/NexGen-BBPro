@@ -63,6 +63,7 @@ class PitchingEditor(QDialog):
                         "primary_position": row["primary_position"],
                         "role": row.get("role", ""),
                         "endurance": row.get("endurance", ""),
+                        "preferred_pitching_role": row.get("preferred_pitching_role") or "",
                     }
         return players
 

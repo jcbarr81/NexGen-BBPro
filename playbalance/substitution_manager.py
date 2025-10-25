@@ -42,6 +42,7 @@ class SubstitutionManager:
     ) -> None:
         self.config = config
         self.rng = rng or random.Random()
+        self._preferred_warm: dict[int, str] = {}
 
     # ------------------------------------------------------------------
     # Rating helpers
@@ -100,6 +101,139 @@ class SubstitutionManager:
         state.allowed_hr = False
         state.appearance_outs = 0
 
+    def _preferred_warm_pid(self, defense: "TeamState") -> str | None:
+        """Return the preferred bullpen pitcher currently warming for ``defense``."""
+
+        return self._preferred_warm.get(id(defense))
+
+    def _set_preferred_warm_pid(self, defense: "TeamState", pid: str | None) -> None:
+        """Record or clear the preferred bullpen pitcher for ``defense``."""
+
+        key = id(defense)
+        if pid:
+            self._preferred_warm[key] = pid
+        else:
+            self._preferred_warm.pop(key, None)
+
+    def _mark_current_pitcher_exit(self, state: "PitcherState") -> None:
+        """Flag ``state`` so the substitution logic will remove the pitcher."""
+
+        if state is None:
+            return
+        state.is_toast = True
+        current_toast = getattr(state, "toast", 0.0) or 0.0
+        state.toast = min(current_toast, -999.0)
+
+    def _apply_closer_boost(self, pitcher: Pitcher) -> None:
+        """Ensure closers enter with premium late-inning stuff."""
+
+        cfg = self.config
+        stuff_floor = int(cfg.get("closerBoostStuffFloor", 92))
+        control_floor = int(cfg.get("closerBoostControlFloor", 72))
+        control_cap = int(cfg.get("closerBoostControlCap", 85))
+        endurance_floor = int(cfg.get("closerBoostEnduranceFloor", 52))
+
+        for attr in ("movement", "fb", "sl", "si"):
+            current = getattr(pitcher, attr, None)
+            if current is None:
+                continue
+            if current < stuff_floor:
+                setattr(pitcher, attr, stuff_floor)
+
+        control = getattr(pitcher, "control", None)
+        if control is not None:
+            control = max(control_floor, control)
+            control = min(control, control_cap)
+            setattr(pitcher, "control", control)
+
+        endurance = getattr(pitcher, "endurance", 0)
+        if endurance < endurance_floor:
+            setattr(pitcher, "endurance", endurance_floor)
+
+    def _runs_allowed(self, defense: "TeamState", run_diff: int) -> int:
+        """Return the number of runs allowed by ``defense`` so far."""
+
+        try:
+            total = int(defense.runs + run_diff)
+        except Exception:
+            total = 0
+        return max(0, total)
+
+    def _is_team_no_hitter(self, defense: "TeamState") -> bool:
+        """Return True when no hits have been allowed by the current staff."""
+
+        try:
+            hits = sum(int(getattr(ps, "h", 0) or 0) for ps in defense.pitcher_stats.values())
+        except Exception:
+            hits = 0
+        return hits == 0
+
+    def _warm_high_leverage(
+        self,
+        defense: "TeamState",
+        *,
+        target_role: str,
+        inning: int,
+        run_diff: int,
+        home_team: bool,
+    ) -> bool:
+        """Schedule a targeted reliever warmup for ``target_role``."""
+
+        cfg = self.config
+        exclude: set[str] | None = None
+        target = (target_role or "").upper()
+        if target == "SU":
+            exclude = {
+                getattr(p, "player_id", "")
+                for p in defense.pitchers
+                if self._pitcher_role(p).upper() == "CL"
+            }
+        idx: int | None
+        idx = None
+        if len(defense.pitchers) > 1:
+            idx, _ = self._select_reliever_index(
+                defense,
+                inning=inning,
+                run_diff=run_diff,
+                home_team=home_team,
+                exclude=exclude,
+            )
+        candidate = None
+        candidate_role = ""
+        if idx is not None and idx < len(defense.pitchers):
+            candidate = defense.pitchers[idx]
+            candidate_role = self._pitcher_role(candidate).upper() or "MR"
+        if candidate is None or candidate_role != target:
+            usage = getattr(defense, "usage_status", {}) or {}
+            for alt in defense.pitchers[1:]:
+                role_token = self._pitcher_role(alt).upper() or "MR"
+                if role_token != target:
+                    continue
+                info = usage.get(getattr(alt, "player_id", ""), {})
+                if not info.get("available", True):
+                    continue
+                candidate = alt
+                candidate_role = role_token
+                break
+        if candidate is None or candidate_role != target:
+            return False
+        defense.warming_reliever = True
+        self._set_preferred_warm_pid(defense, getattr(candidate, "player_id", None))
+        tracker = defense.bullpen_warmups.setdefault(candidate.player_id, WarmupTracker(cfg))
+        required = self._warmup_required_pitches(candidate, defense)
+        setattr(tracker, "required_pitches", required)
+        tracker.warm_pitch()
+        setattr(
+            tracker,
+            "warmup_cost",
+            min(getattr(tracker, "pitches", 0) or 0, required),
+        )
+        if target == "CL":
+            max_outs = self._max_reliever_outs(target, inning, run_diff)
+            max_outs = min(max_outs, 3)
+            defense.forced_out_limit_by_pid.setdefault(candidate.player_id, max_outs)
+        return True
+
     def _target_roles(
         self,
         *,
@@ -130,7 +264,7 @@ class SubstitutionManager:
         if lead > 0 and lead <= 3:
             return ["CL", "SU", "MR", "LR"]
         if lead == 0:
-            return ["CL", "SU", "MR", "LR"]
+            return ["SU", "MR", "CL", "LR"]
         return ["MR", "SU", "LR", "CL"]
 
     def _budget_multiplier(self, role: str) -> float:
@@ -242,6 +376,12 @@ class SubstitutionManager:
             info.setdefault("days_since_use", 9999)
             info.setdefault("last_pitches", 0)
             cand.append((idx, role, info))
+
+        lead = -run_diff
+        if lead <= 0:
+            non_cl = [item for item in cand if item[1] != "CL"]
+            if non_cl:
+                cand = non_cl
 
         # Helper to enforce caps using config
         def _eligible(role: str, info: dict) -> bool:
@@ -1033,6 +1173,9 @@ class SubstitutionManager:
         state = defense.pitcher_stats.setdefault(
             new_pitcher.player_id, PitcherState(new_pitcher)
         )
+        role_new = self._pitcher_role(new_pitcher)
+        if str(role_new).upper() == "CL":
+            self._apply_closer_boost(new_pitcher)
         self._reset_pitcher_state(state)
         defense.current_pitcher_state = state
 
@@ -1095,21 +1238,22 @@ class SubstitutionManager:
         role = ""
         if getattr(state, "player", None) is not None:
             role = self._pitcher_role(state.player)
+        role_upper = str(role).upper() if isinstance(role, str) else ""
         remaining, avail_pct = self._available_budget(state.player, role or "MR", usage_info)
         if remaining is None:
             remaining = state.player.endurance - state.pitches_thrown
         tired_thresh = cfg.get("pitcherTiredThresh", 0)
         lead = -run_diff
-        if state.in_save_situation and lead > 0:
-            defense.warming_reliever = False
-            return False
         if getattr(state, "player", None) is not None:
-            role = self._pitcher_role(state.player)
             # Enforce per-role outing caps for relievers only (never for starters)
-            if role and not role.upper().startswith("SP"):
-                # Enforce per-role outing caps when not actively in a save situation
-                if not (state.in_save_situation and lead > 0):
+            if role_upper and not role_upper.startswith("SP"):
+                caps_apply = True
+                if state.in_save_situation and lead > 0 and role_upper != "CL":
+                    caps_apply = False
+                if caps_apply:
                     max_outs = self._max_reliever_outs(role, inning, run_diff)
+                    if role_upper == "CL":
+                        max_outs = min(max_outs, 3)
                     try:
                         forced = defense.forced_out_limit_by_pid.get(state.player.player_id)
                         if forced is not None:
@@ -1120,6 +1264,52 @@ class SubstitutionManager:
                         state.is_toast = True
         warmed = False
         role_token = self._pitcher_role(state.player)
+        # Proactive warmups for starters cruising late without a shutout/no-hitter.
+        proactive_target: str | None = None
+        if role_upper.startswith("SP") and inning in (7, 8):
+            runs_allowed = self._runs_allowed(defense, run_diff)
+            shutout = runs_allowed == 0
+            no_hitter = self._is_team_no_hitter(defense)
+            lead_cap = int(cfg.get("starterLateWarmLeadMax", 3) or 3)
+            if lead >= 0 and lead <= lead_cap and not shutout and not no_hitter:
+                if inning == 7:
+                    chance = float(cfg.get("starterSeventhWarmChance", 0) or 0.0) / 100.0
+                    if chance > 0 and self.rng.random() < chance:
+                        proactive_target = "SU"
+                else:
+                    chance = float(cfg.get("starterEighthWarmChance", 0) or 0.0) / 100.0
+                    if chance > 0 and self.rng.random() < chance:
+                        proactive_target = "CL"
+        if proactive_target:
+            warmed_target = False
+            preferred_pid = self._preferred_warm_pid(defense)
+            preferred_pitcher = None
+            if preferred_pid:
+                preferred_pitcher = next(
+                    (p for p in defense.pitchers if getattr(p, "player_id", None) == preferred_pid),
+                    None,
+                )
+            if (
+                preferred_pitcher is not None
+                and self._pitcher_role(preferred_pitcher).upper() == proactive_target
+            ):
+                warmed_target = True
+            else:
+                warmed_target = self._warm_high_leverage(
+                    defense,
+                    target_role=proactive_target,
+                    inning=inning,
+                    run_diff=run_diff,
+                    home_team=home_team,
+                )
+            if warmed_target:
+                warmed = True
+                defense.warming_reliever = True
+                self._mark_current_pitcher_exit(state)
+                # Force a preferred identifier when we reused an existing warm pitcher.
+                if preferred_pitcher is not None and self._pitcher_role(preferred_pitcher).upper() == proactive_target:
+                    self._set_preferred_warm_pid(defense, getattr(preferred_pitcher, "player_id", None))
+
         if str(role_token).upper().startswith("SP"):
             thresh = self._starter_toast_threshold(defense, inning, home_team)
             toast_trigger = state.toast < thresh or remaining <= tired_thresh
@@ -1158,16 +1348,66 @@ class SubstitutionManager:
                 defense.warming_reliever = True
                 warmed = True
 
-        # If warming, record a warmup pitch for the selected reliever
-        if defense.warming_reliever and len(defense.pitchers) > 1:
+        # Proactively prepare the closer for late-inning save situations even when
+        # the current reliever is still effective. This keeps setup arms from
+        # shouldering ninth-inning duties by default.
+        if not defense.warming_reliever and inning >= 8 and 0 < lead <= 3:
+            exclude = {player_id} if player_id else set()
             idx, _ = self._select_reliever_index(
                 defense,
                 inning=inning,
                 run_diff=run_diff,
                 home_team=home_team,
+                exclude=exclude,
             )
-            if idx is not None:
-                next_pitcher = defense.pitchers[idx]
+            if idx is not None and idx < len(defense.pitchers):
+                candidate = defense.pitchers[idx]
+                candidate_role = self._pitcher_role(candidate).upper() or "MR"
+                wants_closer = candidate_role == "CL"
+                wants_setup = candidate_role == "SU" and inning == 8 and lead <= 2
+                if (wants_closer and role_upper != "CL") or (wants_setup and role_upper not in {"CL", "SU"}):
+                    defense.warming_reliever = True
+                    warmed = True
+                    required = self._warmup_required_pitches(candidate, defense)
+                    tracker = defense.bullpen_warmups.setdefault(
+                        candidate.player_id, WarmupTracker(cfg)
+                    )
+                    setattr(tracker, "required_pitches", required)
+                    tracker.warm_pitch()
+                    setattr(
+                        tracker,
+                        "warmup_cost",
+                        min(getattr(tracker, "pitches", 0) or 0, required),
+                    )
+                    # Respect configured outing caps for the high-leverage arm once he enters.
+                    max_outs = self._max_reliever_outs(candidate_role, inning, run_diff)
+                    max_outs = min(max_outs, 3)
+                    defense.forced_out_limit_by_pid.setdefault(
+                        candidate.player_id, max_outs
+                    )
+                    # After preparing the high-leverage arm, flag the current pitcher for removal.
+                    self._mark_current_pitcher_exit(state)
+
+        # If warming, record a warmup pitch for the selected reliever
+        if defense.warming_reliever and len(defense.pitchers) > 1:
+            preferred_pid = self._preferred_warm_pid(defense)
+            next_pitcher = None
+            if preferred_pid:
+                next_pitcher = next(
+                    (p for p in defense.pitchers if getattr(p, "player_id", None) == preferred_pid),
+                    None,
+                )
+            if next_pitcher is None:
+                idx, _ = self._select_reliever_index(
+                    defense,
+                    inning=inning,
+                    run_diff=run_diff,
+                    home_team=home_team,
+                )
+                if idx is not None:
+                    next_pitcher = defense.pitchers[idx]
+                    self._set_preferred_warm_pid(defense, getattr(next_pitcher, "player_id", None))
+            if next_pitcher is not None:
                 tracker = defense.bullpen_warmups.setdefault(
                     next_pitcher.player_id, WarmupTracker(cfg)
                 )
@@ -1198,22 +1438,58 @@ class SubstitutionManager:
         usage = getattr(defense, "usage_status", {}) or {}
         player_id = getattr(getattr(state, "player", None), "player_id", "")
         usage_info = usage.get(player_id, {})
-        role = self._pitcher_role(getattr(state, "player", None)) or "MR"
+        raw_role = self._pitcher_role(getattr(state, "player", None)) if getattr(state, "player", None) is not None else ""
+        role = raw_role or "MR"
         remaining, avail_pct = self._available_budget(state.player, role, usage_info)
         if remaining is None:
             remaining = state.player.endurance - state.pitches_thrown
         exhausted = cfg.get("pitcherExhaustedThresh", 0)
         tired = cfg.get("pitcherTiredThresh", 0)
+        lead = -run_diff
+        role_token = raw_role
+        forced_cap_current = None
+        try:
+            forced_cap_current = defense.forced_out_limit_by_pid.get(player_id)
+        except Exception:
+            forced_cap_current = None
         if remaining <= exhausted:
             defense.warming_reliever = True
         if not defense.warming_reliever:
-            return False
+            # Force a closer handoff in the ninth or later when protecting a small lead.
+            if inning >= 9 and 0 < lead <= 3 and str(role_token).upper() != "CL":
+                exclude = {player_id} if player_id else set()
+                idx, _ = self._select_reliever_index(
+                    defense,
+                    inning=inning,
+                    run_diff=run_diff,
+                    home_team=home_team,
+                    exclude=exclude,
+                )
+                if idx is not None and idx < len(defense.pitchers):
+                    candidate = defense.pitchers[idx]
+                    cand_role = self._pitcher_role(candidate).upper() or "MR"
+                    if cand_role == "CL":
+                        defense.warming_reliever = True
+                        required = self._warmup_required_pitches(candidate, defense)
+                        tracker = defense.bullpen_warmups.setdefault(
+                            candidate.player_id, WarmupTracker(cfg)
+                        )
+                        setattr(tracker, "required_pitches", required)
+                        tracker.pitches = max(getattr(tracker, "pitches", 0), required)
+                        limit = self._max_reliever_outs(cand_role, inning, run_diff)
+                        limit = min(limit, 3)
+                        defense.forced_out_limit_by_pid.setdefault(
+                            candidate.player_id,
+                            limit,
+                        )
+                        state.is_toast = True
+            if not defense.warming_reliever:
+                return False
         change = False
-        lead = -run_diff
-        if state.in_save_situation and lead > 0:
+        if state.in_save_situation and lead > 0 and str(role_token).upper() == "CL":
             defense.warming_reliever = False
+            self._set_preferred_warm_pid(defense, None)
             return False
-        role_token = self._pitcher_role(getattr(state, "player", None)) if getattr(state, "player", None) is not None else ""
         if str(role_token).upper().startswith("SP"):
             thresh = self._starter_toast_threshold(defense, inning, home_team)
             sp_change = False
@@ -1260,8 +1536,15 @@ class SubstitutionManager:
         if len(defense.pitchers) > 1 and next_pitcher is not None:
             tracker = defense.bullpen_warmups.get(next_pitcher.player_id)
             required = self._warmup_required_pitches(next_pitcher, defense)
+            force_swap = (
+                forced_cap_current is not None
+                and getattr(defense.current_pitcher_state, "appearance_outs", 0) >= int(forced_cap_current)
+            )
             if tracker is None or getattr(tracker, "pitches", 0) < required:
-                return False
+                if not force_swap:
+                    return False
+                tracker = defense.bullpen_warmups.setdefault(next_pitcher.player_id, WarmupTracker(cfg))
+                tracker.pitches = required
             setattr(tracker, "required_pitches", required)
             setattr(
                 tracker,
@@ -1317,13 +1600,24 @@ class SubstitutionManager:
                 defense.pitchers.insert(0, new_pitcher)
         if new_pitcher is None:
             defense.warming_reliever = False
+            self._set_preferred_warm_pid(defense, None)
             return False
         state = defense.pitcher_stats.setdefault(
             new_pitcher.player_id, PitcherState(new_pitcher)
         )
+        role_new = self._pitcher_role(new_pitcher)
+        if str(role_new).upper() == "CL":
+            self._apply_closer_boost(new_pitcher)
+            try:
+                limit = self._max_reliever_outs(role_new, inning, run_diff)
+            except Exception:
+                limit = 3
+            limit = min(int(limit), 3)
+            defense.forced_out_limit_by_pid[new_pitcher.player_id] = limit
         self._reset_pitcher_state(state)
         defense.current_pitcher_state = state
         defense.warming_reliever = False
+        self._set_preferred_warm_pid(defense, None)
         defense.bullpen_warmups.pop(new_pitcher.player_id, None)
         # Emergency handling: force a tighter outs cap and postgame recovery penalty
         if emergency and new_pitcher is not None:

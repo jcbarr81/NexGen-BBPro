@@ -431,6 +431,10 @@ _DEFAULTS: Dict[str, Any] = {
     "stealChanceOnSecondHighCHAdjust": 5,
     "stealChanceWayBehindThresh": -3,
     "stealChanceWayBehindAdjust": -70,
+    # Runtime tuning hooks for steal calibration
+    "stealAttemptAggressionScale": 1.0,
+    "stealSuccessAdjustment": 0.0,
+    "stealDefensivePenaltyScale": 1.0,
     "hnrChanceBase": 0,
     "hnrChance3MoreBehindAdjust": 0,
     "hnrChance2BehindAdjust": 0,
@@ -605,6 +609,16 @@ _DEFAULTS: Dict[str, Any] = {
     # Back-to-back and consecutive-day rules
     "b2bMaxPriorPitches": 20,
     "forbidThirdConsecutiveDay": 1,
+    # Budget override floor for high-leverage relief on consecutive days
+    "reliefB2BBudgetFloor": 0.5,
+    # Starter late-game warmup heuristics
+    "starterLateWarmLeadMax": 3,
+    "starterSeventhWarmChance": 60,
+    "starterEighthWarmChance": 80,
+    "closerBoostStuffFloor": 92,
+    "closerBoostControlFloor": 68,
+    "closerBoostControlCap": 80,
+    "closerBoostEnduranceFloor": 52,
     # Rolling appearance caps by role (3-day and 7-day windows)
     "maxApps3Day_CL": 2,
     "maxApps3Day_SU": 2,
@@ -635,8 +649,8 @@ _DEFAULTS: Dict[str, Any] = {
     "pitchBudgetRecoveryPct_MR": 0.28,
     "pitchBudgetRecoveryPct_LR": 0.24,
     "pitchBudgetRecoveryPct_SP": 0.24,
-    "pitchBudgetAvailThresh_CL": 0.65,
-    "pitchBudgetAvailThresh_SU": 0.65,
+    "pitchBudgetAvailThresh_CL": 0.5,
+    "pitchBudgetAvailThresh_SU": 0.6,
     "pitchBudgetAvailThresh_MR": 0.68,
     "pitchBudgetAvailThresh_LR": 0.7,
     "pitchBudgetAvailThresh_SP": 0.7,

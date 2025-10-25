@@ -8,6 +8,7 @@ bullpen with closers favoring low endurance arms.
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Dict, Iterable, Tuple
 
 from .pitcher_role import get_role
@@ -34,9 +35,11 @@ def autofill_pitching_staff(players: Iterable[PlayerEntry]) -> Assignments:
     endurance and the closer getting the lowest endurance.
     """
 
-    # Separate starters and relievers, capturing endurance as an int
-    sps: list[tuple[str, int]] = []
-    rps: list[tuple[str, int]] = []
+    def _entry(pid: str, endurance: int, preferred: str = "") -> dict:
+        return {"pid": pid, "endurance": endurance, "preferred": preferred.upper()}
+
+    sps_entries: list[dict] = []
+    rps_entries: list[dict] = []
     for pid, pdata in players:
         role = get_role(pdata)
         if not role:
@@ -45,60 +48,85 @@ def autofill_pitching_staff(players: Iterable[PlayerEntry]) -> Assignments:
             endurance = int(pdata.get("endurance", 0))
         except (TypeError, ValueError):
             endurance = 0
+        preferred = str(pdata.get("preferred_pitching_role", "") or "").upper()
+        entry = _entry(pid, endurance, preferred)
         if role == "SP":
-            sps.append((pid, endurance))
+            sps_entries.append(entry)
         else:
-            rps.append((pid, endurance))
+            rps_entries.append(entry)
 
-    # Order by endurance descending for easier selection
-    sps.sort(key=lambda x: x[1], reverse=True)
-    rps.sort(key=lambda x: x[1], reverse=True)
+    def _sorted_deque(entries: list[dict], *, reverse: bool) -> deque[dict]:
+        return deque(sorted(entries, key=lambda e: e["endurance"], reverse=reverse))
 
-    # Ensure the same pitcher cannot be assigned to multiple roles, even if
-    # duplicated in the input (e.g., bad roster data).
+    sps_high = _sorted_deque(sps_entries, reverse=True)
+    sps_low = _sorted_deque(sps_entries, reverse=False)
+    rps_high = _sorted_deque(rps_entries, reverse=True)
+    rps_low = _sorted_deque(rps_entries, reverse=False)
+    closer_entries = [entry for entry in rps_entries if entry["preferred"] == "CL"]
+    closer_high = _sorted_deque(closer_entries, reverse=True)
+    closer_low = _sorted_deque(closer_entries, reverse=False)
+    noncloser_entries = [entry for entry in rps_entries if entry["preferred"] != "CL"]
+    noncloser_high = _sorted_deque(noncloser_entries, reverse=True)
+    noncloser_low = _sorted_deque(noncloser_entries, reverse=False)
+
     assigned: set[str] = set()
 
-    def pop_next(seq: list[tuple[str, int]]) -> str | None:
-        while seq:
-            pid, _ = seq.pop(0)
+    def _pop(pool: deque[dict]) -> str | None:
+        while pool:
+            entry = pool.popleft()
+            pid = entry["pid"]
             if pid in assigned:
                 continue
             assigned.add(pid)
             return pid
         return None
 
-    def pop_next_low(seq: list[tuple[str, int]]) -> str | None:
-        while seq:
-            pid, _ = seq.pop(-1)
-            if pid in assigned:
-                continue
-            assigned.add(pid)
+    def _pop_relief_high(prefer_closer: bool = False) -> str | None:
+        pools = [closer_high, noncloser_high] if prefer_closer else [noncloser_high, closer_high]
+        for pool in pools:
+            pid = _pop(pool)
+            if pid is not None:
+                return pid
+        pid = _pop(rps_high)
+        if pid is not None:
             return pid
-        return None
+        return _pop(sps_high)
+
+    def _pop_relief_low(prefer_closer: bool = False) -> str | None:
+        pools = [closer_low, noncloser_low] if prefer_closer else [noncloser_low, closer_low]
+        for pool in pools:
+            pid = _pop(pool)
+            if pid is not None:
+                return pid
+        pid = _pop(rps_low)
+        if pid is not None:
+            return pid
+        return _pop(sps_low)
 
     assignment: Assignments = {}
 
     # Fill the starting rotation (SP1-SP5)
     for i in range(5):
-        pid = pop_next(sps)
+        pid = _pop(sps_high)
         if pid is None:
-            # Fall back to highest-endurance reliever if short on starters
-            pid = pop_next(rps)
+            pid = _pop_relief_high()
         if pid is None:
             break
         assignment[f"SP{i + 1}"] = pid
 
     # Bullpen roles use remaining relievers (unique by pid).
-    pid = pop_next(rps)
+    pid = _pop_relief_high()
     if pid is not None:
         assignment["LR"] = pid  # Long reliever prefers high endurance
-    pid = pop_next(rps)
+    pid = _pop_relief_high()
     if pid is not None:
         assignment["MR"] = pid  # Middle reliever
-    pid = pop_next(rps)
+    pid = _pop_relief_high()
     if pid is not None:
         assignment["SU"] = pid  # Setup
-    pid = pop_next_low(rps)
+    pid = _pop_relief_low(prefer_closer=True)
+    if pid is None:
+        pid = _pop_relief_low()
     if pid is not None:
         assignment["CL"] = pid  # Closer prefers low endurance
 

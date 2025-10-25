@@ -333,6 +333,15 @@ class PitcherRecoveryTracker:
             raise
 
     # ------------------------------------------------------------------
+    def reset(self) -> None:
+        """Clear all saved recovery data and persist an empty tracker state."""
+
+        self.data = {"teams": {}}
+        self._assignments.clear()
+        self._current_date = None  # type: ignore[attr-defined]
+        self.save()
+
+    # ------------------------------------------------------------------
     def start_day(self, date_str: str) -> None:
         """Reset per-game assignments for *date_str*."""
 
@@ -725,6 +734,13 @@ class PitcherRecoveryTracker:
                 warmup_cost = float(min(pitches_thrown, required))
             if warmup_cost <= 0:
                 warmup_cost = float(rest_tax)
+            role_token = role or "MR"
+            if status.max_pitches > 0:
+                cap_ratio = 0.5 if role_token in {"CL", "SU"} else 0.6 if role_token == "MR" else 0.75
+                warmup_cap = status.max_pitches * cap_ratio
+                if warmup_cap > 0:
+                    warmup_cost = min(warmup_cost, warmup_cap)
+            warmup_cost = max(warmup_cost, 1.0)
             # Add warmup entry and adjust available_on
             status.recent.append(
                 {
@@ -736,7 +752,10 @@ class PitcherRecoveryTracker:
                 }
             )
             self._trim_recent(status, ref=date_obj)
-            rest_days = _rest_days(rest_tax)
+            rest_basis = max(1, int(round(warmup_cost)))
+            rest_days = _rest_days(rest_basis)
+            if role_token in {"CL", "SU", "MR"}:
+                rest_days = min(rest_days, 1)
             available_on = date_obj + timedelta(days=rest_days)
             prev_available = _parse_date(status.available_on)
             # Take the max (latest) availability date
@@ -827,9 +846,6 @@ class PitcherRecoveryTracker:
         if cfg is None or not int(cfg.get("enableUsageModelV2", 0)):
             return (legacy_avail, "legacy_rest" if not legacy_avail else "ok")
 
-        if not legacy_avail:
-            return False, "rest"
-
         role_key = self._role_key(role or status.last_role)
         self._ensure_budget_initialized(status, None, role_key)
 
@@ -840,11 +856,6 @@ class PitcherRecoveryTracker:
                 if status.max_pitches
                 else 0.0
             )
-        threshold = self._availability_threshold(role_key)
-        if status.max_pitches > 0 and available_pct < threshold and role_key != "SP":
-            pitchers[pid] = status.to_dict()
-            return False, "budget"
-
         # Consecutive days and back-to-back checks
         consec = 0
         yday_pitches = 0
@@ -865,13 +876,30 @@ class PitcherRecoveryTracker:
                 else:
                     break
 
+        threshold = self._availability_threshold(role_key)
+        relief_floor = float(cfg.get("reliefB2BBudgetFloor", 0.45) or 0.45)
+        allow_relief_override = (
+            role_key in {"CL", "SU"}
+            and status.max_pitches > 0
+            and available_pct >= relief_floor
+        )
+
+        if not legacy_avail and not (allow_relief_override and consec == 1):
+            pitchers[pid] = status.to_dict()
+            return False, "rest"
+
+        if status.max_pitches > 0 and available_pct < threshold and role_key != "SP":
+            if not (allow_relief_override and consec == 1):
+                pitchers[pid] = status.to_dict()
+                return False, "budget"
+
         if int(cfg.get("forbidThirdConsecutiveDay", 1)) and consec >= 2 and role_key != "SP":
             pitchers[pid] = status.to_dict()
             return False, "third_day_block"
 
         if consec >= 1 and role_key != "SP":
             max_b2b = int(cfg.get("b2bMaxPriorPitches", 20))
-            if yday_pitches > max_b2b:
+            if yday_pitches > max_b2b and not (allow_relief_override and consec == 1):
                 pitchers[pid] = status.to_dict()
                 return False, "b2b_block"
 

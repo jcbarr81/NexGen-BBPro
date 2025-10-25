@@ -8,6 +8,7 @@ from playbalance.player_generator import (
     generate_player,
     assign_primary_position,
     generate_birthdate,
+    generate_draft_pool,
 )
 import playbalance.player_generator as pg
 
@@ -53,7 +54,7 @@ def test_primary_position_override():
 
 
 def test_pitcher_role_sp_when_endurance_high(monkeypatch):
-    def fake_core(_throws):
+    def fake_core(_throws, **_kwargs):
         return {
             "endurance": 60,
             "control": 55,
@@ -70,7 +71,7 @@ def test_pitcher_role_sp_when_endurance_high(monkeypatch):
 
 
 def test_pitcher_role_rp_when_endurance_low(monkeypatch):
-    def fake_core(_throws):
+    def fake_core(_throws, **_kwargs):
         return {
             "endurance": 55,
             "control": 55,
@@ -249,6 +250,23 @@ def test_pitcher_control_movement_floor():
     pitchers = [generate_player(is_pitcher=True) for _ in range(200)]
     assert all(p["control"] >= 50 for p in pitchers)
     assert all(p["movement"] >= 52 for p in pitchers)
+
+
+def test_generate_closer_archetype():
+    player = generate_player(is_pitcher=True, pitcher_archetype="closer")
+    assert player["preferred_pitching_role"] == "CL"
+    assert player["role"] == "RP"
+    assert player["endurance"] <= 55
+    assert player["movement"] >= player["control"]
+    assert player["sl"] >= 65
+
+
+def test_generate_draft_pool_includes_closers():
+    pool = generate_draft_pool(num_players=40)
+    closers = [p for p in pool if p.get("preferred_pitching_role") == "CL"]
+    pitchers = [p for p in pool if p.get("primary_position") == "P"]
+    assert closers  # at least one closer present
+    assert len(closers) <= len(pitchers)
 
 
 def test_generate_pitches_counts_and_bounds(monkeypatch):

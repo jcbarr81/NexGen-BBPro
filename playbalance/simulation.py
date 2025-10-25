@@ -283,6 +283,13 @@ class GameSimulation:
             original_fp is not None and current_fp is not original_fp
         )
 
+    def _closer_state(self, team: TeamState) -> PitcherState | None:
+        for pitcher in team.pitchers:
+            role = str(getattr(pitcher, "assigned_pitching_role", "") or "").upper()
+            if role == "CL":
+                return team.pitcher_stats.setdefault(pitcher.player_id, PitcherState(pitcher))
+        return None
+
     # ------------------------------------------------------------------
     # Pitcher helpers
     # ------------------------------------------------------------------
@@ -617,8 +624,16 @@ class GameSimulation:
         if ps.in_save_situation:
             if lead > 0:
                 if game_finished:
-                    ps.sv += 1
-                    ps.gf += 1
+                    target = ps
+                    role = str(getattr(getattr(ps, "player", None), "assigned_pitching_role", "") or "").upper()
+                    if role != "CL":
+                        closer_state = self._closer_state(defense)
+                        if closer_state is not None:
+                            target = closer_state
+                    target.sv += 1
+                    target.gf += 1
+                    if target is not ps:
+                        target.svo += 1
                 else:
                     if ps.outs > 0:
                         ps.hld += 1
@@ -3039,6 +3054,14 @@ class GameSimulation:
                 batter_ch=batter_ch,
                 run_diff=run_diff,
             )
+            try:
+                attempt_scale = float(self.config.get("stealAttemptAggressionScale", 1.0))
+            except Exception:
+                attempt_scale = 1.0
+            if attempt_scale <= 0:
+                chance = 0.0
+            else:
+                chance = min(1.0, chance * attempt_scale)
             # Apply configurable minimum attempt probability gate
             try:
                 min_attempt = float(self.config.get("stealAttemptMinProb", 0.0))
@@ -3077,6 +3100,11 @@ class GameSimulation:
                 "hold_penalty": hold_penalty,
                 "hold_bonus": hold_bonus,
             }
+            try:
+                penalty_scale = float(self.config.get("stealDefensivePenaltyScale", 1.0))
+            except Exception:
+                penalty_scale = 1.0
+            penalty_scale = max(0.0, penalty_scale)
             if catcher_fs:
                 reaction_penalty = max(0.0, (catcher_fa - 50) / 320.0)
                 if force_hit_and_run and reaction_penalty > 0:
@@ -3088,6 +3116,10 @@ class GameSimulation:
                     # Treat quicker catchers (shorter delay) as more likely to record the out.
                     # Scale against a mid-range reaction window so tests can tune catcher delays.
                     reaction_penalty += max(0.0, (15.0 - reaction_delay) / 10.0)
+            catcher_penalty *= penalty_scale
+            pitcher_penalty *= penalty_scale
+            hold_penalty *= penalty_scale
+            reaction_penalty *= penalty_scale
             lead_bonus = 0.02 if runner_state.lead >= 2 else 0.0
             if force_hit_and_run:
                 lead_bonus += 0.0
@@ -3103,6 +3135,10 @@ class GameSimulation:
             success_prob -= catcher_penalty + pitcher_penalty + hold_penalty + reaction_penalty
             max_success = 0.93 if not force_hit_and_run else 0.95
             self._last_max_success = max_success
+            try:
+                success_prob += float(self.config.get("stealSuccessAdjustment", 0.0))
+            except Exception:
+                pass
             success_prob = max(0.28, min(max_success, success_prob))
             # Apply configurable minimum success probability gate for attempts (non-forced)
             if not force and success_prob < float(self.config.get("stealMinSuccessProb", 0.0)):
