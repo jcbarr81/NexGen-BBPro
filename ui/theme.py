@@ -82,6 +82,22 @@ QLabel#MetricValue {
 }
 QLabel#MetricValue[highlight="true"] { color: #c3521f; }
 
+QListWidget#DepthChartList {
+    background: #fff7dc;
+    border: 1px solid #d6c4a3;
+    border-radius: 10px;
+    padding: 6px;
+}
+QListWidget#DepthChartList::item {
+    padding: 4px 6px;
+    color: #3a2508;
+}
+QListWidget#DepthChartList::item:selected {
+    background: #604d33;
+    color: #fffdf0;
+    border-radius: 6px;
+}
+
 /* Buttons */
 QPushButton {
     background: #968d7d;
@@ -200,6 +216,22 @@ QLabel#MetricValue {
     font-size: 24px;
     font-weight: 800;
     color: #fffdf0;
+}
+
+QListWidget#DepthChartList {
+    background: #1a0f05;
+    border: 1px solid #3b2810;
+    border-radius: 10px;
+    padding: 6px;
+}
+QListWidget#DepthChartList::item {
+    padding: 4px 6px;
+    color: #fffdf0;
+}
+QListWidget#DepthChartList::item:selected {
+    background: #8d6a36;
+    color: #fffdf0;
+    border-radius: 6px;
 }
 QLabel#MetricValue[highlight="true"] { color: #e67700; }
 QPushButton {

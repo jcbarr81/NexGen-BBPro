@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import math
 import random
+import os
 from dataclasses import dataclass, field, fields, replace
 from typing import Dict, List, Optional, Tuple
 
@@ -24,6 +25,7 @@ from playbalance.state import PitcherState
 from utils.path_utils import get_base_dir
 from utils.putout_probabilities import load_putout_probabilities
 from utils.stats_persistence import save_stats
+from services.injury_simulator import InjurySimulator
 from .stats import (
     compute_batting_derived,
     compute_batting_rates,
@@ -186,6 +188,7 @@ class GameSimulation:
         altitude: float = 0.0,
         wind_speed: float = 0.0,
         stadium: Stadium | None = None,
+        game_date: str | None = None,
     ) -> None:
         self.home = home
         self.away = away
@@ -282,6 +285,13 @@ class GameSimulation:
         self._fouls_disabled = (
             original_fp is not None and current_fp is not original_fp
         )
+        env_flag = os.getenv("PB_ENABLE_SIM_INJURIES", "").strip().lower()
+        self._injuries_enabled = env_flag not in {"0", "false", "no"}
+        self.injury_simulator: InjurySimulator | None = (
+            InjurySimulator() if self._injuries_enabled else None
+        )
+        self.injury_events: List[Dict[str, object]] = []
+        self.game_date = game_date
 
     def _closer_state(self, team: TeamState) -> PitcherState | None:
         for pitcher in team.pitchers:
@@ -300,6 +310,102 @@ class GameSimulation:
             return
         pitcher_state.outs += outs
         pitcher_state.appearance_outs = getattr(pitcher_state, "appearance_outs", 0) + outs
+
+    # ------------------------------------------------------------------
+    # Injury helpers
+    # ------------------------------------------------------------------
+    def _injuries_active_for_team(self, team: TeamState) -> bool:
+        if not self._injuries_enabled or self.injury_simulator is None:
+            return False
+        team_obj = getattr(team, "team", None)
+        team_id = getattr(team_obj, "team_id", None)
+        return bool(team_id)
+
+    def _maybe_apply_injury(
+        self,
+        trigger: str,
+        player: Player,
+        team: TeamState,
+        context: Optional[Dict[str, float]] = None,
+    ) -> None:
+        if not self._injuries_active_for_team(team):
+            return
+        outcome = self.injury_simulator.maybe_create_injury(  # type: ignore[union-attr]
+            trigger,
+            player,
+            context=context,
+        )
+        if outcome is None:
+            return
+        player.injured = True
+        player.injury_description = outcome.description
+        player.injury_list = outcome.dl_tier
+        event = {
+            "team_id": getattr(team.team, "team_id", None),
+            "player_id": getattr(player, "player_id", ""),
+            "trigger": trigger,
+            "dl_tier": outcome.dl_tier,
+            "days": outcome.days,
+            "description": outcome.name,
+            "severity": outcome.severity,
+            "game_date": self.game_date,
+        }
+        self.injury_events.append(event)
+
+    def _register_contact_play(
+        self,
+        runner: Optional[BatterState],
+        offense: TeamState,
+        defense: TeamState,
+        *,
+        trigger: str,
+        fielder_positions: Optional[List[str]] = None,
+    ) -> None:
+        if runner is None:
+            return
+        context = {"speed": max(0.1, min(1.0, runner.player.sp / 100.0))}
+        self._maybe_apply_injury(trigger, runner.player, offense, context=context)
+        if fielder_positions:
+            for pos in fielder_positions:
+                fs = self._get_fielder(defense, pos)
+                if fs is not None:
+                    self._maybe_apply_injury(trigger, fs.player, defense, context=context)
+
+    def _handle_hit_by_pitch_injury(
+        self,
+        batter_state: BatterState,
+        offense: TeamState,
+        pitch_speed: Optional[float],
+    ) -> None:
+        speed = pitch_speed or self.last_pitch_speed or 90.0
+        context = {"pitch_velocity": max(0.5, min(1.5, speed / 90.0))}
+        self._maybe_apply_injury("hit_by_pitch", batter_state.player, offense, context=context)
+
+    def _evaluate_pitcher_overuse(self, team: TeamState) -> None:
+        if not self._injuries_active_for_team(team):
+            return
+        starter_thresh = float(self.config.get("simPitcherOveruseStarterThresh", 110))
+        reliever_thresh = float(self.config.get("simPitcherOveruseRelieverThresh", 45))
+        for pitcher_state in team.pitcher_stats.values():
+            pitches = getattr(pitcher_state, "pitches_thrown", 0)
+            if pitches <= 0:
+                continue
+            role = str(getattr(pitcher_state.player, "assigned_pitching_role", "") or "")
+            is_starter = (
+                role.upper().startswith("SP")
+                or getattr(pitcher_state, "gs", 0) > 0
+            )
+            threshold = starter_thresh if is_starter else reliever_thresh
+            if threshold <= 0:
+                continue
+            if pitches < threshold:
+                continue
+            fatigue = getattr(pitcher_state.player, "fatigue", "fresh")
+            context = {
+                "stress_days": pitches / max(threshold, 1.0),
+                "fatigue": 1.0 if fatigue == "exhausted" else 0.5 if fatigue == "tired" else 0.1,
+            }
+            self._maybe_apply_injury("pitcher_overuse", pitcher_state.player, team, context=context)
 
     # ------------------------------------------------------------------
     # Physics helper shims
@@ -710,6 +816,9 @@ class GameSimulation:
                 if inning >= innings and self.home.runs != self.away.runs:
                     break
                 inning += 1
+
+        self._evaluate_pitcher_overuse(self.home)
+        self._evaluate_pitcher_overuse(self.away)
 
         if getattr(self, "_fouls_disabled", False):
             scale = self._compute_no_foul_pitch_scale()
@@ -1893,6 +2002,7 @@ class GameSimulation:
                                 "pitches",
                                 pitcher_state.pitches_thrown - start_pitches,
                             )
+                            self._handle_hit_by_pitch_injury(batter_state, offense, pitch_speed)
                             self._record_ball(pitcher_state)
                             self._credit_pitcher_outs(pitcher_state, outs)
                             run_diff = offense.runs - defense.runs
@@ -2665,9 +2775,10 @@ class GameSimulation:
                 fielder_time = self.physics.reaction_delay("LF", 0) + self.physics.throw_time(arm, 90, "LF")
                 if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                     outs += 1
-                else:
-                    self._score_runner(offense, defense, 2)
-                    runs_scored += 1
+                    self._register_contact_play(b[2], offense, defense, trigger="collision", fielder_positions=["LF"])
+            else:
+                self._score_runner(offense, defense, 2)
+                runs_scored += 1
             if b[1]:
                 spd = self.physics.player_speed(b[1].player.sp)
                 roll_dist = self.physics.ball_roll_distance(
@@ -2699,6 +2810,7 @@ class GameSimulation:
                     )
                     if self.fielding_ai.should_tag_runner(fielder_time, runner_time):
                         outs += 1
+                        self._register_contact_play(b[1], offense, defense, trigger="collision", fielder_positions=["LF"])
                     else:
                         self._score_runner(offense, defense, 1)
                         runs_scored += 1
@@ -2842,6 +2954,7 @@ class GameSimulation:
                     outs += 1
                     self._add_stat(batter_state, "gidp")
                     self.dp_made += 1
+                    self._register_contact_play(batter_state, offense, defense, trigger="collision", fielder_positions=["1B"])
                     # Second out at first: 4-3 on the relay (2B -> 1B)
                     two_fs = self._get_fielder(defense, "2B")
                     oneb_fs = self._get_fielder(defense, "1B")
@@ -2858,6 +2971,7 @@ class GameSimulation:
                 ):
                     outs += 1
                     self._add_stat(batter_state, "gidp")
+                    self._register_contact_play(batter_state, offense, defense, trigger="collision", fielder_positions=["1B"])
                     # Second out at first on relay: credit as above
                     two_fs = self._get_fielder(defense, "2B")
                     oneb_fs = self._get_fielder(defense, "1B")

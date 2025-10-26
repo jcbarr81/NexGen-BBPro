@@ -13,7 +13,10 @@ def save_players_to_csv(players, file_path):
         "pot_ch", "pot_ph", "pot_sp", "pot_gf", "pot_pl", "pot_vl", "pot_sc", "pot_fa", "pot_arm",
         "pot_control", "pot_movement", "pot_endurance", "pot_hold_runner",
         "pot_fb", "pot_cu", "pot_cb", "pot_sl", "pot_si", "pot_scb", "pot_kn",
-        "injured", "injury_description", "return_date"
+        "injured", "injury_description", "return_date", "ready",
+        "injury_list", "injury_start_date", "injury_minimum_days", "injury_eligible_date",
+        "injury_rehab_assignment", "injury_rehab_days",
+        "durability",
     ]
 
     with open(file_path, mode="w", newline="") as csvfile:
@@ -41,7 +44,15 @@ def save_players_to_csv(players, file_path):
                 "preferred_pitching_role": getattr(p, "preferred_pitching_role", "") if is_pitcher else "",
                 "injured": str(p.injured),
                 "injury_description": p.injury_description or "",
-                "return_date": p.return_date or ""
+                "return_date": p.return_date or "",
+                "ready": "1" if getattr(p, "ready", False) else "0",
+                "injury_list": (p.injury_list or ""),
+                "injury_start_date": p.injury_start_date or "",
+                "injury_minimum_days": "" if getattr(p, "injury_minimum_days", None) is None else str(p.injury_minimum_days),
+                "injury_eligible_date": p.injury_eligible_date or "",
+                "injury_rehab_assignment": p.injury_rehab_assignment or "",
+                "injury_rehab_days": str(getattr(p, "injury_rehab_days", 0)),
+                "durability": getattr(p, "durability", 50),
             }
 
             if is_pitcher:

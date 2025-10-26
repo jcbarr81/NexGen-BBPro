@@ -267,7 +267,10 @@ def auto_assign_team(team_id: str, *, players_file: str = "data/players.csv", ro
     roster.act = act_ids
     roster.aaa = aaa_ids
     roster.low = low_ids
-    roster.dl = list(dict.fromkeys(list(roster.dl) + [pid for pid in pool_ids if pid in injured_ids]))
+    merged_dl = list(dict.fromkeys(list(roster.dl) + [pid for pid in pool_ids if pid in injured_ids]))
+    roster.dl = merged_dl
+    # Default any new assignments to the 15-day DL; UI/workflows can upgrade them later.
+    roster.dl_tiers = {pid: roster.dl_tiers.get(pid, "dl15") for pid in merged_dl}
     # Save
     save_roster(team_id, roster)
 

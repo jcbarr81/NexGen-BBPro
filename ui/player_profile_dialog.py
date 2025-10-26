@@ -11,6 +11,9 @@ import math
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from services.injury_manager import disabled_list_days_remaining, disabled_list_label
+from services.rehab_assignments import REHAB_READY_DAYS, rehab_status
+
 try:
     from PyQt6.QtCore import Qt, QPointF, QRectF
 except ImportError:  # pragma: no cover - test stubs
@@ -778,7 +781,55 @@ class PlayerProfileDialog(QDialog):
         label = QLabel(summary)
         label.setWordWrap(True)
         _layout_add_widget(layout, label)
+        status_label = self._build_injury_status_label()
+        if status_label is not None:
+            _layout_add_widget(layout, status_label)
         return box
+
+    def _build_injury_status_label(self) -> QLabel | None:
+        injured = bool(getattr(self.player, 'injured', False))
+        list_name = getattr(self.player, 'injury_list', None)
+        rehab_text = rehab_status(self.player, ready_threshold=REHAB_READY_DAYS) or ""
+        return_date = getattr(self.player, 'return_date', None) or ""
+        ready_flag = getattr(self.player, 'ready', True)
+        info: List[str] = []
+
+        if list_name:
+            list_label = disabled_list_label(list_name)
+            days = disabled_list_days_remaining(self.player)
+            if days is None:
+                detail = "status pending"
+            elif days <= 0:
+                detail = "eligible to return now"
+            else:
+                detail = f"{days} day(s) remaining"
+            info.append(f"{list_label}: {detail}")
+            desc = getattr(self.player, 'injury_description', None)
+            if desc:
+                info.append(f"Injury: {desc}")
+        elif injured:
+            desc = getattr(self.player, 'injury_description', None) or "Injured"
+            info.append(f"Injury: {desc}")
+
+        if rehab_text:
+            info.append(f"Rehab: {rehab_text}")
+
+        if return_date:
+            info.append(f"ETA: {return_date}")
+
+        if list_name and ready_flag:
+            info.append("Ready for activation")
+        elif not injured and not ready_flag:
+            info.append("Not yet game-ready")
+
+        if not info:
+            return None
+
+        text = "Health Monitor:\n" + "\n".join(info)
+        label = QLabel(text)
+        label.setWordWrap(True)
+        _safe_call(label, "setProperty", "profile", "injury-status")
+        return label
 
     def _build_pitcher_header(self) -> QFrame | None:
         frame = QFrame()
@@ -884,9 +935,6 @@ class PlayerProfileDialog(QDialog):
             fatigue = getattr(self.player, 'fatigue', '').replace('_', ' ').title()
             fatigue_text = fatigue or 'Fresh'
             _layout_add_widget(layout, QLabel(f"Fatigue: {fatigue_text}"))
-            if getattr(self.player, 'injured', False):
-                desc = getattr(self.player, 'injury_description', 'Injured') or 'Injured'
-                _layout_add_widget(layout, QLabel(f"Injury: {desc}"))
         return box
 
     def _build_generic_header(self) -> QFrame:

@@ -155,6 +155,7 @@ class OwnerHomePage(QWidget):
         self._wide_button_width = 160
         button_data = [
             ("Lineups", self._dashboard.open_lineup_editor),
+            ("Depth Chart", self._dashboard.open_depth_chart_dialog),
             ("Pitching Staff", self._dashboard.open_pitching_editor),
             ("Recent Transactions", self._dashboard.open_transactions_page),
             ("Team Settings", self._dashboard.open_team_settings_dialog),
@@ -164,6 +165,7 @@ class OwnerHomePage(QWidget):
             ("League Standings", self._dashboard.open_standings_window),
             ("Team Schedule", self._dashboard.open_team_schedule_window),
             ("Full Roster", self._dashboard.open_player_browser_dialog),
+            ("Team Injuries", self._dashboard.open_team_injury_center),
         ]
         for idx, (label, callback) in enumerate(button_data):
             btn = self._make_action_button(label, callback)

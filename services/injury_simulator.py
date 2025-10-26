@@ -1,0 +1,221 @@
+"""Simulation helpers for deriving injuries from gameplay triggers.
+
+This module consumes ``data/injury_catalog.json`` and exposes a small API that
+simulators can call whenever an injury-eligible trigger occurs (collisions,
+HBPs, pitcher overuse, etc.).  It translates the trigger context into a
+probability, selects an injury template, and returns a structured outcome that
+callers can pass to ``services.injury_manager.place_on_injury_list``.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from functools import lru_cache
+import json
+import random
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional
+
+from utils.path_utils import get_base_dir
+
+
+CATALOG_PATH = "data/injury_catalog.json"
+DEFAULT_SEVERITY_WEIGHTS = {"minor": 0.7, "moderate": 0.25, "major": 0.05}
+
+
+@lru_cache(maxsize=4)
+def load_injury_catalog(path: str = CATALOG_PATH) -> Dict[str, Any]:
+    """Load and cache the injury catalog JSON file."""
+
+    catalog_path = Path(path)
+    if not catalog_path.is_absolute():
+        catalog_path = get_base_dir() / catalog_path
+    try:
+        with catalog_path.open("r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except FileNotFoundError as exc:  # pragma: no cover - configuration error
+        raise FileNotFoundError(f"Injury catalog not found at {catalog_path}") from exc
+
+
+@dataclass
+class InjuryOutcome:
+    """Structured result describing a freshly-created injury."""
+
+    injury_id: str
+    name: str
+    severity: str
+    days: int
+    dl_tier: str
+    body_part: str
+    attributes_penalty: Mapping[str, int]
+    description: str
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "injury_id": self.injury_id,
+            "name": self.name,
+            "severity": self.severity,
+            "days": self.days,
+            "dl_tier": self.dl_tier,
+            "body_part": self.body_part,
+            "attributes_penalty": dict(self.attributes_penalty),
+            "description": self.description,
+        }
+
+
+class InjurySimulator:
+    """Probability engine that selects injuries based on catalog metadata."""
+
+    def __init__(
+        self,
+        *,
+        catalog: Optional[Dict[str, Any]] = None,
+        rng: Optional[random.Random] = None,
+        severity_weights: Optional[Mapping[str, float]] = None,
+    ) -> None:
+        self.catalog = catalog or load_injury_catalog()
+        self.triggers = self.catalog.get("triggers", {})
+        self.injuries = list(self.catalog.get("injuries", []))
+        self.rng = rng or random.Random()
+        self.severity_weights = dict(severity_weights or DEFAULT_SEVERITY_WEIGHTS)
+
+    def available_triggers(self) -> List[str]:
+        return list(self.triggers.keys())
+
+    def maybe_create_injury(
+        self,
+        trigger: str,
+        player: object,
+        *,
+        context: Optional[Mapping[str, float]] = None,
+        force: bool = False,
+        severity_override: Optional[str] = None,
+    ) -> Optional[InjuryOutcome]:
+        """Attempt to generate an injury for ``player`` based on ``trigger``.
+
+        Parameters
+        ----------
+        trigger:
+            Name of the injury trigger (e.g., ``collision``, ``hit_by_pitch``).
+        player:
+            Player-like object; fields ``is_pitcher``/``primary_position`` are
+            inspected to enforce pitcher-only injuries.
+        context:
+            Optional mapping of modifier values (e.g., ``fatigue``,
+            ``pitch_velocity``). All unspecified metrics default to ``0``.
+        force:
+            When ``True`` the probability roll is skipped. Useful for tests or
+            scripted outcomes.
+        severity_override:
+            Force a specific severity tier (``minor``/``moderate``/``major``).
+        """
+
+        trigger_def = self.triggers.get(trigger)
+        if not trigger_def:
+            return None
+
+        ctx = dict(context or {})
+        ctx.setdefault("durability", self._player_durability(player))
+        probability = self._compute_probability(trigger_def, ctx)
+        if not force:
+            roll = self.rng.random()
+            if roll >= probability:
+                return None
+
+        severity = severity_override or self._choose_severity(trigger_def)
+        if severity is None:
+            return None
+
+        template_pair = self._choose_injury_template(trigger, severity, player)
+        if template_pair is None:
+            return None
+        injury, profile = template_pair
+        min_days = int(profile.get("min_days", 1))
+        max_days = int(max(min_days, profile.get("max_days", min_days)))
+        days = self.rng.randint(min_days, max_days)
+        dl_tier = profile.get("dl_tier") or "dl15"
+        attributes_penalty = profile.get("attributes_penalty", {})
+        description = profile.get("description") or injury.get("name", "Injury")
+
+        return InjuryOutcome(
+            injury_id=str(injury.get("id") or injury.get("name", "")).lower(),
+            name=injury.get("name", "Injury"),
+            severity=severity,
+            days=days,
+            dl_tier=dl_tier,
+            body_part=injury.get("body_part", ""),
+            attributes_penalty=attributes_penalty,
+            description=description,
+        )
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _compute_probability(
+        self,
+        trigger_def: Mapping[str, Any],
+        context: Mapping[str, float],
+    ) -> float:
+        probability = float(trigger_def.get("base_probability", 0.0))
+        modifiers = trigger_def.get("modifiers") or {}
+        for modifier_key, factor in modifiers.items():
+            metric_key = modifier_key.replace("_factor", "")
+            metric_value = float(context.get(metric_key, 0.0) or 0.0)
+            probability *= max(0.0, 1.0 + (float(factor) * metric_value))
+        return min(max(probability, 0.0), 1.0)
+
+    def _choose_severity(self, trigger_def: Mapping[str, Any]) -> Optional[str]:
+        severities: List[str] = list(trigger_def.get("severities") or [])
+        if not severities:
+            severities = list(self.severity_weights.keys())
+        weights = [self.severity_weights.get(sev, 0.0) for sev in severities]
+        total = sum(weights)
+        if total <= 0:
+            return self.rng.choice(severities) if severities else None
+        roll = self.rng.random() * total
+        upto = 0.0
+        for sev, weight in zip(severities, weights):
+            upto += weight
+            if roll <= upto:
+                return sev
+        return severities[-1]
+
+    def _choose_injury_template(
+        self,
+        trigger: str,
+        severity: str,
+        player: object,
+    ) -> Optional[tuple[Mapping[str, Any], Mapping[str, Any]]]:
+        is_pitcher = bool(
+            getattr(player, "is_pitcher", False)
+            or str(getattr(player, "primary_position", "")).upper() == "P"
+        )
+        candidates: List[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
+        for injury in self.injuries:
+            triggers = injury.get("eligible_triggers") or []
+            if trigger not in triggers:
+                continue
+            if injury.get("pitcher_only") and not is_pitcher:
+                continue
+            if injury.get("hitter_only") and is_pitcher:
+                continue
+            severity_profiles = injury.get("severity_profiles") or {}
+            profile = severity_profiles.get(severity)
+            if profile is None:
+                continue
+            candidates.append((injury, profile))
+        if not candidates:
+            return None
+        return self.rng.choice(candidates)
+
+    @staticmethod
+    def _player_durability(player: object) -> float:
+        value = getattr(player, "durability", 50)
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            value = 50.0
+        return max(0.0, min(1.0, value / 100.0))
+
+
+__all__ = ["InjurySimulator", "InjuryOutcome", "load_injury_catalog"]

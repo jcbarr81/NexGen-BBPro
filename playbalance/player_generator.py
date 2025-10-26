@@ -224,6 +224,23 @@ def roll_dice(base: int, count: int, faces: int) -> int:
 
     return base + sum(random.randint(1, faces) for _ in range(count))
 
+
+def _generate_durability(age: int, is_pitcher: bool) -> int:
+    """
+    Generate a durability rating (0-99) with subtle age/role adjustments.
+    Young players skew higher, older veterans and heavy-use pitchers skew lower.
+    """
+
+    # Base between roughly 40-80 with a modest spread.
+    base = roll_dice(35, 10, 5)
+    if age > 30:
+        base -= int((age - 30) * 1.25)
+    else:
+        base += int((30 - age) * 0.3)
+    if is_pitcher:
+        base -= roll_dice(5, 2, 1)
+    return max(20, min(95, base))
+
 def generate_name() -> tuple[str, str, str]:
     """Return a unique ``(first, last, ethnicity)`` tuple."""
 
@@ -936,6 +953,8 @@ def generate_player(
             pitch_ratings["sl"] = max(pitch_ratings.get("sl", 0), slider_floor)
             pitch_ratings["si"] = max(pitch_ratings.get("si", 0), 60)
 
+        durability = _generate_durability(age, True)
+
         player = {
             "first_name": first_name,
             "last_name": last_name,
@@ -961,6 +980,7 @@ def generate_player(
             "hm": hm,
             "pl": pl,
             "vl": vl,
+            "durability": durability,
             "height": height,
             "weight": weight,
             "ethnicity": ethnicity,
@@ -1006,6 +1026,7 @@ def generate_player(
         sp = ratings["sp"]
         fa = ratings["fa"]
         arm = ratings["arm"]
+        durability = _generate_durability(age, False)
 
         player = {
             "first_name": first_name,
@@ -1030,6 +1051,7 @@ def generate_player(
             "hm": hm,
             "fa": fa,
             "arm": arm,
+            "durability": durability,
             "height": height,
             "weight": weight,
             "ethnicity": ethnicity,
@@ -1056,6 +1078,7 @@ def generate_player(
             "sc",
             "fa",
             "arm",
+            "durability",
             "pot_ch",
             "pot_ph",
             "pot_sp",

@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import os
 import random
-from datetime import date
+from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, List, Mapping, Sequence, Tuple
@@ -19,10 +19,13 @@ from playbalance.simulation import (
 )
 from utils.lineup_loader import build_default_game_state, load_lineup
 from utils.lineup_autofill import auto_fill_lineup_for_team
-from utils.roster_loader import load_roster
+from utils.roster_loader import load_roster, save_roster
 from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.player_loader import load_players_from_csv
+from utils.player_writer import save_players_to_csv
 from utils.team_loader import load_teams
+from services.injury_manager import place_on_injury_list
+from utils.news_logger import log_news_event
 
 LineupEntry = Tuple[str, str]
 
@@ -449,7 +452,7 @@ def run_single_game(
     )
 
     cfg, _ = load_tuned_playbalance_config()
-    sim = GameSimulation(home_state, away_state, cfg, rng)
+    sim = GameSimulation(home_state, away_state, cfg, rng, game_date=date_token)
 
     # Allow heavy simulation runs to disable per-game persistence via env var.
     # PB_PERSIST_STATS: "1"/"true"/"yes" to persist; "0"/"false"/"no" to skip.
@@ -461,6 +464,12 @@ def run_single_game(
 
     persist_stats = _env_flag("PB_PERSIST_STATS", True)
     sim.simulate_game(persist_stats=persist_stats)
+    _apply_injury_events(
+        getattr(sim, "injury_events", []),
+        players_file=str(players_file),
+        roster_dir=str(roster_dir),
+        game_date=date_token,
+    )
 
     box = generate_boxscore(home_state, away_state)
     home_name = home_state.team.name if home_state.team else home_id
@@ -527,6 +536,79 @@ def run_single_game(
             # Defensive: warmup tax is best-effort and should not break game flow
             pass
     return home_state, away_state, box, html, meta
+
+
+def _parse_injury_date(token: str | None) -> date:
+    if not token:
+        return date.today()
+    try:
+        return date.fromisoformat(str(token))
+    except ValueError:
+        return date.today()
+
+
+def _apply_injury_events(
+    events: List[Dict[str, object]],
+    *,
+    players_file: str,
+    roster_dir: str,
+    game_date: str | None,
+) -> None:
+    if not events:
+        return
+    injury_date = _parse_injury_date(game_date)
+    players = list(load_players_from_csv(players_file))
+    player_map = {p.player_id: p for p in players}
+    team_rosters: Dict[str, object] = {}
+    changed_players = False
+
+    for event in events:
+        team_id = event.get("team_id")
+        player_id = event.get("player_id")
+        if not team_id or not player_id:
+            continue
+        player = player_map.get(str(player_id))
+        if player is None:
+            continue
+        roster = team_rosters.get(str(team_id))
+        if roster is None:
+            roster = load_roster(str(team_id), roster_dir=roster_dir)
+            team_rosters[str(team_id)] = roster
+        dl_tier = str(event.get("dl_tier") or "").lower()
+        days = int(event.get("days") or 0)
+        description = str(event.get("description") or "Injury")
+        player.injured = True
+        player.injury_description = description
+        player.injury_list = dl_tier if dl_tier else None
+        player.injury_start_date = injury_date.isoformat()
+        player.injury_minimum_days = days
+        eligible = injury_date + timedelta(days=max(days, 0))
+        player.injury_eligible_date = eligible.isoformat()
+        if dl_tier and dl_tier != "none":
+            place_on_injury_list(player, roster, list_name=dl_tier)
+            player.return_date = eligible.isoformat()
+        log_news_event(
+            f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')} injured ({description})",
+            category="injury",
+            team_id=str(team_id),
+        )
+        changed_players = True
+
+    if not changed_players:
+        return
+
+    save_players_to_csv(players, players_file)
+    try:
+        load_players_from_csv.cache_clear()
+    except Exception:
+        pass
+
+    for team_id, roster in team_rosters.items():
+        save_roster(team_id, roster)
+    try:
+        load_roster.cache_clear()
+    except Exception:
+        pass
 
 
 def simulate_game_scores(

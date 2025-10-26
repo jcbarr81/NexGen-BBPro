@@ -230,6 +230,10 @@ class _PlaceholderPool:
                     unique.append(pid)
             if len(unique) != len(group):
                 setattr(roster, group_name, unique)
+                if group_name == "dl":
+                    removed = set(group) - set(unique)
+                    for pid in removed:
+                        roster.dl_tiers.pop(pid, None)
 
         for name in ("act", "aaa", "low", "dl", "ir"):
             _dedupe(name)
@@ -312,6 +316,7 @@ def _generate_placeholder_roster(team_id: str) -> Roster:
         act=act,
         aaa=remaining_hitters,
         low=remaining_pitchers,
+        dl_tiers={},
     )
     roster.promote_replacements(target_size=ACTIVE_ROSTER_SIZE)
     return roster
@@ -343,6 +348,7 @@ def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
     team_id = str(team_id)
     roster_dir = Path(str(roster_dir))
     act, aaa, low, dl, ir = [], [], [], [], []
+    dl_tiers: Dict[str, str] = {}
     if not roster_dir.is_absolute():
         roster_dir = get_base_dir() / roster_dir
     file_path = roster_dir / f"{team_id}.csv"
@@ -365,12 +371,16 @@ def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
                 aaa.append(pid)
             elif level == "LOW":
                 low.append(pid)
-            elif level == "DL":
+            elif level in {"DL", "DL15"}:
                 dl.append(pid)
+                dl_tiers[pid] = "dl15"
+            elif level == "DL45":
+                dl.append(pid)
+                dl_tiers[pid] = "dl45"
             elif level == "IR":
                 ir.append(pid)
 
-    roster = Roster(team_id=team_id, act=act, aaa=aaa, low=low, dl=dl, ir=ir)
+    roster = Roster(team_id=team_id, act=act, aaa=aaa, low=low, dl=dl, ir=ir, dl_tiers=dl_tiers)
     pool = _get_placeholder_pool()
     pool.reconcile_roster(team_id, roster)
     roster.promote_replacements(target_size=ACTIVE_ROSTER_SIZE)
@@ -392,11 +402,17 @@ def save_roster(team_id, roster: Roster):
             ("ACT", roster.act),
             ("AAA", roster.aaa),
             ("LOW", roster.low),
-            ("DL", roster.dl),
-            ("IR", roster.ir),
         ]:
             for player_id in group:
                 writer.writerow([player_id, level])
+
+        for player_id in roster.dl:
+            tier = (roster.dl_tiers or {}).get(player_id, "dl15")
+            level = "DL45" if tier == "dl45" else "DL15"
+            writer.writerow([player_id, level])
+
+        for player_id in roster.ir:
+            writer.writerow([player_id, "IR"])
 
 
 _original_cache_clear = getattr(load_roster, "cache_clear", None)

@@ -14,19 +14,63 @@ try:
         QListWidgetItem,
     )
     from PyQt6.QtGui import QColor
+    try:  # Some headless stubs omit QCheckBox; fall back to QPushButton-like behavior
+        from PyQt6.QtWidgets import QCheckBox as _QtCheckBox
+    except Exception:  # pragma: no cover - optional widget
+        class QCheckBox(QPushButton):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                try:
+                    self.setCheckable(True)
+                except Exception:
+                    pass
+
+            def setChecked(self, value):
+                try:
+                    super().setChecked(value)
+                except Exception:
+                    pass
+
+            def isChecked(self):
+                try:
+                    return super().isChecked()
+                except Exception:
+                    return False
+    else:
+        QCheckBox = _QtCheckBox
 except ImportError:  # pragma: no cover - test stubs
+    class DummySignal:
+        def __init__(self, parent=None):
+            self._slot = None
+            self._parent = parent
+
+        def connect(self, slot):
+            self._slot = slot
+
+        def emit(self, *args, **kwargs):
+            if self._slot and (
+                self._parent is None
+                or not hasattr(self._parent, "isEnabled")
+                or self._parent.isEnabled()
+            ):
+                self._slot(*args, **kwargs)
+
     class _WidgetDummy:
         def __init__(self, *args, **kwargs) -> None:
-            if 'DummySignal' in globals():
-                self.clicked = DummySignal(self)
-            else:
-                self.clicked = None
+            self.clicked = DummySignal(self)
+            self._enabled = True
 
         def __getattr__(self, name):
             def _noop(*_args, **_kwargs):
                 return None
 
             return _noop
+
+        def setEnabled(self, value):
+            self._enabled = bool(value)
+
+        def isEnabled(self):
+            return self._enabled
 
     class _ListWidgetDummy(_WidgetDummy):
         class SelectionMode:
@@ -35,6 +79,17 @@ except ImportError:  # pragma: no cover - test stubs
     QDialog = QLabel = QPushButton = QVBoxLayout = QMessageBox = _WidgetDummy
     QListWidget = _ListWidgetDummy
     QListWidgetItem = _WidgetDummy
+    class QCheckBox(_WidgetDummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._checked = False
+            self.toggled = DummySignal(self) if 'DummySignal' in globals() else None
+
+        def setChecked(self, value):
+            self._checked = bool(value)
+
+        def isChecked(self):
+            return self._checked
 
     class QColor:  # type: ignore[too-many-ancestors]
         def __init__(self, *args, **kwargs) -> None:
@@ -101,6 +156,7 @@ from playbalance.aging_model import age_and_retire
 from playbalance.season_manager import SeasonManager, SeasonPhase
 from playbalance.training_camp import run_training_camp
 from services.free_agency import list_unsigned_players
+from services.dl_automation import DLAutomationSummary, process_disabled_lists
 from services.season_progress_flags import (
     ProgressUpdateError,
     mark_draft_completed,
@@ -247,6 +303,7 @@ class SeasonProgressWindow(QDialog):
         }
         self._playoffs_done = False
         self._loaded_playoffs_done = False
+        self._auto_activate_dl = True
         self._load_progress()
 
         try:
@@ -304,6 +361,15 @@ class SeasonProgressWindow(QDialog):
         self.simulation_status_label = QLabel()
         self.simulation_status_label.setWordWrap(True)
         layout.addWidget(self.simulation_status_label)
+
+        self.auto_activate_checkbox = QCheckBox("Auto-activate DL players when eligible")
+        try:
+            self.auto_activate_checkbox.setChecked(self._auto_activate_dl)
+            self.auto_activate_checkbox.toggled.connect(self._on_auto_activate_dl_toggled)
+        except Exception:
+            pass
+        self._update_auto_activate_tip()
+        layout.addWidget(self.auto_activate_checkbox)
 
         self.simulate_day_button = QPushButton("Simulate Day")
         self.simulate_day_button.clicked.connect(self._simulate_day)
@@ -986,11 +1052,9 @@ class SeasonProgressWindow(QDialog):
                             bracket_year = int(raw_year) if raw_year else None
                         except Exception:
                             bracket_year = None
-                        if (
-                            season_year is not None
-                            and bracket_year is not None
-                            and season_year != bracket_year
-                        ):
+                        if season_year is None:
+                            pass
+                        elif bracket_year is not None and season_year != bracket_year:
                             pass
                         else:
                             flag_changed = False
@@ -1110,6 +1174,77 @@ class SeasonProgressWindow(QDialog):
                 label.clear()
                 label.setVisible(False)
             except RuntimeError:
+                pass
+
+    def _update_auto_activate_tip(self) -> None:
+        checkbox = getattr(self, "auto_activate_checkbox", None)
+        if checkbox is None:
+            return
+        if self._auto_activate_dl:
+            tip = "Eligible DL players return to the roster automatically."
+        else:
+            tip = "Receive alerts when DL players are ready and activate them manually."
+        try:
+            checkbox.setToolTip(tip)
+        except Exception:
+            pass
+
+    def _on_auto_activate_dl_toggled(self, checked: bool) -> None:
+        self._auto_activate_dl = bool(checked)
+        self._update_auto_activate_tip()
+        try:
+            self._save_progress()
+        except Exception:
+            pass
+
+    def _apply_dl_updates(self, *, days_elapsed: int) -> None:
+        """Run DL automation after simulations and surface summary text."""
+
+        try:
+            today = get_current_sim_date()
+        except Exception:
+            today = None
+        try:
+            summary = process_disabled_lists(
+                today,
+                days_elapsed=days_elapsed,
+                auto_activate=self._auto_activate_dl,
+            )
+        except Exception:
+            return
+        if not isinstance(summary, DLAutomationSummary) or not summary.has_updates():
+            return
+        pieces: list[str] = []
+        if summary.activated:
+            pieces.append(f"{len(summary.activated)} activated")
+        if summary.alerts:
+            pieces.append(f"{len(summary.alerts)} ready")
+        if summary.blocked:
+            pieces.append(f"{len(summary.blocked)} blocked")
+        if summary.rehab_ready:
+            pieces.append(f"{len(summary.rehab_ready)} rehab done")
+        elif summary.rehab_progressed:
+            pieces.append(f"{summary.rehab_progressed} rehab day(s)")
+        if not pieces:
+            return
+        note = "DL updates: " + ", ".join(pieces)
+        if not self._auto_activate_dl:
+            note += " (manual mode)"
+        try:
+            current = self.notes_label.text()
+        except Exception:
+            current = ""
+        try:
+            if current:
+                self.notes_label.setText(f"{current} | {note}")
+            else:
+                self.notes_label.setText(note)
+        except Exception:
+            pass
+        if self._show_toast:
+            try:
+                self._show_toast("info", note)
+            except Exception:
                 pass
 
     def _consume_rollover_note(self) -> str | None:
@@ -1617,6 +1752,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
+        self._apply_dl_updates(days_elapsed=1)
         # Always merge daily shards into canonical history after any simulation.
         try:  # pragma: no cover - best effort merge
             from utils.stats_persistence import merge_daily_history as _merge
@@ -2017,6 +2153,7 @@ class SeasonProgressWindow(QDialog):
         log_news_event(message, category="progress")
         self._save_progress()
         self._update_ui(message)
+        self._apply_dl_updates(days_elapsed=max(1, simulated_days))
         self._set_button_state(self.done_button, True, "")
         if force_season_end and total_remaining > 0:
             try:
@@ -2812,6 +2949,7 @@ class SeasonProgressWindow(QDialog):
             playoffs_flag = data.get("playoffs_done", self._playoffs_done)
             self._playoffs_done = playoffs_flag
             self._loaded_playoffs_done = bool(playoffs_flag)
+            self._auto_activate_dl = bool(data.get("auto_activate_dl", self._auto_activate_dl))
         except (OSError, json.JSONDecodeError):
             # No saved file or invalid JSON â€” fall back to inference
             pass
@@ -2893,6 +3031,7 @@ class SeasonProgressWindow(QDialog):
         existing["preseason_done"] = self._preseason_done
         existing["sim_index"] = self.simulator._index
         existing["playoffs_done"] = self._playoffs_done
+        existing["auto_activate_dl"] = self._auto_activate_dl
 
         with PROGRESS_FILE.open("w", encoding="utf-8") as fh:
             json.dump(existing, fh, indent=2)

@@ -18,7 +18,7 @@ def _prepare_base(tmp_path: Path, monkeypatch) -> Path:
     return data
 
 
-def _write_players(path: Path, hitters: int = 80, pitchers: int = 40) -> None:
+def _write_players(path: Path, hitters: int = 400, pitchers: int = 200) -> None:
     fieldnames = [
         "player_id",
         "first_name",
@@ -44,9 +44,11 @@ def _write_players(path: Path, hitters: int = 80, pitchers: int = 40) -> None:
         "fa",
         "arm",
         "gf",
+        "durability",
         "injured",
         "injury_description",
         "return_date",
+        "ready",
         "endurance",
         "control",
         "movement",
@@ -110,9 +112,11 @@ def _write_players(path: Path, hitters: int = 80, pitchers: int = 40) -> None:
                     "fa": "50",
                     "arm": "50",
                     "gf": "50",
+                    "durability": "70",
                     "injured": "false",
                     "injury_description": "",
                     "return_date": "",
+                    "ready": "false",
                     "endurance": "0",
                     "control": "0",
                     "movement": "0",
@@ -174,9 +178,11 @@ def _write_players(path: Path, hitters: int = 80, pitchers: int = 40) -> None:
                     "fa": "40",
                     "arm": "60",
                     "gf": "40",
+                    "durability": "65",
                     "injured": "false",
                     "injury_description": "",
                     "return_date": "",
+                    "ready": "false",
                     "endurance": str(60 + (idx % 20)),
                     "control": "55",
                     "movement": str(50 + (idx % 30)),

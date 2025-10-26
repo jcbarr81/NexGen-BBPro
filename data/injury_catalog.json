@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "version": 1,
+    "notes": "Probabilities are relative weights; final chance = trigger base × modifiers."
+  },
+  "triggers": {
+    "collision": {
+      "base_probability": 0.035,
+      "modifiers": {
+        "fatigue_factor": 0.4,
+        "age_factor": 0.2,
+        "durability_factor": -0.3
+      },
+      "severities": ["minor", "moderate", "major"]
+    },
+    "slide_contact": {
+      "base_probability": 0.02,
+      "modifiers": {
+        "speed_factor": 0.25,
+        "fatigue_factor": 0.3
+      },
+      "severities": ["minor", "moderate"]
+    },
+    "hit_by_pitch": {
+      "base_probability": 0.015,
+      "modifiers": {
+        "pitch_velocity_factor": 0.5,
+        "equipment_factor": -0.2
+      },
+      "severities": ["minor", "moderate"]
+    },
+    "pitcher_overuse": {
+      "base_probability": 0.05,
+      "modifiers": {
+        "stress_days": 0.6,
+        "age_factor": 0.3,
+        "durability_factor": -0.4
+      },
+      "severities": ["moderate", "major"]
+    }
+  },
+  "injuries": [
+    {
+      "id": "bruise_hand",
+      "name": "Hand Contusion",
+      "body_part": "hand",
+      "eligible_triggers": ["hit_by_pitch", "collision"],
+      "severity_profiles": {
+        "minor": {
+          "min_days": 3,
+          "max_days": 7,
+          "dl_tier": "none",
+          "attributes_penalty": {
+            "contact": -5,
+            "power": -3
+          }
+        },
+        "moderate": {
+          "min_days": 10,
+          "max_days": 20,
+          "dl_tier": "dl15",
+          "attributes_penalty": {
+            "contact": -8,
+            "power": -6
+          }
+        }
+      }
+    },
+    {
+      "id": "hamstring_strain",
+      "name": "Hamstring Strain",
+      "body_part": "leg",
+      "eligible_triggers": ["slide_contact", "collision", "pitcher_overuse"],
+      "severity_profiles": {
+        "minor": {
+          "min_days": 7,
+          "max_days": 14,
+          "dl_tier": "dl15",
+          "attributes_penalty": {
+            "speed": -10,
+            "baserunning": -8
+          }
+        },
+        "moderate": {
+          "min_days": 21,
+          "max_days": 35,
+          "dl_tier": "dl45",
+          "attributes_penalty": {
+            "speed": -15,
+            "baserunning": -12
+          }
+        },
+        "major": {
+          "min_days": 45,
+          "max_days": 90,
+          "dl_tier": "dl45",
+          "attributes_penalty": {
+            "speed": -20,
+            "baserunning": -15
+          }
+        }
+      }
+    },
+    {
+      "id": "rotator_cuff_inflammation",
+      "name": "Rotator Cuff Inflammation",
+      "body_part": "shoulder",
+      "eligible_triggers": ["pitcher_overuse"],
+      "pitcher_only": true,
+      "severity_profiles": {
+        "moderate": {
+          "min_days": 20,
+          "max_days": 40,
+          "dl_tier": "dl45",
+          "attributes_penalty": {
+            "velocity": -8,
+            "control": -6
+          }
+        },
+        "major": {
+          "min_days": 60,
+          "max_days": 120,
+          "dl_tier": "dl45",
+          "attributes_penalty": {
+            "velocity": -12,
+            "control": -10
+          }
+        }
+      }
+    },
+    {
+      "id": "concussion",
+      "name": "Concussion",
+      "body_part": "head",
+      "eligible_triggers": ["collision"],
+      "severity_profiles": {
+        "minor": {
+          "min_days": 7,
+          "max_days": 15,
+          "dl_tier": "dl15",
+          "attributes_penalty": {
+            "vision": -10,
+            "awareness": -8
+          }
+        },
+        "major": {
+          "min_days": 20,
+          "max_days": 45,
+          "dl_tier": "dl45",
+          "attributes_penalty": {
+            "vision": -12,
+            "awareness": -10
+          }
+        }
+      }
+    }
+  ]
+}

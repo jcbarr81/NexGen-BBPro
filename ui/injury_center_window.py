@@ -12,6 +12,7 @@ try:
         QDialog,
         QVBoxLayout,
         QHBoxLayout,
+        QGridLayout,
         QLabel,
         QPushButton,
         QTableWidget,
@@ -21,6 +22,7 @@ try:
         QComboBox,
     )
     from PyQt6.QtCore import Qt
+    from PyQt6.QtGui import QGuiApplication
 except Exception:  # pragma: no cover - headless stubs for tests
     class _Signal:
         def __init__(self): self._s=None
@@ -53,12 +55,16 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def setContentsMargins(self,*a,**k): pass
         def setSpacing(self,*a,**k): pass
     class QHBoxLayout(QVBoxLayout): pass
+    class QGridLayout(QVBoxLayout):
+        def setHorizontalSpacing(self,*a,**k): pass
+        def setVerticalSpacing(self,*a,**k): pass
+        def setColumnStretch(self,*a,**k): pass
     class QAbstractItemView:
         class EditTrigger: NoEditTriggers=0
         class SelectionBehavior: SelectRows=0
         class SelectionMode: SingleSelection=0
     class Qt:
-        class AlignmentFlag: AlignLeft=0; AlignHCenter=0
+        class AlignmentFlag: AlignLeft=0; AlignHCenter=0; AlignRight=0
     class QLineEdit:
         def __init__(self,*a,**k): self._t=""
         def text(self): return self._t
@@ -68,6 +74,10 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def addItems(self, items): self._items=list(items)
         def currentText(self):
             return self._items[self._idx] if self._items else ""
+    class QGuiApplication:
+        @staticmethod
+        def primaryScreen():
+            return None
 
 from typing import Dict, List, Tuple
 from datetime import datetime
@@ -77,7 +87,20 @@ from utils.team_loader import load_teams
 from utils.roster_loader import load_roster
 from utils.roster_loader import save_roster
 from utils.player_writer import save_players_to_csv
-from services.injury_manager import place_on_injury_list, recover_from_injury
+from services.injury_manager import (
+    DL_LABELS,
+    disabled_list_days_remaining,
+    disabled_list_label,
+    place_on_injury_list,
+    recover_from_injury,
+)
+from services.rehab_assignments import (
+    REHAB_READY_DAYS,
+    assign_rehab,
+    cancel_rehab,
+    rehab_status,
+    VALID_REHAB_LEVELS,
+)
 from utils.news_logger import log_news_event
 try:
     from services.roster_auto_assign import ACTIVE_MAX, AAA_MAX, LOW_MAX
@@ -85,12 +108,22 @@ except Exception:  # sensible defaults
     ACTIVE_MAX, AAA_MAX, LOW_MAX = 25, 15, 10
 
 
+_DL_CHOICES = [
+    ("dl15", DL_LABELS.get("dl15", "15-Day DL")),
+    ("dl45", DL_LABELS.get("dl45", "45-Day DL")),
+]
+
+
 class InjuryCenterWindow(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, team_filter: str | None = None):
         super().__init__(parent)
+        self._team_filter = team_filter
         try:
-            self.setWindowTitle("Injury Center")
-            self.resize(900, 600)
+            title = "Injury Center"
+            if team_filter:
+                title = f"{team_filter} Injuries"
+            self.setWindowTitle(title)
+            self._apply_default_size()
         except Exception:
             pass
 
@@ -107,8 +140,10 @@ class InjuryCenterWindow(QDialog):
         header.addWidget(self.refresh_btn)
         root.addLayout(header)
 
-        self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["Player", "Team", "List", "Position", "Description", "Return Date"])
+        self.table = QTableWidget(0, 8)
+        self.table.setHorizontalHeaderLabels(
+            ["Player", "Team", "List", "Days Remaining", "Rehab", "Position", "Description", "Return Date"]
+        )
         try:
             self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
             self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -117,55 +152,133 @@ class InjuryCenterWindow(QDialog):
             pass
         root.addWidget(self.table)
 
-        # Actions row
-        actions = QHBoxLayout()
-        actions.addWidget(QLabel("Description:"))
+        # Compact control panel keeps the dialog from stretching across the screen
+        controls = QVBoxLayout()
+        controls.setContentsMargins(0, 0, 0, 0)
+        controls.setSpacing(6)
+        root.addLayout(controls)
+
+        form = QGridLayout()
+        try:
+            form.setContentsMargins(0, 0, 0, 0)
+            form.setHorizontalSpacing(12)
+            form.setVerticalSpacing(4)
+        except Exception:
+            pass
+        controls.addLayout(form)
+
+        form.addWidget(QLabel("Description"), 0, 0, 1, 2)
         self.desc_edit = QLineEdit()
         try:
             self.desc_edit.setPlaceholderText("e.g., Hamstring strain")
         except Exception:
             pass
-        actions.addWidget(self.desc_edit)
-        actions.addWidget(QLabel("Return (YYYY-MM-DD):"))
+        form.addWidget(self.desc_edit, 1, 0, 1, 2)
+
+        form.addWidget(QLabel("Return (YYYY-MM-DD)"), 0, 2)
         self.ret_edit = QLineEdit()
         try:
             self.ret_edit.setPlaceholderText("YYYY-MM-DD (optional)")
             self.ret_edit.setToolTip("Enter return date in YYYY-MM-DD format. Leave blank if unknown.")
         except Exception:
             pass
-        actions.addWidget(self.ret_edit)
-        actions.addWidget(QLabel("Destination:"))
+        form.addWidget(self.ret_edit, 1, 2)
+
+        form.addWidget(QLabel("List"), 0, 3)
+        self.list_combo = QComboBox()
+        self._dl_codes = [code for code, _label in _DL_CHOICES]
+        try:
+            for code, label in _DL_CHOICES:
+                self.list_combo.addItem(label, code)
+            self.list_combo.setToolTip("Choose between the 15-day or 45-day disabled list")
+        except Exception:
+            try:
+                self.list_combo.addItems([label for _, label in _DL_CHOICES])
+            except Exception:
+                pass
+        form.addWidget(self.list_combo, 1, 3)
+
+        form.addWidget(QLabel("Destination"), 0, 4)
         self.dest_combo = QComboBox()
         try:
             self.dest_combo.addItems(["Active (ACT)", "AAA", "Low"])
             self.dest_combo.setToolTip("Level to place player on recovery")
         except Exception:
             pass
-        actions.addWidget(self.dest_combo)
+        form.addWidget(self.dest_combo, 1, 4)
+
+        form.addWidget(QLabel("Rehab Level"), 0, 5)
+        self.rehab_combo = QComboBox()
+        try:
+            for code in VALID_REHAB_LEVELS:
+                label = f"{code.upper()} Rehab"
+                self.rehab_combo.addItem(label, code)
+            self.rehab_combo.setToolTip("Assign players to an AAA or Low rehab stint")
+        except Exception:
+            try:
+                self.rehab_combo.addItems(["AAA Rehab", "Low Rehab"])
+            except Exception:
+                pass
+        form.addWidget(self.rehab_combo, 1, 5)
+        try:
+            form.setColumnStretch(0, 3)
+            form.setColumnStretch(1, 0)
+            form.setColumnStretch(2, 1)
+            form.setColumnStretch(3, 1)
+            form.setColumnStretch(4, 1)
+            form.setColumnStretch(5, 1)
+        except Exception:
+            pass
+
         self.btn_place_dl = QPushButton("Place on DL")
         self.btn_place_ir = QPushButton("Place on IR")
         self.btn_recover = QPushButton("Recover to Destination")
         self.btn_promote_best = QPushButton("Promote Best Replacement")
+        self.btn_start_rehab = QPushButton("Start Rehab")
+        self.btn_cancel_rehab = QPushButton("End Rehab")
         self.role_hint_label = QLabel("Recommended: --")
         try:
             self.role_hint_label.setStyleSheet("color: #888888; font-size: 11px;")
         except Exception:
             pass
         try:
-            self.btn_place_dl.clicked.connect(lambda: self._place_on_list("dl"))
+            self.btn_place_dl.clicked.connect(lambda: self._place_on_list(self._chosen_dl_code()))
             self.btn_place_ir.clicked.connect(lambda: self._place_on_list("ir"))
             self.btn_recover.clicked.connect(self._recover)
             # Live date validation styling
             self.ret_edit.textChanged.connect(self._on_date_changed)
             self.btn_promote_best.clicked.connect(self._promote_best)
+            self.btn_start_rehab.clicked.connect(self._start_rehab)
+            self.btn_cancel_rehab.clicked.connect(self._cancel_rehab)
         except Exception:
             pass
-        actions.addWidget(self.btn_place_dl)
-        actions.addWidget(self.btn_place_ir)
-        actions.addWidget(self.btn_recover)
-        actions.addWidget(self.btn_promote_best)
-        actions.addWidget(self.role_hint_label)
-        root.addLayout(actions)
+        buttons_grid = QGridLayout()
+        try:
+            buttons_grid.setContentsMargins(0, 0, 0, 0)
+            buttons_grid.setHorizontalSpacing(10)
+            buttons_grid.setVerticalSpacing(6)
+        except Exception:
+            pass
+        controls.addLayout(buttons_grid)
+        for btn, row, col in (
+            (self.btn_place_dl, 0, 0),
+            (self.btn_place_ir, 0, 1),
+            (self.btn_recover, 0, 2),
+            (self.btn_promote_best, 1, 0),
+            (self.btn_start_rehab, 1, 1),
+            (self.btn_cancel_rehab, 1, 2),
+        ):
+            buttons_grid.addWidget(btn, row, col)
+        try:
+            buttons_grid.setColumnStretch(0, 1)
+            buttons_grid.setColumnStretch(1, 1)
+            buttons_grid.setColumnStretch(2, 1)
+        except Exception:
+            pass
+        try:
+            controls.addWidget(self.role_hint_label, alignment=Qt.AlignmentFlag.AlignRight)
+        except Exception:
+            controls.addWidget(self.role_hint_label)
 
         # Roster counts indicator
         counts_row = QHBoxLayout()
@@ -196,6 +309,35 @@ class InjuryCenterWindow(QDialog):
         self._rows: List[Dict[str, str]] = []
         self.refresh()
 
+    def _apply_default_size(self) -> None:
+        """Scale the dialog to a comfortable fraction of the screen size."""
+        min_w, min_h = 820, 520
+        try:
+            self.setMinimumSize(min_w, min_h)
+        except Exception:
+            pass
+        screen = None
+        try:
+            screen = self.screen()
+        except Exception:
+            screen = None
+        if not screen:
+            try:
+                screen = QGuiApplication.primaryScreen()
+            except Exception:
+                screen = None
+        if screen:
+            try:
+                geom = screen.availableGeometry()
+            except Exception:
+                geom = None
+            if geom:
+                width = max(min_w, min(int(geom.width() * 0.6), 1300))
+                height = max(min_h, min(int(geom.height() * 0.65), 900))
+                self.resize(width, height)
+                return
+        self.resize(960, 600)
+
     def refresh(self) -> None:
         # Build map from player -> (team_id, list_name)
         injury_map: Dict[str, Tuple[str, str]] = {}
@@ -204,14 +346,18 @@ class InjuryCenterWindow(QDialog):
         except Exception:
             teams = []
         for t in teams:
+            if self._team_filter and str(getattr(t, "team_id", "")) != self._team_filter:
+                continue
             try:
                 r = load_roster(t.team_id)
             except Exception:
                 continue
+            tier_map = getattr(r, "dl_tiers", {}) or {}
             for pid in getattr(r, 'dl', []) or []:
-                injury_map[pid] = (t.team_id, 'DL')
+                tier = tier_map.get(pid, "dl15")
+                injury_map[pid] = (t.team_id, tier)
             for pid in getattr(r, 'ir', []) or []:
-                injury_map[pid] = (t.team_id, 'IR')
+                injury_map[pid] = (t.team_id, 'ir')
 
         # Load player details and filter
         try:
@@ -231,16 +377,25 @@ class InjuryCenterWindow(QDialog):
             pid = getattr(p, 'player_id', '')
             name = f"{getattr(p,'first_name','')} {getattr(p,'last_name','')}".strip()
             team_id, list_name = injury_map.get(pid, ("", ""))
+            if self._team_filter and team_id and team_id != self._team_filter:
+                continue
+            player_list = (getattr(p, 'injury_list', None) or list_name or "").lower() or ""
+            list_label = disabled_list_label(player_list or list_name)
             pos = getattr(p, 'primary_position', '')
             desc = getattr(p, 'injury_description', '') or ""
             ret = getattr(p, 'return_date', '') or ""
             self.table.setItem(row, 0, QTableWidgetItem(name))
             self.table.setItem(row, 1, QTableWidgetItem(team_id))
-            self.table.setItem(row, 2, QTableWidgetItem(list_name))
-            self.table.setItem(row, 3, QTableWidgetItem(str(pos)))
-            self.table.setItem(row, 4, QTableWidgetItem(desc))
-            self.table.setItem(row, 5, QTableWidgetItem(ret))
-            self._rows.append({"player_id": pid, "team_id": team_id, "list": list_name})
+            self.table.setItem(row, 2, QTableWidgetItem(list_label))
+            days_remaining = disabled_list_days_remaining(p)
+            days_text = str(days_remaining) if days_remaining is not None else ""
+            self.table.setItem(row, 3, QTableWidgetItem(days_text))
+            rehab_text = rehab_status(p, ready_threshold=REHAB_READY_DAYS) or ""
+            self.table.setItem(row, 4, QTableWidgetItem(rehab_text))
+            self.table.setItem(row, 5, QTableWidgetItem(str(pos)))
+            self.table.setItem(row, 6, QTableWidgetItem(desc))
+            self.table.setItem(row, 7, QTableWidgetItem(ret))
+            self._rows.append({"player_id": pid, "team_id": team_id, "list": player_list or list_name})
         self.status.setText(f"Showing {len(injured)} injured players")
         # Update counts if a row is selected
         try:
@@ -351,6 +506,40 @@ class InjuryCenterWindow(QDialog):
                     return t.team_id, r
         return None, None
 
+    def _persist_player(self, player) -> None:
+        try:
+            plist = list(load_players_from_csv("data/players.csv"))
+        except Exception:
+            return
+        replaced = False
+        for idx, existing in enumerate(plist):
+            if getattr(existing, "player_id", "") == getattr(player, "player_id", ""):
+                plist[idx] = player
+                replaced = True
+                break
+        if not replaced:
+            plist.append(player)
+        try:
+            from utils.path_utils import get_base_dir
+
+            save_players_to_csv(plist, str(get_base_dir() / 'data' / 'players.csv'))
+        except Exception:
+            pass
+        try:
+            load_players_from_csv.cache_clear()
+        except Exception:
+            pass
+
+    def _chosen_dl_code(self) -> str:
+        codes = getattr(self, "_dl_codes", ["dl15"])
+        try:
+            idx = self.list_combo.currentIndex()
+        except Exception:
+            idx = 0
+        if 0 <= idx < len(codes):
+            return codes[idx]
+        return codes[0] if codes else "dl15"
+
     def _place_on_list(self, list_name: str) -> None:
         pid, team_hint = self._selected()
         if not pid:
@@ -365,6 +554,9 @@ class InjuryCenterWindow(QDialog):
             team_id, roster = self._find_team_and_roster(pid)
         if not team_id:
             self.status.setText("Could not determine player's team.")
+            return
+        if self._team_filter and team_id != self._team_filter:
+            self.status.setText("Cannot modify injuries for other teams.")
             return
         if roster is None:
             try:
@@ -383,36 +575,111 @@ class InjuryCenterWindow(QDialog):
             try:
                 player.injured = True
                 player.injury_description = desc or player.injury_description
-                player.return_date = ret or player.return_date
+                eligible = getattr(player, "injury_eligible_date", None)
+                adjusted_ret = ret
+                if ret and eligible:
+                    try:
+                        ret_dt = datetime.strptime(ret, "%Y-%m-%d").date()
+                        elig_dt = datetime.strptime(eligible, "%Y-%m-%d").date()
+                    except Exception:
+                        pass
+                    else:
+                        if ret_dt < elig_dt:
+                            adjusted_ret = eligible
+                    if adjusted_ret != ret:
+                        try:
+                            self.status.setText("Return date adjusted to earliest eligible day.")
+                        except Exception:
+                            pass
+                player.return_date = adjusted_ret or player.return_date
             except Exception:
                 pass
-            # Persist roster and players.csv
             save_roster(team_id, roster)
-            try:
-                # Rewrite players.csv with updated fields
-                plist = list(load_players_from_csv("data/players.csv"))
-                # Replace matching player object by id
-                for i, p in enumerate(plist):
-                    if getattr(p, 'player_id', '') == pid:
-                        plist[i] = player
-                        break
-                from utils.path_utils import get_base_dir
-                save_players_to_csv(plist, str(get_base_dir() / 'data' / 'players.csv'))
-            except Exception:
-                pass
+            self._persist_player(player)
             # Clear caches
             try:
                 load_roster.cache_clear()
             except Exception:
                 pass
-            try:
-                load_players_from_csv.cache_clear()
-            except Exception:
-                pass
-            log_news_event(f"Placed {getattr(player,'first_name','')} {getattr(player,'last_name','')} on {list_name.upper()} ({team_id})")
+            readable_list = disabled_list_label(list_name) or list_name.upper()
+            log_news_event(
+                f"Placed {getattr(player,'first_name','')} {getattr(player,'last_name','')} on {readable_list} ({team_id})"
+            )
             self.refresh()
         except Exception as exc:
             self.status.setText(f"Failed: {exc}")
+
+    def _start_rehab(self) -> None:
+        pid, team_hint = self._selected()
+        if not pid:
+            self.status.setText("Select a player first.")
+            return
+        player = self._players_index.get(pid)
+        if player is None:
+            self.status.setText("Player not found in database.")
+            return
+        if not getattr(player, "injured", False):
+            self.status.setText("Player must be injured to begin rehab.")
+            return
+        team_id, roster = (team_hint, None)
+        if not team_id:
+            team_id, roster = self._find_team_and_roster(pid)
+        if not team_id:
+            self.status.setText("Could not determine player's team.")
+            return
+        if roster is None:
+            try:
+                roster = load_roster(team_id)
+            except Exception as exc:
+                self.status.setText(f"Failed to load roster: {exc}")
+                return
+        if pid not in getattr(roster, "dl", []):
+            self.status.setText("Only players on the DL can start rehab.")
+            return
+        try:
+            level = self.rehab_combo.currentData()
+        except Exception:
+            level = None
+        if not level:
+            try:
+                text = self.rehab_combo.currentText().lower()
+                level = "low" if "low" in text else "aaa"
+            except Exception:
+                level = "aaa"
+        try:
+            assigned = assign_rehab(player, level)
+        except ValueError as exc:
+            self.status.setText(str(exc))
+            return
+        self._persist_player(player)
+        log_news_event(
+            f"Started {assigned.upper()} rehab assignment for {getattr(player,'first_name','')} {getattr(player,'last_name','')} ({team_id})",
+            category="injury",
+        )
+        self.status.setText(f"Rehab assignment started at {assigned.upper()}.")
+        self.refresh()
+
+    def _cancel_rehab(self) -> None:
+        pid, _team_hint = self._selected()
+        if not pid:
+            self.status.setText("Select a player first.")
+            return
+        player = self._players_index.get(pid)
+        if player is None:
+            self.status.setText("Player not found in database.")
+            return
+        if not getattr(player, "injury_rehab_assignment", None):
+            self.status.setText("Player has no active rehab assignment.")
+            return
+        level = getattr(player, "injury_rehab_assignment", "").upper()
+        cancel_rehab(player)
+        self._persist_player(player)
+        log_news_event(
+            f"Ended {level} rehab assignment for {getattr(player,'first_name','')} {getattr(player,'last_name','')}",
+            category="injury",
+        )
+        self.status.setText("Rehab assignment cleared.")
+        self.refresh()
 
     def _recover(self) -> None:
         pid, team_hint = self._selected()
@@ -447,7 +714,12 @@ class InjuryCenterWindow(QDialog):
                 dest = "aaa"
             elif "low" in dest_label:
                 dest = "low"
-            recover_from_injury(player, roster, destination=dest)
+            list_label = disabled_list_label(getattr(player, "injury_list", None)) or "injury list"
+            try:
+                recover_from_injury(player, roster, destination=dest)
+            except ValueError as exc:
+                self.status.setText(str(exc))
+                return
             try:
                 player.injured = False
                 player.injury_description = None
@@ -455,25 +727,14 @@ class InjuryCenterWindow(QDialog):
             except Exception:
                 pass
             save_roster(team_id, roster)
-            try:
-                plist = list(load_players_from_csv("data/players.csv"))
-                for i, p in enumerate(plist):
-                    if getattr(p, 'player_id', '') == pid:
-                        plist[i] = player
-                        break
-                from utils.path_utils import get_base_dir
-                save_players_to_csv(plist, str(get_base_dir() / 'data' / 'players.csv'))
-            except Exception:
-                pass
+            self._persist_player(player)
             try:
                 load_roster.cache_clear()
             except Exception:
                 pass
-            try:
-                load_players_from_csv.cache_clear()
-            except Exception:
-                pass
-            log_news_event(f"Activated {getattr(player,'first_name','')} {getattr(player,'last_name','')} from injury list ({team_id})")
+            log_news_event(
+                f"Activated {getattr(player,'first_name','')} {getattr(player,'last_name','')} from {list_label} ({team_id})"
+            )
             self.refresh()
         except Exception as exc:
             self.status.setText(f"Failed: {exc}")

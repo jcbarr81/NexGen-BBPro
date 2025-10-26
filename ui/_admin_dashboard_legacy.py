@@ -73,6 +73,7 @@ from .season_progress_window import SeasonProgressWindow
 from .playoffs_window import PlayoffsWindow
 from .free_agency_window import FreeAgencyWindow
 from .news_window import NewsWindow
+from .injury_center_window import InjuryCenterWindow
 from .owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades
 from utils.player_loader import load_players_from_csv

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 
 @dataclass
 class Roster:
@@ -9,10 +9,21 @@ class Roster:
     low: List[str] = field(default_factory=list)
     dl: List[str] = field(default_factory=list)
     ir: List[str] = field(default_factory=list)
+    dl_tiers: Dict[str, str] = field(default_factory=dict)
 
     def move_player(self, player_id: str, from_level: str, to_level: str):
-        getattr(self, from_level).remove(player_id)
-        getattr(self, to_level).append(player_id)
+        source = getattr(self, from_level)
+        if player_id not in source:
+            raise ValueError(f"{player_id} not on {from_level}")
+        source.remove(player_id)
+        if from_level == "dl":
+            self.dl_tiers.pop(player_id, None)
+
+        target = getattr(self, to_level)
+        target.append(player_id)
+        if to_level == "dl":
+            # Default manual moves to the 15-day list unless overwritten elsewhere.
+            self.dl_tiers[player_id] = self.dl_tiers.get(player_id, "dl15")
 
     def promote_replacements(self, target_size: int = 25) -> None:
         """Promote players from the minors to fill active roster vacancies.

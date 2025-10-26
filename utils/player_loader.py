@@ -24,6 +24,20 @@ def _optional_int(row, key, default=0):
     return int(value)
 
 
+def _optional_bool(row, key, default=False):
+    value = row.get(key)
+    if value is None or value == "":
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _optional_int_or_none(row, key):
+    value = row.get(key)
+    if value is None or value == "":
+        return None
+    return int(value)
+
+
 def _load_career_players() -> dict[str, dict]:
     path = CAREER_DATA_DIR / "career_players.json"
     try:
@@ -89,6 +103,14 @@ def load_players_from_csv(file_path):
                 "injured": (row.get("injured") or "false").strip().lower() == "true",
                 "injury_description": row.get("injury_description") or None,
                 "return_date": row.get("return_date") or None,
+                "injury_list": (row.get("injury_list") or "").strip().lower() or None,
+                "injury_start_date": row.get("injury_start_date") or None,
+                "injury_minimum_days": _optional_int_or_none(row, "injury_minimum_days"),
+                "injury_eligible_date": row.get("injury_eligible_date") or None,
+                "injury_rehab_assignment": row.get("injury_rehab_assignment") or None,
+                "injury_rehab_days": _optional_int(row, "injury_rehab_days", 0),
+                "durability": _optional_int(row, "durability", 50),
+                "ready": _optional_bool(row, "ready", False),
             }
 
             if is_pitcher:

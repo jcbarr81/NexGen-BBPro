@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import bcrypt
 
 try:
-    from PyQt6.QtCore import Qt, QSize
+    from PyQt6.QtCore import Qt, QSize, QTimer
 except ImportError:  # pragma: no cover - test stubs
     Qt = SimpleNamespace(
         AlignmentFlag=SimpleNamespace(
@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover - test stubs
 
         def height(self) -> int:
             return self._height
+    QTimer = None
 else:  # pragma: no branch - normalize stubs
     if not hasattr(Qt, "AlignmentFlag"):
         Qt.AlignmentFlag = SimpleNamespace(  # type: ignore[attr-defined]
@@ -97,6 +98,9 @@ from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
 from .news_window import NewsWindow
 from .player_browser_dialog import PlayerBrowserDialog
+from .injury_center_window import InjuryCenterWindow
+from .depth_chart_dialog import DepthChartDialog
+from .tutorial_dialog import TutorialDialog, TutorialStep
 from .ui_template import _load_baseball_pixmap, _load_nav_icon
 from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
@@ -140,7 +144,7 @@ class OwnerDashboard(QMainWindow):
         self._latest_metrics: Dict[str, Any] = {}
         self._registry = PageRegistry()
         self._nav_controller = NavigationController(self._registry)
-        self._nav_controller.add_listener(self._on_nav_changed)
+        self._nav_controller.add_listener(self._on_nav_changed_with_tutorial)
 
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
         self.resize(1100, 720)
@@ -300,8 +304,27 @@ class OwnerDashboard(QMainWindow):
         self.team_schedule_action = QAction(self)
         self.team_schedule_action.triggered.connect(self.open_team_schedule_window)
 
+        self._tutorial_keys = {
+            "depth_chart": f"depth_chart_tutorial_done_{team_id}",
+            "injury_center": f"injury_center_tutorial_{team_id}",
+            "roster_moves": f"roster_moves_tutorial_{team_id}",
+            "pitching": f"pitching_staff_tutorial_{team_id}",
+            "lineup": f"lineup_strategy_tutorial_{team_id}",
+            "overview": f"dashboard_overview_tutorial_{team_id}",
+            "admin": "admin_tools_tutorial",
+        }
+        self._tutorial_flags = self._load_tutorial_flags()
+        self._migrate_tutorial_flags()
+        self._tutorial_dialog_open = False
+        self._build_tutorial_menu()
+        if QTimer:
+            QTimer.singleShot(400, self._maybe_auto_show_tutorials)
+        else:
+            self._maybe_auto_show_tutorials()
+
     def _build_menu(self) -> None:
-        file_menu = self.menuBar().addMenu("&File")
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("&File")
         admin_action = QAction("Open Admin Dashboard", self)
         admin_action.triggered.connect(self._prompt_admin_dashboard)
         file_menu.addAction(admin_action)
@@ -323,6 +346,264 @@ class OwnerDashboard(QMainWindow):
             view_menu.addAction(settings_action)
         except Exception:
             pass
+
+    def _build_tutorial_menu(self) -> None:
+        tutorials_menu = self.menuBar().addMenu("&Tutorials")
+
+        depth_action = QAction("Depth Chart Basics", self)
+        depth_action.triggered.connect(lambda: self.show_depth_chart_tutorial(force=True))
+        tutorials_menu.addAction(depth_action)
+
+        injury_action = QAction("Injury Center Guide", self)
+        injury_action.triggered.connect(lambda: self.show_injury_center_tutorial(force=True))
+        tutorials_menu.addAction(injury_action)
+
+        roster_action = QAction("Roster Moves Guide", self)
+        roster_action.triggered.connect(lambda: self.show_roster_moves_tutorial(force=True))
+        tutorials_menu.addAction(roster_action)
+
+        pitching_action = QAction("Pitching Staff Tutorial", self)
+        pitching_action.triggered.connect(lambda: self.show_pitching_staff_tutorial(force=True))
+        tutorials_menu.addAction(pitching_action)
+
+        lineup_action = QAction("Lineup & Strategy Tutorial", self)
+        lineup_action.triggered.connect(lambda: self.show_lineup_strategy_tutorial(force=True))
+        tutorials_menu.addAction(lineup_action)
+
+        overview_action = QAction("Dashboard Overview", self)
+        overview_action.triggered.connect(lambda: self.show_dashboard_overview_tutorial(force=True))
+        tutorials_menu.addAction(overview_action)
+
+        admin_action = QAction("Admin Tools Overview", self)
+        admin_action.triggered.connect(lambda: self.show_admin_tools_tutorial(force=True))
+        tutorials_menu.addAction(admin_action)
+
+    def _load_tutorial_flags(self) -> dict[str, bool]:
+        try:
+            import json
+            path = get_base_dir() / "config" / "tutorial_flags.json"
+            if not path.exists():
+                return {}
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return {str(k): bool(v) for k, v in data.items()}
+        except Exception:
+            pass
+        return {}
+
+    def _save_tutorial_flags(self) -> None:
+        try:
+            import json
+            path = get_base_dir() / "config"
+            path.mkdir(parents=True, exist_ok=True)
+            dest = path / "tutorial_flags.json"
+            dest.write_text(json.dumps(self._tutorial_flags, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def _migrate_tutorial_flags(self) -> None:
+        legacy = self._tutorial_flags.get("injury_center_tutorial")
+        if legacy is not None:
+            self._tutorial_flags.setdefault(self._tutorial_keys["injury_center"], bool(legacy))
+
+    def _run_tutorial(self, key: str, title: str, steps: list[TutorialStep], *, force: bool = False) -> None:
+        if not force and self._tutorial_flags.get(key):
+            return
+        if self._tutorial_dialog_open:
+            return
+        self._tutorial_dialog_open = True
+        try:
+            dlg = TutorialDialog(title=title, steps=steps, parent=self)
+            dlg.exec()
+        finally:
+            self._tutorial_dialog_open = False
+            if not force:
+                self._tutorial_flags[key] = True
+                self._save_tutorial_flags()
+
+    def show_depth_chart_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Why Depth Charts?",
+                "<p>The depth chart lets you choose who replaces a starter when injuries or promotions occur. "
+                "Set three players for each position to keep simulations flowing without pauses.</p>",
+            ),
+            TutorialStep(
+                "Drag & Drop Ordering",
+                "<p>Use the <b>Depth Chart Priorities</b> tiles on the Roster page. Drag players to reorder them. "
+                "Top entries are first in line when a roster move is needed.</p>",
+            ),
+            TutorialStep(
+                "Saving Changes",
+                "<p>After rearranging, click <b>Save Depth Chart</b>. This updates the fallback logic used by lineup "
+                "autofill and injury recovery so your choices stick.</p>",
+            ),
+            TutorialStep(
+                "Full Editor",
+                "<p>Need to add or remove players from the chart? Open the full <b>Depth Chart</b> dialog from the "
+                "Roster quick actions. That dialog lets you pick anyone from ACT/AAA/Low for each slot.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["depth_chart"], "Depth Chart Basics", steps, force=force)
+
+    def maybe_show_depth_chart_tutorial(self) -> None:
+        self.show_depth_chart_tutorial()
+
+    def show_injury_center_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Accessing the Center",
+                "<p>Open <b>Injury Center</b> from the roster quick actions or the Tutorials menu."
+                " It filters to your team automatically and lists every injured player.</p>",
+            ),
+            TutorialStep(
+                "Review & Sort",
+                "<p>Use the table headers to see return dates, rehab status, and DL tiers."
+                " Roster counts and tier legends update when you select a player.</p>",
+            ),
+            TutorialStep(
+                "Managing Injuries",
+                "<p>Use the controls at the bottom to place players on DL/IR, activate them, or assign rehab."
+                " Buttons stay disabled until you select a player, and tooltips explain each action.</p>",
+            ),
+            TutorialStep(
+                "Promotions & News",
+                "<p>The <b>Promote Best Replacement</b> button uses your depth chart to fill roster holes."
+                " Every action logs to the news feed so owners can track moves later.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["injury_center"], "Injury Center Guide", steps, force=force)
+
+    def show_roster_moves_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Reassigning Players",
+                "<p>Use <b>Reassign Players</b> on the Roster page to promote/demote between ACT, AAA, and Low."
+                " The dialog enforces roster limits and highlights when a level is full.</p>",
+            ),
+            TutorialStep(
+                "Replacing Injured Players",
+                "<p>After moving someone to the DL/IR, promote a replacement from AAA or Low. "
+                "The depth chart priority helps determine who should move up.</p>",
+            ),
+            TutorialStep(
+                "Tracking Capacity",
+                "<p>Watch the roster counts at the bottom of the Injury Center and Reassign dialogs."
+                " Staying within 25/15/10 keeps simulations running without interruptions.</p>",
+            ),
+            TutorialStep(
+                "Saving & Notifications",
+                "<p>Every move writes to the news feed so you can audit changes later. "
+                "Remember to save rosters or lineups after a major reshuffle.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["roster_moves"], "Roster Moves Guide", steps, force=force)
+
+    def show_pitching_staff_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Rotation Order",
+                "<p>Open <b>Pitching Staff</b> to drag your rotation slots. "
+                "The order drives which starter the simulator schedules next.</p>",
+            ),
+            TutorialStep(
+                "Bullpen Roles",
+                "<p>Assign CL, SU, MR, and LR roles so the AI knows who to call upon."
+                " Role icons update instantly and help balance workload.</p>",
+            ),
+            TutorialStep(
+                "Rest & Fatigue",
+                "<p>Hover over a pitcher to see stamina and rest days."
+                " Avoid using arms that show red fatigue indicators to prevent injuries.</p>",
+            ),
+            TutorialStep(
+                "Rehab & Recovery",
+                "<p>Pitchers returning from rehab show readiness in the Injury Center."
+                " Activate them here and drop them into the bullpen or rotation slots.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["pitching"], "Pitching Staff Tutorial", steps, force=force)
+
+    def show_lineup_strategy_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Vs LHP/RHP Lineups",
+                "<p>The <b>Lineups</b> editor stores separate batting orders for left- and right-handed starters."
+                " Edit both tabs so the simulator always has coverage.</p>",
+            ),
+            TutorialStep(
+                "Positions & DH",
+                "<p>Assign positions directly in the grid. The DH slot can host any hitter;"
+                " make sure someone covers every defensive spot.</p>",
+            ),
+            TutorialStep(
+                "Auto-Fill vs Manual",
+                "<p>Use Auto-Fill to generate a baseline lineup from ratings, then fine-tune manually."
+                " Auto-Fill respects your depth chart priorities when possible.</p>",
+            ),
+            TutorialStep(
+                "Saving Changes",
+                "<p>Click <b>Save</b> before closing the editor. Saved CSVs feed the simulation engine immediately.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["lineup"], "Lineup & Strategy Tutorial", steps, force=force)
+
+    def show_dashboard_overview_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Scoreboard Strip",
+                "<p>The top scoreboard summarizes record, run differential, streak, upcoming opponent, and injuries."
+                " It updates whenever the sim date advances.</p>",
+            ),
+            TutorialStep(
+                "Quick Actions",
+                "<p>Use the Quick Actions card on the Dashboard page to jump to common tasks like lineups, pitching staff,"
+                " injuries, and stats.</p>",
+            ),
+            TutorialStep(
+                "Trendlines & News",
+                "<p>Trend charts visualize the last ten games while the news card recaps recent sim events."
+                " Toggle \"View all\" to expand the news feed preview.</p>",
+            ),
+            TutorialStep(
+                "Navigation Tips",
+                "<p>The sidebar buttons switch between Dashboard, Roster, Team schedule, Moves & Trades, and League Hub."
+                " The Tutorials menu is always available up top.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["overview"], "Owner Dashboard Overview", steps, force=force)
+
+    def show_admin_tools_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "Admin Dashboard",
+                "<p>From the File menu choose <b>Open Admin Dashboard</b>. "
+                "Only admins with credentials should use this area.</p>",
+            ),
+            TutorialStep(
+                "Season Operations",
+                "<p>Generate schedules, run training camp, and progress playoffs from the admin tools."
+                " Each action logs to the news feed and should be run once per phase.</p>",
+            ),
+            TutorialStep(
+                "Safety & Backups",
+                "<p>Use the backup utilities before performing destructive tasks like resetting seasons."
+                " Keep exports if you plan to share league files.</p>",
+            ),
+            TutorialStep(
+                "Communication",
+                "<p>Notify owners before major admin actions. Tutorials are available so commissioners can explain changes "
+                "using a consistent script.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["admin"], "Admin Tools Overview", steps, force=force)
+
+    def _maybe_auto_show_tutorials(self) -> None:
+        self.show_dashboard_overview_tutorial()
+
+    def _maybe_show_roster_tutorial(self, key: Optional[str]) -> None:
+        if key == "roster":
+            self.maybe_show_depth_chart_tutorial()
 
     def _prompt_admin_dashboard(self) -> None:
         password, accepted = QInputDialog.getText(
@@ -477,6 +758,10 @@ class OwnerDashboard(QMainWindow):
         except KeyError:
             return
 
+    def _on_nav_changed_with_tutorial(self, key: Optional[str]) -> None:
+        self._maybe_show_roster_tutorial(key)
+        self._on_nav_changed(key)
+
     def _on_nav_changed(self, key: Optional[str]) -> None:
         for name, btn in self.nav_buttons.items():
             btn.setChecked(name == key)
@@ -525,6 +810,9 @@ class OwnerDashboard(QMainWindow):
 
     def open_lineup_editor(self) -> None:
         show_on_top(LineupEditor(self.team_id))
+
+    def open_depth_chart_dialog(self) -> None:
+        show_on_top(DepthChartDialog(self))
 
     def open_pitching_editor(self) -> None:
         show_on_top(PitchingEditor(self.team_id))
@@ -638,6 +926,13 @@ class OwnerDashboard(QMainWindow):
                     pass
         except Exception as e:
             QMessageBox.critical(self, "Team Settings", f"Failed to update settings: {e}")
+
+    def open_team_injury_center(self) -> None:
+        try:
+            self._injury_window = InjuryCenterWindow(self, team_filter=self.team_id)
+            self._injury_window.show()
+        except Exception:
+            pass
 
     # ---------- Utilities ----------
     def calculate_age(self, birthdate_str: str):

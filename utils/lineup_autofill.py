@@ -7,6 +7,7 @@ from typing import Dict
 from utils.path_utils import get_base_dir
 from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
+from utils.depth_chart import depth_order_for_position, load_depth_chart
 
 
 def auto_fill_lineup_for_team(
@@ -43,6 +44,10 @@ def auto_fill_lineup_for_team(
     players: Dict[str, object] = {p.player_id: p for p in load_players_from_csv(str(players_path))}
     roster = load_roster(team_id, roster_root)
     act_ids = list(roster.act)
+    try:
+        depth_chart = load_depth_chart(team_id)
+    except Exception:
+        depth_chart = {}
 
     # Collect non-pitchers first
     def is_pitcher(p: object) -> bool:
@@ -72,8 +77,22 @@ def auto_fill_lineup_for_team(
         defense = 0.5 * fa + 0.5 * arm
         return 0.6 * off + 0.2 * sp + 0.2 * defense
 
+    def depth_preferred(pos: str) -> list[str]:
+        preferred = depth_order_for_position(depth_chart, pos)
+        return [
+            pid
+            for pid in preferred
+            if pid in act_ids and pid not in used and eligible_for(pid, pos)
+        ]
+
     for pos in positions:
-        # Choose best eligible by score
+        # Choose best eligible by score, preferring explicit depth chart order
+        preferred = depth_preferred(pos)
+        if preferred:
+            best = preferred[0]
+            lineup.append((best, pos))
+            used.add(best)
+            continue
         candidates = [pid for pid in act_ids if pid not in used and eligible_for(pid, pos)]
         if not candidates:
             candidates = [pid for pid in act_ids if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))]
@@ -85,11 +104,21 @@ def auto_fill_lineup_for_team(
 
     # DH is any remaining non-pitcher
     if len(lineup) < 9:
-        remaining = [pid for pid in act_ids if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))]
-        if remaining:
-            best = max(remaining, key=hitter_score)
+        dh_pref = [
+            pid
+            for pid in depth_order_for_position(depth_chart, "DH")
+            if pid in act_ids and pid not in used and (players.get(pid) and not is_pitcher(players[pid]))
+        ]
+        if dh_pref:
+            best = dh_pref[0]
             lineup.append((best, "DH"))
             used.add(best)
+        else:
+            remaining = [pid for pid in act_ids if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))]
+            if remaining:
+                best = max(remaining, key=hitter_score)
+                lineup.append((best, "DH"))
+                used.add(best)
 
     # If still short, just fill with any remaining ACT players (defensive pos unknown)
     for pid in act_ids:

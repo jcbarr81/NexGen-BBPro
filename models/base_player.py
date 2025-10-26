@@ -23,11 +23,18 @@ class BasePlayer:
     injured: bool = False
     injury_description: Optional[str] = None
     return_date: Optional[str] = None
+    injury_list: Optional[str] = None  # e.g. dl15, dl45, ir
+    injury_start_date: Optional[str] = None
+    injury_minimum_days: Optional[int] = None
+    injury_eligible_date: Optional[str] = None
+    injury_rehab_assignment: Optional[str] = None
+    injury_rehab_days: int = 0
+    durability: int = 50
     is_pitcher: bool = False
     # Flag indicating if the player is ready after training camp
     ready: bool = False
 
-    _rating_fields: ClassVar[set[str]] = {"gf"}
+    _rating_fields: ClassVar[set[str]] = {"gf", "durability"}
 
     def __setattr__(self, name: str, value) -> None:
         rating_fields = getattr(type(self), "_rating_fields", set())
