@@ -1,4 +1,5 @@
 from playbalance.training_camp import run_training_camp
+from playbalance.player_development import TrainingWeights
 from models.player import Player
 
 
@@ -37,3 +38,41 @@ def test_training_camp_returns_reports_and_sets_ready(monkeypatch) -> None:
     assert all(p.ready for p in players)
     assert any(report.changes for report in reports)
     assert calls.get("count") == len(players)
+
+
+def test_training_camp_respects_custom_allocations(monkeypatch) -> None:
+    player = make_player("custom")
+    player.ch = 70
+    player.pot_ch = 72
+    player.ph = 55
+    player.pot_ph = 90
+
+    default_pitcher_weights = {
+        "command": 25,
+        "movement": 20,
+        "stamina": 20,
+        "velocity": 20,
+        "hold": 5,
+        "pitch_lab": 10,
+    }
+
+    allocations = {
+        player.player_id: TrainingWeights(
+            hitters={
+                "contact": 5,
+                "power": 55,
+                "speed": 10,
+                "discipline": 15,
+                "defense": 15,
+            },
+            pitchers=default_pitcher_weights,
+        )
+    }
+
+    monkeypatch.setattr(
+        "playbalance.training_camp.record_training_session",
+        lambda reports, **_: None,
+    )
+
+    reports = run_training_camp([player], allocations=allocations)
+    assert reports[0].focus == "Strength & Lift"

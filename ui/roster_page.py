@@ -99,6 +99,11 @@ class RosterPage(QWidget):
         btn_injuries.clicked.connect(self._dashboard.open_team_injury_center)
         card.layout().addWidget(btn_injuries)
 
+        btn_training = QPushButton("Training Focus", objectName="Primary")
+        btn_training.setToolTip("Adjust hitter/pitcher development budgets for this team")
+        btn_training.clicked.connect(self._dashboard.open_training_focus_dialog)
+        card.layout().addWidget(btn_training)
+
         card.layout().addStretch()
         return card
 

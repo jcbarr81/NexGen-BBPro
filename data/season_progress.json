@@ -4,6 +4,10 @@
     "training_camp": true,
     "schedule": true
   },
-  "sim_index": 0,
-  "playoffs_done": false
+  "sim_index": 89,
+  "playoffs_done": false,
+  "auto_activate_dl": true,
+  "draft_completed_years": [
+    2025
+  ]
 }

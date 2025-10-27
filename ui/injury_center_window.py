@@ -339,27 +339,34 @@ class InjuryCenterWindow(QDialog):
         self.resize(960, 600)
 
     def refresh(self) -> None:
-        # Build map from player -> (team_id, list_name)
-        injury_map: Dict[str, Tuple[str, str]] = {}
+        # Build player -> team/list lookup tables from current rosters
+        team_lookup: Dict[str, str] = {}
+        injury_list_lookup: Dict[str, str] = {}
         try:
             teams = load_teams()
         except Exception:
             teams = []
         for t in teams:
-            if self._team_filter and str(getattr(t, "team_id", "")) != self._team_filter:
+            team_id = str(getattr(t, "team_id", "")).strip()
+            if not team_id:
                 continue
             try:
-                r = load_roster(t.team_id)
+                roster = load_roster(team_id)
             except Exception:
                 continue
-            tier_map = getattr(r, "dl_tiers", {}) or {}
-            for pid in getattr(r, 'dl', []) or []:
-                tier = tier_map.get(pid, "dl15")
-                injury_map[pid] = (t.team_id, tier)
-            for pid in getattr(r, 'ir', []) or []:
-                injury_map[pid] = (t.team_id, 'ir')
+            for group in ("act", "aaa", "low", "dl", "ir"):
+                for pid in getattr(roster, group, []) or []:
+                    if pid:
+                        team_lookup[pid] = team_id
+            tier_map = getattr(roster, "dl_tiers", {}) or {}
+            for pid in getattr(roster, "dl", []) or []:
+                if pid:
+                    injury_list_lookup[pid] = tier_map.get(pid, "dl15")
+            for pid in getattr(roster, "ir", []) or []:
+                if pid:
+                    injury_list_lookup[pid] = "ir"
 
-        # Load player details and filter
+        # Load player details and build filtered list
         try:
             players = load_players_from_csv("data/players.csv")
         except Exception:
@@ -367,20 +374,31 @@ class InjuryCenterWindow(QDialog):
         injured: List[object] = []
         self._players_index = {getattr(p, 'player_id', ''): p for p in players}
         for p in players:
-            if getattr(p, 'injured', False) or getattr(p, 'player_id', '') in injury_map:
+            pid = getattr(p, 'player_id', '')
+            if not pid:
+                continue
+            if getattr(p, 'injured', False) or pid in injury_list_lookup:
                 injured.append(p)
 
-        # Fill table
-        self.table.setRowCount(len(injured))
+        # Filter players for display
+        display_rows: List[Tuple[object, str, str]] = []
+        for p in injured:
+            pid = getattr(p, 'player_id', '')
+            if not pid:
+                continue
+            team_id = team_lookup.get(pid, "")
+            if self._team_filter and team_id != self._team_filter:
+                continue
+            list_code = getattr(p, 'injury_list', None) or injury_list_lookup.get(pid, "") or ""
+            display_rows.append((p, team_id, list_code))
+
+        # Fill table with filtered rows
+        self.table.setRowCount(len(display_rows))
         self._rows = []
-        for row, p in enumerate(injured):
+        for row, (p, team_id, list_code) in enumerate(display_rows):
             pid = getattr(p, 'player_id', '')
             name = f"{getattr(p,'first_name','')} {getattr(p,'last_name','')}".strip()
-            team_id, list_name = injury_map.get(pid, ("", ""))
-            if self._team_filter and team_id and team_id != self._team_filter:
-                continue
-            player_list = (getattr(p, 'injury_list', None) or list_name or "").lower() or ""
-            list_label = disabled_list_label(player_list or list_name)
+            list_label = disabled_list_label(list_code)
             pos = getattr(p, 'primary_position', '')
             desc = getattr(p, 'injury_description', '') or ""
             ret = getattr(p, 'return_date', '') or ""
@@ -395,8 +413,12 @@ class InjuryCenterWindow(QDialog):
             self.table.setItem(row, 5, QTableWidgetItem(str(pos)))
             self.table.setItem(row, 6, QTableWidgetItem(desc))
             self.table.setItem(row, 7, QTableWidgetItem(ret))
-            self._rows.append({"player_id": pid, "team_id": team_id, "list": player_list or list_name})
-        self.status.setText(f"Showing {len(injured)} injured players")
+            self._rows.append({"player_id": pid, "team_id": team_id, "list": list_code})
+
+        if self._team_filter:
+            self.status.setText(f"Showing {len(display_rows)} injured players for {self._team_filter}")
+        else:
+            self.status.setText(f"Showing {len(display_rows)} injured players")
         # Update counts if a row is selected
         try:
             self.table.itemSelectionChanged.connect(self._on_selection_changed)

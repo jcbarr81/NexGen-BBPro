@@ -10,26 +10,41 @@ season.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 from models.base_player import BasePlayer
-from playbalance.player_development import TrainingReport, apply_training_plan, build_training_plan
+from playbalance.player_development import (
+    TrainingReport,
+    TrainingWeights,
+    apply_training_plan,
+    build_training_plan,
+)
 from services.training_history import record_training_session
 
 logger = logging.getLogger(__name__)
 
 
-def run_training_camp(players: Iterable[BasePlayer]) -> Sequence[TrainingReport]:
+def run_training_camp(
+    players: Iterable[BasePlayer],
+    allocations: Mapping[str, TrainingWeights] | None = None,
+) -> Sequence[TrainingReport]:
     """Run a spring training simulation and return development reports.
 
     Each player receives a focused training plan. Attributes may see small,
     capped boosts based on age, potential, and the existing aging model. Every
-    participant is marked ``ready`` when camp ends.
+    participant is marked ``ready`` when camp ends.  When ``allocations`` are
+    provided, the per-track weightings influence which development focus is
+    selected for each player.
     """
 
     reports: list[TrainingReport] = []
     for player in players:
-        plan = build_training_plan(player)
+        weights = None
+        if allocations is not None:
+            pid = getattr(player, "player_id", None)
+            if pid is not None:
+                weights = allocations.get(pid)
+        plan = build_training_plan(player, weights=weights)
         report = apply_training_plan(player, plan)
         player.ready = True
         reports.append(report)

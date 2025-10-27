@@ -3,6 +3,7 @@ import random
 from models.pitcher import Pitcher
 from models.player import Player
 from playbalance.player_development import (
+    TrainingWeights,
     apply_training_plan,
     build_training_plan,
     execute_training_cycle,
@@ -99,3 +100,26 @@ def test_execute_training_cycle_returns_reports() -> None:
     players = [_hitter(player_id="p-1"), _hitter(player_id="p-2", bats="R")]
     reports = execute_training_cycle(players)
     assert len(reports) == len(players)
+
+
+def test_training_weights_bias_focus_selection() -> None:
+    player = _hitter(player_id="p-bias", ch=70, pot_ch=74, ph=60, pot_ph=90)
+    weights = TrainingWeights(
+        hitters={
+            "contact": 5,
+            "power": 55,
+            "speed": 10,
+            "discipline": 15,
+            "defense": 15,
+        },
+        pitchers={
+            "command": 25,
+            "movement": 20,
+            "stamina": 20,
+            "velocity": 20,
+            "hold": 5,
+            "pitch_lab": 10,
+        },
+    )
+    plan = build_training_plan(player, weights=weights)
+    assert plan.focus == "Strength & Lift"

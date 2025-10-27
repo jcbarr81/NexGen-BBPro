@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 try:
     from PyQt6.QtWidgets import (
@@ -155,12 +155,14 @@ import playbalance.season_manager as season_manager
 from playbalance.aging_model import age_and_retire
 from playbalance.season_manager import SeasonManager, SeasonPhase
 from playbalance.training_camp import run_training_camp
+from playbalance.player_development import TrainingWeights
 from services.free_agency import list_unsigned_players
 from services.dl_automation import DLAutomationSummary, process_disabled_lists
 from services.season_progress_flags import (
     ProgressUpdateError,
     mark_draft_completed,
 )
+from services.training_settings import load_training_settings
 from playbalance.season_simulator import SeasonSimulator
 from ui.draft_console import DraftConsole
 from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
@@ -183,6 +185,7 @@ from utils.player_loader import load_players_from_csv
 from utils.pitcher_role import get_role
 from utils.sim_date import get_current_sim_date
 from ui.sim_date_bus import notify_sim_date_changed
+from ui.training_focus_dialog import TrainingFocusDialog
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -350,6 +353,10 @@ class SeasonProgressWindow(QDialog):
         self.training_camp_button = QPushButton("Run Training Camp")
         self.training_camp_button.clicked.connect(self._run_training_camp)
         layout.addWidget(self.training_camp_button)
+
+        self.training_focus_button = QPushButton("Training Focus...")
+        self.training_focus_button.clicked.connect(self._open_training_focus_dialog)
+        layout.addWidget(self.training_focus_button)
 
         self.generate_schedule_button = QPushButton("Generate Schedule")
         self.generate_schedule_button.clicked.connect(self._generate_schedule)
@@ -861,6 +868,7 @@ class SeasonProgressWindow(QDialog):
         is_draft = self.manager.phase == SeasonPhase.AMATEUR_DRAFT
         self.free_agency_button.setVisible(is_preseason)
         self.training_camp_button.setVisible(is_preseason)
+        self.training_focus_button.setVisible(is_preseason)
         self.generate_schedule_button.setVisible(is_preseason)
         self.remaining_label.setVisible(is_regular or is_playoffs)
         self.simulate_day_button.setVisible(is_regular)
@@ -1619,7 +1627,8 @@ class SeasonProgressWindow(QDialog):
     def _run_training_camp(self) -> None:
         """Run the training camp and mark players as ready."""
         players = getattr(self.manager, "players", {})
-        reports = run_training_camp(players.values())
+        allocations = self._resolve_training_allocations(players)
+        reports = run_training_camp(players.values(), allocations=allocations)
         summary = self._training_highlights(reports)
         message = (
             summary
@@ -1635,6 +1644,26 @@ class SeasonProgressWindow(QDialog):
         self._preseason_done["training_camp"] = True
         self._save_progress()
         self._update_ui(message)
+
+    def _open_training_focus_dialog(self) -> None:
+        """Open the league-level training focus configuration dialog."""
+        try:
+            dialog = TrainingFocusDialog(parent=self, mode="league")
+        except Exception:
+            return
+        result = dialog.exec()
+        try:
+            accepted = bool(result)
+        except Exception:
+            accepted = False
+        if not accepted:
+            return
+        message = dialog.result_message or "Training focus preferences updated."
+        self.notes_label.setText(message)
+        try:
+            log_news_event(message)
+        except Exception:
+            pass
 
     def _training_highlights(self, reports) -> str:
         """Format a human-readable summary of camp development gains."""
@@ -1659,6 +1688,38 @@ class SeasonProgressWindow(QDialog):
         if not snippets:
             return ""
         return "Training camp complete. Highlights: " + "; ".join(snippets)
+
+    def _resolve_training_allocations(
+        self, players: Mapping[str, object]
+    ) -> dict[str, TrainingWeights]:
+        """Return training weight mappings keyed by player id."""
+        try:
+            settings = load_training_settings()
+        except Exception:
+            return {}
+        team_lookup = self._player_team_lookup(players)
+        allocations: dict[str, TrainingWeights] = {}
+        for pid in players.keys():
+            team_id = team_lookup.get(pid)
+            allocations[pid] = settings.for_team(team_id)
+        return allocations
+
+    def _player_team_lookup(
+        self, players: Mapping[str, object]
+    ) -> dict[str, Optional[str]]:
+        """Map players to their team identifiers based on current rosters."""
+        roster_map: dict[str, str] = {}
+        teams = getattr(self.manager, "teams", [])
+        for team in teams or []:
+            team_id = getattr(team, "team_id", None) or getattr(team, "abbreviation", None)
+            if not team_id:
+                continue
+            for roster_name in ("act_roster", "aaa_roster", "low_roster"):
+                roster = getattr(team, roster_name, None) or []
+                for pid in roster:
+                    roster_map[str(pid)] = str(team_id)
+        # Ensure free agents fall back to defaults
+        return {pid: roster_map.get(pid) for pid in players.keys()}
 
     def _generate_schedule(self) -> None:
         """Create a full MLB-style schedule for the league."""

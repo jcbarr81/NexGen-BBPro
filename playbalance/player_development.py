@@ -14,7 +14,7 @@ The module exposes small dataclasses so UI layers can surface the outcomes.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, Sequence, Tuple
+from typing import Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 from models.base_player import BasePlayer
 from playbalance.aging import AGE_ADJUSTMENTS, calculate_age, spring_training_pitch
@@ -78,6 +78,22 @@ _AGE_TIERS = {
 _TIER_GAINS = {"prospect": 4, "prime": 3, "veteran": 2, "mentor": 1}
 
 
+@dataclass(frozen=True)
+class TrainingWeights:
+    """Percent allocations applied to hitter/pitcher training tracks."""
+
+    hitters: Mapping[str, float]
+    pitchers: Mapping[str, float]
+
+    def hitter_weight(self, track: str) -> float:
+        value = self.hitters.get(track)
+        return float(value) if value is not None else 0.0
+
+    def pitcher_weight(self, track: str) -> float:
+        value = self.pitchers.get(track)
+        return float(value) if value is not None else 0.0
+
+
 @dataclass(slots=True)
 class TrainingPlan:
     """Lightweight description of what a player will work on."""
@@ -97,7 +113,10 @@ class TrainingReport(TrainingPlan):
     changes: Dict[str, int]
 
 
-def build_training_plan(player: BasePlayer) -> TrainingPlan:
+def build_training_plan(
+    player: BasePlayer,
+    weights: Optional[TrainingWeights] = None,
+) -> TrainingPlan:
     """Create a training plan tailored to ``player``."""
 
     age = calculate_age(player.birthdate)
@@ -105,9 +124,9 @@ def build_training_plan(player: BasePlayer) -> TrainingPlan:
     aging_bias = AGE_ADJUSTMENTS.get(age, {})
 
     if getattr(player, "is_pitcher", False):
-        focus, attrs = _select_pitcher_track(player, aging_bias)
+        focus, attrs = _select_pitcher_track(player, aging_bias, weights)
     else:
-        focus, attrs = _select_hitter_track(player, aging_bias)
+        focus, attrs = _select_hitter_track(player, aging_bias, weights)
 
     label = _TRACK_LABELS.get(focus, focus.title())
     note = _TRACK_NOTES.get(focus, "Focused skill work during camp.")
@@ -148,12 +167,21 @@ def apply_training_plan(player: BasePlayer, plan: TrainingPlan) -> TrainingRepor
     )
 
 
-def execute_training_cycle(players: Iterable[BasePlayer]) -> Sequence[TrainingReport]:
+def execute_training_cycle(
+    players: Iterable[BasePlayer],
+    *,
+    weights_by_player: Optional[Mapping[str, TrainingWeights]] = None,
+) -> Sequence[TrainingReport]:
     """Convenience helper that runs the plan pipeline for an iterable."""
 
     reports: list[TrainingReport] = []
     for player in players:
-        plan = build_training_plan(player)
+        weights = None
+        if weights_by_player is not None:
+            pid = getattr(player, "player_id", None)
+            if pid is not None:
+                weights = weights_by_player.get(pid)
+        plan = build_training_plan(player, weights=weights)
         reports.append(apply_training_plan(player, plan))
     return reports
 
@@ -170,7 +198,9 @@ def _age_tier(age: int) -> str:
 
 
 def _select_hitter_track(
-    player: BasePlayer, adjustments: Dict[str, int]
+    player: BasePlayer,
+    adjustments: Dict[str, int],
+    weights: Optional[TrainingWeights] = None,
 ) -> Tuple[str, Tuple[str, ...]]:
     best = ("contact", ("ch",))
     best_score = float("-inf")
@@ -179,6 +209,7 @@ def _select_hitter_track(
             (attr, _score_attribute(player, attr, adjustments)) for attr in attrs
         ]
         score = sum(val for _, val in attr_scores)
+        score *= _track_weight(weights, track, is_pitcher=False)
         candidate = tuple(
             attr for attr, _ in sorted(attr_scores, key=lambda item: item[1], reverse=True)
         )[:2]
@@ -189,19 +220,23 @@ def _select_hitter_track(
 
 
 def _select_pitcher_track(
-    player: BasePlayer, adjustments: Dict[str, int]
+    player: BasePlayer,
+    adjustments: Dict[str, int],
+    weights: Optional[TrainingWeights] = None,
 ) -> Tuple[str, Tuple[str, ...]]:
     best = ("command", ("control",))
     best_score = float("-inf")
     for track, attrs in _PITCHER_TRACKS.items():
         if track == "pitch_lab":
             score = _pitch_lab_score(player)
+            score *= _track_weight(weights, track, is_pitcher=True)
             candidate: Tuple[str, ...] = tuple()
         else:
             attr_scores = [
                 (attr, _score_attribute(player, attr, adjustments)) for attr in attrs
             ]
             score = sum(val for _, val in attr_scores)
+            score *= _track_weight(weights, track, is_pitcher=True)
             candidate = tuple(
                 attr
                 for attr, _ in sorted(attr_scores, key=lambda item: item[1], reverse=True)
@@ -237,6 +272,24 @@ def _pitch_lab_score(player: BasePlayer) -> float:
     if not deficits:
         return 0.0
     return sum(deficits) / len(deficits) + 5.0
+
+
+# ---------------------------------------------------------------------------
+# Weight helpers
+# ---------------------------------------------------------------------------
+
+
+def _track_weight(
+    weights: Optional[TrainingWeights], track: str, *, is_pitcher: bool
+) -> float:
+    if weights is None:
+        return 1.0
+    value = (
+        weights.pitcher_weight(track) if is_pitcher else weights.hitter_weight(track)
+    )
+    if value <= 0:
+        return 0.1
+    return value
 
 
 # ---------------------------------------------------------------------------
@@ -297,4 +350,3 @@ def _run_pitch_lab(player: BasePlayer) -> Dict[str, int]:
         if delta > 0:
             changes[pitch] = delta
     return changes
-

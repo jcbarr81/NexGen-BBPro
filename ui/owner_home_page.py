@@ -58,6 +58,7 @@ from PyQt6.QtWidgets import (
     QToolButton,
     QVBoxLayout,
     QWidget,
+    QBoxLayout,
 )
 
 from .components import Card, section_title, build_metric_row
@@ -147,38 +148,62 @@ class OwnerHomePage(QWidget):
         self.quick_actions_card = Card()
         self.quick_actions_card.setMinimumHeight(180)
         self.quick_actions_card.layout().addWidget(section_title("Quick Actions"))
-        self.quick_grid = QGridLayout()
-        self.quick_grid.setContentsMargins(6, 12, 6, 12)
-        self.quick_grid.setHorizontalSpacing(24)
-        self.quick_grid.setVerticalSpacing(18)
         self.quick_buttons: list[QPushButton] = []
-        self._wide_button_width = 160
-        button_data = [
-            ("Lineups", self._dashboard.open_lineup_editor),
-            ("Depth Chart", self._dashboard.open_depth_chart_dialog),
-            ("Pitching Staff", self._dashboard.open_pitching_editor),
-            ("Recent Transactions", self._dashboard.open_transactions_page),
-            ("Team Settings", self._dashboard.open_team_settings_dialog),
-            ("Reassign Players", self._dashboard.open_reassign_players_dialog),
-            ("Team Stats", lambda: self._dashboard.open_team_stats_window("team")),
-            ("League Leaders", self._dashboard.open_league_leaders_window),
-            ("League Standings", self._dashboard.open_standings_window),
-            ("Team Schedule", self._dashboard.open_team_schedule_window),
-            ("Full Roster", self._dashboard.open_player_browser_dialog),
-            ("Team Injuries", self._dashboard.open_team_injury_center),
+
+        button_groups = [
+            (
+                "Roster Setup",
+                [
+                    ("Lineups", self._dashboard.open_lineup_editor),
+                    ("Depth Chart", self._dashboard.open_depth_chart_dialog),
+                    ("Training Focus", self._dashboard.open_training_focus_dialog),
+                    ("Pitching Staff", self._dashboard.open_pitching_editor),
+                    ("Reassign Players", self._dashboard.open_reassign_players_dialog),
+                ],
+            ),
+            (
+                "Club Operations",
+                [
+                    ("Recent Transactions", self._dashboard.open_transactions_page),
+                    ("Team Settings", self._dashboard.open_team_settings_dialog),
+                    ("Full Roster", self._dashboard.open_player_browser_dialog),
+                    ("Team Injuries", self._dashboard.open_team_injury_center),
+                ],
+            ),
+            (
+                "League Intel",
+                [
+                    ("Team Stats", lambda: self._dashboard.open_team_stats_window("team")),
+                    ("League Leaders", self._dashboard.open_league_leaders_window),
+                    ("League Standings", self._dashboard.open_standings_window),
+                    ("Team Schedule", self._dashboard.open_team_schedule_window),
+                ],
+            ),
         ]
-        for idx, (label, callback) in enumerate(button_data):
-            btn = self._make_action_button(label, callback)
-            row, col = divmod(idx, 2)
-            self.quick_grid.addWidget(btn, row, col)
-            self.quick_buttons.append(btn)
-        if self.quick_buttons:
-            self._wide_button_width = max(
-                getattr(btn, "_preferred_width", 160) for btn in self.quick_buttons
-            )
-        else:
-            self._wide_button_width = 160
-        self.quick_actions_card.layout().addLayout(self.quick_grid)
+
+        actions_layout = QHBoxLayout()
+        actions_layout.setContentsMargins(6, 12, 6, 12)
+        actions_layout.setSpacing(24)
+        self.quick_actions_layout = actions_layout
+        self.quick_action_columns: list[QVBoxLayout] = []
+
+        for title, items in button_groups:
+            column = QVBoxLayout()
+            column.setSpacing(12)
+            label = QLabel(title)
+            label.setObjectName("QuickActionsGroupTitle")
+            label.setStyleSheet("font-weight:600; color:#d4a76a; margin-bottom:4px;")
+            column.addWidget(label)
+            for text, callback in items:
+                btn = self._make_action_button(text, callback, compact=True)
+                column.addWidget(btn)
+                self.quick_buttons.append(btn)
+            column.addStretch()
+            actions_layout.addLayout(column)
+            self.quick_action_columns.append(column)
+
+        actions_layout.addStretch()
+        self.quick_actions_card.layout().addLayout(actions_layout)
 
         # Trendlines card -----------------------------------------------
         self.trend_card = Card()
@@ -325,30 +350,46 @@ class OwnerHomePage(QWidget):
         super().showEvent(event)
         self._update_layout_mode()
 
-    def _make_action_button(self, label: str, callback: Callable[[], None]) -> QPushButton:
+    def _make_action_button(
+        self,
+        label: str,
+        callback: Callable[[], None],
+        *,
+        compact: bool = False,
+    ) -> QPushButton:
         btn = QPushButton(label, objectName="Primary")
-        btn.setMinimumHeight(64)
         if hasattr(btn, "setWordWrap"):
             btn.setWordWrap(True)
-        hint_width = btn.sizeHint().width()
-        metrics = btn.fontMetrics() if hasattr(btn, "fontMetrics") else None
-        if metrics is not None:
-            horizontal_advance = getattr(metrics, "horizontalAdvance", None)
-            if callable(horizontal_advance):
-                text_width = horizontal_advance(label)
-            else:
-                text_width = metrics.boundingRect(label).width()
+
+        if compact:
+            btn.setMinimumHeight(48)
+            btn.setMaximumHeight(48)
+            btn.setMinimumWidth(200)
+            btn.setMaximumWidth(220)
+            btn.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Fixed,
+            )
         else:
-            text_width = len(label) * 9
-        padding = 32  # matches 16px horizontal padding in the theme
-        preferred_width = max(160, hint_width, text_width + padding)
-        btn._preferred_width = preferred_width  # type: ignore[attr-defined]
-        btn.setMinimumWidth(preferred_width)
-        btn.setMaximumWidth(preferred_width)
-        btn.setSizePolicy(
-            QSizePolicy.Policy.Fixed,
-            QSizePolicy.Policy.Expanding,
-        )
+            btn.setMinimumHeight(64)
+            hint_width = btn.sizeHint().width()
+            metrics = btn.fontMetrics() if hasattr(btn, "fontMetrics") else None
+            if metrics is not None:
+                horizontal_advance = getattr(metrics, "horizontalAdvance", None)
+                if callable(horizontal_advance):
+                    text_width = horizontal_advance(label)
+                else:
+                    text_width = metrics.boundingRect(label).width()
+            else:
+                text_width = len(label) * 9
+            padding = 32  # matches 16px horizontal padding in the theme
+            preferred_width = max(160, hint_width, text_width + padding)
+            btn.setMinimumWidth(preferred_width)
+            btn.setMaximumWidth(preferred_width)
+            btn.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Expanding,
+            )
         btn.clicked.connect(callback)
         return btn
 
@@ -441,39 +482,32 @@ class OwnerHomePage(QWidget):
             )
 
     def _arrange_quick_actions(self, columns: int) -> None:
-        for idx in range(self.quick_grid.count() - 1, -1, -1):
-            item = self.quick_grid.takeAt(idx)
-            if item and item.widget():
-                item.widget().setParent(None)
-
         narrow = columns == 1
-        wide_width = getattr(self, "_wide_button_width", 160)
+        try:
+            direction = (
+                QBoxLayout.Direction.TopToBottom
+                if narrow
+                else QBoxLayout.Direction.LeftToRight
+            )
+            self.quick_actions_layout.setDirection(direction)
+        except Exception:
+            pass
+
         for btn in self.quick_buttons:
             if narrow:
                 btn.setMinimumWidth(0)
                 btn.setMaximumWidth(16777215)
                 btn.setSizePolicy(
                     QSizePolicy.Policy.Expanding,
-                    QSizePolicy.Policy.Expanding,
+                    QSizePolicy.Policy.Fixed,
                 )
             else:
-                preferred_width = getattr(btn, "_preferred_width", wide_width)
-                btn.setMinimumWidth(preferred_width)
-                btn.setMaximumWidth(preferred_width)
+                btn.setMinimumWidth(200)
+                btn.setMaximumWidth(220)
                 btn.setSizePolicy(
                     QSizePolicy.Policy.Fixed,
-                    QSizePolicy.Policy.Expanding,
+                    QSizePolicy.Policy.Fixed,
                 )
-        for idx, btn in enumerate(self.quick_buttons):
-            row, col = divmod(idx, columns)
-            self.quick_grid.addWidget(btn, row, col)
-            self.quick_grid.setAlignment(btn, Qt.AlignmentFlag.AlignHCenter)
-
-        for idx in range(columns):
-            stretch = 1 if narrow else 0
-            self.quick_grid.setColumnStretch(idx, stretch)
-            if not narrow:
-                self.quick_grid.setColumnMinimumWidth(idx, wide_width)
 
     def _apply_layout_mode(self, mode: str) -> None:
         if self._layout_mode == mode:
@@ -483,7 +517,7 @@ class OwnerHomePage(QWidget):
             self._grid.removeWidget(card)
 
         if mode == "wide":
-            self._arrange_quick_actions(columns=2)
+            self._arrange_quick_actions(columns=3)
             self._place_card(self.metrics_card, 0, 0)
             self._place_card(self.quick_actions_card, 0, 1)
             self._place_card(self.readiness_card, 1, 0)

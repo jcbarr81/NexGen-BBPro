@@ -97,10 +97,12 @@ from .team_stats_window import TeamStatsWindow
 from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
 from .news_window import NewsWindow
+from .season_progress_window import SeasonProgressWindow
 from .player_browser_dialog import PlayerBrowserDialog
 from .injury_center_window import InjuryCenterWindow
 from .depth_chart_dialog import DepthChartDialog
 from .tutorial_dialog import TutorialDialog, TutorialStep
+from .training_focus_dialog import TrainingFocusDialog
 from .ui_template import _load_baseball_pixmap, _load_nav_icon
 from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
@@ -149,6 +151,7 @@ class OwnerDashboard(QMainWindow):
         self.setWindowTitle(f"Owner Dashboard - {team_id}")
         self.resize(1100, 720)
         self._admin_window = None
+        self._season_progress_window: Optional[SeasonProgressWindow] = None
 
         central = QWidget()
         root = QHBoxLayout(central)
@@ -311,6 +314,7 @@ class OwnerDashboard(QMainWindow):
             "pitching": f"pitching_staff_tutorial_{team_id}",
             "lineup": f"lineup_strategy_tutorial_{team_id}",
             "overview": f"dashboard_overview_tutorial_{team_id}",
+            "training_camp": f"training_camp_tutorial_{team_id}",
             "admin": "admin_tools_tutorial",
         }
         self._tutorial_flags = self._load_tutorial_flags()
@@ -347,6 +351,12 @@ class OwnerDashboard(QMainWindow):
         except Exception:
             pass
 
+        simulate_menu = self.menuBar().addMenu("&Simulate")
+        self.season_progress_action = QAction("Season Progress...", self)
+        self.season_progress_action.setStatusTip("Open season progress controls")
+        self.season_progress_action.triggered.connect(self.open_season_progress_window)
+        simulate_menu.addAction(self.season_progress_action)
+
     def _build_tutorial_menu(self) -> None:
         tutorials_menu = self.menuBar().addMenu("&Tutorials")
 
@@ -373,6 +383,10 @@ class OwnerDashboard(QMainWindow):
         overview_action = QAction("Dashboard Overview", self)
         overview_action.triggered.connect(lambda: self.show_dashboard_overview_tutorial(force=True))
         tutorials_menu.addAction(overview_action)
+
+        training_action = QAction("Training Camp & Development", self)
+        training_action.triggered.connect(lambda: self.show_training_camp_tutorial(force=True))
+        tutorials_menu.addAction(training_action)
 
         admin_action = QAction("Admin Tools Overview", self)
         admin_action.triggered.connect(lambda: self.show_admin_tools_tutorial(force=True))
@@ -458,18 +472,31 @@ class OwnerDashboard(QMainWindow):
             ),
             TutorialStep(
                 "Review & Sort",
-                "<p>Use the table headers to see return dates, rehab status, and DL tiers."
-                " Roster counts and tier legends update when you select a player.</p>",
+                "<p>Sort the columns to check return dates, rehab readiness, and DL tiers."
+                " The fields underneath let you revise the description, target return date, list tier, and"
+                " preferred destination for the selected player. Roster counts and the legend update as you click.</p>",
             ),
             TutorialStep(
                 "Managing Injuries",
-                "<p>Use the controls at the bottom to place players on DL/IR, activate them, or assign rehab."
-                " Buttons stay disabled until you select a player, and tooltips explain each action.</p>",
+                "<p>Once a player is highlighted, use the action row:</p>"
+                "<ul>"
+                "<li><b>Place on DL</b> moves the player to the chosen 15- or 45-day list and opens a roster spot by"
+                " promoting a depth chart replacement.</li>"
+                "<li><b>Place on IR</b> stashes long-term injuries on injured reserve without a fixed return window,"
+                " freeing the active roster until you manually bring them back.</li>"
+                "<li><b>Recover to Destination</b> clears the injury and returns the player to the level selected in"
+                " <b>Destination</b>, enforcing DL minimums unless they have served the required days.</li>"
+                "<li><b>Promote Best Replacement</b> pulls the next healthy option from your depth chart to keep the"
+                " active roster full.</li>"
+                "<li><b>Start Rehab</b> launches an AAA or Low rehab assignment (chosen in <b>Rehab Level</b>) and tracks"
+                " the simulated days needed before the player is marked ready.</li>"
+                "<li><b>End Rehab</b> stops an active rehab stint and resets its day counter.</li>"
+                "</ul>",
             ),
             TutorialStep(
-                "Promotions & News",
-                "<p>The <b>Promote Best Replacement</b> button uses your depth chart to fill roster holes."
-                " Every action logs to the news feed so owners can track moves later.</p>",
+                "Tracking Progress",
+                "<p>Watch the roster counts footer and the Rehab column to know when someone is coming back."
+                " Each move is also written to the news feed so owners can audit what happened and when.</p>",
             ),
         ]
         self._run_tutorial(self._tutorial_keys["injury_center"], "Injury Center Guide", steps, force=force)
@@ -573,6 +600,64 @@ class OwnerDashboard(QMainWindow):
         ]
         self._run_tutorial(self._tutorial_keys["overview"], "Owner Dashboard Overview", steps, force=force)
 
+    def show_training_camp_tutorial(self, *, force: bool = False) -> None:
+        steps = [
+            TutorialStep(
+                "When to Run Camp",
+                "<p>Open <b>Admin Tools → Season Progress</b> once free agency prep is complete."
+                " The <b>Run Training Camp</b> button unlocks after you finish required preseason tasks.</p>",
+            ),
+            TutorialStep(
+                "Customize Focus Budgets",
+                "<p>Before running camp you can tailor hitter and pitcher allocations."
+                " Use the <b>Training Focus</b> button on the Roster page or the <b>Training Focus…</b> button in"
+                " the Season Progress window to split training time across tracks. League defaults are used when"
+                " a team hasn't set its own mix.</p>",
+            ),
+            TutorialStep(
+                "Development Highlights",
+                "<p>After camp runs, check the progress window for the highlight reel."
+                " It calls out the biggest rating gains so you can brief your front office.</p>",
+            ),
+            TutorialStep(
+                "Detailed Reports",
+                "<p>Each camp writes a JSON report under <code>data/training_reports</code> by season."
+                " These files record the focus track, notes, and exact rating changes for every player.</p>",
+            ),
+            TutorialStep(
+                "Profile History",
+                "<p>Player profile dialogs include a <b>Recent Training Focus</b> card showing the last few camps."
+                " Use it during trade talks or to plan development meetings.</p>",
+            ),
+        ]
+        self._run_tutorial(self._tutorial_keys["training_camp"], "Training Camp & Development", steps, force=force)
+
+    def _open_training_focus_dialog(self) -> None:
+        team_label = getattr(self.team, "name", self.team_id)
+        try:
+            dialog = TrainingFocusDialog(
+                parent=self,
+                team_id=self.team_id,
+                team_name=team_label,
+                mode="team",
+            )
+        except Exception:
+            return
+        result = dialog.exec()
+        try:
+            accepted = bool(result)
+        except Exception:
+            accepted = False
+        if not accepted:
+            return
+        message = dialog.result_message or "Training focus updated."
+        try:
+            status = self.statusBar()
+            if status is not None:
+                status.showMessage(message, 5000)
+        except Exception:
+            pass
+
     def show_admin_tools_tutorial(self, *, force: bool = False) -> None:
         steps = [
             TutorialStep(
@@ -584,6 +669,11 @@ class OwnerDashboard(QMainWindow):
                 "Season Operations",
                 "<p>Generate schedules, run training camp, and progress playoffs from the admin tools."
                 " Each action logs to the news feed and should be run once per phase.</p>",
+            ),
+            TutorialStep(
+                "Training Focus",
+                "<p>Use the <b>Training Focus…</b> button on Season Progress to set league-wide hitter and pitcher"
+                " allocations. Commissioners can balance defaults here before teams override them.</p>",
             ),
             TutorialStep(
                 "Safety & Backups",
@@ -817,6 +907,9 @@ class OwnerDashboard(QMainWindow):
     def open_pitching_editor(self) -> None:
         show_on_top(PitchingEditor(self.team_id))
 
+    def open_training_focus_dialog(self) -> None:
+        self._open_training_focus_dialog()
+
     def open_position_players_dialog(self) -> None:
         show_on_top(PositionPlayersDialog(self.players, self.roster))
 
@@ -873,6 +966,61 @@ class OwnerDashboard(QMainWindow):
             QMessageBox.information(self, "Schedule", "No schedule available for this team.")
             return
         show_on_top(TeamScheduleWindow(self.team_id, self))
+
+    def open_season_progress_window(self) -> None:
+        """Open the season progress dialog without blocking the dashboard."""
+        existing = getattr(self, "_season_progress_window", None)
+        try:
+            if existing is not None and existing.isVisible():
+                existing.raise_()
+                existing.activateWindow()
+                return
+        except Exception:
+            self._season_progress_window = None
+
+        try:
+            win = SeasonProgressWindow(
+                self,
+                run_async=self._context.run_async,
+                show_toast=self._context.show_toast,
+                register_cleanup=self._context.register_cleanup,
+            )
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Season Progress",
+                f"Unable to open season progress: {exc}",
+            )
+            return
+
+        self._season_progress_window = win
+
+        def _refresh_after_progress() -> None:
+            try:
+                self._update_status_bar()
+            except Exception:
+                pass
+            try:
+                self._update_header_context()
+            except Exception:
+                pass
+
+        def _clear_reference() -> None:
+            self._season_progress_window = None
+            _refresh_after_progress()
+
+        try:
+            win.progressUpdated.connect(lambda *_, cb=_refresh_after_progress: cb())
+            win.destroyed.connect(lambda *_: _clear_reference())
+        except Exception:
+            pass
+
+        try:
+            win.show()
+            win.raise_()
+            win.activateWindow()
+        except Exception:
+            pass
 
     def open_team_stats_window(self, tab: str = "team") -> None:
         """Open the team statistics window with the specified default tab."""
