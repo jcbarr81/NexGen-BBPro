@@ -9,20 +9,33 @@ season.
 
 from __future__ import annotations
 
-from typing import Iterable
+import logging
+from typing import Iterable, Sequence
 
 from models.base_player import BasePlayer
+from playbalance.player_development import TrainingReport, apply_training_plan, build_training_plan
+from services.training_history import record_training_session
+
+logger = logging.getLogger(__name__)
 
 
-def run_training_camp(players: Iterable[BasePlayer]) -> None:
-    """Run a spring training simulation and flag players as ready.
+def run_training_camp(players: Iterable[BasePlayer]) -> Sequence[TrainingReport]:
+    """Run a spring training simulation and return development reports.
 
-    Parameters
-    ----------
-    players:
-        Iterable of player objects participating in camp.
+    Each player receives a focused training plan. Attributes may see small,
+    capped boosts based on age, potential, and the existing aging model. Every
+    participant is marked ``ready`` when camp ends.
     """
 
+    reports: list[TrainingReport] = []
     for player in players:
+        plan = build_training_plan(player)
+        report = apply_training_plan(player, plan)
         player.ready = True
+        reports.append(report)
+    try:
+        record_training_session(reports)
+    except Exception as exc:  # pragma: no cover - defensive, persistence should not block flow
+        logger.exception("Failed to record training camp session: %s", exc)
+    return reports
 

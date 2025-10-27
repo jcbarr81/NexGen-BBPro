@@ -13,6 +13,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from services.injury_manager import disabled_list_days_remaining, disabled_list_label
 from services.rehab_assignments import REHAB_READY_DAYS, rehab_status
+from services.training_history import load_player_training_history
 
 try:
     from PyQt6.QtCore import Qt, QPointF, QRectF
@@ -1178,7 +1179,54 @@ class PlayerProfileDialog(QDialog):
         return str(getattr(player, metric_id, "--"))
 
     def _build_insights_section(self) -> Card | None:
-        return None
+        history = load_player_training_history(getattr(self.player, "player_id", ""), limit=3)
+        if not history:
+            return None
+
+        card = Card()
+        layout = card.layout()
+        if layout is None:
+            return None
+
+        _layout_add_widget(layout, section_title("Recent Training Focus"))
+
+        for idx, entry in enumerate(history):
+            header = QLabel(self._format_training_header(entry))
+            _safe_call(header, "setWordWrap", True)
+            _safe_call(header, "setProperty", "profile", "training-header")
+            _layout_add_widget(layout, header)
+
+            note = str(entry.get("note") or "").strip()
+            if note:
+                note_label = QLabel(note)
+                _safe_call(note_label, "setWordWrap", True)
+                _safe_call(note_label, "setProperty", "profile", "training-note")
+                _layout_add_widget(layout, note_label)
+
+            if idx < len(history) - 1:
+                _safe_call(layout, "addSpacing", 8)
+
+        return card
+
+    def _format_training_header(self, entry: Dict[str, object]) -> str:
+        season = str(entry.get("season_id") or "").strip() or "Season"
+        focus = str(entry.get("focus") or "").strip() or "Training Focus"
+        run_at = str(entry.get("run_at") or "").strip()
+        if "T" in run_at:
+            run_at = run_at.split("T", 1)[0]
+        changes = entry.get("changes") or {}
+        change_bits: List[str] = []
+        if isinstance(changes, dict):
+            for attr, value in changes.items():
+                if isinstance(attr, str) and isinstance(value, (int, float)) and value:
+                    sign = "+" if value >= 0 else ""
+                    change_bits.append(f"{attr.upper()} {sign}{int(value)}")
+        seasonal = f"{season} • {focus}"
+        if change_bits:
+            seasonal += f" ({', '.join(change_bits)})"
+        if run_at:
+            return f"{run_at}: {seasonal}"
+        return seasonal
 
     def _compute_spray_points(self) -> List[Dict[str, float]]:
         stats = self._player_stats(self.player)

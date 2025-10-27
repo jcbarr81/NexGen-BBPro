@@ -1619,9 +1619,14 @@ class SeasonProgressWindow(QDialog):
     def _run_training_camp(self) -> None:
         """Run the training camp and mark players as ready."""
         players = getattr(self.manager, "players", {})
-        run_training_camp(players.values())
-        self.notes_label.setText("Training camp completed. Players marked ready.")
-        log_news_event("Training camp completed; players marked ready")
+        reports = run_training_camp(players.values())
+        summary = self._training_highlights(reports)
+        message = (
+            summary
+            or "Training camp completed. Players marked ready—review highlights in the Admin timeline."
+        )
+        self.notes_label.setText(message)
+        log_news_event(message)
         self._set_button_state(
             self.training_camp_button,
             False,
@@ -1629,7 +1634,31 @@ class SeasonProgressWindow(QDialog):
         )
         self._preseason_done["training_camp"] = True
         self._save_progress()
-        self._update_ui("Training camp completed. Players marked ready.")
+        self._update_ui(message)
+
+    def _training_highlights(self, reports) -> str:
+        """Format a human-readable summary of camp development gains."""
+        if not reports:
+            return ""
+        ranked = sorted(
+            reports,
+            key=lambda report: sum(report.changes.values() or [0]),
+            reverse=True,
+        )[:3]
+        snippets = []
+        for report in ranked:
+            if not report.changes:
+                detail = report.focus
+            else:
+                deltas = ", ".join(
+                    f"{attr.upper()} +{value}"
+                    for attr, value in report.changes.items()
+                )
+                detail = f"{report.focus}: {deltas}"
+            snippets.append(f"{report.player_name} ({detail})")
+        if not snippets:
+            return ""
+        return "Training camp complete. Highlights: " + "; ".join(snippets)
 
     def _generate_schedule(self) -> None:
         """Create a full MLB-style schedule for the league."""
