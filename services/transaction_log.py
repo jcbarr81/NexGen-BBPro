@@ -10,6 +10,7 @@ from typing import Iterable, List
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
 from utils.sim_date import get_current_sim_date
+from services.unified_data_service import get_unified_data_service
 
 
 TRANSACTION_COLUMNS = [
@@ -27,6 +28,7 @@ TRANSACTION_COLUMNS = [
 
 _TRANSACTIONS_PATH = get_base_dir() / "data" / "transactions.csv"
 _PLAYER_NAME_CACHE: dict[str, str] | None = None
+_TRANSACTIONS_TOPIC = "transactions"
 
 
 def _ensure_path(path: Path) -> None:
@@ -56,6 +58,14 @@ def reset_player_cache() -> None:
 
     global _PLAYER_NAME_CACHE
     _PLAYER_NAME_CACHE = None
+
+
+def _read_transactions(path: Path) -> List[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        return [dict(row) for row in reader]
 
 
 def record_transaction(
@@ -93,6 +103,15 @@ def record_transaction(
     with path.open("a", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=TRANSACTION_COLUMNS)
         writer.writerow(row)
+    service = get_unified_data_service()
+    try:
+        cached = service.get_document(path, _read_transactions, topic=_TRANSACTIONS_TOPIC)
+    except Exception:
+        service.invalidate_document(path, topic=_TRANSACTIONS_TOPIC)
+        return
+    if not cached or cached[-1] != row:
+        cached.append(dict(row))
+    service.update_document(path, cached, topic=_TRANSACTIONS_TOPIC)
 
 
 def load_transactions(
@@ -104,11 +123,8 @@ def load_transactions(
 ) -> List[dict[str, str]]:
     """Return recorded transactions, optionally filtered by team/action."""
 
-    if not path.exists():
-        return []
-    with path.open("r", encoding="utf-8", newline="") as fh:
-        reader = csv.DictReader(fh)
-        rows = list(reader)
+    service = get_unified_data_service()
+    rows = service.get_document(path, _read_transactions, topic=_TRANSACTIONS_TOPIC)
     rows.sort(key=lambda row: row.get("timestamp", ""), reverse=True)
     if team_id:
         rows = [row for row in rows if row.get("team_id") == team_id]

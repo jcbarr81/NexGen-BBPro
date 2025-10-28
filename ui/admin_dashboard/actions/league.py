@@ -26,6 +26,7 @@ from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
 from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.team_loader import load_teams
+from services.standings_repository import save_standings
 
 from ..context import DashboardContext
 
@@ -246,8 +247,7 @@ def reset_season_to_opening_day(
             raise RuntimeError(f"Failed resetting progress: {exc}") from exc
 
         try:
-            standings.parent.mkdir(parents=True, exist_ok=True)
-            standings.write_text("{}", encoding="utf-8")
+            save_standings({}, base_path=standings)
         except Exception:
             pass
 

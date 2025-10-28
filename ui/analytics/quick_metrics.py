@@ -12,8 +12,8 @@ from utils.path_utils import get_base_dir
 from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.pitcher_role import get_role
 from utils.sim_date import get_current_sim_date
-from utils.standings_utils import normalize_record
 from utils.stats_persistence import load_stats as _load_season_stats
+from services.standings_repository import load_standings
 
 DATE_FMT = "%Y-%m-%d"
 
@@ -50,11 +50,7 @@ def gather_owner_quick_metrics(
     base_dir = get_base_dir() if base_path is None else Path(base_path)
     data_dir = base_dir / "data"
 
-    standings_path = data_dir / "standings.json"
-    standings_raw = _load_json_dict(standings_path)
-    standings_normalized = {
-        key: normalize_record(value) for key, value in standings_raw.items()
-    }
+    standings_normalized = load_standings(base_path=data_dir)
     team_standings = standings_normalized.get(team_id, {})
 
     schedule_path = data_dir / "schedule.csv"
@@ -661,23 +657,6 @@ def _first_value(stats: Mapping[str, Any], keys: Sequence[str]) -> Any:
         if key in stats:
             return stats[key]
     return None
-
-
-# ---------------------------------------------------------------------------
-# Utilities
-
-
-def _load_json_dict(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        return {}
-    try:
-        with path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        if isinstance(data, dict):
-            return data
-    except Exception:
-        pass
-    return {}
 
 
 def _current_date() -> date:

@@ -170,7 +170,8 @@ from utils.exceptions import DraftRosterError
 from playbalance.simulation import save_boxscore_html
 from utils.news_logger import log_news_event
 from utils.team_loader import load_teams
-from utils.standings_utils import default_record, normalize_record, update_record
+from utils.standings_utils import default_record, update_record
+from services.standings_repository import load_standings, save_standings
 from playbalance.config import load_config as load_pb_config
 from playbalance.benchmarks import load_benchmarks as load_pb_benchmarks
 from playbalance.orchestrator import (
@@ -285,18 +286,7 @@ class SeasonProgressWindow(QDialog):
         self._cancel_requested = False
         # Track season standings with detailed splits so that schedule and
         # standings windows can display rich statistics.
-        standings_file = DATA_DIR / "standings.json"
-        raw_standings: dict[str, dict[str, object]] = {}
-        if standings_file.exists():
-            try:
-                with standings_file.open("r", encoding="utf-8") as fh:
-                    raw_standings = json.load(fh)
-            except (OSError, json.JSONDecodeError):
-                raw_standings = {}
-        self._standings: dict[str, dict[str, object]] = {
-            team_id: normalize_record(data)
-            for team_id, data in raw_standings.items()
-        }
+        self._standings: dict[str, dict[str, object]] = load_standings(base_path=DATA_DIR)
         teams = load_teams()
         self._team_divisions = {team.team_id: team.division for team in teams}
         self._preseason_done = {
@@ -2803,8 +2793,7 @@ class SeasonProgressWindow(QDialog):
         except ValueError:
             pass
 
-        with (DATA_DIR / "standings.json").open("w", encoding="utf-8") as fh:
-            json.dump(self._standings, fh, indent=2)
+        save_standings(self._standings, base_path=DATA_DIR)
 
     # ------------------------------------------------------------------
     # Lineup validation/repair helpers

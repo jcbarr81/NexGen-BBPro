@@ -21,7 +21,7 @@ try:
         QLineEdit,
         QComboBox,
     )
-    from PyQt6.QtCore import Qt
+    from PyQt6.QtCore import Qt, QTimer
     from PyQt6.QtGui import QGuiApplication
 except Exception:  # pragma: no cover - headless stubs for tests
     class _Signal:
@@ -74,12 +74,17 @@ except Exception:  # pragma: no cover - headless stubs for tests
         def addItems(self, items): self._items=list(items)
         def currentText(self):
             return self._items[self._idx] if self._items else ""
+    class QTimer:
+        @staticmethod
+        def singleShot(_msec, callback):
+            if callback is not None:
+                callback()
     class QGuiApplication:
         @staticmethod
         def primaryScreen():
             return None
 
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 from datetime import datetime
 
 from utils.player_loader import load_players_from_csv
@@ -87,6 +92,7 @@ from utils.team_loader import load_teams
 from utils.roster_loader import load_roster
 from utils.roster_loader import save_roster
 from utils.player_writer import save_players_to_csv
+from services.unified_data_service import get_unified_data_service
 from services.injury_manager import (
     DL_LABELS,
     disabled_list_days_remaining,
@@ -307,6 +313,12 @@ class InjuryCenterWindow(QDialog):
 
         self._players_index: Dict[str, object] = {}
         self._rows: List[Dict[str, str]] = []
+        self._service = get_unified_data_service()
+        self._event_unsubscribes: List[Callable[[], None]] = []
+        self._pending_refresh = False
+        self._pending_toast_reason: Optional[str] = None
+        self._selection_signal_hooked = False
+        self._register_event_listeners()
         self.refresh()
 
     def _apply_default_size(self) -> None:
@@ -419,12 +431,100 @@ class InjuryCenterWindow(QDialog):
             self.status.setText(f"Showing {len(display_rows)} injured players for {self._team_filter}")
         else:
             self.status.setText(f"Showing {len(display_rows)} injured players")
-        # Update counts if a row is selected
+        if not self._selection_signal_hooked:
+            try:
+                self.table.itemSelectionChanged.connect(self._on_selection_changed)
+                self._selection_signal_hooked = True
+            except Exception:
+                pass
+        self._on_selection_changed()
+
+    def _register_event_listeners(self) -> None:
+        bus = getattr(self._service, "events", None)
+        if bus is None:
+            return
+
+        def _on_roster(_payload: Optional[dict] = None) -> None:
+            self._queue_refresh("Roster changes detected; injury data refreshed.")
+
+        def _on_players(_payload: Optional[dict] = None) -> None:
+            self._queue_refresh("Player information updated; injury data refreshed.")
+
+        for topic, handler in (
+            ("rosters.updated", _on_roster),
+            ("rosters.invalidated", _on_roster),
+            ("players.updated", _on_players),
+            ("players.invalidated", _on_players),
+        ):
+            try:
+                self._event_unsubscribes.append(bus.subscribe(topic, handler))
+            except Exception:
+                pass
+
+    def _queue_refresh(self, reason: str) -> None:
+        def _execute() -> None:
+            if not self._is_visible():
+                self._pending_refresh = True
+                self._pending_toast_reason = reason
+                try:
+                    self.status.setText("Changes detected; refresh will run when reopened.")
+                except Exception:
+                    pass
+                return
+            self._pending_refresh = False
+            self._pending_toast_reason = None
+            self.refresh()
+            self._maybe_toast("info", reason)
+
+        QTimer.singleShot(0, _execute)
+
+    def _maybe_toast(self, kind: str, message: str) -> None:
+        callback = self._toast_callback()
+        if callable(callback):
+            try:
+                callback(kind, message)
+            except Exception:
+                pass
+
+    def _toast_callback(self) -> Optional[Callable[[str, str], None]]:
+        parent = self.parent()
+        if parent is None:
+            return None
+        for attr in ("_show_toast", "show_toast"):
+            candidate = getattr(parent, attr, None)
+            if callable(candidate):
+                return candidate
+        return None
+
+    def _is_visible(self) -> bool:
         try:
-            self.table.itemSelectionChanged.connect(self._on_selection_changed)
+            return bool(self.isVisible())
+        except Exception:
+            return True
+
+    def showEvent(self, event):  # pragma: no cover - UI callback
+        try:
+            super().showEvent(event)
         except Exception:
             pass
-        self._on_selection_changed()
+        if self._pending_refresh:
+            self._pending_refresh = False
+            self.refresh()
+            if self._pending_toast_reason:
+                self._maybe_toast("info", self._pending_toast_reason)
+                self._pending_toast_reason = None
+
+    def closeEvent(self, event):  # pragma: no cover - UI callback
+        for unsubscribe in self._event_unsubscribes:
+            try:
+                unsubscribe()
+            except Exception:
+                pass
+        self._event_unsubscribes.clear()
+        try:
+            super().closeEvent(event)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Actions

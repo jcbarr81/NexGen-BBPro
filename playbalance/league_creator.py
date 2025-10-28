@@ -15,6 +15,7 @@ from utils.user_manager import clear_users
 from utils.player_loader import load_players_from_csv
 from utils.lineup_loader import build_default_game_state
 from playbalance.season_context import SeasonContext
+from services.standings_repository import save_standings
 
 
 def _abbr(city: str, name: str, existing: set) -> str:
@@ -220,8 +221,7 @@ def _initialize_league_state(base_dir: Path) -> None:
     news_path.write_text("", encoding="utf-8")
 
     standings_path = base_dir / "standings.json"
-    with standings_path.open("w", encoding="utf-8") as fh:
-        json.dump({}, fh, indent=2)
+    save_standings({}, base_path=standings_path)
 
     schedule_path = base_dir / "schedule.csv"
     if schedule_path.exists():

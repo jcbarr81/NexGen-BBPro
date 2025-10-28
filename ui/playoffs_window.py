@@ -14,6 +14,7 @@ from services.season_progress_flags import (
     ProgressUpdateError,
     mark_playoffs_completed,
 )
+from services.unified_data_service import get_unified_data_service
 
 try:
     from PyQt6.QtWidgets import (
@@ -273,6 +274,11 @@ class PlayoffsWindow(QDialog):
 
         self._bracket = None
         self._last_summary_path = None
+        self._data_service = get_unified_data_service()
+        self._event_unsubscribes: list[Callable[[], None]] = []
+        self._pending_refresh = False
+        self._pending_toast_reason: Optional[str] = None
+        self._register_data_subscriptions()
         self.refresh()
 
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt signature
@@ -291,7 +297,60 @@ class PlayoffsWindow(QDialog):
             except Exception:
                 pass
             self._executor = None
+        for unsubscribe in getattr(self, "_event_unsubscribes", []):
+            try:
+                unsubscribe()
+            except Exception:
+                pass
+        self._event_unsubscribes = []
         super().closeEvent(event)
+
+    def _register_data_subscriptions(self) -> None:
+        bus = getattr(self._data_service, "events", None)
+        if bus is None:
+            return
+
+        def _enqueue_refresh(_payload=None) -> None:
+            QTimer.singleShot(0, self._handle_external_update)
+
+        for topic in ("standings.updated", "standings.invalidated"):
+            try:
+                self._event_unsubscribes.append(bus.subscribe(topic, _enqueue_refresh))
+            except Exception:  # pragma: no cover - defensive
+                pass
+
+    def _handle_external_update(self) -> None:
+        try:
+            visible = self.isVisible()
+        except Exception:
+            visible = True
+        message = "Standings updated; playoff bracket refreshed."
+        if not visible:
+            self._pending_refresh = True
+            self._pending_toast_reason = message
+            self._bracket = None
+            return
+        self.refresh()
+        if callable(self._show_toast):
+            try:
+                self._show_toast("info", message)
+            except Exception:
+                pass
+
+    def showEvent(self, event):  # pragma: no cover - UI callback
+        try:
+            super().showEvent(event)
+        except Exception:
+            pass
+        if self._pending_refresh:
+            self._pending_refresh = False
+            self.refresh()
+            if self._pending_toast_reason and callable(self._show_toast):
+                try:
+                    self._show_toast("info", self._pending_toast_reason)
+                except Exception:
+                    pass
+            self._pending_toast_reason = None
 
     def refresh(self, *, bracket: object | None = None) -> None:
         if bracket is not None:
@@ -314,15 +373,8 @@ class PlayoffsWindow(QDialog):
                 from playbalance.playoffs import generate_bracket, save_bracket
                 from playbalance.playoffs_config import load_playoffs_config
                 from utils.team_loader import load_teams
-                import json as _json
-                base = get_base_dir()
-                standings_path = base / 'data' / 'standings.json'
-                standings: dict = {}
-                if standings_path.exists():
-                    try:
-                        standings = _json.loads(standings_path.read_text(encoding='utf-8'))
-                    except Exception:
-                        standings = {}
+                from services.standings_repository import load_standings
+                standings = load_standings()
                 teams = []
                 try:
                     teams = load_teams()

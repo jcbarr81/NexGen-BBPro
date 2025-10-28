@@ -13,6 +13,7 @@ import shutil
 from playbalance.awards_manager import AwardsManager
 from playbalance.season_context import CAREER_DATA_DIR, SeasonContext
 from services.transaction_log import TRANSACTION_COLUMNS, reset_player_cache as reset_transaction_cache
+from services.standings_repository import save_standings
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
 from utils.sim_date import get_current_sim_date
@@ -332,7 +333,7 @@ class LeagueRolloverService:
                     shard.unlink()
                 except OSError:
                     pass
-        _write_json(_STANDINGS_PATH, {})
+        save_standings({}, base_path=_STANDINGS_PATH)
 
         if _SCHEDULE_PATH.exists():
             try:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Dialog for editing position depth charts for a team."""
 
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 
 try:  # pragma: no cover - PyQt stubs for tests
     from PyQt6.QtWidgets import (
@@ -15,6 +15,7 @@ try:  # pragma: no cover - PyQt stubs for tests
         QVBoxLayout,
         QWidget,
     )
+    from PyQt6.QtCore import QTimer
 except Exception:  # pragma: no cover
     class _Signal:
         def connect(self, *_args, **_kwargs):
@@ -58,6 +59,13 @@ except Exception:  # pragma: no cover
                 return self._items[self._index][1]
             return ""
 
+        def clear(self):
+            self._items = []
+            self._index = 0
+
+        def blockSignals(self, *_):
+            return None
+
     class QGridLayout:
         def __init__(self, *_, **__):
             pass
@@ -89,6 +97,11 @@ except Exception:  # pragma: no cover
         def __init__(self, *_a, **_k):
             self.accepted = _Signal()
             self.rejected = _Signal()
+    class QTimer:
+        @staticmethod
+        def singleShot(_msec, callback):
+            if callback is not None:
+                callback()
 
 from utils.player_loader import load_players_from_csv
 from utils.roster_loader import load_roster
@@ -98,6 +111,7 @@ from utils.depth_chart import (
     load_depth_chart,
     save_depth_chart,
 )
+from services.unified_data_service import get_unified_data_service
 
 
 class DepthChartDialog(QDialog):
@@ -115,8 +129,13 @@ class DepthChartDialog(QDialog):
             self.chart = {}
         self._level_map = self._build_level_index()
         self._combo_map: Dict[tuple[str, int], QComboBox] = {}
+        self._service = get_unified_data_service()
+        self._event_unsubscribes: List[Callable[[], None]] = []
+        self._pending_refresh = False
+        self._pending_toast_reason: Optional[str] = None
         self._build_ui()
         self._apply_existing_values()
+        self._register_event_listeners()
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -216,6 +235,128 @@ class DepthChartDialog(QDialog):
                     idx = combo.findData(pid)
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
+
+    def _register_event_listeners(self) -> None:
+        bus = getattr(self._service, "events", None)
+        if bus is None:
+            return
+
+        def _on_roster(payload: Optional[dict] = None) -> None:
+            team_id = str((payload or {}).get("team_id", ""))
+            if team_id and team_id != str(self.team_id):
+                return
+            self._queue_refresh("Roster changes detected; depth chart refreshed.")
+
+        def _on_players(_payload: Optional[dict] = None) -> None:
+            self._queue_refresh("Player data updated; depth chart refreshed.")
+
+        for topic, handler in (
+            ("rosters.updated", _on_roster),
+            ("rosters.invalidated", _on_roster),
+            ("players.updated", _on_players),
+            ("players.invalidated", _on_players),
+        ):
+            try:
+                self._event_unsubscribes.append(bus.subscribe(topic, handler))
+            except Exception:
+                pass
+
+    def _queue_refresh(self, reason: str) -> None:
+        def _execute() -> None:
+            if not self._is_visible():
+                self._pending_refresh = True
+                self._pending_toast_reason = reason
+                return
+            self._pending_refresh = False
+            self._pending_toast_reason = None
+            self._refresh_data()
+            self.status_label.setText("Auto-refreshed from latest roster data.")
+            self._maybe_toast("info", reason)
+
+        QTimer.singleShot(0, _execute)
+
+    def _refresh_data(self) -> None:
+        self.players = {p.player_id: p for p in load_players_from_csv("data/players.csv")}
+        self.roster = load_roster(self.team_id)
+        self._level_map = self._build_level_index()
+        current_choices: Dict[tuple[str, int], str] = {}
+        for key, combo in self._combo_map.items():
+            try:
+                current = combo.currentData()
+            except Exception:
+                current = ""
+            current_choices[key] = str(current or "")
+        for (position, slot), combo in self._combo_map.items():
+            try:
+                combo.blockSignals(True)
+            except Exception:
+                pass
+            try:
+                combo.clear()
+            except Exception:
+                continue
+            self._populate_combo(combo, position)
+            selected = current_choices.get((position, slot), "")
+            if selected:
+                idx = combo.findData(selected)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
+                else:
+                    combo.setCurrentIndex(0)
+            else:
+                combo.setCurrentIndex(0)
+            try:
+                combo.blockSignals(False)
+            except Exception:
+                pass
+
+    def _maybe_toast(self, kind: str, message: str) -> None:
+        callback = self._toast_callback()
+        if callable(callback):
+            try:
+                callback(kind, message)
+            except Exception:
+                pass
+
+    def _toast_callback(self) -> Optional[Callable[[str, str], None]]:
+        parent = self.parent()
+        if parent is None:
+            return None
+        for attr in ("_show_toast", "show_toast"):
+            candidate = getattr(parent, attr, None)
+            if callable(candidate):
+                return candidate
+        return None
+
+    def _is_visible(self) -> bool:
+        try:
+            return bool(self.isVisible())
+        except Exception:
+            return True
+
+    def showEvent(self, event):  # pragma: no cover - GUI callback
+        try:
+            super().showEvent(event)
+        except Exception:
+            pass
+        if self._pending_refresh:
+            self._pending_refresh = False
+            self._refresh_data()
+            if self._pending_toast_reason:
+                self._maybe_toast("info", self._pending_toast_reason)
+                self._pending_toast_reason = None
+
+    def closeEvent(self, event):  # pragma: no cover - GUI callback
+        for unsubscribe in self._event_unsubscribes:
+            try:
+                unsubscribe()
+            except Exception:
+                pass
+        self._event_unsubscribes.clear()
+        try:
+            super().closeEvent(event)
+        except Exception:
+            pass
 
     def _save(self) -> None:
         result: Dict[str, List[str]] = {pos: [] for pos in DEPTH_CHART_POSITIONS}

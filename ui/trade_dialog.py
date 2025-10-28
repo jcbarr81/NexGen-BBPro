@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -24,6 +24,7 @@ from utils.roster_loader import load_roster, save_roster
 from utils.team_loader import load_teams
 from utils.trade_utils import get_pending_trades, save_trade
 from services.transaction_log import record_transaction
+from services.unified_data_service import get_unified_data_service
 
 import uuid
 
@@ -35,6 +36,10 @@ class TradeDialog(QDialog):
         super().__init__(parent)
         self.team_id = team_id
         self.players = {p.player_id: p for p in load_players_from_csv("data/players.csv")}
+        self._service = get_unified_data_service()
+        self._event_unsubscribes: List[Callable[[], None]] = []
+        self._pending_refresh = False
+        self._pending_toast_reason: Optional[str] = None
 
         self.setWindowTitle("Trade Center")
         self.resize(600, 400)
@@ -46,6 +51,7 @@ class TradeDialog(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(tabs)
         self.setLayout(layout)
+        self._register_event_listeners()
 
     # --- New trade tab -------------------------------------------------
     def _build_new_trade_tab(self) -> QWidget:
@@ -78,6 +84,157 @@ class TradeDialog(QDialog):
         layout.addWidget(submit_btn)
 
         return widget
+
+    def _register_event_listeners(self) -> None:
+        bus = getattr(self._service, "events", None)
+        if bus is None:
+            return
+
+        def _on_roster(_payload: Optional[dict] = None) -> None:
+            self._queue_refresh("Roster changes detected; trade center refreshed.")
+
+        def _on_players(_payload: Optional[dict] = None) -> None:
+            self._queue_refresh("Player data updated; trade center refreshed.")
+
+        for topic, handler in (
+            ("rosters.updated", _on_roster),
+            ("rosters.invalidated", _on_roster),
+            ("players.updated", _on_players),
+            ("players.invalidated", _on_players),
+        ):
+            try:
+                self._event_unsubscribes.append(bus.subscribe(topic, handler))
+            except Exception:
+                pass
+
+    def _queue_refresh(self, reason: str) -> None:
+        def _execute() -> None:
+            if not self._is_visible():
+                self._pending_refresh = True
+                self._pending_toast_reason = reason
+                return
+            self._pending_refresh = False
+            self._pending_toast_reason = None
+            self._refresh_sources()
+            self._maybe_toast("info", reason)
+
+        QTimer.singleShot(0, _execute)
+
+    def _refresh_sources(self) -> None:
+        self.players = {p.player_id: p for p in load_players_from_csv("data/players.csv")}
+        give_selected = {
+            item.data(Qt.ItemDataRole.UserRole)
+            for item in self.give_list.selectedItems()
+        }
+        receive_selected = {
+            item.data(Qt.ItemDataRole.UserRole)
+            for item in self.receive_list.selectedItems()
+        }
+        current_team = self.team_dropdown.currentText()
+        team_ids = [t.team_id for t in load_teams() if t.team_id != self.team_id]
+        try:
+            self.team_dropdown.blockSignals(True)
+        except Exception:
+            pass
+        try:
+            self.team_dropdown.clear()
+            self.team_dropdown.addItems(team_ids)
+        except Exception:
+            pass
+        if current_team not in team_ids and team_ids:
+            current_team = team_ids[0]
+        if team_ids:
+            try:
+                idx = self.team_dropdown.findText(current_team)  # type: ignore[attr-defined]
+            except Exception:
+                idx = team_ids.index(current_team) if current_team in team_ids else 0
+            try:
+                self.team_dropdown.setCurrentIndex(max(idx, 0))
+            except Exception:
+                pass
+        try:
+            self.team_dropdown.blockSignals(False)
+        except Exception:
+            pass
+
+        roster = load_roster(self.team_id)
+        self.give_list.clear()
+        for pid in roster.act:
+            self.give_list.addItem(self._make_player_item(pid))
+        for i in range(self.give_list.count()):
+            item = self.give_list.item(i)
+            try:
+                pid = item.data(Qt.ItemDataRole.UserRole)
+            except Exception:
+                pid = None
+            if pid in give_selected:
+                try:
+                    item.setSelected(True)
+                except Exception:
+                    pass
+
+        self._refresh_receive_list(current_team)
+        for i in range(self.receive_list.count()):
+            item = self.receive_list.item(i)
+            try:
+                pid = item.data(Qt.ItemDataRole.UserRole)
+            except Exception:
+                pid = None
+            if pid in receive_selected:
+                try:
+                    item.setSelected(True)
+                except Exception:
+                    pass
+
+        self._load_incoming_trades()
+
+    def _maybe_toast(self, kind: str, message: str) -> None:
+        callback = self._toast_callback()
+        if callable(callback):
+            try:
+                callback(kind, message)
+            except Exception:
+                pass
+
+    def _toast_callback(self) -> Optional[Callable[[str, str], None]]:
+        parent = self.parent()
+        if parent is None:
+            return None
+        for attr in ("_show_toast", "show_toast"):
+            candidate = getattr(parent, attr, None)
+            if callable(candidate):
+                return candidate
+        return None
+
+    def _is_visible(self) -> bool:
+        try:
+            return bool(self.isVisible())
+        except Exception:
+            return True
+
+    def showEvent(self, event):  # pragma: no cover - UI callback
+        try:
+            super().showEvent(event)
+        except Exception:
+            pass
+        if self._pending_refresh:
+            self._pending_refresh = False
+            self._refresh_sources()
+            if self._pending_toast_reason:
+                self._maybe_toast("info", self._pending_toast_reason)
+                self._pending_toast_reason = None
+
+    def closeEvent(self, event):  # pragma: no cover - UI callback
+        for unsubscribe in self._event_unsubscribes:
+            try:
+                unsubscribe()
+            except Exception:
+                pass
+        self._event_unsubscribes.clear()
+        try:
+            super().closeEvent(event)
+        except Exception:
+            pass
 
     def _make_player_item(self, pid: str) -> QListWidgetItem:
         p = self.players.get(pid)

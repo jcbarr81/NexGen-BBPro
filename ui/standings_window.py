@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime
-import json
 
 try:
     from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
+    from PyQt6.QtCore import QTimer
 except ImportError:  # pragma: no cover - fallback for stubbed tests
     class _QtDummy:
         def __init__(self, *_, **__):
@@ -47,10 +47,18 @@ except ImportError:  # pragma: no cover - fallback for stubbed tests
         def toHtml(self):
             return self._html
 
+    class QTimer:
+        @staticmethod
+        def singleShot(_msec, callback):
+            if callback is not None:
+                callback()
+
 from utils.team_loader import load_teams
-from utils.standings_utils import default_record, normalize_record
+from utils.standings_utils import default_record
 from utils.path_utils import get_base_dir
 from utils.sim_date import get_current_sim_date
+from services.standings_repository import load_standings
+from services.unified_data_service import get_unified_data_service
 
 
 class StandingsWindow(QDialog):
@@ -71,10 +79,32 @@ class StandingsWindow(QDialog):
 
         layout.addWidget(self.viewer)
 
-        self._load_standings()
+        self._service = get_unified_data_service()
+        self._event_unsubscribes: list[callable] = []
+        self._register_event_listeners()
 
-    def _load_standings(self) -> None:
+        self._render_standings()
+
+    def _register_event_listeners(self) -> None:
+        """Subscribe to standings events to keep the view updated."""
+
+        bus = self._service.events
+
+        def _schedule_refresh(_payload=None) -> None:
+            QTimer.singleShot(0, self._render_standings)
+
+        for topic in ("standings.updated", "standings.invalidated"):
+            try:
+                self._event_unsubscribes.append(bus.subscribe(topic, _schedule_refresh))
+            except Exception:  # pragma: no cover - defensive
+                pass
+
+    def _render_standings(self) -> None:
         """Load league, division and team names into the text viewer."""
+
+        if not hasattr(self, "viewer"):
+            return
+
         base_dir = get_base_dir()
         league_name, umbrella_name = self._load_league_names(base_dir)
 
@@ -83,18 +113,7 @@ class StandingsWindow(QDialog):
         for team in teams:
             divisions[team.division].append((f"{team.city} {team.name}", team.abbreviation))
 
-        standings_path = base_dir / "data" / "standings.json"
-        raw_standings: dict[str, dict[str, object]] = {}
-        if standings_path.exists():
-            try:
-                with standings_path.open("r", encoding="utf-8") as fh:
-                    raw_standings = json.load(fh)
-            except (OSError, json.JSONDecodeError):
-                raw_standings = {}
-        standings: dict[str, dict[str, object]] = {
-            team_id: normalize_record(data)
-            for team_id, data in raw_standings.items()
-        }
+        standings = load_standings()
 
         # Build HTML using the same format as the sample standings page.
         sim_date = get_current_sim_date()
@@ -217,6 +236,15 @@ class StandingsWindow(QDialog):
 
         parts.extend(["</pre></body></html>"])
         self.viewer.setHtml("\n".join(parts))
+
+    def closeEvent(self, event):  # pragma: no cover - GUI wiring
+        for unsubscribe in getattr(self, "_event_unsubscribes", []):
+            try:
+                unsubscribe()
+            except Exception:
+                pass
+        self._event_unsubscribes = []
+        super().closeEvent(event)
 
     @staticmethod
     def _load_league_names(base_dir) -> tuple[str, str]:

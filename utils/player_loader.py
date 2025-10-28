@@ -1,13 +1,16 @@
 import csv
 import json
 from pathlib import Path
-from functools import lru_cache
 
 from models.player import Player
 from models.pitcher import Pitcher
 from playbalance.season_context import CAREER_DATA_DIR
-from utils.path_utils import get_base_dir
+from utils.path_utils import get_base_dir as _get_base_dir
 from utils.stats_persistence import load_stats
+from services.unified_data_service import get_unified_data_service
+
+# Backwards compatibility: tests patch this attribute directly.
+get_base_dir = _get_base_dir
 
 
 def _required_int(row, key):
@@ -51,8 +54,21 @@ def _load_career_players() -> dict[str, dict]:
     return {}
 
 
-@lru_cache(maxsize=None)
-def load_players_from_csv(file_path):
+def _resolve_players_path(resolved: Path, raw: Path) -> Path:
+    """Mirror legacy lookup semantics for locating player CSV files."""
+
+    if resolved.exists():
+        return resolved
+    if raw.is_absolute() and raw.exists():
+        return raw
+    repo_root = Path(__file__).resolve().parent.parent
+    alt_path = repo_root / raw
+    if alt_path.exists():
+        return alt_path
+    return resolved
+
+
+def _read_players_from_csv(csv_path: Path):
     """Load player objects from a CSV file.
 
     Parameters
@@ -62,17 +78,6 @@ def load_players_from_csv(file_path):
         project root so that callers can load data regardless of the current
         working directory.
     """
-
-    file_path = str(file_path)
-    base_path = get_base_dir()
-    csv_path = Path(file_path)
-    if not csv_path.is_absolute():
-        csv_path = base_path / csv_path
-        if not csv_path.exists():
-            repo_root = Path(__file__).resolve().parent.parent
-            alt_path = repo_root / file_path
-            if alt_path.exists():
-                csv_path = alt_path
 
     players = []
     with csv_path.open(mode="r", newline="") as csvfile:
@@ -218,3 +223,24 @@ def load_players_from_csv(file_path):
                     for sid, data in seasons.items()
                 }
     return players
+
+
+def load_players_from_csv(file_path):
+    """Return players loaded from ``file_path`` using the shared data service."""
+
+    service = get_unified_data_service()
+    raw_path = Path(str(file_path))
+
+    def _loader(resolved: Path):
+        csv_path = _resolve_players_path(resolved, raw_path)
+        return _read_players_from_csv(csv_path)
+
+    return service.get_players(raw_path, _loader)
+
+
+def _players_cache_clear(file_path=None):
+    service = get_unified_data_service()
+    service.invalidate_players(file_path)
+
+
+load_players_from_csv.cache_clear = _players_cache_clear  # type: ignore[attr-defined]

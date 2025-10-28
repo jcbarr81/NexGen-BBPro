@@ -4,12 +4,12 @@ import json
 import random
 import warnings
 from pathlib import Path
-from functools import lru_cache
 from typing import Dict, List
 
 from models.roster import Roster
 from utils.path_utils import get_base_dir
 from .player_loader import load_players_from_csv
+from services.unified_data_service import get_unified_data_service
 
 # Teams should field exactly 25 players on the active roster.
 ACTIVE_ROSTER_SIZE = 25
@@ -343,14 +343,13 @@ def _persist_placeholder_roster(file_path: Path, roster: Roster) -> None:
         )
 
 
-@lru_cache(maxsize=None)
-def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
-    team_id = str(team_id)
-    roster_dir = Path(str(roster_dir))
-    act, aaa, low, dl, ir = [], [], [], [], []
+def _load_roster_from_storage(team_id: str, roster_dir: Path) -> Roster:
+    act: List[str] = []
+    aaa: List[str] = []
+    low: List[str] = []
+    dl: List[str] = []
+    ir: List[str] = []
     dl_tiers: Dict[str, str] = {}
-    if not roster_dir.is_absolute():
-        roster_dir = get_base_dir() / roster_dir
     file_path = roster_dir / f"{team_id}.csv"
     if not file_path.exists():
         roster = _generate_placeholder_roster(team_id)
@@ -389,8 +388,24 @@ def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
     return roster
 
 
+def load_roster(team_id, roster_dir: str | Path = "data/rosters"):
+    team_id = str(team_id)
+    raw_dir = Path(str(roster_dir))
+
+    def _loader(tid: str, resolved_dir: Path):
+        real_dir = resolved_dir
+        if not real_dir.is_absolute():
+            real_dir = get_base_dir() / real_dir
+        real_dir = real_dir.resolve(strict=False)
+        return _load_roster_from_storage(tid, real_dir)
+
+    service = get_unified_data_service()
+    return service.get_roster(team_id, raw_dir, _loader)
+
+
 def save_roster(team_id, roster: Roster):
-    filepath = get_base_dir() / "data" / "rosters" / f"{team_id}.csv"
+    roster_dir = Path("data") / "rosters"
+    filepath = get_base_dir() / roster_dir / f"{team_id}.csv"
     try:
         if filepath.exists():
             filepath.chmod(0o644)
@@ -415,14 +430,14 @@ def save_roster(team_id, roster: Roster):
             writer.writerow([player_id, "IR"])
 
 
-_original_cache_clear = getattr(load_roster, "cache_clear", None)
+    service = get_unified_data_service()
+    service.update_roster(str(team_id), roster_dir, roster)
 
 
-def _cache_clear_wrapper():
+def _cache_clear_rosters(team_id: str | None = None, roster_dir: str | Path | None = None) -> None:
     _reset_placeholder_pool()
-    if _original_cache_clear is not None:
-        _original_cache_clear()
+    service = get_unified_data_service()
+    service.invalidate_roster(team_id=team_id, roster_dir=roster_dir)
 
 
-if _original_cache_clear is not None:
-    load_roster.cache_clear = _cache_clear_wrapper  # type: ignore[attr-defined]
+load_roster.cache_clear = _cache_clear_rosters  # type: ignore[attr-defined]

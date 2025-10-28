@@ -15,6 +15,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from playbalance.playoffs_config import DEFAULT_PLAYOFF_TEAMS_PER_LEAGUE
+from services.standings_repository import load_standings
 from utils.path_utils import get_base_dir
 
 
@@ -872,16 +873,7 @@ def _load_known_teams() -> Tuple[List[Any], set[str]]:
 
 
 def _load_standings_snapshot() -> Dict[str, Dict[str, Any]]:
-    path = get_base_dir() / "data" / "standings.json"
-    try:
-        if path.exists():
-            with path.open("r", encoding="utf-8") as fh:
-                data = json.load(fh)
-            if isinstance(data, dict):
-                return data
-    except Exception:
-        pass
-    return {}
+    return load_standings(normalize=False)
 
 
 def _refresh_bracket_if_stale(bracket: PlayoffBracket) -> PlayoffBracket:
