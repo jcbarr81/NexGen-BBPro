@@ -489,14 +489,17 @@ class OwnerDashboard(QMainWindow):
                 "<li><b>Promote Best Replacement</b> pulls the next healthy option from your depth chart to keep the"
                 " active roster full.</li>"
                 "<li><b>Start Rehab</b> launches an AAA or Low rehab assignment (chosen in <b>Rehab Level</b>) and tracks"
-                " the simulated days needed before the player is marked ready.</li>"
+                " the simulated days needed before the player is marked ready. Plan to begin rehab roughly five"
+                " simulated days ahead of the DL eligibility date so both clocks finish together.</li>"
                 "<li><b>End Rehab</b> stops an active rehab stint and resets its day counter.</li>"
                 "</ul>",
             ),
             TutorialStep(
                 "Tracking Progress",
                 "<p>Watch the roster counts footer and the Rehab column to know when someone is coming back."
-                " Each move is also written to the news feed so owners can audit what happened and when.</p>",
+                " A player must satisfy both the DL minimum and the five-day rehab window before <b>Recover to"
+                " Destination</b> will clear them. Each move is also written to the news feed so owners can audit what"
+                " happened and when.</p>",
             ),
         ]
         self._run_tutorial(self._tutorial_keys["injury_center"], "Injury Center Guide", steps, force=force)
