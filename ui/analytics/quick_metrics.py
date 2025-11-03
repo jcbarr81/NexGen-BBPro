@@ -14,6 +14,10 @@ from utils.pitcher_role import get_role
 from utils.sim_date import get_current_sim_date
 from utils.stats_persistence import load_stats as _load_season_stats
 from services.standings_repository import load_standings
+try:
+    from playbalance.config import load_config as _load_playbalance_config
+except Exception:  # pragma: no cover - optional dependency in some test harnesses
+    _load_playbalance_config = None  # type: ignore
 
 DATE_FMT = "%Y-%m-%d"
 
@@ -94,11 +98,18 @@ def gather_owner_quick_metrics(
         "last_game": last_game_played,
     }
 
-    batting_leaders, pitching_leaders = _collect_team_leaders(
+    metrics["calibration"] = _calibration_summary(base_dir)
+
+    (
+        batting_leaders,
+        pitching_leaders,
+        leader_meta,
+    ) = _collect_team_leaders(
         base_dir, roster, players
     )
     metrics["batting_leaders"] = batting_leaders
     metrics["pitching_leaders"] = pitching_leaders
+    metrics["leader_meta"] = leader_meta
     return metrics
 
 
@@ -480,11 +491,12 @@ def _collect_team_leaders(
     base_dir: Path,
     roster: Any | None,
     players: Mapping[str, Any] | None,
-) -> tuple[Dict[str, str], Dict[str, str]]:
+) -> tuple[Dict[str, str], Dict[str, str], Dict[str, Dict[str, Dict[str, Any]]]]:
     batting = {"avg": "--", "hr": "--", "rbi": "--"}
     pitching = {"wins": "--", "so": "--", "saves": "--"}
+    meta: Dict[str, Dict[str, Dict[str, Any]]] = {"batting": {}, "pitching": {}}
     if roster is None or not players:
-        return batting, pitching
+        return batting, pitching, meta
 
     candidate_ids: list[str] = []
     seen: set[str] = set()
@@ -502,7 +514,7 @@ def _collect_team_leaders(
             candidate_ids.append(pid_str)
             seen.add(pid_str)
     if not candidate_ids:
-        return batting, pitching
+        return batting, pitching, meta
 
     try:
         stats_payload = _load_season_stats(base_dir / "data" / "season_stats.json")
@@ -539,13 +551,27 @@ def _collect_team_leaders(
     so_leader = _find_stat_leader(pitchers, ("so", "SO", "k", "K"))
     save_leader = _find_stat_leader(pitchers, ("sv", "SV", "saves", "S"))
 
-    batting["avg"] = _format_leader_entry(avg_leader, stat="avg")
-    batting["hr"] = _format_leader_entry(hr_leader, stat="int")
-    batting["rbi"] = _format_leader_entry(rbi_leader, stat="int")
-    pitching["wins"] = _format_leader_entry(win_leader, stat="int")
-    pitching["so"] = _format_leader_entry(so_leader, stat="int")
-    pitching["saves"] = _format_leader_entry(save_leader, stat="int")
-    return batting, pitching
+    batting["avg"], meta_entry = _format_leader_entry(avg_leader, stat="avg")
+    if meta_entry and meta_entry.get("player_id"):
+        meta["batting"]["avg"] = meta_entry
+    batting["hr"], meta_entry = _format_leader_entry(hr_leader, stat="int")
+    if meta_entry and meta_entry.get("player_id"):
+        meta["batting"]["hr"] = meta_entry
+    batting["rbi"], meta_entry = _format_leader_entry(rbi_leader, stat="int")
+    if meta_entry and meta_entry.get("player_id"):
+        meta["batting"]["rbi"] = meta_entry
+
+    pitching["wins"], meta_entry = _format_leader_entry(win_leader, stat="int")
+    if meta_entry and meta_entry.get("player_id"):
+        meta["pitching"]["wins"] = meta_entry
+    pitching["so"], meta_entry = _format_leader_entry(so_leader, stat="int")
+    if meta_entry and meta_entry.get("player_id"):
+        meta["pitching"]["so"] = meta_entry
+    pitching["saves"], meta_entry = _format_leader_entry(save_leader, stat="int")
+    if meta_entry and meta_entry.get("player_id"):
+        meta["pitching"]["saves"] = meta_entry
+
+    return batting, pitching, meta
 
 
 def _has_batter_sample(stats: Mapping[str, Any]) -> bool:
@@ -597,28 +623,85 @@ def _find_stat_leader(
     return leader
 
 
+def _player_identifier(player: Any) -> Optional[str]:
+    """Best-effort player identifier extraction for leader links."""
+
+    for attr in ("player_id", "playerId", "id", "mlb_id"):  # noqa: SIM118
+        candidate = getattr(player, attr, None)
+        if candidate:
+            return str(candidate)
+    return None
+
+
+def _calibration_summary(base_dir: Path) -> Dict[str, Any]:
+    """Expose pitch calibration status for quick diagnostics."""
+
+    defaults = {
+        "enabled": False,
+        "target_p_per_pa": None,
+        "tolerance": None,
+        "per_plate_cap": None,
+        "per_game_cap": None,
+        "min_pa": None,
+        "ema_alpha": None,
+    }
+    if _load_playbalance_config is None:
+        return defaults
+
+    try:
+        cfg = _load_playbalance_config(
+            pbini_path=base_dir / "playbalance" / "PBINI.txt",
+            overrides_path=base_dir / "data" / "playbalance_overrides.json",
+        )
+        pb = cfg.sections.get("PlayBalance")
+        if pb is None:
+            return defaults
+        enabled = bool(getattr(pb, "pitchCalibrationEnabled", 0))
+        return {
+            "enabled": enabled,
+            "target_p_per_pa": float(getattr(pb, "pitchCalibrationTarget", 0.0)),
+            "tolerance": float(getattr(pb, "pitchCalibrationTolerance", 0.0)),
+            "per_plate_cap": int(getattr(pb, "pitchCalibrationPerPlateCap", 0) or 0),
+            "per_game_cap": int(getattr(pb, "pitchCalibrationPerGameCap", 0) or 0),
+            "min_pa": int(getattr(pb, "pitchCalibrationMinPA", 0) or 0),
+            "ema_alpha": float(getattr(pb, "pitchCalibrationEmaAlpha", 0.0)),
+        }
+    except Exception:
+        return defaults
+
+
 def _format_leader_entry(
     leader: Optional[tuple[Any, float]],
     *,
     stat: str,
-) -> str:
+) -> tuple[str, Optional[Dict[str, Any]]]:
     if leader is None:
-        return "--"
+        return "--", None
     player, value = leader
     name = _format_player_name(player)
     if name == "--":
-        return "--"
+        return "--", None
     if stat == "avg":
         if not math.isfinite(value):
-            return "--"
+            return "--", None
         formatted = f"{value:.3f}"
         if value < 1:
             formatted = formatted.lstrip("0")
-        return f"{name} {formatted}".strip()
+        return f"{name} {formatted}".strip(), {
+            "player_id": _player_identifier(player),
+            "name": name,
+            "stat": "avg",
+            "value": round(value, 3),
+        }
     if not math.isfinite(value):
-        return "--"
+        return "--", None
     count = int(round(value))
-    return f"{name} {count}".strip()
+    return f"{name} {count}".strip(), {
+        "player_id": _player_identifier(player),
+        "name": name,
+        "stat": stat,
+        "value": count,
+    }
 
 
 def _is_pitcher_type(player: Any) -> bool:

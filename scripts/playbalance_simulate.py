@@ -42,6 +42,11 @@ from playbalance.benchmarks import load_benchmarks, league_average
 from playbalance.schedule_generator import generate_mlb_schedule
 from playbalance.sim_config import load_tuned_playbalance_config
 from playbalance.simulation import FieldingState, GameSimulation, PitcherState, TeamState
+from playbalance.batter_ai import (
+    reset_swing_diagnostics,
+    swing_diagnostics_summary,
+    auto_take_summary,
+)
 from utils.lineup_loader import build_default_game_state
 from utils.team_loader import load_teams
 
@@ -280,12 +285,28 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="enable PerfTune profiling",
     )
+    parser.add_argument(
+        "--disable-calibration",
+        action="store_true",
+        help="disable pitch calibration and target pitches/PA adjustments",
+    )
     args = parser.parse_args(argv)
 
     configure_perf_tuning()
 
     benchmarks = load_benchmarks()
     cfg, _ = load_tuned_playbalance_config(apply_benchmarks=True)
+    if args.disable_calibration:
+        if hasattr(cfg, "pitchCalibrationEnabled"):
+            cfg.pitchCalibrationEnabled = 0
+        if hasattr(cfg, "values"):
+            cfg.values["pitchCalibrationEnabled"] = 0
+        if hasattr(cfg, "targetPitchesPerPA"):
+            cfg.targetPitchesPerPA = 0
+        if hasattr(cfg, "values"):
+            cfg.values["targetPitchesPerPA"] = 0
+    if getattr(cfg, "collectSwingDiagnostics", 0):
+        reset_swing_diagnostics()
 
     team_ids = [t.team_id for t in load_teams("data/teams.csv")]
     base_states = {tid: pickle.dumps(build_default_game_state(tid)) for tid in team_ids}
@@ -471,6 +492,18 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"SB%: {sb_pct:.3f} (MLB {league_average(benchmarks, 'sb_pct'):.3f})"
     )
+
+    if getattr(cfg, "collectSwingDiagnostics", 0):
+        swing_lines = list(swing_diagnostics_summary(limit=10))
+        if swing_lines:
+            print("\nSwing diagnostics (top by samples):")
+            for line in swing_lines:
+                print(f"  {line}")
+        auto_lines = list(auto_take_summary())
+        if auto_lines:
+            print("Auto-take diagnostics:")
+            for line in auto_lines:
+                print(f"  {line}")
 
     return 0
 

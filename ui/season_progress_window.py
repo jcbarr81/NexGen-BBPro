@@ -2309,7 +2309,7 @@ class SeasonProgressWindow(QDialog):
                 extras += 1
             # Add up to 3 examples
             if len(examples) < 3:
-                examples.append(f"{g.get('away','')} at {g.get('home','')} â€” {res}")
+                examples.append(f"{g.get('away','')} at {g.get('home','')} - {res}")
         msg = (
             f"Daily Recap {date_str}: {len(played)} games; "
             f"{one_run} one-run; {extras} extras. "

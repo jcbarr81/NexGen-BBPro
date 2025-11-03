@@ -33,6 +33,15 @@ _DEFAULTS: Dict[str, Any] = {
     "halfInningLimitEnabled": 1,
     "maxHalfInningPA": 50,
     "maxHalfInningRuns": 30,
+    # Feature toggles --------------------------------------------------
+    "pitchCalibrationEnabled": 0,
+    "pitchCalibrationTarget": 3.9,
+    "pitchCalibrationTolerance": 0.05,
+    "pitchCalibrationPerPlateCap": 1,
+    "pitchCalibrationPerGameCap": 30,
+    "pitchCalibrationMinPA": 6,
+    "pitchCalibrationPreferFoul": 1,
+    "pitchCalibrationEmaAlpha": 0.1,
     # Physics --------------------------------------------------------
     "speedBase": 19,
     "speedPct": 5,
@@ -332,6 +341,9 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating30CountAdjust": 60,
     "disciplineRating31CountAdjust": 5,
     "disciplineRating32CountAdjust": 15,
+    "disciplineThreeBallScale": 0.5,
+    "disciplineThreeBallPenaltyScale": 0.5,
+    "swingBallThreeBallWeightScale": 0.5,
     # Baseline contact chance when the batter misreads the pitch
     "minMisreadContact": 0.3,
     # Final contact multiplier applied to swing decisions
@@ -615,6 +627,10 @@ _DEFAULTS: Dict[str, Any] = {
     "starterLateWarmLeadMax": 3,
     "starterSeventhWarmChance": 60,
     "starterEighthWarmChance": 80,
+    "starterSoftPitchLimitMultiplier": 1.6,
+    "starterHardPitchLimitMultiplier": 1.85,
+    "starterMinSoftPitchLimit": 95,
+    "starterMinHardPitchLimit": 110,
     "closerBoostStuffFloor": 92,
     "closerBoostControlFloor": 68,
     "closerBoostControlCap": 80,
@@ -773,6 +789,23 @@ class PlayBalanceConfig:
     """
 
     values: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if "pitchCalibrationEnabled" not in self.values:
+            self.values["pitchCalibrationEnabled"] = _DEFAULTS.get(
+                "pitchCalibrationEnabled", 0
+            )
+        for key in (
+            "pitchCalibrationTarget",
+            "pitchCalibrationTolerance",
+            "pitchCalibrationPerPlateCap",
+            "pitchCalibrationPerGameCap",
+            "pitchCalibrationMinPA",
+            "pitchCalibrationPreferFoul",
+            "pitchCalibrationEmaAlpha",
+        ):
+            if key not in self.values:
+                self.values[key] = _DEFAULTS.get(key, 0)
 
     def __getstate__(self) -> Dict[str, Any]:
         return self.values

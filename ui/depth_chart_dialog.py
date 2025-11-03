@@ -12,6 +12,7 @@ try:  # pragma: no cover - PyQt stubs for tests
         QGridLayout,
         QLabel,
         QMessageBox,
+        QPushButton,
         QVBoxLayout,
         QWidget,
     )
@@ -35,6 +36,10 @@ except Exception:  # pragma: no cover
 
         def setText(self, text):
             self._text = text
+
+    class QPushButton(QWidget):
+        def __init__(self, *_args, **_kwargs):
+            self.clicked = _Signal()
 
     class QComboBox(QWidget):
         def __init__(self, *_, **__):
@@ -151,6 +156,13 @@ class DepthChartDialog(QDialog):
                 grid.addWidget(combo, row, slot + 1)
                 self._combo_map[(pos, slot)] = combo
         root.addLayout(grid)
+        try:
+            auto_btn = QPushButton("Auto Populate")
+            auto_btn.clicked.connect(self._auto_populate)
+        except Exception:
+            auto_btn = QPushButton()
+        self._auto_button = auto_btn
+        root.addWidget(auto_btn)
         self.status_label = QLabel()
         root.addWidget(self.status_label)
         buttons = QDialogButtonBox(
@@ -217,6 +229,88 @@ class DepthChartDialog(QDialog):
         combo.addItem("— None —", "")
         for pid in self._eligible_players(position):
             combo.addItem(self._player_label(pid), pid)
+
+    def _set_combo_selection(self, combo: QComboBox, player_id: str) -> None:
+        target = str(player_id or "").strip()
+        if not target:
+            try:
+                combo.setCurrentIndex(0)
+            except Exception:
+                pass
+            return
+        idx = combo.findData(target)
+        if idx == -1:
+            try:
+                combo.addItem(self._player_label(target), target)
+            except Exception:
+                pass
+            idx = combo.findData(target)
+        if idx >= 0:
+            try:
+                combo.setCurrentIndex(idx)
+            except Exception:
+                pass
+
+    def _auto_populate(self) -> None:
+        self._refresh_data()
+        assigned: set[str] = set()
+        level_order = {"ACT": 0, "AAA": 1, "LOW": 2, "DL": 3, "IR": 4}
+
+        def _sort_candidates(position: str) -> List[str]:
+            pos = position.upper()
+            primaries: List[str] = []
+            secondaries: List[str] = []
+            seen: set[str] = set()
+            for pid in self._eligible_players(position):
+                if pid in seen:
+                    continue
+                seen.add(pid)
+                player = self.players.get(pid)
+                primary = str(getattr(player, "primary_position", "")).upper()
+                if primary == pos:
+                    primaries.append(pid)
+                else:
+                    secondaries.append(pid)
+
+            def _sorted(pool: List[str]) -> List[str]:
+                return sorted(
+                    pool,
+                    key=lambda pid: (
+                        level_order.get(self._level_map.get(pid, ""), 5),
+                    ),
+                )
+
+            ordered = _sorted(primaries) + _sorted(secondaries)
+            unique: List[str] = []
+            for pid in ordered:
+                if pid not in unique:
+                    unique.append(pid)
+            return unique
+
+        for position in DEPTH_CHART_POSITIONS:
+            candidates = _sort_candidates(position)
+            choices: List[str] = []
+            for pid in candidates:
+                if pid not in assigned:
+                    choices.append(pid)
+                if len(choices) >= 3:
+                    break
+            if len(choices) < 3:
+                for pid in candidates:
+                    if pid not in choices:
+                        choices.append(pid)
+                    if len(choices) >= 3:
+                        break
+            for slot in range(3):
+                combo = self._combo_map.get((position, slot))
+                if combo is None:
+                    continue
+                pid = choices[slot] if slot < len(choices) else ""
+                self._set_combo_selection(combo, pid)
+            assigned.update(choices)
+
+        self.status_label.setText("Auto-populated from current roster.")
+        self._maybe_toast("info", "Depth chart auto-populated.")
 
     def _apply_existing_values(self) -> None:
         for pos in DEPTH_CHART_POSITIONS:

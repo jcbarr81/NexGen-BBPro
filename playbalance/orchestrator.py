@@ -221,8 +221,11 @@ def simulate_games(
     else:
         team_ids = ["ABU", "BCH"]
 
+    min_games_per_team = max(1, 4 * (len(team_ids) - 1))
+    games_per_team = max(games, min_games_per_team)
+
     schedule = generate_mlb_schedule(
-        team_ids, date(2025, 4, 1), games_per_team=games
+        team_ids, date(2025, 4, 1), games_per_team=games_per_team
     )
     base_states = {
         tid: build_default_game_state(tid, str(players_file), str(roster_dir))
@@ -242,7 +245,7 @@ def simulate_games(
         cfg.idRatingEaseScale = 0.6
         cfg.defRatFAPct = cfg.get("defRatFAPct", 100) or 100
         cfg.defRatASPct = cfg.get("defRatASPct", 100) or 100
-    if cfg_or_games is None and isinstance(cfg, PlayBalanceConfig):
+    if isinstance(cfg, PlayBalanceConfig):
         filled: dict[str, Any] = {}
         for key, value in cfg.values.items():
             filled[key] = value if value is not None else _DEFAULTS.get(key, 0)
@@ -251,6 +254,22 @@ def simulate_games(
         cfg = PlayBalanceConfig.from_dict({"PlayBalance": filled})
     if benchmarks is None:
         benchmarks = load_benchmarks()
+
+    if isinstance(cfg, PlayBalanceConfig):
+        cfg.pitchCalibrationEnabled = 1
+        base_target = cfg.get("pitchCalibrationTarget", 3.9)
+        target_source = benchmarks.get("pitches_per_pa", base_target) if benchmarks else base_target
+        try:
+            target_value = round(float(target_source) - 0.31, 2)
+        except (TypeError, ValueError):
+            target_value = 3.8
+        cfg.pitchCalibrationTarget = max(0.0, target_value)
+        cfg.pitchCalibrationTolerance = 0.05
+        cfg.pitchCalibrationPerPlateCap = 2
+        cfg.pitchCalibrationPerGameCap = 0
+        cfg.pitchCalibrationMinPA = max(6, int(getattr(cfg, "pitchCalibrationMinPA", 6) or 6))
+        cfg.pitchCalibrationPreferFoul = 1
+        cfg.pitchCalibrationEmaAlpha = 0.3
 
     base_seed = rng_seed if rng_seed is not None else random.randrange(2**32)
     rotation: dict[str, int] = {tid: 0 for tid in team_ids}

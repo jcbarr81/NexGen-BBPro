@@ -279,25 +279,35 @@ class SubstitutionManager:
         pitcher: Pitcher | Player | None,
         role: str,
         usage_info: dict[str, object],
-    ) -> tuple[float | None, float | None]:
+    ) -> tuple[float | None, float | None, float | None]:
         if pitcher is None:
-            return None, None
+            return None, None, None
         endurance = float(getattr(pitcher, "endurance", 0) or 0)
         if endurance <= 0:
-            return None, None
-        multiplier = self._budget_multiplier(role)
-        max_budget = multiplier * endurance
+            return None, None, None
+        role_key = (role or "").upper()
+        if role_key.startswith("SP"):
+            soft_limit = float(self.config.get("starterSoftPitchLimitMultiplier", 1.1)) * endurance
+            hard_limit = float(self.config.get("starterHardPitchLimitMultiplier", 1.25)) * endurance
+            soft_limit = max(soft_limit, float(self.config.get("starterMinSoftPitchLimit", 85)))
+            hard_limit = max(hard_limit, float(self.config.get("starterMinHardPitchLimit", 95)))
+            max_budget = max(hard_limit, endurance)
+        else:
+            multiplier = self._budget_multiplier(role_key or "MR")
+            max_budget = multiplier * endurance
         pct = usage_info.get("available_pct")
         if pct is None:
             pct = getattr(pitcher, "budget_available_pct", None)
         if pct is None:
-            return None, None
-        try:
-            pct_val = float(pct)
-        except (TypeError, ValueError):
-            return None, None
+            pct_val = 1.0
+        else:
+            try:
+                pct_val = float(pct)
+            except (TypeError, ValueError):
+                pct_val = 1.0
         pct_val = max(0.0, min(1.0, pct_val))
-        return max_budget * pct_val, pct_val
+        available_total = max_budget * pct_val
+        return available_total, pct_val, max_budget
 
     def _warmup_required_pitches(self, pitcher: Pitcher, defense: "TeamState") -> int:
         role = self._pitcher_role(pitcher) or "MR"
@@ -318,6 +328,9 @@ class SubstitutionManager:
         pct = max(0.0, pct)
         pct = max(pct, floor)
         required = int(round(base * (pct ** exponent)))
+        override = int(self.config.get("warmupPitchCount", 0) or 0)
+        if override > 0:
+            required = override
         return max(1, required)
 
     def _select_reliever_index(
@@ -360,6 +373,7 @@ class SubstitutionManager:
 
         # Build candidate list with metadata
         cand: list[tuple[int, str, dict]] = []
+        used = getattr(defense, "used_pitchers", set()) or set()
         for idx, pitcher in enumerate(defense.pitchers):
             if idx == 0:
                 continue
@@ -367,6 +381,8 @@ class SubstitutionManager:
             if role in {"SP1", "SP2", "SP3", "SP4", "SP5"}:
                 continue
             if pitcher.player_id in exclude:
+                continue
+            if pitcher.player_id in used:
                 continue
             info = dict(usage.get(pitcher.player_id, {}))
             info.setdefault("available", True)
@@ -1168,8 +1184,16 @@ class SubstitutionManager:
         if len(defense.pitchers) <= 1:
             return None
         old_pitcher = defense.pitchers[0]
-        new_pitcher = defense.pitchers[1]
-        defense.pitchers = [new_pitcher] + defense.pitchers[2:] + [old_pitcher]
+        bullpen = defense.pitchers[1:]
+        used = getattr(defense, "used_pitchers", set()) or set()
+        available = [p for p in bullpen if p.player_id not in used]
+        if not available:
+            available = list(bullpen)
+        if not available:
+            return None
+        new_pitcher = available[0]
+        remaining = [p for p in bullpen if p.player_id != new_pitcher.player_id and p.player_id != getattr(old_pitcher, "player_id", None)]
+        defense.pitchers = [new_pitcher] + remaining
         state = defense.pitcher_stats.setdefault(
             new_pitcher.player_id, PitcherState(new_pitcher)
         )
@@ -1239,11 +1263,23 @@ class SubstitutionManager:
         if getattr(state, "player", None) is not None:
             role = self._pitcher_role(state.player)
         role_upper = str(role).upper() if isinstance(role, str) else ""
-        remaining, avail_pct = self._available_budget(state.player, role or "MR", usage_info)
+        available_total, avail_pct_initial, max_budget = self._available_budget(
+            state.player, role or "MR", usage_info
+        )
+        if available_total is None:
+            max_budget = self._budget_multiplier(role or "MR") * getattr(state.player, "endurance", 0)
+            available_total = max_budget
+        remaining = available_total - state.pitches_thrown if available_total is not None else None
+        endurance_remaining = float(getattr(state.player, "endurance", 0) - state.pitches_thrown)
         if remaining is None:
-            remaining = state.player.endurance - state.pitches_thrown
+            remaining = endurance_remaining
         tired_thresh = cfg.get("pitcherTiredThresh", 0)
         lead = -run_diff
+        if remaining is not None:
+            remaining = max(0.0, float(remaining))
+        budget_pct_remaining = None
+        if available_total and available_total > 0:
+            budget_pct_remaining = max(0.0, min(1.0, remaining / available_total))
         if getattr(state, "player", None) is not None:
             # Enforce per-role outing caps for relievers only (never for starters)
             if role_upper and not role_upper.startswith("SP"):
@@ -1311,13 +1347,22 @@ class SubstitutionManager:
                     self._set_preferred_warm_pid(defense, getattr(preferred_pitcher, "player_id", None))
 
         if str(role_token).upper().startswith("SP"):
+            endurance = getattr(state.player, "endurance", 0)
+            soft_limit = float(cfg.get("starterSoftPitchLimitMultiplier", 1.1)) * endurance
+            hard_limit = float(cfg.get("starterHardPitchLimitMultiplier", 1.25)) * endurance
+            soft_limit = max(soft_limit, float(cfg.get("starterMinSoftPitchLimit", 85)))
+            hard_limit = max(hard_limit, float(cfg.get("starterMinHardPitchLimit", 95)))
+            soft_limit = min(soft_limit, hard_limit)
+            if state.pitches_thrown >= soft_limit:
+                defense.warming_reliever = True
+                warmed = True
             thresh = self._starter_toast_threshold(defense, inning, home_team)
-            toast_trigger = state.toast < thresh or remaining <= tired_thresh
+            toast_trigger = state.toast < thresh or endurance_remaining <= tired_thresh
             # Budget-aware warmup for starters
             budget_trigger = False
             try:
                 sp_thresh = float(self.config.get("pitchBudgetAvailThresh_SP", 0.55))
-                if avail_pct is not None and float(avail_pct) < sp_thresh:
+                if budget_pct_remaining is not None and budget_pct_remaining < sp_thresh:
                     budget_trigger = True
             except Exception:
                 budget_trigger = False
@@ -1325,11 +1370,11 @@ class SubstitutionManager:
                 defense.warming_reliever = True
                 warmed = True
         else:
-            if avail_pct is not None:
-                pct_left = avail_pct * 100.0
+            if budget_pct_remaining is not None:
+                pct_left = budget_pct_remaining * 100.0
             else:
                 pct_left = (
-                    (remaining / state.player.endurance) * 100
+                    ((remaining or 0.0) / state.player.endurance) * 100
                     if state.player.endurance
                     else 0
                 )
@@ -1440,9 +1485,22 @@ class SubstitutionManager:
         usage_info = usage.get(player_id, {})
         raw_role = self._pitcher_role(getattr(state, "player", None)) if getattr(state, "player", None) is not None else ""
         role = raw_role or "MR"
-        remaining, avail_pct = self._available_budget(state.player, role, usage_info)
+        hard_limit_value = None
+        available_total, avail_pct_initial, max_budget = self._available_budget(
+            state.player, role, usage_info
+        )
+        if available_total is None:
+            max_budget = self._budget_multiplier(role) * getattr(state.player, "endurance", 0)
+            available_total = max_budget
+        remaining = available_total - state.pitches_thrown if available_total is not None else None
+        endurance_remaining = float(getattr(state.player, "endurance", 0) - state.pitches_thrown)
         if remaining is None:
-            remaining = state.player.endurance - state.pitches_thrown
+            remaining = endurance_remaining
+        if remaining is not None:
+            remaining = max(0.0, float(remaining))
+        budget_pct_remaining = None
+        if available_total and available_total > 0:
+            budget_pct_remaining = max(0.0, min(1.0, remaining / available_total))
         exhausted = cfg.get("pitcherExhaustedThresh", 0)
         tired = cfg.get("pitcherTiredThresh", 0)
         lead = -run_diff
@@ -1452,7 +1510,7 @@ class SubstitutionManager:
             forced_cap_current = defense.forced_out_limit_by_pid.get(player_id)
         except Exception:
             forced_cap_current = None
-        if remaining <= exhausted:
+        if endurance_remaining <= exhausted:
             defense.warming_reliever = True
         if not defense.warming_reliever:
             # Force a closer handoff in the ninth or later when protecting a small lead.
@@ -1491,34 +1549,43 @@ class SubstitutionManager:
             self._set_preferred_warm_pid(defense, None)
             return False
         if str(role_token).upper().startswith("SP"):
+            endurance = getattr(state.player, "endurance", 0)
+            soft_limit = float(cfg.get("starterSoftPitchLimitMultiplier", 1.1)) * endurance
+            hard_limit = float(cfg.get("starterHardPitchLimitMultiplier", 1.25)) * endurance
+            soft_limit = max(soft_limit, float(cfg.get("starterMinSoftPitchLimit", 85)))
+            hard_limit = max(hard_limit, float(cfg.get("starterMinHardPitchLimit", 95)))
+            soft_limit = min(soft_limit, hard_limit)
+            hard_limit_value = hard_limit
             thresh = self._starter_toast_threshold(defense, inning, home_team)
             sp_change = False
-            if state.toast < thresh or remaining <= tired:
+            if state.pitches_thrown >= hard_limit:
+                sp_change = True
+            elif state.toast < thresh or endurance_remaining <= tired:
                 sp_change = True
             elif thresh <= 0 and state.consecutive_baserunners >= 1:
                 sp_change = True
             # Budget-aware replace for starters
             try:
                 sp_thresh = float(self.config.get("pitchBudgetAvailThresh_SP", 0.55))
-                if avail_pct is not None and float(avail_pct) < sp_thresh:
+                if budget_pct_remaining is not None and budget_pct_remaining < sp_thresh:
                     sp_change = True
             except Exception:
                 pass
             if sp_change:
                 change = True
         else:
-            if avail_pct is not None:
-                pct_left = avail_pct * 100.0
+            if budget_pct_remaining is not None:
+                pct_left = budget_pct_remaining * 100.0
             else:
                 pct_left = (
-                    (remaining / state.player.endurance) * 100
+                    ((remaining or 0.0) / state.player.endurance) * 100
                     if state.player.endurance
                     else 0
                 )
             if (
                 state.is_toast
                 or pct_left <= cfg.get("pitcherToastPctPitchesLeft", 0)
-                or remaining <= tired
+                or endurance_remaining <= tired
             ):
                 change = True
         if not change:
@@ -1540,6 +1607,11 @@ class SubstitutionManager:
                 forced_cap_current is not None
                 and getattr(defense.current_pitcher_state, "appearance_outs", 0) >= int(forced_cap_current)
             )
+            if not force_swap:
+                if state.is_toast:
+                    force_swap = True
+                elif hard_limit_value is not None and state.pitches_thrown >= hard_limit_value:
+                    force_swap = True
             if tracker is None or getattr(tracker, "pitches", 0) < required:
                 if not force_swap:
                     return False
@@ -1559,9 +1631,14 @@ class SubstitutionManager:
             defense.pitchers[1] if len(defense.pitchers) > 1 else None
         )
         if new_pitcher is not None:
-            # Rebuild list placing selected reliever first, preserving order of others
-            remaining = [p for i, p in enumerate(defense.pitchers) if i != 0 and p.player_id != new_pitcher.player_id]
-            defense.pitchers = [new_pitcher] + remaining + ([old_pitcher] if old_pitcher is not None else [])
+            # Rebuild list placing selected reliever first, preserving order of unused others
+            old_pid = getattr(old_pitcher, "player_id", None)
+            remaining = [
+                p
+                for i, p in enumerate(defense.pitchers)
+                if i != 0 and p.player_id != new_pitcher.player_id and p.player_id != old_pid
+            ]
+            defense.pitchers = [new_pitcher] + remaining
         if new_pitcher is None and run_diff <= -cfg.get("posPlayerPitchingRuns", 0) and defense.bench:
             from models.pitcher import Pitcher
 
@@ -1594,10 +1671,7 @@ class SubstitutionManager:
             )
             if old_pitcher is not None:
                 defense.pitchers.pop(0)
-                defense.pitchers.insert(0, new_pitcher)
-                defense.pitchers.append(old_pitcher)
-            else:
-                defense.pitchers.insert(0, new_pitcher)
+            defense.pitchers.insert(0, new_pitcher)
         if new_pitcher is None:
             defense.warming_reliever = False
             self._set_preferred_warm_pid(defense, None)
@@ -1640,9 +1714,19 @@ class SubstitutionManager:
     def maybe_change_pitcher(
         self, defense: "TeamState", log: Optional[list[str]] = None
     ) -> bool:
-        self.maybe_warm_reliever(
+        warmed = self.maybe_warm_reliever(
             defense, inning=1, run_diff=0, home_team=True
         )
+        if len(defense.pitchers) > 1:
+            next_pitcher = defense.pitchers[1]
+            tracker = defense.bullpen_warmups.setdefault(
+                next_pitcher.player_id, WarmupTracker(self.config)
+            )
+            required = self._warmup_required_pitches(next_pitcher, defense)
+            tracker.pitches = max(getattr(tracker, "pitches", 0), required)
+            setattr(tracker, "required_pitches", required)
+            defense.warming_reliever = True
+            self._set_preferred_warm_pid(defense, getattr(next_pitcher, "player_id", None))
         return self.maybe_replace_pitcher(
             defense, inning=1, run_diff=0, home_team=True, log=log
         )

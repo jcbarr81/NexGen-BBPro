@@ -160,10 +160,15 @@ class LeagueLeadersWindow(QDialog):
             grid.setContentsMargins(0, 0, 0, 0)
         if callable(getattr(grid, "setSpacing", None)):
             grid.setSpacing(16)
-        fallback_pool = list(fallback_players) if fallback_players is not None else list(players)
+        base_pool = list(players)
+        fallback_pool = list(fallback_players) if fallback_players is not None else list(base_pool)
         for idx, (label, key, descending, pitcher_only, decimals) in enumerate(categories):
+            category_players = base_pool
+            if key == "sv" and pitcher_only:
+                # Saves should not be limited by the innings qualifier; consider every pitcher.
+                category_players = fallback_pool
             leaders = self._leaders_for_category(
-                players,
+                category_players,
                 fallback_pool,
                 key,
                 pitcher_only=pitcher_only,

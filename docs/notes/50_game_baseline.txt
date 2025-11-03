@@ -1,0 +1,33 @@
+Games simulated: 50
+Total pitches thrown: 25467
+Total plate appearances: 4891
+Pitches per PA: 5.207
+Starter pitch count avg: 51.3
+Starter pitch count min: 4
+Starter pitch count max: 176
+Starter toast avg: 6.23
+Starter toast max: 37.00
+Starter outs recorded avg: 6.1
+Starter outs recorded max: 25
+Starter flagged toast count: 0
+Sample debug log (first game, first 20 entries):
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=doublePlay, outfield=normal
+  - Defense holds runner
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=guardLines, outfield=normal
+  - Defense holds runner
+  - Defensive alignment: infield=guardLines, outfield=normal
+  - Defense holds runner
+  - Defensive alignment: infield=cutoffRun, outfield=normal
+  - Defensive alignment: infield=normal, outfield=normal
+  - Defensive alignment: infield=cutoffRun, outfield=normal
+  - Defense holds runner
+  - Defensive alignment: infield=doublePlay, outfield=normal

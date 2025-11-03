@@ -72,6 +72,17 @@ class OwnerHomePage(QWidget):
     shared Card and section title components and the current theme.
     """
 
+    _BATTING_KEY_MAP = {
+        "AVG Leader": "avg",
+        "HR Leader": "hr",
+        "RBI Leader": "rbi",
+    }
+    _PITCHING_KEY_MAP = {
+        "Wins Leader": "wins",
+        "SO Leader": "so",
+        "Saves Leader": "saves",
+    }
+
     def __init__(self, dashboard):
         super().__init__()
         self._dashboard = dashboard
@@ -118,12 +129,25 @@ class OwnerHomePage(QWidget):
         )
         self.metrics_card.layout().addWidget(self.metrics_row)
 
-        self._batting_leaders = self._default_batting_leaders()
-        self.batting_row = build_metric_row(self._batting_leaders, columns=3)
+        self._leader_meta: dict[str, dict[str, dict[str, object]]] = {
+            "batting": {},
+            "pitching": {},
+        }
+
+        self._batting_leaders = self._format_batting_leaders(None)
+        self.batting_row = build_metric_row(
+            self._batting_leaders,
+            columns=3,
+            variant="leader",
+        )
         self.metrics_card.layout().addWidget(self.batting_row)
 
-        self._pitching_leaders = self._default_pitching_leaders()
-        self.pitching_row = build_metric_row(self._pitching_leaders, columns=3)
+        self._pitching_leaders = self._format_pitching_leaders(None)
+        self.pitching_row = build_metric_row(
+            self._pitching_leaders,
+            columns=3,
+            variant="leader",
+        )
         self.metrics_card.layout().addWidget(self.pitching_row)
 
         # Readiness & matchup card ---------------------------------
@@ -282,6 +306,20 @@ class OwnerHomePage(QWidget):
         except Exception:
             m = None
 
+        injuries_raw = m.get("injuries") if m else 0
+        try:
+            injuries_count = int(injuries_raw)
+        except (TypeError, ValueError):
+            injuries_count = 0
+        injury_entry: dict[str, object] = {
+            "text": str(injuries_count),
+            "highlight": injuries_count > 0,
+            "tooltip": "Open Team Injury Center",
+        }
+        open_injuries = getattr(self._dashboard, "open_team_injury_center", None)
+        if callable(open_injuries):
+            injury_entry["on_click"] = open_injuries
+
         # Update our metric values
         new_values = {
             "Record": m.get("record", "--") if m else "--",
@@ -290,7 +328,7 @@ class OwnerHomePage(QWidget):
             "Next Date": m.get("next_date", "--") if m else "--",
             "Streak": m.get("streak", "--") if m else "--",
             "Last 10": m.get("last10", "--") if m else "--",
-            "Injuries": str(m.get("injuries", 0) if m else 0),
+            "Injuries": injury_entry,
             "Prob SP": m.get("prob_sp", "--") if m else "--",
         }
 
@@ -304,13 +342,27 @@ class OwnerHomePage(QWidget):
         )
         self.metrics_card.layout().insertWidget(1, self.metrics_row)
 
+        meta_candidate = m.get("leader_meta") if m else None
+        batting_meta = (
+            meta_candidate.get("batting") if isinstance(meta_candidate, Mapping) else {}
+        )
+        pitching_meta = (
+            meta_candidate.get("pitching") if isinstance(meta_candidate, Mapping) else {}
+        )
+        self._leader_meta = {
+            "batting": batting_meta if isinstance(batting_meta, Mapping) else {},
+            "pitching": pitching_meta if isinstance(pitching_meta, Mapping) else {},
+        }
+
         batting_entries = self._format_batting_leaders(
-            m.get("batting_leaders") if m else None
+            m.get("batting_leaders") if m else None,
+            self._leader_meta.get("batting"),
         )
         self._set_batting_leader_row(batting_entries)
 
         pitching_entries = self._format_pitching_leaders(
-            m.get("pitching_leaders") if m else None
+            m.get("pitching_leaders") if m else None,
+            self._leader_meta.get("pitching"),
         )
         self._set_pitching_leader_row(pitching_entries)
 
@@ -323,13 +375,13 @@ class OwnerHomePage(QWidget):
 
         # Update recent news
         try:
-            from utils.news_logger import NEWS_FILE
+            from utils.news_logger import NEWS_FILE, sanitize_news_text
             from pathlib import Path
 
             p = Path(NEWS_FILE)
             if p.exists():
                 lines = [
-                    line
+                    sanitize_news_text(line)
                     for line in p.read_text(encoding="utf-8").splitlines()
                     if line.strip()
                 ]
@@ -410,38 +462,90 @@ class OwnerHomePage(QWidget):
     def _format_batting_leaders(
         self,
         leaders: Mapping[str, str] | None,
-    ) -> list[tuple[str, str]]:
+        meta: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> list[tuple[str, Any]]:
         formatted = dict(self._default_batting_leaders())
         if leaders:
             formatted["AVG Leader"] = leaders.get("avg") or formatted["AVG Leader"]
             formatted["HR Leader"] = leaders.get("hr") or formatted["HR Leader"]
             formatted["RBI Leader"] = leaders.get("rbi") or formatted["RBI Leader"]
-        return list(formatted.items())
+        meta_map = meta if isinstance(meta, Mapping) else {}
+        entries: list[tuple[str, Any]] = []
+        for title, label in formatted.items():
+            key = self._BATTING_KEY_MAP.get(title)
+            info = meta_map.get(key) if isinstance(meta_map, Mapping) else None
+            entries.append((title, self._player_metric_value(label, info)))
+        return entries
 
     def _format_pitching_leaders(
         self,
         leaders: Mapping[str, str] | None,
-    ) -> list[tuple[str, str]]:
+        meta: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> list[tuple[str, Any]]:
         formatted = dict(self._default_pitching_leaders())
         if leaders:
             formatted["Wins Leader"] = leaders.get("wins") or formatted["Wins Leader"]
             formatted["SO Leader"] = leaders.get("so") or formatted["SO Leader"]
             formatted["Saves Leader"] = leaders.get("saves") or formatted["Saves Leader"]
-        return list(formatted.items())
+        meta_map = meta if isinstance(meta, Mapping) else {}
+        entries: list[tuple[str, Any]] = []
+        for title, label in formatted.items():
+            key = self._PITCHING_KEY_MAP.get(title)
+            info = meta_map.get(key) if isinstance(meta_map, Mapping) else None
+            entries.append((title, self._player_metric_value(label, info)))
+        return entries
 
-    def _set_batting_leader_row(self, entries: list[tuple[str, str]]) -> None:
+    def _player_metric_value(
+        self,
+        text: str,
+        info: Mapping[str, Any] | None,
+    ) -> Any:
+        if not info or not isinstance(info, Mapping):
+            return text
+        player_id_raw = info.get("player_id")
+        if not player_id_raw:
+            return text
+        player_id = str(player_id_raw)
+        name = str(info.get("name") or text.split(" ", 1)[0])
+
+        def _handler(pid: str = player_id) -> None:
+            self._open_player_profile(pid)
+
+        return {
+            "text": text,
+            "on_click": _handler,
+            "tooltip": f"View {name}'s profile",
+        }
+
+    def _set_batting_leader_row(self, entries: list[tuple[str, Any]]) -> None:
         self.metrics_card.layout().removeWidget(self.batting_row)
         self.batting_row.setParent(None)
         self._batting_leaders = entries
-        self.batting_row = build_metric_row(self._batting_leaders, columns=3)
+        self.batting_row = build_metric_row(
+            self._batting_leaders,
+            columns=3,
+            variant="leader",
+        )
         self.metrics_card.layout().insertWidget(2, self.batting_row)
 
-    def _set_pitching_leader_row(self, entries: list[tuple[str, str]]) -> None:
+    def _set_pitching_leader_row(self, entries: list[tuple[str, Any]]) -> None:
         self.metrics_card.layout().removeWidget(self.pitching_row)
         self.pitching_row.setParent(None)
         self._pitching_leaders = entries
-        self.pitching_row = build_metric_row(self._pitching_leaders, columns=3)
+        self.pitching_row = build_metric_row(
+            self._pitching_leaders,
+            columns=3,
+            variant="leader",
+        )
         self.metrics_card.layout().insertWidget(3, self.pitching_row)
+
+    def _open_player_profile(self, player_id: str) -> None:
+        opener = getattr(self._dashboard, "open_player_profile", None)
+        if callable(opener):
+            try:
+                opener(player_id)
+            except Exception:
+                pass
 
     def _toggle_news(self, checked: bool) -> None:
         if not self.news_toggle.isEnabled():

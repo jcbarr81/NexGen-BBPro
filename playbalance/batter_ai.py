@@ -8,8 +8,11 @@ functions below.  Defaults of ``0`` are assumed when attributes are missing.
 """
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Iterable, Tuple
+import logging
+import math
 import random
 
 from models.player import Player
@@ -19,6 +22,156 @@ from .probability import clamp01, roll
 from .constants import PITCH_RATINGS
 
 
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Swing diagnostics (optional instrumentation)
+# ---------------------------------------------------------------------------
+
+SWING_PITCH_DIAGNOSTICS: dict[tuple[str, int, int], dict[str, float]] = defaultdict(
+    lambda: {
+        "samples": 0.0,
+        "swings": 0.0,
+        "base_total": 0.0,
+        "final_total": 0.0,
+        "penalty_factor_total": 0.0,
+        "discipline_adjust_total": 0.0,
+        "count_adjust_total": 0.0,
+        "take_bonus_total": 0.0,
+        "two_strike_total": 0.0,
+    }
+)
+
+SWING_COUNT_DIAGNOSTICS: dict[tuple[int, int], dict[str, float]] = defaultdict(
+    lambda: {
+        "samples": 0.0,
+        "swings": 0.0,
+        "base_total": 0.0,
+        "final_total": 0.0,
+    }
+)
+
+AUTO_TAKE_DIAGNOSTICS: dict[tuple[int, int], dict[str, float]] = defaultdict(
+    lambda: {
+        "forced": 0.0,
+        "distance": 0.0,
+        "three_ball": 0.0,
+        "full": 0.0,
+        "other": 0.0,
+        "dist_total": 0.0,
+        "threshold_total": 0.0,
+    }
+)
+
+
+def reset_swing_diagnostics() -> None:
+    """Reset accumulated swing diagnostics."""
+
+    SWING_PITCH_DIAGNOSTICS.clear()
+    SWING_COUNT_DIAGNOSTICS.clear()
+    AUTO_TAKE_DIAGNOSTICS.clear()
+
+
+def _record_swing_diagnostic(
+    config: PlayBalanceConfig,
+    balls: int,
+    strikes: int,
+    pitch_kind: str,
+    breakdown: dict[str, float],
+    swing: bool,
+) -> None:
+    if not getattr(config, "collectSwingDiagnostics", 0):
+        return
+    key = (pitch_kind, balls, strikes)
+    data = SWING_PITCH_DIAGNOSTICS[key]
+    data["samples"] += 1.0
+    if swing:
+        data["swings"] += 1.0
+    data["base_total"] += breakdown.get("base_lookup", 0.0)
+    data["final_total"] += breakdown.get("final", 0.0)
+    data["penalty_factor_total"] += breakdown.get("penalty_factor", 0.0)
+    data["discipline_adjust_total"] += breakdown.get("discipline_adjust", 0.0)
+    data["count_adjust_total"] += breakdown.get("count_adjust", 0.0)
+    data["take_bonus_total"] += breakdown.get("take_bonus", 0.0)
+    data["two_strike_total"] += breakdown.get("two_strike_bonus", 0.0)
+
+    count_key = (balls, strikes)
+    count_data = SWING_COUNT_DIAGNOSTICS[count_key]
+    count_data["samples"] += 1.0
+    if swing:
+        count_data["swings"] += 1.0
+    count_data["base_total"] += breakdown.get("base_lookup", 0.0)
+    count_data["final_total"] += breakdown.get("final", 0.0)
+
+
+def record_auto_take(
+    config: PlayBalanceConfig,
+    *,
+    balls: int,
+    strikes: int,
+    reason: str,
+    distance: float,
+    threshold: float,
+) -> None:
+    """Record a forced take event for diagnostics."""
+
+    if not getattr(config, "collectSwingDiagnostics", 0):
+        return
+    entry = AUTO_TAKE_DIAGNOSTICS[(balls, strikes)]
+    entry["forced"] += 1.0
+    reason_key = reason if reason in {"distance", "three_ball", "full"} else "other"
+    entry[reason_key] += 1.0
+    entry["dist_total"] += distance
+    entry["threshold_total"] += threshold
+
+
+def swing_diagnostics_summary(limit: int | None = None) -> Iterable[str]:
+    """Yield formatted swing diagnostic summary lines."""
+
+    items: list[tuple[float, str]] = []
+    for (pitch_kind, balls, strikes), stats in SWING_PITCH_DIAGNOSTICS.items():
+        samples = stats["samples"]
+        if samples <= 0:
+            continue
+        swing_rate = stats["swings"] / samples
+        avg_base = stats["base_total"] / samples
+        avg_final = stats["final_total"] / samples
+        avg_penalty = stats["penalty_factor_total"] / samples
+        avg_disc = stats["discipline_adjust_total"] / samples
+        avg_count = stats["count_adjust_total"] / samples
+        items.append(
+            (
+                samples,
+                f"{pitch_kind} {balls}-{strikes}: n={samples:.0f} "
+                f"swing%={swing_rate:.3f} base={avg_base:.3f} "
+                f"final={avg_final:.3f} pen={avg_penalty:.3f} "
+                f"discAdj={avg_disc:.3f} countAdj={avg_count:.3f}",
+            )
+        )
+    items.sort(reverse=True)
+    if limit is not None:
+        items = items[:limit]
+    return [entry for _, entry in items]
+
+
+def auto_take_summary() -> Iterable[str]:
+    lines: list[str] = []
+    for (balls, strikes), stats in sorted(AUTO_TAKE_DIAGNOSTICS.items()):
+        forced = stats["forced"]
+        if forced <= 0:
+            continue
+        avg_dist = stats["dist_total"] / forced
+        avg_thresh = stats["threshold_total"] / forced
+        lines.append(
+            f"{balls}-{strikes}: forced={forced:.0f} "
+            f"distance={stats['distance'] / forced:.2f} "
+            f"three_ball={stats['three_ball'] / forced:.2f} "
+            f"full={stats['full'] / forced:.2f} "
+            f"other={stats['other'] / forced:.2f} "
+            f"avgDist={avg_dist:.2f} thresh={avg_thresh:.2f}"
+        )
+    return lines
 # ---------------------------------------------------------------------------
 # Strike-zone representation
 # ---------------------------------------------------------------------------
@@ -220,6 +373,7 @@ class BatterAI:
     _best_cache: Dict[str, str] = None  # type: ignore[assignment]
     last_decision: Tuple[bool, float] | None = None
     last_misread: bool = False
+    last_swing_breakdown: dict[str, float | str] | None = None
 
     def _primary_pitch(self, pitcher: Pitcher) -> str:
         if self._primary_cache is None:
@@ -311,23 +465,51 @@ class BatterAI:
             "close ball": "swingProbCloseBall",
             "sure ball": "swingProbSureBall",
         }[pitch_kind]
-        base = getattr(self.config, prob_key, 0.0)
+        base_raw = getattr(self.config, prob_key, 0.0)
         scale = getattr(self.config, "swingProbScale", 1.0)
         if pitch_kind in {"sure strike", "close strike"}:
             scale *= getattr(self.config, "zSwingProbScale", 1.0)
         else:
             scale *= getattr(self.config, "oSwingProbScale", 1.0)
-        swing_chance = clamp01(base * scale)
+        swing_chance = clamp01(base_raw * scale)
+
+        breakdown: dict[str, float | str] = {
+            "base_lookup": swing_chance,
+            "base_raw": base_raw,
+            "scale": scale,
+            "count_adjust": 0.0,
+            "close_ball_bonus": 0.0,
+            "discipline_adjust": 0.0,
+            "discipline_bias": 0.0,
+            "discipline_logit_offset": 0.0,
+            "penalty_factor": 1.0,
+            "penalty_source": 0.0,
+            "penalty_delta": 0.0,
+            "penalty_floor": 0.0,
+            "penalty_multiplier": 1.0,
+            "location_adjust": 0.0,
+            "take_bonus": 0.0,
+            "two_strike_bonus": 0.0,
+            "discipline_raw": 0.0,
+            "discipline_norm": 0.0,
+            "discipline_clamped": 0.0,
+            "discipline_logit": 0.0,
+            "close_strike_mix": 0.0,
+        }
 
         # Count-based adjustment allows tuning per ball-strike count.
         count_key = f"swingProb{balls}{strikes}CountAdjust"
-        swing_chance += getattr(self.config, count_key, 0) / 100.0
+        count_adjust = getattr(self.config, count_key, 0) / 100.0
+        swing_chance += count_adjust
+        breakdown["count_adjust"] = count_adjust
 
         # Strike-sensitive bonus for pitches just off the plate.
         if pitch_kind == "close ball":
-            swing_chance += strikes * getattr(
+            close_ball_bonus = strikes * getattr(
                 self.config, "closeBallStrikeBonus", 0
             ) / 100.0
+            swing_chance += close_ball_bonus
+            breakdown["close_ball_bonus"] = close_ball_bonus
             swing_chance = clamp01(swing_chance)
 
         dis_keys = (
@@ -340,43 +522,220 @@ class BatterAI:
         use_config_discipline = any(
             config_values.get(key, 0) not in (None, 0) for key in explicit_keys
         )
+        count_adj = getattr(self.config, f"disciplineRating{balls}{strikes}CountAdjust", 0)
+
+        count_suffix = f"{balls}{strikes}"
+
         if use_config_discipline:
             base = getattr(self.config, "disciplineRatingBase", 0)
             ch_pct = getattr(self.config, "disciplineRatingCHPct", 0)
             exp_pct = getattr(self.config, "disciplineRatingExpPct", 0)
             ch_score = getattr(batter, "ch", 50) * ch_pct / 100.0
             exp_score = getattr(batter, "exp", 50) * exp_pct / 100.0
-            discipline = clamp01((base + ch_score + exp_score) / 100.0)
+            discipline_raw = base + ch_score + exp_score + count_adj
         else:
-            discipline = getattr(batter, "ch", 50) / 100.0
-        zone_weight = getattr(self.config, "swingZoneDisciplineWeight", None) or 0.1
-        ball_weight = getattr(self.config, "swingBallDisciplineWeight", None) or 0.05
-        disc_pct = getattr(self.config, "disciplineRatingPct", 0) / 100.0
-        ball_penalty = getattr(self.config, "disciplineBallPenalty", None) or 1.0
-        if pitch_kind in {"sure strike", "close strike"}:
-            swing_chance += (discipline - 0.5) * zone_weight
+            discipline_raw = getattr(batter, "ch", 50) + count_adj
+
+        raw_scale_default = float(self.config.get("disciplineRawScaleDefault", 1.0))
+        raw_scale = float(
+            self.config.get(f"disciplineRawScale{count_suffix}", raw_scale_default)
+        )
+        discipline_raw_scaled = discipline_raw * raw_scale
+        discipline_norm = discipline_raw_scaled / 100.0
+        discipline_clamped = clamp01(discipline_norm)
+
+        three_ball_scale = float(self.config.get("disciplineThreeBallScale", 0.5))
+        zone_weight = float(self.config.get("swingZoneDisciplineWeight", 0.1) or 0.0) or 0.1
+        ball_weight = float(self.config.get("swingBallDisciplineWeight", 0.05) or 0.0) or 0.05
+        three_ball_weight_scale = getattr(
+            self.config, "swingBallThreeBallWeightScale", 0.5
+        )
+        eff_ball_weight = ball_weight * (three_ball_weight_scale if balls >= 3 else 1.0)
+        disc_pct = float(self.config.get("disciplineRatingPct", 0)) / 100.0
+        ball_penalty = float(self.config.get("disciplineBallPenalty", 1.0) or 1.0)
+
+        logit_center = float(self.config.get("disciplineSwingLogitCenter", 110.0))
+        logit_center = float(
+            self.config.get(f"disciplineSwingLogitCenter{count_suffix}", logit_center)
+        )
+        logit_slope = float(self.config.get("disciplineSwingLogitSlope", 0.05))
+        logit_slope = float(
+            self.config.get(f"disciplineSwingLogitSlope{count_suffix}", logit_slope)
+        )
+        logit_weight = float(self.config.get("disciplineSwingLogitWeight", 1.0))
+        logit_weight = float(
+            self.config.get(f"disciplineSwingLogitWeight{count_suffix}", logit_weight)
+        )
+        logit_offset = float(
+            self.config.get(f"disciplineSwingLogitOffset{count_suffix}", 0.0)
+        )
+        log_arg = (discipline_raw_scaled - logit_center) * logit_slope + logit_offset
+        if log_arg >= 60:
+            discipline_logit = 1.0
+        elif log_arg <= -60:
+            discipline_logit = 0.0
         else:
-            swing_chance += (0.5 - discipline) * ball_weight
-            swing_chance *= max(0.0, 1.0 - discipline * disc_pct * ball_penalty)
+            discipline_logit = 1.0 / (1.0 + math.exp(-log_arg))
+        discipline_bias = (discipline_logit - 0.5) * logit_weight
+        three_ball_logit_scale = float(
+            self.config.get("disciplineThreeBallLogitScale", three_ball_scale)
+        )
+        three_ball_logit_scale = float(
+            self.config.get(
+                f"disciplineThreeBallLogitScale{count_suffix}", three_ball_logit_scale
+            )
+        )
+        if balls >= 3:
+            discipline_bias *= three_ball_logit_scale
+        discipline_logit = max(0.0, min(1.0, 0.5 + discipline_bias))
+
+        discipline_adjust = 0.0
+        penalty_factor = 1.0
+        penalty_delta = 0.0
+        penalty_source = discipline_logit
+        penalty_floor = float(self.config.get("disciplinePenaltyFloorDefault", 0.0))
+        penalty_floor = float(
+            self.config.get(f"disciplinePenaltyFloor{count_suffix}", penalty_floor)
+        )
+        if balls >= 3:
+            penalty_floor = max(
+                penalty_floor,
+                float(self.config.get("disciplinePenaltyFloorThreeBall", 0.35)),
+            )
+            if strikes >= 2:
+                penalty_floor = max(
+                    penalty_floor,
+                    float(self.config.get("disciplinePenaltyFloorFullCount", 0.45)),
+                )
+        elif balls == 2:
+            penalty_floor = max(
+                penalty_floor, float(self.config.get("disciplinePenaltyFloorTwoBall", 0.2))
+            )
+        elif balls == 1:
+            penalty_floor = max(
+                penalty_floor, float(self.config.get("disciplinePenaltyFloorOneBall", 0.05))
+            )
+
+        if balls >= 3:
+            discipline_clamped = 0.5 + (discipline_clamped - 0.5) * three_ball_scale
+
+        penalty_scale = 0.0
+        close_strike_mix = 0.0
+        if pitch_kind == "sure strike":
+            discipline_adjust = discipline_bias * zone_weight
+            swing_chance += discipline_adjust
+        elif pitch_kind == "close strike":
+            close_strike_mix = float(self.config.get("closeStrikeDisciplineMix", 0.35))
+            zone_component = discipline_bias * zone_weight * max(0.0, 1.0 - close_strike_mix)
+            ball_component = -discipline_bias * eff_ball_weight * max(0.0, min(close_strike_mix, 1.0))
+            discipline_adjust = zone_component + ball_component
+            swing_chance += discipline_adjust
+            penalty_scale = max(0.0, min(close_strike_mix, 1.0))
+        else:
+            discipline_adjust = -discipline_bias * eff_ball_weight
+            swing_chance += discipline_adjust
+            penalty_scale = 1.0
+
+        if penalty_scale > 0.0:
+            penalty = max(0.0, penalty_source) * disc_pct * ball_penalty * penalty_scale
+            penalty_multiplier = float(
+                self.config.get(
+                    f"disciplinePenaltyMultiplier{count_suffix}",
+                    self.config.get("disciplinePenaltyMultiplierDefault", 1.0),
+                )
+            )
+            penalty *= max(0.0, penalty_multiplier)
+            if balls >= 3:
+                penalty *= getattr(self.config, "disciplineThreeBallPenaltyScale", 0.5)
+                penalty *= float(
+                    self.config.get(
+                        f"disciplineThreeBallPenaltyScale{count_suffix}", 1.0
+                    )
+                )
+            penalty_factor = max(penalty_floor, max(0.0, 1.0 - penalty))
+            pre_penalty = swing_chance
+            swing_chance *= penalty_factor
+            penalty_delta = swing_chance - pre_penalty
+            breakdown["penalty_multiplier"] = penalty_multiplier
+
+        breakdown["discipline_adjust"] = discipline_adjust
+        breakdown["discipline_bias"] = discipline_bias
+        breakdown["penalty_source"] = penalty_source
+        breakdown["penalty_factor"] = penalty_factor
+        breakdown["penalty_delta"] = penalty_delta
+        breakdown["penalty_floor"] = penalty_floor
+        breakdown["discipline_raw"] = discipline_raw
+        breakdown["discipline_raw_scaled"] = discipline_raw_scaled
+        breakdown["discipline_norm"] = discipline_norm
+        breakdown["discipline_clamped"] = discipline_clamped
+        breakdown["discipline_logit"] = discipline_logit
+        breakdown["close_strike_mix"] = close_strike_mix
+        breakdown["discipline_logit_offset"] = logit_offset
 
         # Location-based adjustment penalises pitches further from the target.
         dx_abs = abs(dx) if dx is not None else 0.0
         dy_abs = abs(dy) if dy is not None else 0.0
         loc_factor = getattr(self.config, "swingLocationFactor", 0.0) / 100.0
-        swing_chance -= (dx_abs + dy_abs) * loc_factor
+        location_penalty = (dx_abs + dy_abs) * loc_factor
+        swing_chance -= location_penalty
+        breakdown["location_adjust"] = -location_penalty
 
         if pitch_kind == "close ball" and strikes < 2:
-            swing_chance -= getattr(self.config, "closeBallTakeBonus", 0) / 100.0
+            take_bonus = getattr(self.config, "closeBallTakeBonus", 0) / 100.0
+            swing_chance -= take_bonus
         elif pitch_kind == "sure ball":
-            swing_chance -= getattr(self.config, "sureBallTakeBonus", 0) / 100.0
+            take_bonus = getattr(self.config, "sureBallTakeBonus", 0) / 100.0
+            swing_chance -= take_bonus
+        else:
+            take_bonus = 0.0
+        breakdown["take_bonus"] = -take_bonus if take_bonus else 0.0
 
         swing_chance = clamp01(swing_chance)
         self.last_swing_chance = swing_chance
+        breakdown["pre_two_strike"] = swing_chance
         # Two-strike protection: become more aggressive to reduce called Ks.
         # Tunable via config key "twoStrikeSwingBonus" (percent additive).
         if strikes >= 2:
-            swing_chance += getattr(self.config, "twoStrikeSwingBonus", 0) / 100.0
+            two_strike_bonus = getattr(self.config, "twoStrikeSwingBonus", 0) / 100.0
+            swing_chance += two_strike_bonus
+            breakdown["two_strike_bonus"] = two_strike_bonus
             swing_chance = clamp01(swing_chance)
+        breakdown["final"] = swing_chance
+        breakdown["discipline"] = discipline_clamped
+        breakdown["discipline_pct"] = disc_pct
+        breakdown["discipline_penalty"] = ball_penalty
+        breakdown["pitch_kind"] = pitch_kind
+        self.last_swing_breakdown = breakdown
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                (
+                    "Swing chance breakdown count=%d-%d pitch=%s swing_type=%s "
+                    "base=%.3f scale=%.2f count_adj=%.3f close_ball=%.3f disc_adj=%.3f pen_factor=%.3f "
+                    "pen_delta=%.3f loc=%.3f take=%.3f two_strike=%.3f final=%.3f "
+                    "disc_raw=%.1f disc_logit=%.3f bias=%.3f disc_pct=%.3f penalty_coef=%.2f floor=%.2f"
+                ),
+                balls,
+                strikes,
+                pitch_kind,
+                swing_type,
+                breakdown["base_lookup"],
+                breakdown["scale"],
+                breakdown["count_adjust"],
+                breakdown["close_ball_bonus"],
+                breakdown["discipline_adjust"],
+                breakdown["penalty_factor"],
+                breakdown["penalty_delta"],
+                breakdown["location_adjust"],
+                breakdown["take_bonus"],
+                breakdown["two_strike_bonus"],
+                breakdown["final"],
+                breakdown["discipline_raw"],
+                breakdown["discipline_logit"],
+                breakdown["discipline_bias"],
+                disc_pct,
+                ball_penalty,
+                breakdown["penalty_floor"],
+            )
         if rv < swing_chance:
             swing = True
 
@@ -540,6 +899,16 @@ class BatterAI:
                     contact_quality = min(contact_quality, two_strike_quality_cap)
         else:
             self.last_contact = False
+
+        if getattr(self.config, "collectSwingDiagnostics", 0):
+            _record_swing_diagnostic(
+                self.config,
+                balls,
+                strikes,
+                pitch_kind,
+                breakdown,
+                swing,
+            )
 
         # Add minor variation at perfect-ID to avoid identical values in tests
         if swing and check_random is None and id_prob >= 1.0:

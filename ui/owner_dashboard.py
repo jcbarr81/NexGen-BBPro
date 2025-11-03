@@ -5,7 +5,7 @@ import importlib
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Mapping, Optional
 from types import SimpleNamespace
 
 import bcrypt
@@ -921,6 +921,24 @@ class OwnerDashboard(QMainWindow):
 
     def open_player_browser_dialog(self) -> None:
         show_on_top(PlayerBrowserDialog(self.players, self.roster, self))
+
+    def open_player_profile(self, player_id: str) -> None:
+        player = None
+        try:
+            if isinstance(self.players, Mapping):
+                player = self.players.get(player_id)
+            else:
+                player = getattr(self.players, "get", lambda _pid: None)(player_id)
+        except Exception:
+            player = None
+        if player is None:
+            return
+        try:
+            from ui.player_profile_dialog import PlayerProfileDialog
+
+            show_on_top(PlayerProfileDialog(player, self))
+        except Exception:
+            pass
 
     def open_reassign_players_dialog(self) -> None:
         show_on_top(ReassignPlayersDialog(self.players, self.roster, self))

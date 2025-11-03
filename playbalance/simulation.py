@@ -5,7 +5,7 @@ import math
 import random
 import os
 from dataclasses import dataclass, field, fields, replace
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from models.player import Player
 from models.pitcher import Pitcher
@@ -16,7 +16,8 @@ from playbalance.substitution_manager import SubstitutionManager
 from playbalance.playbalance_config import PlayBalanceConfig
 from playbalance.physics import Physics, bat_impact as bat_impact_func
 from playbalance.pitcher_ai import PitcherAI
-from playbalance.batter_ai import BatterAI
+from playbalance.batter_ai import BatterAI, record_auto_take
+from playbalance.diagnostics.batter_decision import BatterDecisionTracker
 from playbalance.bullpen import WarmupTracker
 from playbalance.fielding_ai import FieldingAI
 from playbalance.field_geometry import DEFAULT_POSITIONS, Stadium, FIRST_BASE, SECOND_BASE
@@ -252,6 +253,8 @@ class GameSimulation:
         self.last_ground_fielder: str | None = None
         self.last_batted_ball_type: str | None = None
         self.last_pitch_speed: float | None = None
+        self.batter_decision_tracker: BatterDecisionTracker | None = None
+        self._pending_batter_decision: dict[str, Any] | None = None
         base = get_base_dir()
         data_path = (
             base
@@ -320,6 +323,102 @@ class GameSimulation:
         team_obj = getattr(team, "team", None)
         team_id = getattr(team_obj, "team_id", None)
         return bool(team_id)
+
+    def set_batter_decision_tracker(
+        self, tracker: BatterDecisionTracker | None
+    ) -> None:
+        """Attach a BatterDecisionTracker for per-pitch swing/take logging."""
+
+        self.batter_decision_tracker = tracker
+
+    def _log_batter_decision(
+        self,
+        *,
+        balls: int,
+        strikes: int,
+        in_zone: bool,
+        swing: bool,
+        contact: bool,
+        foul: bool,
+        ball_in_play: bool,
+        hit: bool,
+        ball: bool,
+        called_strike: bool,
+        walk: bool,
+        strikeout: bool,
+        hbp: bool,
+        breakdown: dict[str, float | str] | None,
+    ) -> None:
+        tracker = self.batter_decision_tracker
+        if tracker is None:
+            return
+        tracker.record(
+            balls=balls,
+            strikes=strikes,
+            in_zone=in_zone,
+            swing=swing,
+            contact=contact,
+            foul=foul,
+            ball_in_play=ball_in_play,
+            hit=hit,
+            ball=ball,
+            called_strike=called_strike,
+            walk=walk,
+            strikeout=strikeout,
+            hbp=hbp,
+            breakdown=breakdown,
+        )
+
+    def _queue_batter_decision(
+        self,
+        *,
+        balls: int,
+        strikes: int,
+        in_zone: bool,
+        swing: bool,
+        contact: bool,
+        foul: bool,
+        ball_in_play: bool,
+        hit: bool,
+        ball: bool,
+        called_strike: bool,
+        walk: bool,
+        strikeout: bool,
+        hbp: bool,
+        breakdown: dict[str, float | str] | None,
+        immediate: bool = False,
+    ) -> None:
+        if self.batter_decision_tracker is None:
+            return
+        self._pending_batter_decision = {
+            "balls": balls,
+            "strikes": strikes,
+            "in_zone": in_zone,
+            "swing": swing,
+            "contact": contact,
+            "foul": foul,
+            "ball_in_play": ball_in_play,
+            "hit": hit,
+            "ball": ball,
+            "called_strike": called_strike,
+            "walk": walk,
+            "strikeout": strikeout,
+            "hbp": hbp,
+            "breakdown": breakdown,
+        }
+        if immediate:
+            self._flush_batter_decision()
+
+    def _flush_batter_decision(self) -> None:
+        if (
+            self.batter_decision_tracker is None
+            or self._pending_batter_decision is None
+        ):
+            self._pending_batter_decision = None
+            return
+        data = self._pending_batter_decision
+        self._pending_batter_decision = None
+        self._log_batter_decision(**data)
 
     def _maybe_apply_injury(
         self,
@@ -1259,6 +1358,23 @@ class GameSimulation:
         run_diff = offense.runs - defense.runs
 
         while True:
+            self._flush_batter_decision()
+            decision_data: dict[str, Any] = {
+                "balls": balls,
+                "strikes": strikes,
+                "in_zone": False,
+                "swing": False,
+                "contact": False,
+                "foul": False,
+                "ball_in_play": False,
+                "hit": False,
+                "ball": False,
+                "called_strike": False,
+                "walk": False,
+                "strikeout": False,
+                "hbp": False,
+                "breakdown": None,
+            }
             real_pitch_count = (pitcher_state.pitches_thrown - start_pitches) - (
                 getattr(pitcher_state, "simulated_pitches", 0) - start_simulated
             )
@@ -1530,6 +1646,7 @@ class GameSimulation:
             plate_w = getattr(self.config, "plateWidth", 3)
             plate_h = getattr(self.config, "plateHeight", 3)
             in_zone = dist <= max(plate_w, plate_h)
+            decision_data["in_zone"] = in_zone
             self._last_pitch_distance = dist
             self._last_pitch_in_zone = in_zone
             dec_r = self.rng.random()
@@ -1565,10 +1682,57 @@ class GameSimulation:
                 step_take = float(self.config.get("autoTakeDistanceBallStep", 0.5))
                 min_take = float(self.config.get("autoTakeDistanceMin", 1.5))
                 auto_take_dist = max(min_take, base_take - balls * step_take)
-                if dist >= auto_take_dist or balls >= 3:
+                force_take = dist >= auto_take_dist
+                force_reason = "distance" if force_take else None
+                if not force_take and balls >= 3:
+                    force_three_ball = bool(int(getattr(self.config, "autoTakeForceThreeBall", 1)))
+                    force_full_count = bool(
+                        int(
+                            getattr(
+                                self.config,
+                                "autoTakeForceFullCount",
+                                getattr(self.config, "autoTakeForceThreeBall", 1),
+                            )
+                        )
+                    )
+                    if strikes >= 2:
+                        force_take = force_full_count
+                        if force_take:
+                            force_reason = "full"
+                    else:
+                        force_take = force_three_ball
+                        if force_take:
+                            force_reason = "three_ball"
+                if force_take and balls >= 3:
+                    chase_base = float(getattr(self.config, "autoTakeThreeBallChaseChance", 0.0))
+                    chase_override = getattr(self.config, "values", {}).get(
+                        f"autoTakeChaseChance{balls}{strikes}"
+                    )
+                    if chase_override not in (None, ""):
+                        try:
+                            chase_base = float(chase_override)
+                        except (TypeError, ValueError):
+                            pass
+                    if chase_base > 0.0 and self.rng.random() < chase_base:
+                        force_take = False
+                        force_reason = None
+                if force_take:
                     swing = False
                     contact_quality = 0.0
+                    record_auto_take(
+                        self.config,
+                        balls=balls,
+                        strikes=strikes,
+                        reason=force_reason or "other",
+                        distance=float(dist),
+                        threshold=float(auto_take_dist),
+                    )
+            decision_data["swing"] = bool(swing)
+            decision_data["breakdown"] = getattr(
+                self.batter_ai, "last_swing_breakdown", None
+            )
             contact = getattr(self.batter_ai, "last_contact", contact_quality > 0)
+            decision_data["contact"] = bool(contact)
             catcher_fs = self._get_fielder(defense, "C")
             if swing and self._maybe_catcher_interference(
                 offense,
@@ -1624,6 +1788,7 @@ class GameSimulation:
                     strikes += 1
                     self._maybe_passed_ball(offense, defense, catcher_fs)
                     if strikes >= 3:
+                        decision_data["strikeout"] = True
                         self.logged_strikeouts += 1
                         self._add_stat(batter_state, "ab")
                         self._add_stat(batter_state, "so")
@@ -1651,6 +1816,7 @@ class GameSimulation:
                         self.subs.maybe_warm_reliever(
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
+                        self._queue_batter_decision(**decision_data, immediate=True)
                         return outs + outs_from_pick
                     continue
                 bases, error = self._swing_result(
@@ -1665,6 +1831,7 @@ class GameSimulation:
                     start_pitches=start_pitches,
                 )
                 if self._last_swing_strikeout:
+                    decision_data["strikeout"] = True
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
@@ -1694,8 +1861,11 @@ class GameSimulation:
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
+                    self._queue_batter_decision(**decision_data, immediate=True)
                     return outs + outs_from_pick
                 if self.infield_fly:
+                    decision_data["ball_in_play"] = True
+                    decision_data["contact"] = True
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
@@ -1715,8 +1885,11 @@ class GameSimulation:
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
+                    self._queue_batter_decision(**decision_data, immediate=True)
                     return outs + outs_from_pick
                 if bases == 0:
+                    decision_data["ball_in_play"] = True
+                    decision_data["contact"] = True
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
@@ -1839,14 +2012,18 @@ class GameSimulation:
                         self.subs.maybe_warm_reliever(
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
+                        self._queue_batter_decision(**decision_data, immediate=True)
                         return outs + outs_from_pick
                     self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
+                    self._queue_batter_decision(**decision_data, immediate=True)
                     return outs + outs_from_pick
                 if bases:
+                    decision_data["ball_in_play"] = True
+                    decision_data["contact"] = True
                     if in_zone:
                         pitcher_state.strikes_thrown += 1
                     else:
@@ -1873,6 +2050,7 @@ class GameSimulation:
                     else:
                         pitcher_state.h += 1
                         self._add_stat(batter_state, "h")
+                        decision_data["hit"] = True
                         if bases == 4:
                             pitcher_state.hr += 1
                             pitcher_state.allowed_hr = True
@@ -1916,6 +2094,7 @@ class GameSimulation:
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
+                    self._queue_batter_decision(**decision_data, immediate=True)
                     return outs + outs_from_pick
                 foul_chance = self._foul_probability(
                     batter,
@@ -1925,6 +2104,8 @@ class GameSimulation:
                     misread=self.batter_ai.last_misread,
                 )
                 if contact and self.rng.random() < foul_chance:
+                    decision_data["foul"] = True
+                    decision_data["contact"] = True
                     if not in_zone:
                         self._record_ball(pitcher_state)
                     pitcher_state.strikes_thrown += 1
@@ -1953,11 +2134,13 @@ class GameSimulation:
                             run_diff=run_diff,
                             home_team=home_team,
                         )
+                        self._queue_batter_decision(**decision_data, immediate=True)
                         return outs + outs_from_pick
                     if strikes < 2:
                         if first_pitch_this_pitch and strikes == 0:
                             pitcher_state.first_pitch_strikes += 1
                         strikes += 1
+                    self._queue_batter_decision(**decision_data, immediate=False)
                     continue
                 if first_pitch_this_pitch and strikes == 0:
                     pitcher_state.first_pitch_strikes += 1
@@ -1968,11 +2151,13 @@ class GameSimulation:
                     pitcher_state.strikes_thrown += 1
             else:
                 if in_zone:
+                    decision_data["called_strike"] = True
                     strikes += 1
                     if first_pitch_this_pitch and strikes == 1:
                         pitcher_state.first_pitch_strikes += 1
                     pitcher_state.strikes_thrown += 1
                 else:
+                    decision_data["ball"] = True
                     hbp_dist = self.config.get("closeBallDist", 5) + self.rng.randint(1, 2)
                     league_hbp = self.config.get("leagueHBPPerGame", 0.86)
                     if league_hbp > 0:
@@ -1989,6 +2174,8 @@ class GameSimulation:
                             if step_out_roll < step_out_chance:
                                 is_hbp = False
                         if is_hbp:
+                            decision_data["hbp"] = True
+                            decision_data["ball"] = False
                             self._add_stat(batter_state, "hbp")
                             pitcher_state.hbp += 1
                             pitcher_state.toast += self.config.get(
@@ -2012,14 +2199,17 @@ class GameSimulation:
                                 run_diff=run_diff,
                                 home_team=home_team,
                             )
+                            self._queue_batter_decision(**decision_data, immediate=True)
                             return outs + outs_from_pick
                     if orig_swing and contact_quality <= 0:
+                        decision_data["ball"] = False
                         self._maybe_passed_ball(offense, defense, catcher_fs)
                         pitcher_state.strikes_thrown += 1
                         if first_pitch_this_pitch and strikes == 0:
                             pitcher_state.first_pitch_strikes += 1
                         strikes += 1
                         if strikes >= 3:
+                            decision_data["strikeout"] = True
                             self.logged_strikeouts += 1
                             self._add_stat(batter_state, "ab")
                             self._add_stat(batter_state, "so")
@@ -2048,7 +2238,9 @@ class GameSimulation:
                                 run_diff=run_diff,
                                 home_team=home_team,
                             )
+                            self._queue_batter_decision(**decision_data, immediate=True)
                             return outs + outs_from_pick
+                        self._queue_batter_decision(**decision_data, immediate=False)
                         continue
                     else:
                         balls += 1
@@ -2064,6 +2256,7 @@ class GameSimulation:
                 self.three_ball_counts += 1
 
             if balls >= 4:
+                decision_data["walk"] = True
                 self._add_stat(batter_state, "bb")
                 pitcher_state.bb += 1
                 pitcher_state.walks += 1
@@ -2079,8 +2272,10 @@ class GameSimulation:
                 self.subs.maybe_warm_reliever(
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
                 )
+                self._queue_batter_decision(**decision_data, immediate=True)
                 return outs + outs_from_pick
             if strikes >= 3:
+                decision_data["strikeout"] = True
                 self.logged_strikeouts += 1
                 self._add_stat(batter_state, "ab")
                 self._add_stat(batter_state, "so")
@@ -2110,7 +2305,10 @@ class GameSimulation:
                 self.subs.maybe_warm_reliever(
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
                 )
+                self._queue_batter_decision(**decision_data, immediate=True)
                 return outs + outs_from_pick
+
+            self._queue_batter_decision(**decision_data, immediate=False)
 
 
     # ------------------------------------------------------------------

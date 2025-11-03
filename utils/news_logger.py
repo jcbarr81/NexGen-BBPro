@@ -7,6 +7,25 @@ from utils.path_utils import get_base_dir
 NEWS_FILE = get_base_dir() / "data" / "news_feed.txt"
 NEWS_JSONL = get_base_dir() / "data" / "news_feed.jsonl"
 
+_MOJIBAKE_REPLACEMENTS: dict[str, str] = {
+    "â€”": " - ",
+    "â€“": "-",
+    "â€™": "'",
+    "â€œ": '"',
+    "â€": '"',
+    "â€˜": "'",
+    "â€¢": "-",
+}
+
+
+def sanitize_news_text(text: str) -> str:
+    """Replace common mojibake artifacts with ASCII-friendly equivalents."""
+
+    cleaned = text
+    for src, replacement in _MOJIBAKE_REPLACEMENTS.items():
+        cleaned = cleaned.replace(src, replacement)
+    return cleaned
+
 
 def log_news_event(event: str, *, category: str | None = None, team_id: str | None = None, file_path: Path = NEWS_FILE):
     """Append a timestamped news event to the news feed file.
@@ -29,7 +48,7 @@ def log_news_event(event: str, *, category: str | None = None, team_id: str | No
     tag_cat = f" [{category}]" if category else ""
     tag_team = f" [{team_id}]" if team_id else ""
     with path.open(mode="a", encoding="utf-8") as f:
-        f.write(f"[{timestamp}]{tag_cat}{tag_team} {event}\n")
+        f.write(f"[{timestamp}]{tag_cat}{tag_team} {sanitize_news_text(event)}\n")
 
 
 def log_news_json(event: str, *, category: str | None = None, team_id: str | None = None, jsonl_path: Path = NEWS_JSONL) -> None:
@@ -37,7 +56,7 @@ def log_news_json(event: str, *, category: str | None = None, team_id: str | Non
 
     rec = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "event": event,
+        "event": sanitize_news_text(event),
         "category": category,
         "team_id": team_id,
     }

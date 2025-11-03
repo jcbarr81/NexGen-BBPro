@@ -15,6 +15,11 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+try:  # PyQt6.sip is optional depending on packaging
+    from PyQt6 import sip
+except Exception:  # pragma: no cover - defensive import
+    sip = None  # type: ignore
+
 from playbalance.league_creator import create_league
 from playbalance.schedule_generator import generate_mlb_schedule, save_schedule
 from playbalance.season_manager import SeasonManager, SeasonPhase
@@ -24,7 +29,11 @@ from ui.window_utils import ensure_on_top
 from utils.news_logger import log_news_event
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
+from utils.player_writer import save_players_to_csv
+from utils.roster_loader import load_roster, save_roster
+from services.injury_manager import recover_from_injury
 from utils.pitcher_recovery import PitcherRecoveryTracker
+from utils.stats_persistence import reset_stats
 from utils.team_loader import load_teams
 from services.standings_repository import save_standings
 
@@ -35,6 +44,20 @@ AfterCallback = Optional[Callable[[], None]]
 
 def _schedule(callback: Callable[[], None]) -> None:
     QTimer.singleShot(0, callback)
+
+
+def _alive_widget(widget: Optional[QWidget]) -> Optional[QWidget]:
+    """Return *widget* when still valid, otherwise ``None``."""
+
+    if widget is None:
+        return None
+    if sip is not None:
+        try:
+            if sip.isdeleted(widget):  # type: ignore[attr-defined]
+                return None
+        except Exception:
+            pass
+    return widget
 
 
 def create_league_action(
@@ -252,29 +275,14 @@ def reset_season_to_opening_day(
             pass
 
         try:
-            stats_file.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                if history_dir.exists():
-                    shutil.rmtree(history_dir)
-            except Exception:
-                pass
-            try:
-                lock = stats_file.with_suffix(stats_file.suffix + ".lock")
-                if lock.exists():
-                    lock.unlink()
-            except Exception:
-                pass
-            if stats_file.exists():
-                try:
-                    stats_file.unlink()
-                except Exception:
-                    pass
-            stats_file.write_text(
-                '{"players": {}, "teams": {}, "history": []}',
-                encoding="utf-8",
-            )
-        except Exception:
-            pass
+            reset_stats(stats_file)
+        except Exception as exc:
+            notes.append(f"Failed resetting season stats: {exc}")
+        try:
+            if history_dir.exists():
+                shutil.rmtree(history_dir)
+        except Exception as exc:
+            notes.append(f"Failed clearing season history: {exc}")
 
         try:
             if first_year is not None:
@@ -322,6 +330,67 @@ def reset_season_to_opening_day(
                     pass
         except Exception:
             pass
+
+        try:
+            players_path = data_root / "players.csv"
+            players = list(load_players_from_csv(players_path))
+            players_by_id = {}
+            if players:
+                for player in players:
+                    player.injured = False
+                    player.injury_description = None
+                    player.return_date = None
+                    player.injury_list = None
+                    player.injury_start_date = None
+                    player.injury_minimum_days = None
+                    player.injury_eligible_date = None
+                    player.injury_rehab_assignment = None
+                    player.injury_rehab_days = 0
+                    if hasattr(player, "ready"):
+                        player.ready = True
+                players_by_id = {player.player_id: player for player in players}
+                save_players_to_csv(players, str(players_path))
+            roster_dir = data_root / "rosters"
+            if roster_dir.exists():
+                for roster_file in roster_dir.glob("*.csv"):
+                    team_id = roster_file.stem
+                    try:
+                        roster = load_roster(team_id, roster_dir)
+                    except Exception:
+                        continue
+                    changed = False
+                    injured_ids = list(getattr(roster, "dl", []) or []) + list(getattr(roster, "ir", []) or [])
+                    for pid in injured_ids:
+                        player = players_by_id.get(pid)
+                        if player is None:
+                            if pid in roster.dl:
+                                roster.dl.remove(pid)
+                                changed = True
+                            if pid in roster.ir:
+                                roster.ir.remove(pid)
+                                changed = True
+                            roster.dl_tiers.pop(pid, None)
+                            continue
+                        try:
+                            recover_from_injury(player, roster, destination="act", force=True)
+                            changed = True
+                        except Exception:
+                            if pid in roster.dl:
+                                roster.dl.remove(pid)
+                                changed = True
+                            if pid in roster.ir:
+                                roster.ir.remove(pid)
+                                changed = True
+                            roster.dl_tiers.pop(pid, None)
+                    if changed:
+                        roster.promote_replacements()
+                        save_roster(team_id, roster)
+                        try:
+                            load_roster.cache_clear(team_id, roster_dir)  # type: ignore[attr-defined]
+                        except Exception:
+                            pass
+        except Exception as exc:
+            notes.append(f"Failed clearing injuries: {exc}")
 
         try:
             manager = SeasonManager()
@@ -400,11 +469,12 @@ def reset_season_to_opening_day(
             kind, message = "error", str(exc)
 
         def finish() -> None:
-            if parent is not None:
+            dialog_parent = _alive_widget(parent)
+            if dialog_parent is not None:
                 if kind == "success":
-                    QMessageBox.information(parent, "Reset Complete", message)
+                    QMessageBox.information(dialog_parent, "Reset Complete", message)
                 else:
-                    QMessageBox.warning(parent, "Reset Failed", message)
+                    QMessageBox.warning(dialog_parent, "Reset Failed", message)
             if context.show_toast:
                 toast_kind = "success" if kind == "success" else "error"
                 context.show_toast(toast_kind, message)

@@ -43,7 +43,7 @@ except Exception:  # pragma: no cover - headless stubs
     class QHBoxLayout(QVBoxLayout): pass
 
 from pathlib import Path
-from utils.news_logger import NEWS_FILE
+from utils.news_logger import NEWS_FILE, sanitize_news_text
 
 
 class NewsWindow(QDialog):
@@ -92,7 +92,9 @@ class NewsWindow(QDialog):
             if not path.exists():
                 self.text.setPlainText("No news yet.")
                 return
-            txt = path.read_text(encoding="utf-8")
+            raw = path.read_text(encoding="utf-8")
+            lines = [sanitize_news_text(line) for line in raw.splitlines()]
+            txt = "\n".join(lines)
             term = ""
             try:
                 term = self.filter_edit.text().strip()
@@ -111,4 +113,3 @@ class NewsWindow(QDialog):
 
 
 __all__ = ["NewsWindow"]
-

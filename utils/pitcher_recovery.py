@@ -654,6 +654,10 @@ class PitcherRecoveryTracker:
             pitches = int(getattr(state, "pitches_thrown", 0) or 0)
             if pitches <= 0:
                 continue
+            # ``simulated_pitches`` is a legacy field from the phantom pitch era.
+            # Calibration now records real waste/foul pitches so the value is
+            # normally ``0``; keep the addition for backward compatibility with
+            # archived schedules that still use phantom padding.
             simulated = int(getattr(state, "simulated_pitches", 0) or 0)
             role = self._role_key(self._assigned_role_for(pitcher))
             rest_days = _rest_days(pitches)

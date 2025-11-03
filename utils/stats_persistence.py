@@ -15,6 +15,7 @@ from typing import Any, Dict, Iterable
 import contextlib
 import errno
 import os
+import tempfile
 import time
 from datetime import date as _date
 from datetime import datetime as _dt
@@ -238,6 +239,46 @@ def merge_daily_history(
     with file_path.open("w", encoding="utf-8") as f:
         json.dump({"players": players, "teams": teams, "history": history}, f, indent=2)
     return file_path
+
+
+def reset_stats(path: str | Path = "data/season_stats.json") -> Path:
+    """Overwrite the season stats file with an empty payload.
+
+    Uses the shared lock file to avoid clobbering concurrent writes and
+    replaces the target atomically to minimize the risk of partial writes.
+    """
+
+    file_path = _resolve_path(path)
+    lock_path = file_path.with_suffix(file_path.suffix + ".lock")
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"players": {}, "teams": {}, "history": []}
+
+    attempts = 0
+    while True:
+        attempts += 1
+        try:
+            with lock_path.open("a+") as lock_file:
+                with _locked(lock_file):
+                    fd, tmp_name = tempfile.mkstemp(
+                        dir=str(file_path.parent),
+                        prefix=f"{file_path.name}.",
+                        suffix=".tmp",
+                    )
+                    try:
+                        with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
+                            json.dump(payload, tmp_file, indent=2)
+                        os.replace(tmp_name, file_path)
+                    finally:
+                        try:
+                            os.unlink(tmp_name)
+                        except FileNotFoundError:
+                            pass
+            return file_path
+        except OSError as exc:
+            if attempts >= 3:
+                raise
+            time.sleep(0.05)
 
 
 def load_stats(path: str | Path = "data/season_stats.json") -> Dict[str, Any]:

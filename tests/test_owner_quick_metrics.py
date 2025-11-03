@@ -22,6 +22,7 @@ def test_gather_owner_quick_metrics_handles_missing(tmp_path):
     )
 
     assert metrics["record"] == "--"
+    assert metrics["calibration"]["enabled"] is False
     assert metrics["bullpen"]["total"] == 0
     assert metrics["matchup"]["opponent"] == "--"
     assert metrics["batting_leaders"] == {
@@ -34,6 +35,9 @@ def test_gather_owner_quick_metrics_handles_missing(tmp_path):
         "so": "--",
         "saves": "--",
     }
+    meta = metrics.get("leader_meta", {})
+    assert meta.get("batting") == {}
+    assert meta.get("pitching") == {}
 
 
 def test_gather_owner_quick_metrics_team_leader_rows(tmp_path):
@@ -103,3 +107,10 @@ def test_gather_owner_quick_metrics_team_leader_rows(tmp_path):
     assert metrics["pitching_leaders"]["wins"] == "Ace Starter 12"
     assert metrics["pitching_leaders"]["so"] == "Ace Starter 150"
     assert metrics["pitching_leaders"]["saves"] == "Closer Guy 22"
+    leader_meta = metrics["leader_meta"]
+    assert leader_meta["batting"]["avg"]["player_id"] == "BAT2"
+    assert leader_meta["batting"]["hr"]["player_id"] == "BAT1"
+    assert leader_meta["batting"]["rbi"]["player_id"] == "BAT1"
+    assert leader_meta["pitching"]["wins"]["player_id"] == "PIT1"
+    assert leader_meta["pitching"]["so"]["player_id"] == "PIT1"
+    assert leader_meta["pitching"]["saves"]["player_id"] == "PIT2"

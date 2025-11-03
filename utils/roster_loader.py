@@ -16,6 +16,7 @@ ACTIVE_ROSTER_SIZE = 25
 _PLACEHOLDER_PLAYERS_FILE = "data/players.csv"
 _PLACEHOLDER_HITTERS = 17
 _PLACEHOLDER_PITCHERS = 8
+MIN_ACTIVE_PITCHERS = 6
 _PLACEHOLDER_LOAD_WARNING_EMITTED = False
 
 
@@ -263,6 +264,18 @@ class _PlaceholderPool:
             self._save_registry()
         return additions
 
+    def acquire_pitchers(self, team_id: str, count: int, *, salt: str = "pitcher-depth") -> List[str]:
+        """Return up to ``count`` placeholder pitchers assigned to ``team_id``."""
+
+        self._ensure_loaded()
+        if count <= 0:
+            return []
+        selected = self._select_players(team_id, self._pitcher_pool, count, salt)
+        ids = [getattr(player, "player_id", "") for player in selected if getattr(player, "player_id", "")]
+        if ids:
+            self._save_registry()
+        return ids
+
 
 _PLACEHOLDER_POOL: _PlaceholderPool | None = None
 
@@ -320,6 +333,80 @@ def _generate_placeholder_roster(team_id: str) -> Roster:
     )
     roster.promote_replacements(target_size=ACTIVE_ROSTER_SIZE)
     return roster
+
+
+def _ensure_pitcher_depth(roster: Roster, *, min_pitchers: int = MIN_ACTIVE_PITCHERS) -> bool:
+    """Promote or add pitchers so the active roster has at least ``min_pitchers`` arms."""
+
+    if min_pitchers <= 0:
+        return False
+
+    players = {
+        p.player_id: p for p in load_players_from_csv(_PLACEHOLDER_PLAYERS_FILE)
+    }
+
+    def _is_pitcher(pid: str) -> bool:
+        player = players.get(pid)
+        return bool(player and getattr(player, "is_pitcher", False))
+
+    active_pitchers: List[str] = [pid for pid in roster.act if _is_pitcher(pid)]
+    if len(active_pitchers) >= min_pitchers:
+        return False
+
+    changed = False
+
+    def _trim_excess() -> None:
+        nonlocal changed
+        while len(roster.act) > ACTIVE_ROSTER_SIZE:
+            moved = False
+            for idx in range(len(roster.act) - 1, -1, -1):
+                pid = roster.act[idx]
+                if _is_pitcher(pid) and len(active_pitchers) <= min_pitchers:
+                    continue
+                roster.act.pop(idx)
+                if pid not in roster.aaa:
+                    roster.aaa.append(pid)
+                if pid in active_pitchers:
+                    active_pitchers.remove(pid)
+                changed = True
+                moved = True
+                break
+            if not moved:
+                break
+
+    def _promote_from(group: List[str]) -> None:
+        nonlocal changed
+        idx = 0
+        while len(active_pitchers) < min_pitchers and idx < len(group):
+            pid = group[idx]
+            if not _is_pitcher(pid):
+                idx += 1
+                continue
+            group.pop(idx)
+            roster.act.append(pid)
+            active_pitchers.append(pid)
+            changed = True
+            _trim_excess()
+
+    _promote_from(roster.aaa)
+    _promote_from(roster.low)
+
+    if len(active_pitchers) < min_pitchers:
+        needed = min_pitchers - len(active_pitchers)
+        pool = _get_placeholder_pool()
+        placeholders = pool.acquire_pitchers(roster.team_id, needed)
+        for pid in placeholders:
+            if not pid or pid in roster.act:
+                continue
+            if not _is_pitcher(pid):
+                continue
+            roster.act.append(pid)
+            active_pitchers.append(pid)
+            changed = True
+        if placeholders:
+            _trim_excess()
+
+    return changed
 
 
 def _persist_placeholder_roster(file_path: Path, roster: Roster) -> None:
@@ -383,7 +470,8 @@ def _load_roster_from_storage(team_id: str, roster_dir: Path) -> Roster:
     pool = _get_placeholder_pool()
     pool.reconcile_roster(team_id, roster)
     roster.promote_replacements(target_size=ACTIVE_ROSTER_SIZE)
-    pool.reconcile_roster(team_id, roster)
+    if _ensure_pitcher_depth(roster):
+        pool.reconcile_roster(team_id, roster)
     pool.record_roster(team_id, roster)
     return roster
 

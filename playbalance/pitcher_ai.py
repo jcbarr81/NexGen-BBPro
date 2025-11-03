@@ -12,12 +12,15 @@ functions below.
 """
 from __future__ import annotations
 
-from typing import Dict, Mapping, Tuple, List, Set
+from typing import Dict, Mapping, Tuple, List, Set, TYPE_CHECKING
 import random
 
 from models.pitcher import Pitcher
 from .playbalance_config import PlayBalanceConfig
 from .constants import PITCH_RATINGS
+
+if TYPE_CHECKING:  # pragma: no cover
+    from playbalance.diagnostics.pitch_intent import PitchIntentTracker
 
 
 # ---------------------------------------------------------------------------
@@ -144,13 +147,19 @@ def select_pitch(
 class PitcherAI:
     """Very small pitch selection helper used by the legacy simulation."""
 
-    def __init__(self, config: PlayBalanceConfig, rng: random.Random | None = None) -> None:
+    def __init__(
+        self,
+        config: PlayBalanceConfig,
+        rng: random.Random | None = None,
+        intent_tracker: "PitchIntentTracker | None" = None,
+    ) -> None:
         self.config = config
         self.rng = rng or random.Random()
         self._established: Dict[str, Set[str]] = {}
         self._primary_cache: Dict[str, str] = {}
         self._variation_cache: Dict[str, Dict[str, int]] = {}
         self.last_selection: Tuple[str, str] | None = None
+        self._intent_tracker: "PitchIntentTracker | None" = intent_tracker
 
     def new_game(self) -> None:
         """Reset caches specific to a single game."""
@@ -158,6 +167,11 @@ class PitcherAI:
         self._established.clear()
         self._variation_cache.clear()
         self.last_selection = None
+
+    def set_intent_tracker(self, tracker: "PitchIntentTracker | None") -> None:
+        """Assign or clear the diagnostic intent tracker."""
+
+        self._intent_tracker = tracker
 
     def _primary_pitch(self, pitcher: Pitcher) -> str:
         pid = pitcher.player_id
@@ -228,6 +242,14 @@ class PitcherAI:
                     break
 
         self.last_selection = (pitch_type, objective)
+        if self._intent_tracker is not None:
+            self._intent_tracker.record(
+                balls=balls,
+                strikes=strikes,
+                objective=objective,
+                pitch_type=pitch_type,
+                pitcher_id=getattr(pitcher, "player_id", None),
+            )
         return self.last_selection
 
 

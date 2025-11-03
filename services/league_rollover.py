@@ -17,7 +17,7 @@ from services.standings_repository import save_standings
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
 from utils.sim_date import get_current_sim_date
-from utils.stats_persistence import load_stats, merge_daily_history
+from utils.stats_persistence import load_stats, merge_daily_history, reset_stats
 
 _DATA_DIR = get_base_dir() / "data"
 _STATS_PATH = _DATA_DIR / "season_stats.json"
@@ -326,7 +326,10 @@ class LeagueRolloverService:
 
     # ------------------------------------------------------------------
     def _reset_active_state(self, league_year: Optional[int]) -> None:
-        _write_json(_STATS_PATH, {"players": {}, "teams": {}, "history": []})
+        try:
+            reset_stats(_STATS_PATH)
+        except Exception:
+            _write_json(_STATS_PATH, {"players": {}, "teams": {}, "history": []})
         if _SEASON_HISTORY_DIR.exists():
             for shard in _SEASON_HISTORY_DIR.glob("*.json"):
                 try:

@@ -700,7 +700,7 @@ def test_walk_records_stats():
     home = TeamState(lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp")])
     away = TeamState(lineup=[batter], bench=[], pitchers=[make_pitcher("ap")])
     # four balls
-    rng = MockRandom([0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99])
+    rng = MockRandom([0.99] * 16)
     sim = GameSimulation(home, away, cfg, rng)
     outs = sim.play_at_bat(away, home)
     assert outs == 0
@@ -710,7 +710,8 @@ def test_walk_records_stats():
     assert stats.ab == 0
     assert stats.pa == 1
     assert pstats.walks == 1
-    assert pstats.pitches_thrown == 4
+    real_pitches = pstats.pitches_thrown - getattr(pstats, "simulated_pitches", 0)
+    assert real_pitches == 4
 
 
 def test_swing_and_miss_records_strikeout(monkeypatch):

@@ -1,0 +1,28 @@
+{
+  "stochastic": {
+    "pitches": 48481.0,
+    "swing_rate": 0.694973288504775,
+    "take_rate": 0.3050267114952249,
+    "contact_rate": 0.32548833563664115,
+    "swing_contact_rate": 0.4683465408245036,
+    "foul_rate": 0.010086425610032796,
+    "ball_in_play_rate": 0.3154019100266084,
+    "ball_rate": 0.25059301582063076,
+    "called_strike_rate": 0.05443369567459417,
+    "walk_rate": 0.0068892968379365115,
+    "strikeout_rate": 0.10447391761721087
+  },
+  "deterministic": {
+    "pitches": 2179.0,
+    "swing_rate": 0.6906837999082148,
+    "take_rate": 0.30931620009178523,
+    "contact_rate": 0.3074804956402019,
+    "swing_contact_rate": 0.44518272425249167,
+    "foul_rate": 0.008719596145020651,
+    "ball_in_play_rate": 0.29876089949518125,
+    "ball_rate": 0.25929325378614043,
+    "called_strike_rate": 0.05002294630564479,
+    "walk_rate": 0.0073428178063331805,
+    "strikeout_rate": 0.1101422670949977
+  }
+}

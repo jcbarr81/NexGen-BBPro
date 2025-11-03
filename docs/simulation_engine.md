@@ -116,3 +116,38 @@ Key entries now available include:
 - **`throwSuccessScale`** – adjusts the chance of completing an accurate throw,
   improving double plays and other outs.
 
+### Pitch Count Calibration
+
+Modern MLB plate appearances average roughly four pitches. Earlier builds
+approximated this by padding box scores with “phantom” pitches; calibration is
+now handled by the live simulation. The `PitchCountCalibrator` watches every
+plate appearance and injects real waste or foul pitches only when aggregate
+counts drift below the configured target.
+
+Key knobs exposed in `PlayBalanceConfig`:
+
+- **`pitchCalibrationEnabled`** – toggles the calibrator. Legacy phantom
+  padding remains available when disabled so existing tests still pass.
+- **`pitchCalibrationTarget`** – desired league average pitches per plate
+  appearance. The orchestrator currently targets ~3.85 to land within ±0.05 of
+  MLB’s 3.86 benchmark after full-season variance.
+- **`pitchCalibrationTolerance`** – buffer before directives are issued. A
+  small non-zero tolerance prevents unnecessary corrective pitches once the
+  rolling average is on track.
+- **`pitchCalibrationPerPlateCap`**, **`pitchCalibrationPerGameCap`** – guard
+  rails limiting how many corrective pitches can be injected per plate
+  appearance and per game. The live calibrator now leaves these at `2` and `0`
+  (unlimited) respectively and relies on aggregate deficit tracking, but the
+  fields remain tweakable.
+- **`pitchCalibrationMinPA`** – minimum completed plate appearances before the
+  calibrator becomes active. This avoids noisy adjustments in the first inning.
+- **`pitchCalibrationEmaAlpha`** – smoothing factor for the exponential moving
+  average used to judge trends.
+- **`pitchCalibrationExpectedPA`** – rough estimate of plate appearances per
+  game. The calibrator spreads remaining deficit across this value so it can
+  top up gradually instead of injecting pitches every trip to the plate.
+
+With calibration enabled the simulation no longer emits `simulated_pitches`;
+all waste/foul directives flow through the normal scoring pipeline, so box
+scores, fatigue tracking, and exported statistics now reflect only real pitches.
+

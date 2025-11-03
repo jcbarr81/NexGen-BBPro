@@ -30,13 +30,13 @@
       "severities": ["minor", "moderate"]
     },
     "pitcher_overuse": {
-      "base_probability": 0.05,
+      "base_probability": 0.02,
       "modifiers": {
-        "stress_days": 0.6,
-        "age_factor": 0.3,
-        "durability_factor": -0.4
+        "stress_days": 0.25,
+        "age_factor": 0.2,
+        "durability_factor": -0.3
       },
-      "severities": ["moderate", "major"]
+      "severities": ["minor", "moderate"]
     }
   },
   "injuries": [

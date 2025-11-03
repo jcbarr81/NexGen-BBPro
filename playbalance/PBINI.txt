@@ -1235,11 +1235,11 @@ pitchObj02CountFastCenterWeight=0   ; Primary pitch to center of zone 0-2 counts
 pitchObj02CountPlusWeight=23        ; Any pitch to plus location on 0-2 counts
 ;
 pitchObj10CountEstablishWeight=0   ; Establish a pitch on 1-0 counts
-pitchObj10CountOutsideWeight=25     ; Throw outside the zone on 1-0 counts
+pitchObj10CountOutsideWeight=40     ; Throw outside the zone on 1-0 counts
 pitchObj10CountBestWeight=10        ; Best pitch to plus location on 1-0 counts
 pitchObj10CountBestCenterWeight=0   ; Best pitch to center of zone on 1-0 counts
 pitchObj10CountFastCenterWeight=5   ; Primary pitch to center of zone 1-0 counts
-pitchObj10CountPlusWeight=60        ; Any pitch to plus location on 1-0 counts
+pitchObj10CountPlusWeight=45        ; Any pitch to plus location on 1-0 counts
 ;
 pitchObj11CountEstablishWeight=0    ; Establish a pitch on 1-1 counts
 pitchObj11CountOutsideWeight=40     ; Throw outside the zone on 1-1 counts
@@ -1256,18 +1256,18 @@ pitchObj12CountFastCenterWeight=5   ; Primary pitch to center of zone 1-2 counts
 pitchObj12CountPlusWeight=32        ; Any pitch to plus location on 1-2 counts
 ;
 pitchObj20CountEstablishWeight=0    ; Establish a pitch on 2-0 counts
-pitchObj20CountOutsideWeight=25     ; Throw outside the zone on 2-0 counts
+pitchObj20CountOutsideWeight=40     ; Throw outside the zone on 2-0 counts
 pitchObj20CountBestWeight=5         ; Best pitch to plus location on 2-0 counts
 pitchObj20CountBestCenterWeight=5   ; Best pitch to center of zone on 2-0 counts
 pitchObj20CountFastCenterWeight=15  ; Primary pitch to center of zone 2-0 counts
-pitchObj20CountPlusWeight=50        ; Any pitch to plus location on 2-0 counts
+pitchObj20CountPlusWeight=35        ; Any pitch to plus location on 2-0 counts
 ;
 pitchObj21CountEstablishWeight=0    ; Establish a pitch on 2-1 counts
-pitchObj21CountOutsideWeight=20     ; Throw outside the zone on 2-1 counts
+pitchObj21CountOutsideWeight=35     ; Throw outside the zone on 2-1 counts
 pitchObj21CountBestWeight=5         ; Best pitch to plus location on 2-1 counts
 pitchObj21CountBestCenterWeight=10  ; Best pitch to center of zone on 2-1 counts
 pitchObj21CountFastCenterWeight=15  ; Primary pitch to center of zone 2-1 counts
-pitchObj21CountPlusWeight=50        ; Any pitch to plus location on 2-1 counts
+pitchObj21CountPlusWeight=35        ; Any pitch to plus location on 2-1 counts
 ;
 pitchObj22CountEstablishWeight=0    ; Establish a pitch on 2-2 counts
 pitchObj22CountOutsideWeight=25     ; Throw outside the zone on 2-2 counts
@@ -1284,18 +1284,18 @@ pitchObj30CountFastCenterWeight=35  ; Primary pitch to center of zone 3-0 counts
 pitchObj30CountPlusWeight=15        ; Any pitch to plus location on 3-0 counts
 ;
 pitchObj31CountEstablishWeight=0    ; Establish a pitch on 3-1 counts
-pitchObj31CountOutsideWeight=27     ; Throw outside the zone on 3-1 counts
+pitchObj31CountOutsideWeight=40     ; Throw outside the zone on 3-1 counts
 pitchObj31CountBestWeight=5         ; Best pitch to plus location on 3-1 counts
 pitchObj31CountBestCenterWeight=10  ; Best pitch to center of zone on 3-1 counts
 pitchObj31CountFastCenterWeight=25  ; Primary pitch to center of zone 3-1 counts
-pitchObj31CountPlusWeight=33        ; Any pitch to plus location on 3-1 counts
+pitchObj31CountPlusWeight=20        ; Any pitch to plus location on 3-1 counts
 ;
 pitchObj32CountEstablishWeight=0    ; Establish a pitch on 3-2 counts
-pitchObj32CountOutsideWeight=17     ; Throw outside the zone on 3-2 counts
-pitchObj32CountBestWeight=15        ; Best pitch to plus location on 3-2 counts
+pitchObj32CountOutsideWeight=30     ; Throw outside the zone on 3-2 counts
+pitchObj32CountBestWeight=10        ; Best pitch to plus location on 3-2 counts
 pitchObj32CountBestCenterWeight=20  ; Best pitch to center of zone on 3-2 counts
 pitchObj32CountFastCenterWeight=25  ; Primary pitch to center of zone 3-2 counts
-pitchObj32CountPlusWeight=23        ; Any pitch to plus location on 3-2 counts
+pitchObj32CountPlusWeight=15        ; Any pitch to plus location on 3-2 counts
 ;
 ;
 ; ******************************** BATTER AI **********************************
@@ -1506,18 +1506,27 @@ disciplineRatingFBDownMiddleAdjust=-30  ; Pitch is a fastball down the middle
 ;
 ; Adjustments to discipline based on the pitch count
 ;
-disciplineRating00CountAdjust=5     ; Adjustment on 0-0 counts
+disciplineRating00CountAdjust=60     ; Adjustment on 0-0 counts
 disciplineRating01CountAdjust=35    ; Adjustment on 0-1 counts
 disciplineRating02CountAdjust=15    ; Adjustment on 0-2 counts
-disciplineRating10CountAdjust=-5   ; Adjustment on 1-0 counts
-disciplineRating11CountAdjust=15    ; Adjustment on 1-1 counts
-disciplineRating12CountAdjust=5     ; Adjustment on 1-2 counts
-disciplineRating20CountAdjust=0    ; Adjustment on 2-0 counts
-disciplineRating21CountAdjust=10     ; Adjustment on 2-1 counts
-disciplineRating22CountAdjust=15    ; Adjustment on 2-2 counts
-disciplineRating30CountAdjust=60    ; Adjustment on 3-0 counts
-disciplineRating31CountAdjust=5     ; Adjustment on 3-1 counts
-disciplineRating32CountAdjust=15    ; Adjustment on 3-2 counts
+disciplineRating10CountAdjust=75   ; Adjustment on 1-0 counts
+disciplineRating11CountAdjust=25    ; Adjustment on 1-1 counts
+disciplineRating12CountAdjust=15     ; Adjustment on 1-2 counts
+disciplineRating20CountAdjust=60    ; Adjustment on 2-0 counts
+disciplineRating21CountAdjust=30     ; Adjustment on 2-1 counts
+disciplineRating22CountAdjust=25    ; Adjustment on 2-2 counts
+disciplineRating30CountAdjust=50    ; Adjustment on 3-0 counts
+disciplineRating31CountAdjust=-30     ; Adjustment on 3-1 counts
+disciplineRating32CountAdjust=-35    ; Adjustment on 3-2 counts
+disciplineThreeBallScale=0.0
+disciplineThreeBallPenaltyScale=0.0
+swingBallThreeBallWeightScale=0.0
+swingProb00CountAdjust=-0.35
+swingProb10CountAdjust=-0.40
+swingProb20CountAdjust=-0.35
+swingProb21CountAdjust=-0.20
+swingProb31CountAdjust=0.35
+swingProb32CountAdjust=0.40
 ;
 ; CHECK SWING CHANCE
 ; If the batter has started his swing then determines that the actual pitch

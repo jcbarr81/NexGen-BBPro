@@ -131,7 +131,10 @@ def load_config(
                 else:
                     # Allow flat overrides applied to the default section.
                     if sect not in pbini_keys.get(default_section, set()):
-                        raise KeyError(f"Unknown key '{sect}' for section '{default_section}'")
+                        section_dict = sections.setdefault(default_section, {})
+                        section_dict[sect] = values
+                        pbini_keys.setdefault(default_section, set()).add(sect)
+                        continue
                     section_dict = sections.setdefault(default_section, {})
                     section_dict[sect] = values
 

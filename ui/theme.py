@@ -75,10 +75,22 @@ QLabel#MetricLabel {
     text-transform: uppercase;
     color: #6f5c42;
 }
+QLabel#MetricLabel[variant="leader"] {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+}
 QLabel#MetricValue {
     font-size: 24px;
     font-weight: 800;
     color: #462d0d;
+}
+QLabel#MetricValue[interactive="true"] {
+    color: #b36b18;
+}
+QLabel#MetricValue[interactive="true"][highlight="true"] { color: #c3521f; }
+QLabel#MetricValue[variant="leader"] {
+    font-size: 18px;
+    font-weight: 700;
 }
 QLabel#MetricValue[highlight="true"] { color: #c3521f; }
 
@@ -212,10 +224,23 @@ QLabel#MetricLabel {
     text-transform: uppercase;
     color: #a59c8c;
 }
+QLabel#MetricLabel[variant="leader"] {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    color: #d4c5a5;
+}
 QLabel#MetricValue {
     font-size: 24px;
     font-weight: 800;
     color: #fffdf0;
+}
+QLabel#MetricValue[interactive="true"] {
+    color: #f1c27d;
+}
+QLabel#MetricValue[interactive="true"][highlight="true"] { color: #e67700; }
+QLabel#MetricValue[variant="leader"] {
+    font-size: 18px;
+    font-weight: 700;
 }
 
 QListWidget#DepthChartList {
