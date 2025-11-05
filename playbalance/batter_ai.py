@@ -422,6 +422,7 @@ class BatterAI:
         swing_type: str = "normal",
         dx: int | None = None,
         dy: int | None = None,
+        objective: str | None = None,
         random_value: float | None = None,
         check_random: float | None = None,
     ) -> Tuple[bool, float]:
@@ -495,7 +496,66 @@ class BatterAI:
             "discipline_clamped": 0.0,
             "discipline_logit": 0.0,
             "close_strike_mix": 0.0,
+            "objective_penalty": 0.0,
+            "objective": (objective or "").lower() if objective else "",
         }
+
+        objective_lower = (objective or "").lower() if objective else ""
+        objective_penalty = 0.0
+        objective_delta = 0.0
+        dist_over_plate = 0.0
+        if objective_lower:
+            sure_thresh = getattr(self.config, "sureStrikeDist", 4)
+            close_thresh = getattr(self.config, "closeStrikeDist", sure_thresh + 1)
+            close_ball_thresh = getattr(self.config, "closeBallDist", close_thresh + 3)
+            dist_over_plate = max(0.0, float(dist - close_ball_thresh))
+            if objective_lower == "ball":
+                penalty_pct = getattr(self.config, "wasteObjectiveSwingPenalty", 0.0) / 100.0
+                dist_penalty_pct = getattr(self.config, "wasteObjectiveDistancePenalty", 0.0) / 100.0
+                if penalty_pct:
+                    objective_penalty -= penalty_pct
+                if dist_penalty_pct and dist_over_plate > 0:
+                    objective_penalty -= dist_penalty_pct * dist_over_plate
+            elif objective_lower == "edge":
+                penalty_pct = getattr(self.config, "edgeObjectiveSwingPenalty", 0.0) / 100.0
+                dist_penalty_pct = getattr(self.config, "edgeObjectiveDistancePenalty", 0.0) / 100.0
+                if penalty_pct:
+                    objective_penalty -= penalty_pct
+                if dist_penalty_pct and dist_over_plate > 0:
+                    objective_penalty -= dist_penalty_pct * dist_over_plate
+        if objective_penalty:
+            new_val = clamp01(swing_chance + objective_penalty)
+            objective_delta += new_val - swing_chance
+            swing_chance = new_val
+
+        objective_scale = 1.0
+        dist_scale = 0.0
+        swing_cap = None
+        swing_cap_two_strike = None
+        if objective_lower == "ball":
+            objective_scale = float(getattr(self.config, "wasteObjectiveSwingScale", 0.32) or 0.32)
+            dist_scale = float(getattr(self.config, "wasteObjectiveSwingDistanceScale", 0.16) or 0.16)
+            swing_cap = getattr(self.config, "wasteObjectiveSwingCap", 0.035)
+            swing_cap_two_strike = getattr(self.config, "wasteObjectiveTwoStrikeSwingCap", 0.18)
+        elif objective_lower == "edge":
+            objective_scale = float(getattr(self.config, "edgeObjectiveSwingScale", 0.62) or 0.62)
+            dist_scale = float(getattr(self.config, "edgeObjectiveSwingDistanceScale", 0.08) or 0.08)
+            swing_cap = getattr(self.config, "edgeObjectiveSwingCap", 0.12)
+            swing_cap_two_strike = getattr(self.config, "edgeObjectiveTwoStrikeSwingCap", 0.30)
+        if swing_cap is not None:
+            cap_value = swing_cap_two_strike if strikes >= 2 and swing_cap_two_strike is not None else swing_cap
+            swing_chance = min(swing_chance, cap_value)
+        if objective_scale < 1.0:
+            new_val = clamp01(swing_chance * objective_scale)
+            objective_delta += new_val - swing_chance
+            swing_chance = new_val
+        if dist_scale > 0.0 and dist_over_plate > 0.0 and swing_chance > 0.0:
+            decay = math.exp(-dist_scale * dist_over_plate)
+            new_val = clamp01(swing_chance * decay)
+            objective_delta += new_val - swing_chance
+            swing_chance = new_val
+        if objective_delta:
+            breakdown["objective_penalty"] = objective_delta
 
         # Count-based adjustment allows tuning per ball-strike count.
         count_key = f"swingProb{balls}{strikes}CountAdjust"
@@ -742,6 +802,31 @@ class BatterAI:
         forced_two_strike_contact = False
         two_strike_floor = getattr(self.config, "twoStrikeContactFloor", 0.0)
         two_strike_quality_cap = getattr(self.config, "twoStrikeContactQuality", 0.0)
+        id_prob = 0.0
+        in_zone_flag = bool(getattr(self, "_last_pitch_in_zone", False))
+        close_ball_scale = float(getattr(self.config, "closeBallContactScale", 0.6) or 0.6)
+        sure_ball_scale = float(getattr(self.config, "sureBallContactScale", 0.3) or 0.3)
+        waste_contact_scale = float(getattr(self.config, "wasteObjectiveContactScale", 0.6) or 0.6)
+        edge_contact_scale = float(getattr(self.config, "edgeObjectiveContactScale", 0.82) or 0.82)
+        waste_contact_dist_scale = float(
+            getattr(self.config, "wasteObjectiveContactDistanceScale", 0.20) or 0.20
+        )
+        edge_contact_dist_scale = float(
+            getattr(self.config, "edgeObjectiveContactDistanceScale", 0.12) or 0.12
+        )
+        o_zone_contact_scale = 1.0
+        if pitch_kind == "close ball":
+            o_zone_contact_scale = close_ball_scale
+        elif pitch_kind == "sure ball":
+            o_zone_contact_scale = sure_ball_scale
+        if objective_lower == "ball":
+            o_zone_contact_scale *= waste_contact_scale
+            if dist_over_plate > 0.0 and waste_contact_dist_scale > 0.0:
+                o_zone_contact_scale *= math.exp(-waste_contact_dist_scale * dist_over_plate)
+        elif objective_lower == "edge":
+            o_zone_contact_scale *= edge_contact_scale
+            if dist_over_plate > 0.0 and edge_contact_dist_scale > 0.0:
+                o_zone_contact_scale *= math.exp(-edge_contact_dist_scale * dist_over_plate)
 
         if swing:
             # Base miss chance shaped by pitch quality vs batter contact
@@ -838,7 +923,8 @@ class BatterAI:
                     prob_contact = 0.5 + (16.0 / 3500.0) * id_score
                     prob_contact = round(prob_contact, 2)
                     apply_reduction = True
-                
+            prob_contact *= o_zone_contact_scale
+
             if apply_reduction:
                 reduction_enabled = getattr(self.config, "enableContactReduction", None)
                 if reduction_enabled is None or reduction_enabled:
@@ -849,25 +935,31 @@ class BatterAI:
                         miss_scale = 1.0
                     reduction = max(0.0, min(0.95, miss_chance * miss_scale))
                     prob_contact = max(0.0, min(1.0, prob_contact * (1.0 - reduction)))
-                    contact_scale = getattr(self.config, "contactOutcomeScale", 0.65)
-                    if not contact_scale:
-                        contact_scale = 0.65
-                    prob_contact = max(0.0, min(1.0, prob_contact * contact_scale))
+                    outcome_scale = getattr(self.config, "contactOutcomeScale", 0.65)
+                    if not outcome_scale:
+                        outcome_scale = 0.65
+                    prob_contact = max(0.0, min(1.0, prob_contact * outcome_scale))
 
-            # Two-strike contact safety: modestly increase contact probability
+            if objective_lower == "ball":
+                cap_value = waste_contact_ts_cap if strikes >= 2 else waste_contact_cap
+                prob_contact = min(prob_contact, cap_value)
+            elif objective_lower == "edge":
+                cap_value = edge_contact_ts_cap if strikes >= 2 else edge_contact_cap
+                prob_contact = min(prob_contact, cap_value)
+
             if strikes >= 2 and id_prob > 0.0:
-                prob_contact = min(1.0, prob_contact + 0.05)
+                bonus = getattr(self.config, "twoStrikeContactBonus", 0.0) / 100.0
+                if bonus:
+                    prob_contact = min(1.0, prob_contact + bonus)
 
             if strikes >= 2 and two_strike_floor > 0 and prob_contact < two_strike_floor:
                 prob_contact = two_strike_floor
                 forced_two_strike_contact = True
 
-            # If look mismatch or poor ID, ensure floor still applies
             if self.last_misread:
                 floor = getattr(self.config, "minMisreadContact", 0.0) * (batter_contact / 100.0)
                 prob_contact = max(prob_contact, floor)
 
-            # Check-swing handling: if batter attempts to adjust mid-swing
             if (dx or dy) and check_random is not None and pitch_kind != "sure ball":
                 st = swing_type.lower()
                 kind = st[0].upper() + st[1:]
@@ -897,24 +989,29 @@ class BatterAI:
                 contact_quality = prob_contact
                 if forced_two_strike_contact and self.last_contact and two_strike_quality_cap > 0:
                     contact_quality = min(contact_quality, two_strike_quality_cap)
+            if getattr(self.config, "collectSwingDiagnostics", 0):
+                _record_swing_diagnostic(
+                    self.config,
+                    balls,
+                    strikes,
+                    pitch_kind,
+                    breakdown,
+                    swing,
+                )
+
+            # Add minor variation at perfect-ID to avoid identical values in tests
+            if check_random is None and id_prob >= 1.0:
+                # Different random_value inputs yield slightly different probabilities
+                if rv >= 0.15:
+                    contact_quality = max(0.0, contact_quality - 0.02)
+            if self.last_contact and not in_zone_flag:
+                # Apply additional penalty based on distance for chased pitches.
+                dist_penalty = max(0.0, min(dist / 8.0, 0.8))
+                contact_quality *= o_zone_contact_scale * (1.0 - dist_penalty)
+                if strikes < 2:
+                    contact_quality *= 0.4
         else:
             self.last_contact = False
-
-        if getattr(self.config, "collectSwingDiagnostics", 0):
-            _record_swing_diagnostic(
-                self.config,
-                balls,
-                strikes,
-                pitch_kind,
-                breakdown,
-                swing,
-            )
-
-        # Add minor variation at perfect-ID to avoid identical values in tests
-        if swing and check_random is None and id_prob >= 1.0:
-            # Different random_value inputs yield slightly different probabilities
-            if rv >= 0.15:
-                contact_quality = max(0.0, contact_quality - 0.02)
 
         self.last_decision = (swing, max(0.0, min(1.0, contact_quality)))
         return self.last_decision

@@ -223,6 +223,15 @@ _DEFAULTS: Dict[str, Any] = {
     "foulPitchBasePct": _FOUL_PITCH_BASE_PCT,
     "foulStrikeBasePct": 31,
     "foulContactTrendPct": 2.0,
+    "foulProbabilityScale": 1.0,
+    "ballInPlayScale": 1.0,
+    "foulStrikePctScale": 1.0,
+    "foulPitchPctScale": 1.0,
+    "extraZSwingScaleMin": 0.78,
+    "extraZSwingScaleMax": 1.04,
+    "extraOSwingScaleMin": 1.32,
+    "extraOSwingScaleMax": None,
+    "twoStrikeContactBonus": 5.0,
     # Target roughly 17% of all pitches being put into play
     "ballInPlayPitchPct": 9,
     "ballInPlayOuts": 0,
@@ -253,6 +262,11 @@ _DEFAULTS: Dict[str, Any] = {
     "pitchObj10CountOutsideWeight": 30,
     "pitchObj11CountOutsideWeight": 30,
     "pitchObj20CountOutsideWeight": 30,
+    # Pitcher target tuning; offsets expressed in strike-zone distance units.
+    "pitchTargetEdgeOffset": 3.6,
+    "pitchTargetWasteOffset": 6.3,
+    "pitchTargetAimVariance": 1.8,
+    "pitchTargetCrossSpread": 1.6,
     # Batter AI -------------------------------------------------------
     "sureStrikeDist": 4,
     "closeStrikeDist": 3,
@@ -271,9 +285,22 @@ _DEFAULTS: Dict[str, Any] = {
     "extraZSwingScale": 1.0,
     "extraOSwingScale": 1.0,
     # Bonus applied to close-ball swing probability per strike
-    "closeBallStrikeBonus": 1,
+    "closeBallStrikeBonus": 0,
     # Two-strike additive swing bonus (percent)
     "twoStrikeSwingBonus": 6,
+    # Penalty applied when pitcher objective targets waste/edge
+    "wasteObjectiveSwingPenalty": 8,
+    "edgeObjectiveSwingPenalty": 3,
+    "wasteObjectiveContactScale": 0.60,
+    "edgeObjectiveContactScale": 0.82,
+    "wasteObjectiveDistancePenalty": 8,
+    "edgeObjectiveDistancePenalty": 3,
+    "wasteObjectiveSwingScale": 0.32,
+    "edgeObjectiveSwingScale": 0.68,
+    "wasteObjectiveSwingDistanceScale": 0.16,
+    "edgeObjectiveSwingDistanceScale": 0.08,
+    "wasteObjectiveContactDistanceScale": 0.20,
+    "edgeObjectiveContactDistanceScale": 0.12,
     # Count and location adjustments to swing probability
     "swingProb00CountAdjust": -0.03,
     "swingProb01CountAdjust": 0,

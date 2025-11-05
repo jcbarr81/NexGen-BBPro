@@ -18,6 +18,7 @@ from playbalance.physics import Physics, bat_impact as bat_impact_func
 from playbalance.pitcher_ai import PitcherAI
 from playbalance.batter_ai import BatterAI, record_auto_take
 from playbalance.diagnostics.batter_decision import BatterDecisionTracker
+from playbalance.diagnostics.pitch_intent import bucket_for_objective
 from playbalance.bullpen import WarmupTracker
 from playbalance.fielding_ai import FieldingAI
 from playbalance.field_geometry import DEFAULT_POSITIONS, Stadium, FIRST_BASE, SECOND_BASE
@@ -314,6 +315,45 @@ class GameSimulation:
         pitcher_state.outs += outs
         pitcher_state.appearance_outs = getattr(pitcher_state, "appearance_outs", 0) + outs
 
+    def _pitch_target_offset(self, objective: str, control_roll: float) -> tuple[float, float]:
+        """Return target offsets for the selected pitch objective."""
+
+        bucket = bucket_for_objective(str(objective))
+        if bucket == "zone":
+            return 0.0, 0.0
+
+        plate_w = float(getattr(self.config, "plateWidth", 3))
+        plate_h = float(getattr(self.config, "plateHeight", 3))
+        max_dim = max(plate_w, plate_h)
+        edge_offset = float(
+            self.config.get("pitchTargetEdgeOffset", max_dim * 0.85)
+        )
+        waste_offset = float(
+            self.config.get("pitchTargetWasteOffset", max_dim * 1.35)
+        )
+        variance = float(
+            self.config.get("pitchTargetAimVariance", max_dim * 0.35)
+        )
+        cross_spread = float(
+            self.config.get("pitchTargetCrossSpread", max_dim * 0.25)
+        )
+        objective_key = str(objective).lower()
+        use_waste_offset = objective_key in {"outside", "waste", "ball"}
+        base_mag = waste_offset if use_waste_offset else edge_offset
+        mag_roll = self.rng.random()
+        magnitude = max(0.0, base_mag + (mag_roll - 0.5) * variance)
+        cross_offset = (mag_roll - 0.5) * cross_spread
+
+        axis_roll = control_roll
+        if axis_roll < 0.5:
+            dir_roll = axis_roll
+            direction = -1.0 if dir_roll < 0.25 else 1.0
+            return direction * magnitude, cross_offset
+
+        dir_roll = axis_roll - 0.5
+        direction = -1.0 if dir_roll < 0.25 else 1.0
+        return cross_offset, direction * magnitude
+
     # ------------------------------------------------------------------
     # Injury helpers
     # ------------------------------------------------------------------
@@ -348,6 +388,8 @@ class GameSimulation:
         strikeout: bool,
         hbp: bool,
         breakdown: dict[str, float | str] | None,
+        objective: str = "zone",
+        target_offset: tuple[float, float] | None = None,
     ) -> None:
         tracker = self.batter_decision_tracker
         if tracker is None:
@@ -367,6 +409,8 @@ class GameSimulation:
             strikeout=strikeout,
             hbp=hbp,
             breakdown=breakdown,
+            objective=objective,
+            target_offset=target_offset,
         )
 
     def _queue_batter_decision(
@@ -386,6 +430,8 @@ class GameSimulation:
         strikeout: bool,
         hbp: bool,
         breakdown: dict[str, float | str] | None,
+        objective: str = "zone",
+        target_offset: tuple[float, float] | None = None,
         immediate: bool = False,
     ) -> None:
         if self.batter_decision_tracker is None:
@@ -405,6 +451,8 @@ class GameSimulation:
             "strikeout": strikeout,
             "hbp": hbp,
             "breakdown": breakdown,
+            "objective": objective,
+            "target_offset": target_offset,
         }
         if immediate:
             self._flush_batter_decision()
@@ -1374,6 +1422,8 @@ class GameSimulation:
                 "strikeout": False,
                 "hbp": False,
                 "breakdown": None,
+                "objective": "zone",
+                "target_offset": (0.0, 0.0),
             }
             real_pitch_count = (pitcher_state.pitches_thrown - start_pitches) - (
                 getattr(pitcher_state, "simulated_pitches", 0) - start_simulated
@@ -1573,10 +1623,13 @@ class GameSimulation:
 
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
-            pitch_type, _ = self.pitcher_ai.select_pitch(
+            pitch_type, objective = self.pitcher_ai.select_pitch(
                 pitcher, balls=balls, strikes=strikes
             )
             control_roll = self.rng.random()
+            target_dx, target_dy = self._pitch_target_offset(objective, control_roll)
+            decision_data["objective"] = objective
+            decision_data["target_offset"] = (target_dx, target_dy)
             pitch_speed = self.physics.pitch_velocity(
                 pitch_type, pitcher.arm, rand=control_roll
             )
@@ -1619,8 +1672,8 @@ class GameSimulation:
             self._last_control_pct = control_pct
             self._last_miss_pct = miss_pct
             self._last_miss_amt = miss_amt
-            x_off = (frac * 2 - 1) * width
-            y_off = (frac * 2 - 1) * height
+            x_off = target_dx + (frac * 2 - 1) * width
+            y_off = target_dy + (frac * 2 - 1) * height
             exp_dx, exp_dy = self.physics.pitch_break(pitch_type, rand=0.5)
             x_off -= exp_dx
             y_off -= exp_dy
@@ -1661,6 +1714,7 @@ class GameSimulation:
                 "balls": balls,
                 "strikes": strikes,
                 "dist": dist,
+                "objective": objective,
                 "random_value": dec_r,
             }
             params = inspect.signature(decide_fn).parameters
@@ -2348,6 +2402,8 @@ class GameSimulation:
         strike_base_pct = float(cfg.get("foulStrikeBasePct", 36.4)) / 100.0
         pitch_base_pct = float(cfg.get("foulPitchBasePct", 24.0)) / 100.0
         bip_pitch_pct = float(cfg.get("ballInPlayPitchPct", 25.0)) / 100.0
+        bip_pitch_scale = float(cfg.get("ballInPlayScale", 1.0) or 1.0)
+        bip_pitch_pct *= max(0.0, bip_pitch_scale)
         trend_pct = float(cfg.get("foulContactTrendPct", 1.5)) / 100.0
 
         strike_rate = pitch_base_pct / strike_base_pct if strike_base_pct else 0.0
@@ -2364,6 +2420,8 @@ class GameSimulation:
         if contact_rate <= 0.0:
             return 0.0
         prob = foul_per_pitch / contact_rate
+        foul_scale = float(cfg.get("foulProbabilityScale", 1.0) or 1.0)
+        prob *= max(0.0, foul_scale)
         prob = max(0.05, min(0.95, prob))
 
         if dist > 0:
@@ -3395,7 +3453,7 @@ class GameSimulation:
             catcher_fa = catcher_fs.player.fa if catcher_fs else 50
             runner_sp = runner_state.player.sp
             base_success = self.config.get("stealSuccessBasePct", 72) / 100.0
-            base_success = max(0.45, min(0.85, base_success))
+            base_success = max(0.55, min(0.92, base_success))
             speed_adj = (runner_sp - 50) / 250.0
             catcher_penalty = max(0.0, (catcher_arm - 50) / 220.0)
             catcher_bonus = max(0.0, (50 - catcher_arm) / 260.0)
@@ -3445,7 +3503,7 @@ class GameSimulation:
                 + hold_bonus
             )
             success_prob -= catcher_penalty + pitcher_penalty + hold_penalty + reaction_penalty
-            max_success = 0.93 if not force_hit_and_run else 0.95
+            max_success = 0.95 if not force_hit_and_run else 0.97
             self._last_max_success = max_success
             try:
                 success_prob += float(self.config.get("stealSuccessAdjustment", 0.0))

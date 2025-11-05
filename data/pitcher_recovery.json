@@ -81,7 +81,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 196.0,
-          "available_pitches": 133.0
+          "available_pitches": 196.0
         },
         "P2917": {
           "available_on": "2025-10-28",
@@ -161,7 +161,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 224.0,
-          "available_pitches": 216.0
+          "available_pitches": 224.0
         },
         "P6426": {
           "available_on": "2025-10-28",
@@ -234,7 +234,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 224.0,
-          "available_pitches": 218.0
+          "available_pitches": 224.0
         },
         "P9790": {
           "available_on": "2025-10-30",
@@ -377,7 +377,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 196.0,
-          "available_pitches": 77.35999999999973
+          "available_pitches": 196.0
         },
         "P1184": {
           "available_on": "2025-10-28",
@@ -443,7 +443,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 186.06
+          "available_pitches": 206.5
         },
         "P7619": {
           "available_on": "2025-10-30",
@@ -621,7 +621,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P3855": {
           "available_on": "2025-10-30",
@@ -792,7 +792,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P4827": {
           "available_on": "2025-10-29",
@@ -970,7 +970,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P5756": {
           "available_on": "2025-10-30",
@@ -1148,7 +1148,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P9969": {
           "available_on": "2025-10-30",
@@ -1326,7 +1326,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P6161": {
           "available_on": "2025-11-01",
@@ -1406,7 +1406,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 245.0,
-          "available_pitches": 66.4
+          "available_pitches": 245.0
         },
         "P4272": {
           "available_on": "2025-10-29",
@@ -1584,7 +1584,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         }
       }
     },
@@ -1725,7 +1725,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 199.5,
-          "available_pitches": 65.13999999999999
+          "available_pitches": 199.5
         },
         "P4861": {
           "available_on": "2025-10-29",
@@ -1847,7 +1847,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 104.42000000000002
+          "available_pitches": 206.5
         },
         "P2742": {
           "available_on": "2025-11-01",
@@ -1906,7 +1906,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 259.0,
-          "available_pitches": 175.16
+          "available_pitches": 259.0
         },
         "P1665": {
           "available_on": "2025-11-01",
@@ -1972,7 +1972,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 255.5,
-          "available_pitches": 172.5
+          "available_pitches": 255.5
         },
         "P2660": {
           "available_on": "2025-10-31",
@@ -2024,7 +2024,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 227.5,
-          "available_pitches": 214.7
+          "available_pitches": 227.5
         },
         "P4618": {
           "available_on": "2025-10-29",
@@ -2139,7 +2139,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 16.312000000000005
+          "available_pitches": 70.2
         },
         "P2297": {
           "available_on": "2025-10-30",
@@ -2289,7 +2289,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P4947": {
           "available_on": "2025-11-01",
@@ -2397,7 +2397,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 220.5,
-          "available_pitches": 136.5
+          "available_pitches": 220.5
         },
         "P7955": {
           "available_on": "2025-10-30",
@@ -2508,7 +2508,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 238.0,
-          "available_pitches": 231.0
+          "available_pitches": 238.0
         },
         "P8912": {
           "available_on": "2025-10-30",
@@ -2637,7 +2637,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 113.86000000000001
+          "available_pitches": 206.5
         }
       }
     },
@@ -2805,7 +2805,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 224.0,
-          "available_pitches": 193.27999999999997
+          "available_pitches": 224.0
         },
         "P6200": {
           "available_on": "2025-11-02",
@@ -2927,7 +2927,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 234.5,
-          "available_pitches": 106.5
+          "available_pitches": 234.5
         },
         "P4426": {
           "available_on": "2025-11-03",
@@ -2958,7 +2958,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 252.0,
-          "available_pitches": 109.0
+          "available_pitches": 252.0
         },
         "P8647": {
           "available_on": "2025-10-29",
@@ -3066,7 +3066,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P7115": {
           "available_on": "2025-10-30",
@@ -3223,7 +3223,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P7800": {
           "available_on": "2025-10-29",
@@ -3397,7 +3397,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 74.25,
-          "available_pitches": 0.0
+          "available_pitches": 74.25
         },
         "P4969": {
           "available_on": "2025-10-27",
@@ -3466,7 +3466,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 262.5,
-          "available_pitches": 185.5
+          "available_pitches": 262.5
         },
         "P1068": {
           "available_on": "2025-10-30",
@@ -3588,7 +3588,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 217.0,
-          "available_pitches": 123.24000000000001
+          "available_pitches": 217.0
         }
       }
     },
@@ -3746,7 +3746,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 227.5,
-          "available_pitches": 198.7
+          "available_pitches": 227.5
         },
         "P4917": {
           "available_on": "2025-11-01",
@@ -3840,7 +3840,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 122.06
+          "available_pitches": 206.5
         },
         "P6520": {
           "available_on": "2025-11-02",
@@ -3899,7 +3899,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 227.5,
-          "available_pitches": 139.1
+          "available_pitches": 227.5
         },
         "P1627": {
           "available_on": "2025-10-29",
@@ -4136,7 +4136,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 70.2,
-          "available_pitches": 33.696
+          "available_pitches": 70.2
         },
         "P7934": {
           "available_on": "2025-10-28",
@@ -4279,7 +4279,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 19.656000000000002
+          "available_pitches": 70.2
         },
         "P2626": {
           "available_on": "2025-10-27",
@@ -4436,7 +4436,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 43.928000000000004
+          "available_pitches": 70.2
         },
         "P1409": {
           "available_on": "2025-10-28",
@@ -4558,7 +4558,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 33.312000000000005
+          "available_pitches": 70.2
         },
         "P4760": {
           "available_on": "2025-10-24",
@@ -4662,7 +4662,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 273.0,
-          "available_pitches": 174.0
+          "available_pitches": 273.0
         },
         "P9854": {
           "available_on": "2025-10-27",
@@ -4822,7 +4822,7 @@
           ],
           "last_role": "CL",
           "max_pitches": 68.85000000000001,
-          "available_pitches": 0.0
+          "available_pitches": 68.85000000000001
         }
       }
     },
@@ -4928,7 +4928,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 199.5,
-          "available_pitches": 111.27999999999997
+          "available_pitches": 199.5
         },
         "P6449": {
           "available_on": "2025-10-31",
@@ -5022,7 +5022,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 220.5,
-          "available_pitches": 159.5
+          "available_pitches": 220.5
         },
         "P2556": {
           "available_on": "2025-10-29",
@@ -5116,7 +5116,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 220.5,
-          "available_pitches": 204.5
+          "available_pitches": 220.5
         },
         "P5276": {
           "available_on": "2025-10-28",
@@ -5210,7 +5210,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 210.0,
-          "available_pitches": 193.4
+          "available_pitches": 210.0
         },
         "P9011": {
           "available_on": "2025-10-30",
@@ -5388,7 +5388,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P8891": {
           "available_on": "2025-10-30",
@@ -5566,7 +5566,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P8855": {
           "available_on": "2025-10-29",
@@ -5744,7 +5744,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P9777": {
           "available_on": "2025-10-29",
@@ -5922,7 +5922,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P2039": {
           "available_on": "2025-10-29",
@@ -6100,7 +6100,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 74.25,
-          "available_pitches": 0.0
+          "available_pitches": 74.25
         },
         "P2058": {
           "available_on": "2025-10-30",
@@ -6278,7 +6278,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P3186": {
           "available_on": "2025-10-29",
@@ -6372,7 +6372,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 196.0,
-          "available_pitches": 161.04
+          "available_pitches": 196.0
         },
         "P9820": {
           "available_on": "2025-10-30",
@@ -6550,7 +6550,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         }
       }
     },
@@ -6621,7 +6621,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 245.0,
-          "available_pitches": 178.0
+          "available_pitches": 245.0
         },
         "P7668": {
           "available_on": "2025-10-31",
@@ -6673,7 +6673,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 255.5,
-          "available_pitches": 241.82
+          "available_pitches": 255.5
         },
         "P8074": {
           "available_on": "2025-10-27",
@@ -6854,7 +6854,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 162.78000000000003
+          "available_pitches": 206.5
         },
         "P2931": {
           "available_on": "2025-10-27",
@@ -7084,7 +7084,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 19.464000000000002
+          "available_pitches": 70.2
         },
         "P6001": {
           "available_on": "2025-10-31",
@@ -7262,7 +7262,7 @@
           ],
           "last_role": "CL",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P5821": {
           "available_on": "2025-10-30",
@@ -7433,7 +7433,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P7908": {
           "available_on": "2025-10-30",
@@ -7597,7 +7597,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P6912": {
           "available_on": "2025-10-30",
@@ -7775,7 +7775,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 74.25,
-          "available_pitches": 0.0
+          "available_pitches": 74.25
         },
         "P8433": {
           "available_on": "2025-10-29",
@@ -7911,7 +7911,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P2479": {
           "available_on": "2025-10-29",
@@ -8089,7 +8089,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 72.9,
-          "available_pitches": 0.0
+          "available_pitches": 72.9
         },
         "P1394": {
           "available_on": "2025-10-27",
@@ -8351,7 +8351,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 134.5
+          "available_pitches": 206.5
         },
         "P5382": {
           "available_on": "2025-11-02",
@@ -8403,7 +8403,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 234.5,
-          "available_pitches": 99.5
+          "available_pitches": 234.5
         },
         "P7044": {
           "available_on": "2025-11-01",
@@ -8441,7 +8441,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 255.5,
-          "available_pitches": 174.82
+          "available_pitches": 255.5
         },
         "P4525": {
           "available_on": "2025-10-29",
@@ -8598,7 +8598,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P6421": {
           "available_on": "2025-10-29",
@@ -8727,7 +8727,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P9523": {
           "available_on": "2025-10-30",
@@ -8835,7 +8835,7 @@
           ],
           "last_role": "CL",
           "max_pitches": 70.2,
-          "available_pitches": 67.39200000000001
+          "available_pitches": 70.2
         },
         "P9961": {
           "available_on": "2025-10-29",
@@ -8971,7 +8971,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P2448": {
           "available_on": "2025-10-29",
@@ -9114,7 +9114,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 4.624000000000006
+          "available_pitches": 70.2
         },
         "P4830": {
           "available_on": "2025-10-29",
@@ -9243,7 +9243,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 74.25,
-          "available_pitches": 0.0
+          "available_pitches": 74.25
         },
         "P9906": {
           "available_on": "2025-10-31",
@@ -9337,7 +9337,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 213.5,
-          "available_pitches": 179.74
+          "available_pitches": 213.5
         },
         "P4093": {
           "available_on": "2025-10-26",
@@ -9460,7 +9460,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 220.5,
-          "available_pitches": 152.5
+          "available_pitches": 220.5
         },
         "P2200": {
           "available_on": "2025-10-28",
@@ -9526,7 +9526,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 234.5,
-          "available_pitches": 196.06
+          "available_pitches": 234.5
         },
         "P5281": {
           "available_on": "2025-10-28",
@@ -9606,7 +9606,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 217.0,
-          "available_pitches": 161.55999999999997
+          "available_pitches": 217.0
         },
         "P4970": {
           "available_on": "2025-10-30",
@@ -9749,7 +9749,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 210.0,
-          "available_pitches": 80.80000000000007
+          "available_pitches": 210.0
         },
         "P6123": {
           "available_on": "2025-10-30",
@@ -9920,7 +9920,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P8506": {
           "available_on": "2025-10-30",
@@ -10098,7 +10098,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P7926": {
           "available_on": "2025-11-01",
@@ -10234,7 +10234,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 203.0,
-          "available_pitches": 0.0
+          "available_pitches": 203.0
         },
         "P5688": {
           "available_on": "2025-10-29",
@@ -10384,7 +10384,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 88.10000000000002
+          "available_pitches": 206.5
         },
         "P2177": {
           "available_on": "2025-10-30",
@@ -10513,7 +10513,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 213.5,
-          "available_pitches": 102.35999999999996
+          "available_pitches": 213.5
         },
         "P2315": {
           "available_on": "2025-10-28",
@@ -10593,7 +10593,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 220.5,
-          "available_pitches": 214.5
+          "available_pitches": 220.5
         },
         "P6065": {
           "available_on": "2025-11-01",
@@ -10666,7 +10666,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 227.5,
-          "available_pitches": 179.1
+          "available_pitches": 227.5
         }
       }
     },
@@ -10800,7 +10800,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 210.0,
-          "available_pitches": 136.8
+          "available_pitches": 210.0
         },
         "P2064": {
           "available_on": "2025-10-28",
@@ -10852,7 +10852,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 227.5,
-          "available_pitches": 199.7
+          "available_pitches": 227.5
         },
         "P2903": {
           "available_on": "2025-10-30",
@@ -10911,7 +10911,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 217.0,
-          "available_pitches": 171.07999999999998
+          "available_pitches": 217.0
         },
         "P5919": {
           "available_on": "2025-10-28",
@@ -10977,7 +10977,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 255.5,
-          "available_pitches": 247.5
+          "available_pitches": 255.5
         },
         "P8374": {
           "available_on": "2025-10-29",
@@ -11050,7 +11050,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 276.5,
-          "available_pitches": 255.5
+          "available_pitches": 276.5
         },
         "P6258": {
           "available_on": "2025-10-30",
@@ -11172,7 +11172,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P3544": {
           "available_on": "2025-10-30",
@@ -11350,7 +11350,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P6838": {
           "available_on": "2025-10-30",
@@ -11514,7 +11514,7 @@
           ],
           "last_role": "CL",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P1450": {
           "available_on": "2025-10-29",
@@ -11692,7 +11692,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P1682": {
           "available_on": "2025-10-29",
@@ -11870,7 +11870,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P3635": {
           "available_on": "2025-10-29",
@@ -12013,7 +12013,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P9776": {
           "available_on": "2025-10-29",
@@ -12191,7 +12191,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 71.55000000000001,
-          "available_pitches": 0.0
+          "available_pitches": 71.55000000000001
         },
         "P6428": {
           "available_on": "2025-10-31",
@@ -12243,7 +12243,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 217.0,
-          "available_pitches": 156.0
+          "available_pitches": 217.0
         }
       }
     },
@@ -12356,7 +12356,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 196.0,
-          "available_pitches": 159.15999999999997
+          "available_pitches": 196.0
         },
         "P8952": {
           "available_on": "2025-10-27",
@@ -12408,7 +12408,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 220.5,
-          "available_pitches": 219.17999999999995
+          "available_pitches": 220.5
         },
         "P1676": {
           "available_on": "2025-10-30",
@@ -12509,7 +12509,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 203.0,
-          "available_pitches": 182.72
+          "available_pitches": 203.0
         },
         "P6786": {
           "available_on": "2025-11-02",
@@ -12554,7 +12554,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 245.0,
-          "available_pitches": 149.8
+          "available_pitches": 245.0
         },
         "P2593": {
           "available_on": "2025-10-30",
@@ -12777,7 +12777,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P5501": {
           "available_on": "2025-10-29",
@@ -12927,7 +12927,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P4035": {
           "available_on": "2025-10-30",
@@ -13098,7 +13098,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P5567": {
           "available_on": "2025-10-31",
@@ -13213,7 +13213,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 213.5,
-          "available_pitches": 149.70000000000005
+          "available_pitches": 213.5
         },
         "P2210": {
           "available_on": "2025-11-02",
@@ -13265,7 +13265,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 224.0,
-          "available_pitches": 87.0
+          "available_pitches": 224.0
         },
         "P1232": {
           "available_on": "2025-10-30",
@@ -13394,7 +13394,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 95.11999999999999
+          "available_pitches": 206.5
         },
         "P9875": {
           "available_on": "2025-10-29",
@@ -13580,7 +13580,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 196.0,
-          "available_pitches": 46.08
+          "available_pitches": 196.0
         },
         "P7477": {
           "available_on": "2025-10-28",
@@ -13632,7 +13632,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 245.0,
-          "available_pitches": 236.0
+          "available_pitches": 245.0
         },
         "P1618": {
           "available_on": "2025-10-28",
@@ -13698,7 +13698,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 276.5,
-          "available_pitches": 268.5
+          "available_pitches": 276.5
         },
         "P2624": {
           "available_on": "2025-10-29",
@@ -13827,7 +13827,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 203.0,
-          "available_pitches": 127.63999999999999
+          "available_pitches": 203.0
         },
         "P4646": {
           "available_on": "2025-10-28",
@@ -13886,7 +13886,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 234.5,
-          "available_pitches": 225.5
+          "available_pitches": 234.5
         },
         "P9934": {
           "available_on": "2025-10-29",
@@ -14057,7 +14057,7 @@
           ],
           "last_role": "CL",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P7878": {
           "available_on": "2025-10-30",
@@ -14228,7 +14228,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 72.9,
-          "available_pitches": 0.0
+          "available_pitches": 72.9
         },
         "P4907": {
           "available_on": "2025-10-29",
@@ -14399,7 +14399,7 @@
           ],
           "last_role": "LR",
           "max_pitches": 74.25,
-          "available_pitches": 0.0
+          "available_pitches": 74.25
         },
         "P3270": {
           "available_on": "2025-11-02",
@@ -14458,7 +14458,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 283.5,
-          "available_pitches": 158.5
+          "available_pitches": 283.5
         },
         "P4008": {
           "available_on": "2025-10-29",
@@ -14573,7 +14573,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 203.0,
-          "available_pitches": 166.43999999999997
+          "available_pitches": 203.0
         },
         "P5954": {
           "available_on": "2025-10-29",
@@ -14730,7 +14730,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 74.25,
-          "available_pitches": 0.0
+          "available_pitches": 74.25
         },
         "P8565": {
           "available_on": "2025-11-01",
@@ -14803,7 +14803,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 206.5,
-          "available_pitches": 33.06
+          "available_pitches": 206.5
         }
       }
     },
@@ -14867,7 +14867,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 234.5,
-          "available_pitches": 224.5
+          "available_pitches": 234.5
         },
         "P1893": {
           "available_on": "2025-10-30",
@@ -14989,7 +14989,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 199.5,
-          "available_pitches": 102.93999999999994
+          "available_pitches": 199.5
         },
         "P1827": {
           "available_on": "2025-10-28",
@@ -15048,7 +15048,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 255.5,
-          "available_pitches": 243.5
+          "available_pitches": 255.5
         },
         "P1600": {
           "available_on": "2025-10-28",
@@ -15100,7 +15100,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 283.5,
-          "available_pitches": 273.5
+          "available_pitches": 283.5
         },
         "P2637": {
           "available_on": "2025-10-30",
@@ -15229,7 +15229,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 217.0,
-          "available_pitches": 99.03999999999996
+          "available_pitches": 217.0
         },
         "P5563": {
           "available_on": "2025-10-30",
@@ -15365,7 +15365,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P9575": {
           "available_on": "2025-10-29",
@@ -15494,7 +15494,7 @@
           ],
           "last_role": "SU",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P2027": {
           "available_on": "2025-10-29",
@@ -15616,7 +15616,7 @@
           ],
           "last_role": "CL",
           "max_pitches": 70.2,
-          "available_pitches": 7.928000000000004
+          "available_pitches": 70.2
         },
         "P6007": {
           "available_on": "2025-10-30",
@@ -15787,7 +15787,7 @@
           ],
           "last_role": "MR",
           "max_pitches": 70.2,
-          "available_pitches": 0.0
+          "available_pitches": 70.2
         },
         "P3152": {
           "available_on": "2025-10-29",
@@ -15923,7 +15923,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 210.0,
-          "available_pitches": 102.60000000000005
+          "available_pitches": 210.0
         },
         "P4676": {
           "available_on": "2025-11-01",
@@ -15996,7 +15996,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 224.0,
-          "available_pitches": 64.75999999999999
+          "available_pitches": 224.0
         },
         "P7253": {
           "available_on": "2025-10-31",
@@ -16048,7 +16048,7 @@
           ],
           "last_role": "SP",
           "max_pitches": 224.0,
-          "available_pitches": 159.0
+          "available_pitches": 224.0
         }
       }
     }
