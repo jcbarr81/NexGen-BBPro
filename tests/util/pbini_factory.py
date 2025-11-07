@@ -84,6 +84,12 @@ def load_config(path: Path | None = None) -> PlayBalanceConfig:
             "swingProbCloseStrike": 0.46,
             "swingProbCloseBall": 0.56,
             "swingProbSureBall": 0.18,
+            # Keep swing scaling consistent with the vanilla PBINI defaults so
+            # engine overrides (e.g. data/playbalance_overrides.json) do not
+            # leak into deterministic unit tests.
+            "swingProbScale": 1.0,
+            "zSwingProbScale": 1.0,
+            "oSwingProbScale": 1.0,
             "contactOutcomeScale": 0.92,
             "enableContactReduction": 0,
             "missChanceScale": 1.0,

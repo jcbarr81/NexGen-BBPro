@@ -232,6 +232,7 @@ _DEFAULTS: Dict[str, Any] = {
     "extraOSwingScaleMin": 1.32,
     "extraOSwingScaleMax": None,
     "twoStrikeContactBonus": 5.0,
+    "twoStrikeFoulBonusPct": 0.0,
     # Target roughly 17% of all pitches being put into play
     "ballInPlayPitchPct": 9,
     "ballInPlayOuts": 0,
@@ -245,7 +246,7 @@ _DEFAULTS: Dict[str, Any] = {
     "stealSuccessBasePct": 88,
     # Hit by pitch avoidance ----------------------------------------
     "hbpBatterStepOutChance": 10,
-    "hbpBaseChance": 0.12,
+    "hbpBaseChance": 0.012,
     "leagueHBPPerGame": 0.86,
     # Pitcher AI ------------------------------------------------------
     "pitchRatVariationCount": 1,

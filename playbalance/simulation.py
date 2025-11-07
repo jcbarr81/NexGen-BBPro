@@ -18,6 +18,7 @@ from playbalance.physics import Physics, bat_impact as bat_impact_func
 from playbalance.pitcher_ai import PitcherAI
 from playbalance.batter_ai import BatterAI, record_auto_take
 from playbalance.diagnostics.batter_decision import BatterDecisionTracker
+from playbalance.diagnostics.pitch_survival import PitchSurvivalTracker
 from playbalance.diagnostics.pitch_intent import bucket_for_objective
 from playbalance.bullpen import WarmupTracker
 from playbalance.fielding_ai import FieldingAI
@@ -255,6 +256,7 @@ class GameSimulation:
         self.last_batted_ball_type: str | None = None
         self.last_pitch_speed: float | None = None
         self.batter_decision_tracker: BatterDecisionTracker | None = None
+        self.pitch_survival_tracker: PitchSurvivalTracker | None = None
         self._pending_batter_decision: dict[str, Any] | None = None
         base = get_base_dir()
         data_path = (
@@ -370,6 +372,13 @@ class GameSimulation:
         """Attach a BatterDecisionTracker for per-pitch swing/take logging."""
 
         self.batter_decision_tracker = tracker
+
+    def set_pitch_survival_tracker(
+        self, tracker: PitchSurvivalTracker | None
+    ) -> None:
+        """Attach a tracker that records pitches per plate appearance."""
+
+        self.pitch_survival_tracker = tracker
 
     def _log_batter_decision(
         self,
@@ -635,6 +644,13 @@ class GameSimulation:
         """Increment ``attr`` on ``state``."""
 
         setattr(state, attr, getattr(state, attr) + amount)
+        if (
+            attr == "pitches"
+            and amount > 0
+            and isinstance(state, BatterState)
+            and self.pitch_survival_tracker is not None
+        ):
+            self.pitch_survival_tracker.record_plate(amount)
 
     def _record_ball(self, pitcher_state: PitcherState) -> None:
         if self._skip_next_ball_count:
@@ -2432,6 +2448,9 @@ class GameSimulation:
         if strikes >= 2:
             resilience = 2.0 + max(0.0, contact_delta) / 80.0
             prob *= resilience
+            bonus_pct = float(cfg.get("twoStrikeFoulBonusPct", 0.0)) / 100.0
+            if bonus_pct > 0:
+                prob *= 1.0 + bonus_pct
         return max(0.0, min(1.0, prob))
 
     def _attempt_foul_catch(
@@ -3597,10 +3616,12 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
             sim_pitches = getattr(ps, "simulated_pitches", 0)
             sim_strikes = getattr(ps, "simulated_strikes", 0)
             sim_balls = getattr(ps, "simulated_balls", 0)
+            total_pitches = max(0, getattr(ps, "pitches_thrown", 0) - sim_pitches)
             actual_strikes = max(0, getattr(ps, "strikes_thrown", 0) - sim_strikes)
             actual_balls = max(0, getattr(ps, "balls_thrown", 0) - sim_balls)
+            extra_balls = max(0, total_pitches - actual_strikes)
             walk_balls = getattr(ps, "bb", 0) * 4 + getattr(ps, "hbp", 0)
-            counted_balls = min(actual_balls, walk_balls)
+            counted_balls = min(extra_balls, walk_balls)
             line = {
                 "player": ps.player,
                 "g": getattr(ps, "g", 0),
@@ -3629,7 +3650,7 @@ def generate_boxscore(home: TeamState, away: TeamState) -> Dict[str, Dict[str, o
                 "bs": getattr(ps, "bs", 0),
                 "hld": getattr(ps, "hld", 0),
                 "svo": getattr(ps, "svo", 0),
-                "pitches": max(0, actual_strikes + counted_balls),
+                "pitches": total_pitches,
                 "strikes": actual_strikes,
                 "balls": actual_balls,
             }

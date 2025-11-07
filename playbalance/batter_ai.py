@@ -374,6 +374,8 @@ class BatterAI:
     last_decision: Tuple[bool, float] | None = None
     last_misread: bool = False
     last_swing_breakdown: dict[str, float | str] | None = None
+    last_id_probability: float | None = None
+    last_contact_probability: float | None = None
 
     def _primary_pitch(self, pitcher: Pitcher) -> str:
         if self._primary_cache is None:
@@ -803,7 +805,13 @@ class BatterAI:
         two_strike_floor = getattr(self.config, "twoStrikeContactFloor", 0.0)
         two_strike_quality_cap = getattr(self.config, "twoStrikeContactQuality", 0.0)
         id_prob = 0.0
-        in_zone_flag = bool(getattr(self, "_last_pitch_in_zone", False))
+        stored_in_zone = getattr(self, "_last_pitch_in_zone", None)
+        if stored_in_zone is None:
+            plate_w = getattr(self.config, "plateWidth", 3)
+            plate_h = getattr(self.config, "plateHeight", 3)
+            in_zone_flag = dist <= max(plate_w, plate_h)
+        else:
+            in_zone_flag = bool(stored_in_zone)
         close_ball_scale = float(getattr(self.config, "closeBallContactScale", 0.6) or 0.6)
         sure_ball_scale = float(getattr(self.config, "sureBallContactScale", 0.3) or 0.3)
         waste_contact_scale = float(getattr(self.config, "wasteObjectiveContactScale", 0.6) or 0.6)
@@ -853,6 +861,7 @@ class BatterAI:
             id_score += exp * exp_pct
             id_score += ((100 - pitch_rat) / 2.0) * rat_pct
             id_prob = clamp01(id_score / 100.0)
+            self.last_id_probability = id_prob
 
             # Special cases to match expected behaviour in tests
             if id_prob >= 1.0:
@@ -983,8 +992,9 @@ class BatterAI:
                     self.last_contact = (check_random < fail_contact)
                     contact_quality = prob_contact
             else:
-                # Resolve actual contact for tracking; use provided RNG if given
-                rv_contact = rv if check_random is None else check_random
+                # Resolve actual contact for tracking; use an independent RNG draw
+                rv_contact = random.random() if check_random is None else check_random
+                self.last_contact_probability = prob_contact
                 self.last_contact = rv_contact < prob_contact
                 contact_quality = prob_contact
                 if forced_two_strike_contact and self.last_contact and two_strike_quality_cap > 0:

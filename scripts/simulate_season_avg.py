@@ -237,7 +237,8 @@ def simulate_season_average(
     # Prepare list of (home, away, seed) tuples for multiprocessing
     rng = random.Random(seed)
     games = [
-        (g["home"], g["away"], rng.randrange(2**32)) for g in schedule
+        (game["home"], game["away"], rng.randrange(2**32))
+        for game in schedule
     ]
     # Expect one schedule entry per game; duplicates would inflate averages.
     games_per_team = 162

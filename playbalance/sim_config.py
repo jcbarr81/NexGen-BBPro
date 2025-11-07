@@ -194,8 +194,62 @@ def load_tuned_playbalance_config(
         base_contact = max(cfg.contactFactorBase, 1.62)
         cfg.contactFactorBase = round(base_contact * 1.18, 2)
         cfg.contactFactorDiv = max(96, int(round(cfg.contactFactorDiv * 0.86)))
-        cfg.closeBallStrikeBonus = max(cfg.closeBallStrikeBonus, 0)
+        cfg.closeBallStrikeBonus = max(cfg.closeBallStrikeBonus, 4)
         cfg.twoStrikeSwingBonus = max(cfg.twoStrikeSwingBonus, 5)
+
+        early_swing_adjusts = {
+            "swingProb00CountAdjust": -4,
+            "swingProb01CountAdjust": -3,
+            "swingProb10CountAdjust": -4,
+            "swingProb11CountAdjust": -2,
+            "swingProb20CountAdjust": -3,
+            "swingProb21CountAdjust": -2,
+        }
+        for key, value in early_swing_adjusts.items():
+            cfg.values[key] = float(value)
+
+        cfg.closeBallTakeBonus = max(getattr(cfg, "closeBallTakeBonus", 0), 5)
+        cfg.sureBallTakeBonus = max(getattr(cfg, "sureBallTakeBonus", 0), 12)
+        cfg.disciplinePenaltyFloorOneBall = max(
+            getattr(cfg, "disciplinePenaltyFloorOneBall", 0), 0.10
+        )
+        cfg.disciplinePenaltyFloorTwoBall = max(
+            getattr(cfg, "disciplinePenaltyFloorTwoBall", 0), 0.22
+        )
+        cfg.closeStrikeDisciplineMix = max(
+            getattr(cfg, "closeStrikeDisciplineMix", 0.35), 0.40
+        )
+        cfg.twoStrikeContactBonus = max(
+            getattr(cfg, "twoStrikeContactBonus", 0.0), 1.2
+        )
+        cfg.twoStrikeContactFloor = max(
+            getattr(cfg, "twoStrikeContactFloor", 0.0), 0.04
+        )
+        cfg.twoStrikeContactQuality = max(
+            getattr(cfg, "twoStrikeContactQuality", 0.0), 0.09
+        )
+        cfg.twoStrikeFoulBonusPct = max(
+            getattr(cfg, "twoStrikeFoulBonusPct", 0.0), 14.0
+        )
+
+        pitcher_obj_overrides = {
+            "pitchObj00CountOutsideWeight": 55,
+            "pitchObj00CountPlusWeight": 30,
+            "pitchObj10CountOutsideWeight": 50,
+            "pitchObj10CountPlusWeight": 35,
+            "pitchObj20CountOutsideWeight": 50,
+            "pitchObj20CountFastCenterWeight": 12,
+            "pitchObj11CountOutsideWeight": 42,
+            "pitchObj12CountOutsideWeight": 35,
+            "pitchObj21CountOutsideWeight": 40,
+            "pitchObj22CountOutsideWeight": 32,
+        }
+        for key, target in pitcher_obj_overrides.items():
+            current = cfg.values.get(key, cfg.get(key, 0))
+            if "Outside" in key:
+                cfg.values[key] = max(current, target)
+            else:
+                cfg.values[key] = min(current, target)
 
         # Nudge base hit probability up slightly and relax caps to restore a
         # Major League run environment.
@@ -219,8 +273,8 @@ def load_tuned_playbalance_config(
         cfg.goodThrowBase = min(max(cfg.get("goodThrowBase", 63), 78), 88)
         cfg.goodThrowFAPct = min(max(cfg.get("goodThrowFAPct", 40), 48), 60)
         cfg.throwSuccessScale = min(max(cfg.get("throwSuccessScale", 1.0), 1.12), 1.2)
-        cfg.hbpBaseChance = max(cfg.get("hbpBaseChance", 0.0), 0.15)
-        cfg.hbpBatterStepOutChance = min(cfg.get("hbpBatterStepOutChance", 18), 2)
+        cfg.hbpBaseChance = max(0.0, float(cfg.get("hbpBaseChance", 0.0)))
+        cfg.hbpBatterStepOutChance = min(max(cfg.get("hbpBatterStepOutChance", 0), 0), 2)
 
         cfg.collectSwingDiagnostics = int(os.getenv("SWING_DIAGNOSTICS", "0"))
 
