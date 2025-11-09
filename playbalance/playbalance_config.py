@@ -791,8 +791,9 @@ _DEFAULTS: Dict[str, Any] = {
     "fielderReactionScale": 1.0,
     "throwSuccessScale": 1.1,
     # Strike zone dimensions (half-width/height in control-box units)
-    "plateWidth": 1,
-    "plateHeight": 1,
+    # Use a full-width plate so strike/ball calculations align with MLB geometry.
+    "plateWidth": 3,
+    "plateHeight": 3,
 }
 _BASE_DEFAULTS = dict(_DEFAULTS)
 

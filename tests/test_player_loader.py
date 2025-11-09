@@ -1,6 +1,10 @@
 import csv
+import json
+
 import pytest
+
 from models.pitcher import Pitcher
+from services import unified_data_service
 from utils.player_loader import load_players_from_csv
 
 
@@ -244,3 +248,72 @@ def test_pitcher_arm_defaults_to_fastball(tmp_path):
     assert isinstance(player, Pitcher)
     assert player.role == "SP"
     assert player.arm == 70
+
+
+def test_player_loader_refreshes_stats_after_reset(tmp_path, monkeypatch):
+    base_dir = tmp_path
+    data_dir = base_dir / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    players_path = data_dir / "players.csv"
+    fieldnames = [
+        "player_id",
+        "first_name",
+        "last_name",
+        "birthdate",
+        "height",
+        "weight",
+        "bats",
+        "primary_position",
+        "gf",
+        "is_pitcher",
+        "role",
+        "ch",
+        "ph",
+        "sp",
+        "pl",
+        "vl",
+        "sc",
+        "fa",
+        "arm",
+    ]
+    with players_path.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(
+            {
+                "player_id": "P42",
+                "first_name": "Alex",
+                "last_name": "Reset",
+                "birthdate": "1991-01-01",
+                "height": "72",
+                "weight": "190",
+                "bats": "R",
+                "primary_position": "1B",
+                "gf": "60",
+                "is_pitcher": "false",
+                "role": "",
+                "ch": "55",
+                "ph": "50",
+                "sp": "45",
+                "pl": "60",
+                "vl": "65",
+                "sc": "58",
+                "fa": "62",
+                "arm": "70",
+            }
+        )
+
+    stats_path = data_dir / "season_stats.json"
+    stats_path.write_text(
+        json.dumps({"players": {"P42": {"pa": 10}}, "teams": {}, "history": []}, indent=2),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("utils.player_loader.get_base_dir", lambda: base_dir)
+    monkeypatch.setattr(unified_data_service, "_SERVICE", None)
+
+    first = load_players_from_csv(players_path)
+    assert first[0].season_stats["pa"] == 10
+
+    stats_path.write_text(json.dumps({"players": {}, "teams": {}, "history": []}, indent=2), encoding="utf-8")
+    second = load_players_from_csv(players_path)
+    assert not hasattr(second[0], "season_stats")

@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 import json
+import logging
 import random
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
@@ -21,6 +22,109 @@ from utils.path_utils import get_base_dir
 
 CATALOG_PATH = "data/injury_catalog.json"
 DEFAULT_SEVERITY_WEIGHTS = {"minor": 0.7, "moderate": 0.25, "major": 0.05}
+logger = logging.getLogger(__name__)
+
+_FALLBACK_INJURY_CATALOG: Dict[str, Any] = {
+    "metadata": {
+        "name": "Auto-generated fallback",
+        "source": "services.injury_simulator",
+        "description": (
+            "Generated when data/injury_catalog.json is missing so that the season "
+            "simulator can continue to run with a small injury set."
+        ),
+    },
+    "triggers": {
+        "collision": {
+            "base_probability": 0.12,
+            "modifiers": {"durability_factor": -0.35},
+            "severities": ["minor", "moderate"],
+        },
+        "hit_by_pitch": {
+            "base_probability": 0.08,
+            "modifiers": {"durability_factor": -0.25},
+            "severities": ["minor"],
+        },
+        "pitcher_overuse": {
+            "base_probability": 0.18,
+            "modifiers": {"fatigue_factor": 0.45},
+            "severities": ["moderate", "major"],
+        },
+    },
+    "injuries": [
+        {
+            "id": "fallback_bruise",
+            "name": "Bruised Shoulder",
+            "body_part": "shoulder",
+            "eligible_triggers": ["collision", "hit_by_pitch"],
+            "severity_profiles": {
+                "minor": {
+                    "min_days": 1,
+                    "max_days": 3,
+                    "dl_tier": "none",
+                    "description": "Day-to-day shoulder bruise",
+                    "attributes_penalty": {"pow": -2, "con": -1},
+                }
+            },
+        },
+        {
+            "id": "fallback_oblique",
+            "name": "Strained Oblique",
+            "body_part": "core",
+            "eligible_triggers": ["collision"],
+            "severity_profiles": {
+                "moderate": {
+                    "min_days": 7,
+                    "max_days": 12,
+                    "dl_tier": "dl15",
+                    "description": "Moderate oblique strain",
+                    "attributes_penalty": {"spd": -3, "con": -2},
+                }
+            },
+        },
+        {
+            "id": "fallback_elbow",
+            "name": "Elbow Tendinitis",
+            "body_part": "elbow",
+            "eligible_triggers": ["pitcher_overuse"],
+            "pitcher_only": True,
+            "severity_profiles": {
+                "moderate": {
+                    "min_days": 10,
+                    "max_days": 18,
+                    "dl_tier": "dl15",
+                    "description": "Tendinitis flare-up",
+                    "attributes_penalty": {"vel": -3, "ctrl": -2},
+                },
+                "major": {
+                    "min_days": 30,
+                    "max_days": 45,
+                    "dl_tier": "dl45",
+                    "description": "Severe tendinitis",
+                    "attributes_penalty": {"vel": -5, "sta": -4},
+                },
+            },
+        },
+    ],
+}
+
+
+def _fallback_catalog() -> Dict[str, Any]:
+    """Return a deep copy of the embedded fallback catalog."""
+
+    return json.loads(json.dumps(_FALLBACK_INJURY_CATALOG))
+
+
+def _bootstrap_catalog_file(path: Path) -> Dict[str, Any]:
+    """Write a fallback catalog to ``path`` and return its data."""
+
+    catalog = _fallback_catalog()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as fh:
+            json.dump(catalog, fh, indent=2)
+    except Exception as exc:  # pragma: no cover - best-effort bootstrap
+        logger.warning("Unable to write fallback injury catalog to %s: %s", path, exc)
+    return catalog
 
 
 @lru_cache(maxsize=4)
@@ -33,8 +137,22 @@ def load_injury_catalog(path: str = CATALOG_PATH) -> Dict[str, Any]:
     try:
         with catalog_path.open("r", encoding="utf-8") as fh:
             return json.load(fh)
-    except FileNotFoundError as exc:  # pragma: no cover - configuration error
-        raise FileNotFoundError(f"Injury catalog not found at {catalog_path}") from exc
+    except FileNotFoundError:  # pragma: no cover - runtime bootstrap
+        catalog = _bootstrap_catalog_file(catalog_path)
+        logger.warning(
+            "Injury catalog missing at %s; generated fallback catalog with %d injuries.",
+            catalog_path,
+            len(catalog.get("injuries", [])),
+        )
+        return catalog
+    except json.JSONDecodeError as exc:  # pragma: no cover - recover from corruption
+        catalog = _bootstrap_catalog_file(catalog_path)
+        logger.warning(
+            "Injury catalog at %s is corrupt (%s); regenerated fallback catalog.",
+            catalog_path,
+            exc,
+        )
+        return catalog
 
 
 @dataclass

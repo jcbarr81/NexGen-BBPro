@@ -1,7 +1,11 @@
 import random
 from types import SimpleNamespace
 
-from services.injury_simulator import InjurySimulator, InjuryOutcome
+from services.injury_simulator import (
+    InjurySimulator,
+    InjuryOutcome,
+    load_injury_catalog,
+)
 
 
 def _player(is_pitcher: bool = False, durability: int = 70):
@@ -119,3 +123,22 @@ def test_durability_modifier_influences_probability():
     fragile_player = _player(durability=1)
     outcome = sim.maybe_create_injury("collision", fragile_player, force=False)
     assert isinstance(outcome, InjuryOutcome)
+
+
+def test_load_injury_catalog_bootstraps_missing_file(tmp_path):
+    target = tmp_path / "injury_catalog.json"
+    load_injury_catalog.cache_clear()
+    catalog = load_injury_catalog(path=str(target))
+    assert target.exists()
+    assert catalog.get("triggers")
+    assert catalog.get("injuries")
+    load_injury_catalog.cache_clear()
+
+
+def test_load_injury_catalog_recovers_from_corrupt_file(tmp_path):
+    target = tmp_path / "injury_catalog.json"
+    target.write_text("{broken")
+    load_injury_catalog.cache_clear()
+    catalog = load_injury_catalog(path=str(target))
+    assert catalog.get("injuries")
+    load_injury_catalog.cache_clear()

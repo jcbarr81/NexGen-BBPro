@@ -233,7 +233,10 @@ def simulate_games(
     }
     if cfg is None:
         cfg, _ = load_tuned_playbalance_config()
-    if cfg_or_games is None and not (home_team and away_team):
+    enable_calibration = (
+        os.getenv("PB_ENABLE_CALIBRATION", "").strip().lower() in {"1", "true", "yes"}
+    )
+    if enable_calibration and cfg_or_games is None and not (home_team and away_team):
         base_contact = cfg.get("contactFactorBase", None)
         if base_contact is None:
             base_contact = getattr(cfg, "contactFactorBase", 1.88)
@@ -256,20 +259,28 @@ def simulate_games(
         benchmarks = load_benchmarks()
 
     if isinstance(cfg, PlayBalanceConfig):
-        cfg.pitchCalibrationEnabled = 1
-        base_target = cfg.get("pitchCalibrationTarget", 3.9)
-        target_source = benchmarks.get("pitches_per_pa", base_target) if benchmarks else base_target
-        try:
-            target_value = round(float(target_source) - 0.31, 2)
-        except (TypeError, ValueError):
-            target_value = 3.8
-        cfg.pitchCalibrationTarget = max(0.0, target_value)
-        cfg.pitchCalibrationTolerance = 0.05
-        cfg.pitchCalibrationPerPlateCap = 2
-        cfg.pitchCalibrationPerGameCap = 0
-        cfg.pitchCalibrationMinPA = max(6, int(getattr(cfg, "pitchCalibrationMinPA", 6) or 6))
-        cfg.pitchCalibrationPreferFoul = 1
-        cfg.pitchCalibrationEmaAlpha = 0.3
+        if enable_calibration:
+            cfg.pitchCalibrationEnabled = 1
+            base_target = cfg.get("pitchCalibrationTarget", 3.9)
+            target_source = (
+                benchmarks.get("pitches_per_pa", base_target) if benchmarks else base_target
+            )
+            try:
+                target_value = round(float(target_source) - 0.31, 2)
+            except (TypeError, ValueError):
+                target_value = 3.8
+            cfg.pitchCalibrationTarget = max(0.0, target_value)
+            cfg.pitchCalibrationTolerance = 0.05
+            cfg.pitchCalibrationPerPlateCap = 2
+            cfg.pitchCalibrationPerGameCap = 0
+            cfg.pitchCalibrationMinPA = max(
+                6, int(getattr(cfg, "pitchCalibrationMinPA", 6) or 6)
+            )
+            cfg.pitchCalibrationPreferFoul = 1
+            cfg.pitchCalibrationEmaAlpha = 0.3
+        else:
+            cfg.pitchCalibrationEnabled = 0
+            cfg.values["pitchCalibrationEnabled"] = 0
 
     base_seed = rng_seed if rng_seed is not None else random.randrange(2**32)
     rotation: dict[str, int] = {tid: 0 for tid in team_ids}

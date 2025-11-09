@@ -1,155 +1,109 @@
 {
-  "meta": {
-    "version": 1,
-    "notes": "Probabilities are relative weights; final chance = trigger base × modifiers."
+  "metadata": {
+    "name": "Auto-generated fallback",
+    "source": "services.injury_simulator",
+    "description": "Generated when data/injury_catalog.json is missing so that the season simulator can continue to run with a small injury set."
   },
   "triggers": {
     "collision": {
-      "base_probability": 0.035,
+      "base_probability": 0.12,
       "modifiers": {
-        "fatigue_factor": 0.4,
-        "age_factor": 0.2,
-        "durability_factor": -0.3
+        "durability_factor": -0.35
       },
-      "severities": ["minor", "moderate", "major"]
-    },
-    "slide_contact": {
-      "base_probability": 0.02,
-      "modifiers": {
-        "speed_factor": 0.25,
-        "fatigue_factor": 0.3
-      },
-      "severities": ["minor", "moderate"]
+      "severities": [
+        "minor",
+        "moderate"
+      ]
     },
     "hit_by_pitch": {
-      "base_probability": 0.015,
+      "base_probability": 0.08,
       "modifiers": {
-        "pitch_velocity_factor": 0.5,
-        "equipment_factor": -0.2
+        "durability_factor": -0.25
       },
-      "severities": ["minor", "moderate"]
+      "severities": [
+        "minor"
+      ]
     },
     "pitcher_overuse": {
-      "base_probability": 0.02,
+      "base_probability": 0.18,
       "modifiers": {
-        "stress_days": 0.25,
-        "age_factor": 0.2,
-        "durability_factor": -0.3
+        "fatigue_factor": 0.45
       },
-      "severities": ["minor", "moderate"]
+      "severities": [
+        "moderate",
+        "major"
+      ]
     }
   },
   "injuries": [
     {
-      "id": "bruise_hand",
-      "name": "Hand Contusion",
-      "body_part": "hand",
-      "eligible_triggers": ["hit_by_pitch", "collision"],
-      "severity_profiles": {
-        "minor": {
-          "min_days": 3,
-          "max_days": 7,
-          "dl_tier": "none",
-          "attributes_penalty": {
-            "contact": -5,
-            "power": -3
-          }
-        },
-        "moderate": {
-          "min_days": 10,
-          "max_days": 20,
-          "dl_tier": "dl15",
-          "attributes_penalty": {
-            "contact": -8,
-            "power": -6
-          }
-        }
-      }
-    },
-    {
-      "id": "hamstring_strain",
-      "name": "Hamstring Strain",
-      "body_part": "leg",
-      "eligible_triggers": ["slide_contact", "collision", "pitcher_overuse"],
-      "severity_profiles": {
-        "minor": {
-          "min_days": 7,
-          "max_days": 14,
-          "dl_tier": "dl15",
-          "attributes_penalty": {
-            "speed": -10,
-            "baserunning": -8
-          }
-        },
-        "moderate": {
-          "min_days": 21,
-          "max_days": 35,
-          "dl_tier": "dl45",
-          "attributes_penalty": {
-            "speed": -15,
-            "baserunning": -12
-          }
-        },
-        "major": {
-          "min_days": 45,
-          "max_days": 90,
-          "dl_tier": "dl45",
-          "attributes_penalty": {
-            "speed": -20,
-            "baserunning": -15
-          }
-        }
-      }
-    },
-    {
-      "id": "rotator_cuff_inflammation",
-      "name": "Rotator Cuff Inflammation",
+      "id": "fallback_bruise",
+      "name": "Bruised Shoulder",
       "body_part": "shoulder",
-      "eligible_triggers": ["pitcher_overuse"],
+      "eligible_triggers": [
+        "collision",
+        "hit_by_pitch"
+      ],
+      "severity_profiles": {
+        "minor": {
+          "min_days": 1,
+          "max_days": 3,
+          "dl_tier": "none",
+          "description": "Day-to-day shoulder bruise",
+          "attributes_penalty": {
+            "pow": -2,
+            "con": -1
+          }
+        }
+      }
+    },
+    {
+      "id": "fallback_oblique",
+      "name": "Strained Oblique",
+      "body_part": "core",
+      "eligible_triggers": [
+        "collision"
+      ],
+      "severity_profiles": {
+        "moderate": {
+          "min_days": 7,
+          "max_days": 12,
+          "dl_tier": "dl15",
+          "description": "Moderate oblique strain",
+          "attributes_penalty": {
+            "spd": -3,
+            "con": -2
+          }
+        }
+      }
+    },
+    {
+      "id": "fallback_elbow",
+      "name": "Elbow Tendinitis",
+      "body_part": "elbow",
+      "eligible_triggers": [
+        "pitcher_overuse"
+      ],
       "pitcher_only": true,
       "severity_profiles": {
         "moderate": {
-          "min_days": 20,
-          "max_days": 40,
-          "dl_tier": "dl45",
-          "attributes_penalty": {
-            "velocity": -8,
-            "control": -6
-          }
-        },
-        "major": {
-          "min_days": 60,
-          "max_days": 120,
-          "dl_tier": "dl45",
-          "attributes_penalty": {
-            "velocity": -12,
-            "control": -10
-          }
-        }
-      }
-    },
-    {
-      "id": "concussion",
-      "name": "Concussion",
-      "body_part": "head",
-      "eligible_triggers": ["collision"],
-      "severity_profiles": {
-        "minor": {
-          "min_days": 7,
-          "max_days": 15,
+          "min_days": 10,
+          "max_days": 18,
           "dl_tier": "dl15",
+          "description": "Tendinitis flare-up",
           "attributes_penalty": {
-            "vision": -10,
-            "awareness": -8
+            "vel": -3,
+            "ctrl": -2
           }
         },
         "major": {
-          "min_days": 20,
+          "min_days": 30,
           "max_days": 45,
           "dl_tier": "dl45",
+          "description": "Severe tendinitis",
           "attributes_penalty": {
-            "vision": -12,
-            "awareness": -10
+            "vel": -5,
+            "sta": -4
           }
         }
       }

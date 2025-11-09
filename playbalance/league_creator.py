@@ -9,11 +9,14 @@ from typing import Dict, List, Tuple, Iterable, Set
 
 from models.player import Player
 from models.pitcher import Pitcher
+from models.roster import Roster
 from utils.player_writer import save_players_to_csv
 from playbalance.player_generator import generate_player, reset_name_cache
 from utils.user_manager import clear_users
 from utils.player_loader import load_players_from_csv
+import utils.lineup_loader as lineup_loader
 from utils.lineup_loader import build_default_game_state
+from utils import roster_loader
 from playbalance.season_context import SeasonContext
 from services.standings_repository import save_standings
 
@@ -299,6 +302,8 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
             players.append(_ensure_unique_id(data))
         return players
 
+    generated_rosters: dict[str, Roster] = {}
+
     for division, teams in divisions.items():
         for city, name in teams:
             abbr = _abbr(city, name, existing_abbr)
@@ -334,11 +339,49 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
                     for p in players:
                         writer.writerow([p["player_id"], level])
 
+            generated_rosters[abbr] = Roster(
+                team_id=abbr,
+                act=[p["player_id"] for p in act_players],
+                aaa=[p["player_id"] for p in aaa_players],
+                low=[p["player_id"] for p in low_players],
+            )
+
     player_models = [_dict_to_model(p) for p in all_players]
     save_players_to_csv(player_models, players_path)
 
     load_players_from_csv.cache_clear()
-    _write_default_lineups(base_dir, [row["team_id"] for row in team_rows])
+    # New league rosters replace previously cached entries; drop them so lineup
+    # generation reads the freshly-written CSVs instead of stale in-memory data.
+    roster_loader.load_roster.cache_clear()
+    original_pitcher_guard = roster_loader._ensure_pitcher_depth
+    def _skip_pitcher_depth(roster, *, min_pitchers=roster_loader.MIN_ACTIVE_PITCHERS):
+        return False
+    roster_loader._ensure_pitcher_depth = _skip_pitcher_depth
+    roster_root = (base_dir / "rosters").resolve()
+    original_lineup_load_roster = lineup_loader.load_roster
+
+    def _load_roster_override(team_id, roster_dir: str | Path = "data/rosters"):
+        try:
+            resolved = Path(roster_dir)
+            if not resolved.is_absolute():
+                resolved = (base_dir / resolved).resolve()
+            else:
+                resolved = resolved.resolve()
+        except Exception:
+            resolved = None
+        if resolved == roster_root:
+            cached = generated_rosters.get(team_id)
+            if cached is not None:
+                return cached
+        return original_lineup_load_roster(team_id, roster_dir)
+
+    lineup_loader.load_roster = _load_roster_override
+    try:
+        _write_default_lineups(base_dir, [row["team_id"] for row in team_rows])
+    finally:
+        roster_loader._ensure_pitcher_depth = original_pitcher_guard
+        lineup_loader.load_roster = original_lineup_load_roster
+        roster_loader.load_roster.cache_clear()
     _initialize_league_state(base_dir)
 
     with open(teams_path, "w", newline="") as f:

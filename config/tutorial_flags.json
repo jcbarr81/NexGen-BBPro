@@ -1,4 +1,8 @@
 {
   "depth_chart_tutorial_done_WAS": true,
-  "dashboard_overview_tutorial_WAS": true
+  "dashboard_overview_tutorial_WAS": true,
+  "dashboard_overview_tutorial_BAL": true,
+  "dashboard_overview_tutorial_SAN": true,
+  "depth_chart_tutorial_done_SAN": true,
+  "dashboard_overview_tutorial_NEW": true
 }

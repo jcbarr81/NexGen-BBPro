@@ -1,6 +1,8 @@
 import csv
 import json
 from pathlib import Path
+from threading import RLock
+from typing import Any, Dict, Iterable
 
 from models.player import Player
 from models.pitcher import Pitcher
@@ -41,6 +43,13 @@ def _optional_int_or_none(row, key):
     return int(value)
 
 
+_CACHE_LOCK = RLock()
+_STATS_CACHE: Dict[str, Any] | None = None
+_STATS_TOKEN: tuple[int, int] | None = None
+_CAREER_CACHE: Dict[str, Any] | None = None
+_CAREER_TOKEN: tuple[int, int] | None = None
+
+
 def _load_career_players() -> dict[str, dict]:
     path = CAREER_DATA_DIR / "career_players.json"
     try:
@@ -52,6 +61,80 @@ def _load_career_players() -> dict[str, dict]:
     if isinstance(players, dict):
         return players
     return {}
+
+
+def _file_token(path: Path) -> tuple[int, int] | None:
+    try:
+        stat_result = path.stat()
+    except OSError:
+        return None
+    mtime_ns = getattr(stat_result, "st_mtime_ns", None)
+    if mtime_ns is None:
+        mtime_ns = int(stat_result.st_mtime * 1_000_000_000)
+    return mtime_ns, stat_result.st_size
+
+
+def _stats_payload() -> Dict[str, Any]:
+    global _STATS_CACHE, _STATS_TOKEN
+    stats_path = get_base_dir() / "data" / "season_stats.json"
+    token = _file_token(stats_path)
+    with _CACHE_LOCK:
+        if _STATS_CACHE is None or token != _STATS_TOKEN:
+            _STATS_CACHE = load_stats(stats_path)
+            _STATS_TOKEN = token
+        return _STATS_CACHE
+
+
+def _career_payload() -> Dict[str, dict]:
+    global _CAREER_CACHE, _CAREER_TOKEN
+    path = CAREER_DATA_DIR / "career_players.json"
+    token = _file_token(path)
+    with _CACHE_LOCK:
+        if _CAREER_CACHE is None or token != _CAREER_TOKEN:
+            _CAREER_CACHE = _load_career_players()
+            _CAREER_TOKEN = token
+        return _CAREER_CACHE
+
+
+def _apply_dynamic_player_data(players: Iterable[Player]) -> None:
+    """Attach season/career stats based on the latest on-disk payloads."""
+
+    stats_data = _stats_payload()
+    stats_map: Dict[str, Any] = stats_data.get("players", {}) if isinstance(stats_data, dict) else {}
+    career_map = _career_payload()
+
+    for player in players:
+        season = stats_map.get(player.player_id)
+        if season:
+            player.season_stats = season
+        elif hasattr(player, "season_stats"):
+            try:
+                delattr(player, "season_stats")
+            except AttributeError:
+                pass
+
+        career_entry = career_map.get(player.player_id) if isinstance(career_map, dict) else None
+        if career_entry:
+            totals = career_entry.get("totals", {})
+            if isinstance(totals, dict):
+                player.career_stats = dict(totals)
+            seasons = career_entry.get("seasons", {})
+            if isinstance(seasons, dict):
+                player.career_history = {
+                    sid: dict(data) if isinstance(data, dict) else data
+                    for sid, data in seasons.items()
+                }
+        else:
+            if hasattr(player, "career_stats"):
+                try:
+                    delattr(player, "career_stats")
+                except AttributeError:
+                    pass
+            if hasattr(player, "career_history"):
+                try:
+                    delattr(player, "career_history")
+                except AttributeError:
+                    pass
 
 
 def _resolve_players_path(resolved: Path, raw: Path) -> Path:
@@ -205,23 +288,6 @@ def _read_players_from_csv(csv_path: Path):
                 player.is_pitcher = False
 
             players.append(player)
-    stats = load_stats()
-    career_map = _load_career_players()
-    for player in players:
-        season = stats["players"].get(player.player_id)
-        if season:
-            player.season_stats = season
-        career_entry = career_map.get(player.player_id)
-        if career_entry:
-            totals = career_entry.get("totals", {})
-            if isinstance(totals, dict):
-                player.career_stats = dict(totals)
-            seasons = career_entry.get("seasons", {})
-            if isinstance(seasons, dict):
-                player.career_history = {
-                    sid: dict(data) if isinstance(data, dict) else data
-                    for sid, data in seasons.items()
-                }
     return players
 
 
@@ -235,7 +301,9 @@ def load_players_from_csv(file_path):
         csv_path = _resolve_players_path(resolved, raw_path)
         return _read_players_from_csv(csv_path)
 
-    return service.get_players(raw_path, _loader)
+    players = service.get_players(raw_path, _loader)
+    _apply_dynamic_player_data(players)
+    return players
 
 
 def _players_cache_clear(file_path=None):
