@@ -1,1 +1,105 @@
-{"teams": {"ATL": {"rotation": ["P9576", "P2730", "P2528", "P3350", "P9224"], "next_index": 2, "pitchers": {"P9576": {"available_on": "2025-04-06", "last_used": "2025-04-01", "last_pitches": 91, "recent": [{"date": "2025-04-01", "pitches": 91, "appeared": true, "warmed_only": false, "available_pitches": 170.0}], "last_role": "SP", "max_pitches": 315.0, "available_pitches": 245.6}, "P3350": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 220.5, "available_pitches": 220.5}, "P5927": {"available_on": "2025-04-05", "last_used": "2025-04-01", "last_pitches": 67, "recent": [{"date": "2025-04-01", "pitches": 67, "appeared": true, "warmed_only": false, "available_pitches": 112.5}], "last_role": "SP", "max_pitches": 213.5, "available_pitches": 112.5}, "P2730": {"available_on": "2025-04-05", "last_used": "2025-04-01", "last_pitches": 65, "recent": [{"date": "2025-04-01", "pitches": 65, "appeared": true, "warmed_only": false, "available_pitches": 126.0}], "last_role": "SP", "max_pitches": 224.0, "available_pitches": 126.0}, "P9224": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 217.0, "available_pitches": 217.0}, "P1860": {"available_on": "2025-04-04", "last_used": "2025-04-01", "last_pitches": 41, "recent": [{"date": "2025-04-01", "pitches": 41, "appeared": true, "warmed_only": false, "available_pitches": 7.8500000000000085}], "last_role": "LR", "max_pitches": 68.85000000000001, "available_pitches": 24.37400000000001}, "P4569": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 217.0, "available_pitches": 217.0}, "P6761": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 199.5, "available_pitches": 199.5}, "P2528": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 224.0, "available_pitches": 224.0}, "P4228": {"available_on": "2025-04-04", "last_used": "2025-04-01", "last_pitches": 38, "recent": [{"date": "2025-04-01", "pitches": 38, "appeared": true, "warmed_only": false, "available_pitches": 1.4000000000000057}], "last_role": "SU", "max_pitches": 59.400000000000006, "available_pitches": 20.40800000000001}, "P6886": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 210.0, "available_pitches": 210.0}, "P6994": {"available_on": "2025-04-07", "last_used": "2025-04-01", "last_pitches": 104, "recent": [{"date": "2025-04-01", "pitches": 104, "appeared": true, "warmed_only": false, "available_pitches": 0.0}], "last_role": "CL", "max_pitches": 59.400000000000006, "available_pitches": 0.0}, "P3539": {"available_on": "2025-04-05", "last_used": "2025-04-01", "last_pitches": 54, "recent": [{"date": "2025-04-01", "pitches": 54, "appeared": true, "warmed_only": false, "available_pitches": 0.0, "pitchers": {"P9576": {"available_on": "2025-04-06", "last_used": "2025-04-01", "last_pitches": 91, "recent": [{"date": "2025-04-01", "pitches": 91, "appeared": true, "warmed_only": false, "available_pitches": 170.0}], "last_role": "SP", "max_pitches": 315.0, "available_pitches": 245.6}, "P3350": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 220.5, "available_pitches": 220.5}, "P5927": {"available_on": "2025-04-05", "last_used": "2025-04-01", "last_pitches": 67, "recent": [{"date": "2025-04-01", "pitches": 67, "appeared": true, "warmed_only": false, "available_pitches": 112.5}], "last_role": "SP", "max_pitches": 213.5, "available_pitches": 112.5}, "P2730": {"available_on": "2025-04-05", "last_used": "2025-04-01", "last_pitches": 65, "recent": [{"date": "2025-04-01", "pitches": 65, "appeared": true, "warmed_only": false, "available_pitches": 126.0}], "last_role": "SP", "max_pitches": 224.0, "available_pitches": 126.0}, "P9224": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 217.0, "available_pitches": 217.0}, "P1860": {"available_on": "2025-04-04", "last_used": "2025-04-01", "last_pitches": 41, "recent": [{"date": "2025-04-01", "pitches": 41, "appeared": true, "warmed_only": false, "available_pitches": 7.8500000000000085}], "last_role": "LR", "max_pitches": 68.85000000000001, "available_pitches": 24.37400000000001}, "P4569": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 217.0, "available_pitches": 217.0}, "P6761": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 199.5, "available_pitches": 199.5}, "P2528": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 224.0, "available_pitches": 224.0}, "P4228": {"available_on": "2025-04-04", "last_used": "2025-04-01", "last_pitches": 38, "recent": [{"date": "2025-04-01", "pitches": 38, "appeared": true, "warmed_only": false, "available_pitches": 1.4000000000000057}], "last_role": "SU", "max_pitches": 59.400000000000006, "available_pitches": 20.40800000000001}, "P6886": {"available_on": null, "last_used": null, "last_pitches": 0, "recent": [], "last_role": "SP", "max_pitches": 210.0, "available_pitches": 210.0}, "P6994": {"available_on": "2025-04-07", "last_used": "2025-04-01", "last_pitches": 104, "recent": [{"date": "2025-04-01", "pitches": 104, "appeared": true, "warmed_only": false, "available_pitches": 0.0}], "last_role": "CL", "max_pitches": 59.400000000000006, "available_pitches": 0.0}, "P3539": {"available_on": "2025-04-05", "last_used": "2025-04-01", "last_pitches": 54, "recent": [{"date": "2025-04-01", "pitches": 54, "appeared": true, "warmed_only": false, "available_pitches": 0.0, "pitchers": 
+{
+  "teams": {
+    "ATL": {
+      "rotation": [
+        "P4747",
+        "P3462",
+        "P7814",
+        "P2887",
+        "P6198"
+      ],
+      "next_index": 0,
+      "pitchers": {
+        "P7814": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "SP",
+          "max_pitches": 234.5,
+          "available_pitches": 234.5
+        },
+        "P3795": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "MR",
+          "max_pitches": 70.2,
+          "available_pitches": 70.2
+        },
+        "P3248": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "MR",
+          "max_pitches": 74.25,
+          "available_pitches": 74.25
+        },
+        "P4747": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "SP",
+          "max_pitches": 252.0,
+          "available_pitches": 252.0
+        },
+        "P3462": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "SP",
+          "max_pitches": 252.0,
+          "available_pitches": 252.0
+        },
+        "P2887": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "SP",
+          "max_pitches": 234.5,
+          "available_pitches": 234.5
+        },
+        "P6198": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "SP",
+          "max_pitches": 217.0,
+          "available_pitches": 217.0
+        },
+        "P4634": {
+          "available_on": null,
+          "last_used": null,
+          "last_pitches": 0,
+          "recent": [],
+          "last_role": "MR",
+          "max_pitches": 70.2,
+          "available_pitches": 70.2
+        },
+        "P6994": {
+          "available_on": "2025-04-02",
+          "last_used": "2025-04-02",
+          "last_pitches": 10,
+          "recent": [
+            {
+              "date": "2025-04-02",
+              "pitches": 10,
+              "appeared": true,
+              "warmed_only": false,
+              "available_pitches": 0.0
+            }
+          ],
+          "last_role": "CL",
+          "max_pitches": 0.0,
+          "available_pitches": 0.0
+        }
+      }
+    }
+  }
+}

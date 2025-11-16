@@ -194,6 +194,11 @@ _DEFAULTS: Dict[str, Any] = {
     "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
     "hitProbCap": 0.80,
+    # Scales applied to swing probability on balls before and after two strikes.
+    "ballSwingScale": 0.55,
+    "ballSwingScaleTwoStrike": 0.85,
+    "ballSwingCap": 0.25,
+    "ballSwingCapTwoStrike": 0.55,
     # Baseline probabilities for converting batted balls into outs
     # MLB averages: ground balls ~24% hits (76% outs), line drives ~68% hits
     # (32% outs), fly balls ~14% hits (86% outs).  These defaults keep the
@@ -703,6 +708,11 @@ _DEFAULTS: Dict[str, Any] = {
     "warmupPitchBase_MR": 12,
     "warmupPitchBase_LR": 18,
     "warmupPitchBase_SP": 20,
+    "pitchBudgetFallbackEndurance_CL": 45,
+    "pitchBudgetFallbackEndurance_SU": 45,
+    "pitchBudgetFallbackEndurance_MR": 45,
+    "pitchBudgetFallbackEndurance_LR": 60,
+    "pitchBudgetFallbackEndurance_SP": 90,
     "warmupAvailabilityExponent": 1.2,
     "warmupAvailabilityFloor": 0.2,
     "pitchBudgetExhaustionPenaltyScale": 0.4,

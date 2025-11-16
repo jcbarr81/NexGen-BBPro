@@ -260,6 +260,14 @@ class PitcherRecoveryTracker:
         multiplier = self._role_multiplier(role)
         return max(0.0, float(endurance or 0.0) * multiplier)
 
+    def _fallback_endurance(self, role: str) -> float:
+        cfg = self._config()
+        role_key = (role or "MR").upper()
+        default = float(cfg.get("pitchBudgetFallbackEndurance_MR", 45) or 45)
+        return float(
+            cfg.get(f"pitchBudgetFallbackEndurance_{role_key}", default) or default
+        )
+
     def _apply_daily_recovery(self, status: _PitcherStatus, role: str) -> None:
         if status.max_pitches <= 0:
             return
@@ -285,6 +293,8 @@ class PitcherRecoveryTracker:
         endurance = 0.0
         if pitcher is not None:
             endurance = float(getattr(pitcher, "endurance", 0) or 0)
+        if endurance <= 0:
+            endurance = self._fallback_endurance(role)
         status.max_pitches = self._max_pitches_for(role, endurance)
         status.available_pitches = status.max_pitches
 
@@ -406,19 +416,34 @@ class PitcherRecoveryTracker:
                 entry_pitchers[pid] = current.to_dict()
         # Remove pitchers no longer on the roster.
         for pid in list(entry_pitchers.keys()):
-            if pid not in pitcher_ids:
+            if pid in pitcher_ids:
+                continue
+            status = _PitcherStatus.from_dict(entry_pitchers[pid])
+            if not status.recent:
                 entry_pitchers.pop(pid, None)
 
+        built = [
+            getattr(p, "player_id", "")
+            for p in self._build_rotation(active_pitchers)
+            if getattr(p, "player_id", "")
+        ]
+        candidates: list[str] = []
         if saved_rotation:
-            rotation = [pid for pid in saved_rotation if pid in pitcher_ids]
-        else:
-            rotation = entry.get("rotation") or []
-            rotation = [pid for pid in rotation if pid in pitcher_ids]
-            if len(rotation) < 5:
-                extras = [pid for pid in pitcher_ids if pid not in rotation]
-                rotation.extend(extras[: 5 - len(rotation)])
-            if not rotation:
-                rotation = self._build_rotation(active_pitchers)
+            candidates.extend(saved_rotation)
+        existing_rotation = entry.get("rotation") or []
+        candidates.extend(existing_rotation)
+        candidates.extend(built)
+        candidates.extend([pid for pid in pitcher_ids])
+
+        rotation: list[str] = []
+        seen: set[str] = set()
+        for pid in candidates:
+            if len(rotation) >= 5:
+                break
+            if not pid or pid not in pitcher_ids or pid in seen:
+                continue
+            rotation.append(pid)
+            seen.add(pid)
 
         entry["rotation"] = rotation
         if rotation:
@@ -662,7 +687,13 @@ class PitcherRecoveryTracker:
             role = self._role_key(self._assigned_role_for(pitcher))
             rest_days = _rest_days(pitches)
             available_on = date_obj + timedelta(days=rest_days)
-            status = _PitcherStatus.from_dict(pitchers.get(pid, {}))
+            stored_status = pitchers.get(pid, {})
+            prior_recent: list[dict] = []
+            for recent_entry in stored_status.get("recent", []):
+                if isinstance(recent_entry, dict):
+                    prior_recent.append(dict(recent_entry))
+            status = _PitcherStatus.from_dict(stored_status)
+            status.recent = prior_recent
             self._ensure_budget_initialized(status, pitcher, role)
             status.available_on = _format_date(available_on)
             status.last_used = date_str

@@ -435,25 +435,6 @@ class SubstitutionManager:
             eligible.sort(key=_score)
             return eligible[0][0], False
 
-        # Fallback: ignore caps but respect rest/day availability
-        relaxed = [it for it in cand if it[2].get("available", True)]
-        if relaxed:
-            # Emergency selection: choose pitcher with lowest apps7 and longest rest
-            def _em_score(item: tuple[int, str, dict]) -> tuple[float, float, float, float]:
-                idx, role, info = item
-                role = role.upper()
-                priority_map = {"MR": 0.0, "": 0.5, "LR": 1.0, "SU": 2.0, "CL": 3.0}
-                priority = priority_map.get(role, priority_map.get("", 0.5))
-                apps7 = float(info.get("apps7", 0) or 0)
-                days_since = float(info.get("days_since_use", 0) or 0)
-                last_p = float(info.get("last_pitches", 0) or 0)
-                return (priority, apps7, -days_since, last_p)
-            relaxed.sort(key=_em_score)
-            return relaxed[0][0], True
-
-        # Last resort: any non-starter
-        for idx, role, _ in cand:
-            return idx, True
         return None, False
 
     def _max_reliever_outs(self, role: str, inning: int, run_diff: int) -> int:

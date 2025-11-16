@@ -6,7 +6,7 @@ import random
 from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable, List, Mapping, Sequence, Tuple
+from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
 from models.pitcher import Pitcher
 from models.team import Team
@@ -26,9 +26,13 @@ from utils.player_writer import save_players_to_csv
 from utils.team_loader import load_teams
 from services.injury_manager import place_on_injury_list
 from utils.news_logger import log_news_event
+from utils.pitcher_role import get_role
+from utils.path_utils import get_base_dir
 
 LineupEntry = Tuple[str, str]
 
+MAX_PITCHERS_ON_DL = int(os.getenv("PB_MAX_PITCHERS_ON_DL", "5") or 5)
+DAY_TO_DAY_MAX_DAYS = int(os.getenv("PB_DAY_TO_DAY_MAX_DAYS", "5") or 5)
 
 
 @lru_cache(maxsize=1)
@@ -125,6 +129,48 @@ def apply_lineup(state: TeamState, lineup: Sequence[LineupEntry]) -> None:
         )
     state.lineup = new_lineup
     state.bench = [p for p in hitters if p.player_id not in seen]
+
+
+def _log_bullpen_status(team_id: str, state: TeamState, date_token: str | None) -> None:
+    """Append bullpen availability diagnostics when PB_LOG_BULLPEN_STATUS is set."""
+
+    if not os.getenv("PB_LOG_BULLPEN_STATUS"):
+        return
+    usage = getattr(state, "usage_status", {}) or {}
+    if not usage:
+        return
+    lines: list[str] = []
+    for pitcher in state.pitchers[1:]:
+        pid = getattr(pitcher, "player_id", "")
+        if not pid:
+            continue
+        info = usage.get(pid)
+        if not info:
+            continue
+        role = str(getattr(pitcher, "assigned_pitching_role", "") or "")
+        available = bool(info.get("available", True))
+        apps3 = int(info.get("apps3", 0) or 0)
+        apps7 = int(info.get("apps7", 0) or 0)
+        consec = int(info.get("consecutive_days", 0) or 0)
+        last_pitches = int(info.get("last_pitches", 0) or 0)
+        pct = info.get("available_pct")
+        pct_text = f"{float(pct) * 100:.0f}%" if pct is not None else "--"
+        available_on = info.get("available_on")
+        if hasattr(available_on, "isoformat"):
+            available_on = available_on.isoformat()
+        lines.append(
+            f"  {pid:<6} role={role:<3} ready={'Y' if available else 'N'} "
+            f"pct={pct_text:<4} apps3={apps3} apps7={apps7} consec={consec} last={last_pitches} "
+            f"avail_on={available_on}"
+        )
+    if not lines:
+        return
+    path = get_base_dir() / "tmp" / "bullpen_status.log"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    header = f"{date_token or 'undated'} team={team_id}"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(header + "\n")
+        handle.write("\n".join(lines) + "\n")
 
 
 def _apply_bullpen_usage_order(
@@ -441,6 +487,7 @@ def run_single_game(
         players_file=players_file,
         roster_dir=roster_dir,
     )
+    _log_bullpen_status(home_id, home_state, date_token)
     _apply_bullpen_usage_order(
         away_state,
         away_id,
@@ -450,6 +497,7 @@ def run_single_game(
         players_file=players_file,
         roster_dir=roster_dir,
     )
+    _log_bullpen_status(away_id, away_state, date_token)
 
     cfg, _ = load_tuned_playbalance_config()
     sim = GameSimulation(home_state, away_state, cfg, rng, game_date=date_token)
@@ -560,7 +608,19 @@ def _apply_injury_events(
     players = list(load_players_from_csv(players_file))
     player_map = {p.player_id: p for p in players}
     team_rosters: Dict[str, object] = {}
+    pitcher_dl_counts: Dict[str, int] = {}
     changed_players = False
+
+    def _is_pitcher(player) -> bool:
+        if player is None:
+            return False
+        if getattr(player, "is_pitcher", False):
+            return True
+        return get_role(player) in {"SP", "RP"}
+
+    def _pitchers_on_dl(roster, team_id: str) -> int:
+        player_ids = getattr(roster, "dl", []) or []
+        return sum(1 for pid in player_ids if _is_pitcher(player_map.get(pid)))
 
     for event in events:
         team_id = event.get("team_id")
@@ -570,10 +630,12 @@ def _apply_injury_events(
         player = player_map.get(str(player_id))
         if player is None:
             continue
-        roster = team_rosters.get(str(team_id))
+        team_id_str = str(team_id)
+        roster = team_rosters.get(team_id_str)
         if roster is None:
-            roster = load_roster(str(team_id), roster_dir=roster_dir)
-            team_rosters[str(team_id)] = roster
+            roster = load_roster(team_id_str, roster_dir=roster_dir)
+            team_rosters[team_id_str] = roster
+            pitcher_dl_counts[team_id_str] = _pitchers_on_dl(roster, team_id_str)
         dl_tier = str(event.get("dl_tier") or "").lower()
         days = int(event.get("days") or 0)
         description = str(event.get("description") or "Injury")
@@ -584,13 +646,37 @@ def _apply_injury_events(
         player.injury_minimum_days = days
         eligible = injury_date + timedelta(days=max(days, 0))
         player.injury_eligible_date = eligible.isoformat()
+
+        if (
+            _is_pitcher(player)
+            and dl_tier
+            and dl_tier != "none"
+            and MAX_PITCHERS_ON_DL > 0
+        ):
+            current = pitcher_dl_counts.get(team_id_str, 0)
+            if current >= MAX_PITCHERS_ON_DL:
+                # Convert to a short day-to-day injury when the DL is saturated.
+                dl_tier = "none"
+                event["dl_tier"] = "none"
+                days = max(1, min(days or DAY_TO_DAY_MAX_DAYS, DAY_TO_DAY_MAX_DAYS))
+                player.injury_minimum_days = days
+                eligible = injury_date + timedelta(days=days)
+                player.injury_eligible_date = eligible.isoformat()
+                description = f"{description} (day-to-day)"
+                event["description"] = description
+                player.injury_description = description
+                player.injury_list = None
+                player.return_date = None
+            else:
+                pitcher_dl_counts[team_id_str] = current + 1
+
         if dl_tier and dl_tier != "none":
             place_on_injury_list(player, roster, list_name=dl_tier)
             player.return_date = eligible.isoformat()
         log_news_event(
             f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')} injured ({description})",
             category="injury",
-            team_id=str(team_id),
+            team_id=team_id_str,
         )
         changed_players = True
 

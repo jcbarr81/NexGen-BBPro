@@ -11,8 +11,9 @@ PitchKey = Tuple[int, int, str, str]
 
 
 _OBJECTIVE_BUCKET_MAP: Dict[str, str] = {
-    # Treat ``outside`` as waste/nibble; remaining objectives are zone-focused.
-    "outside": "waste",
+    # Treat ``outside`` as edge/nibble to distinguish from true waste pitches.
+    "outside": "edge",
+    "waste": "waste",
     "establish": "zone",
     "best": "zone",
     "best_center": "zone",
@@ -89,4 +90,3 @@ class PitchIntentTracker:
             bucket: (count / self.total) if self.total else 0.0
             for bucket, count in totals.items()
         }
-

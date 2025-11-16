@@ -1,1 +1,2 @@
 admin,pass,admin,
+jbarr,yIyLeXbJ/W44I6dIRUmoh3ro4tpM7Oy7LTe7IEFJWNGUHaJAabf7+m8nqe7Tt8Ox,owner,NEW

@@ -104,3 +104,36 @@ def test_autofill_prefers_designated_closer():
 
     assert assignments["CL"] == "cl2"  # lower-endurance closer should finish games
     assert assignments["CL"] not in {assignments["LR"], assignments["MR"], assignments["SU"]}
+
+
+def test_autofill_elevates_preferred_starter_relief():
+    players = [
+        ("rp_sp", {"role": "RP", "endurance": 68, "preferred_pitching_role": "SP"}),
+        ("rp_lr", {"role": "RP", "endurance": 62}),
+        ("rp_mid", {"role": "RP", "endurance": 58}),
+        ("rp_su", {"role": "RP", "endurance": 55}),
+        ("rp_cl", {"role": "RP", "endurance": 40, "preferred_pitching_role": "CL"}),
+    ]
+
+    assignments = autofill_pitching_staff(players)
+
+    # Reliever who prefers starting should anchor SP1 despite RP designation.
+    assert assignments["SP1"] == "rp_sp"
+    # Remaining relievers should backfill the rotation before bullpen roles.
+    assert assignments["SP2"] == "rp_lr"
+    assert assignments["SP3"] == "rp_mid"
+    assert assignments["SP4"] == "rp_su"
+    assert assignments["SP5"] == "rp_cl"
+
+
+def test_autofill_handles_all_relief_staff():
+    players = [
+        (f"rp{i}", {"role": "RP", "endurance": 70 - i * 3})
+        for i in range(9)
+    ]
+
+    assignments = autofill_pitching_staff(players)
+
+    for slot in ("SP1", "SP2", "SP3", "SP4", "SP5"):
+        assert assignments.get(slot) is not None
+    assert len(set(assignments.values())) == len(assignments)

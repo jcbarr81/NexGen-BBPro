@@ -50,7 +50,7 @@ def autofill_pitching_staff(players: Iterable[PlayerEntry]) -> Assignments:
             endurance = 0
         preferred = str(pdata.get("preferred_pitching_role", "") or "").upper()
         entry = _entry(pid, endurance, preferred)
-        if role == "SP":
+        if role == "SP" or preferred == "SP":
             sps_entries.append(entry)
         else:
             rps_entries.append(entry)

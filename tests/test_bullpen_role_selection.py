@@ -71,6 +71,22 @@ def test_selects_closer_in_ninth_save_situation():
     assert getattr(chosen, "assigned_pitching_role", "") == "CL"
 
 
+def test_returns_none_when_all_bullpen_unavailable():
+    cfg = _cfg()
+    cfg.enableUsageModelV2 = 1
+    sm = SubstitutionManager(cfg)
+    usage = {
+        "LR1": {"available": False},
+        "MR1": {"available": False},
+        "SU1": {"available": False},
+        "CL1": {"available": False},
+    }
+    team = _team_state_with_usage(usage)
+    idx, emergency = sm._select_reliever_index(team, inning=9, run_diff=0, home_team=True)
+    assert idx is None
+    assert emergency is False
+
+
 def test_selects_setup_in_eighth_tie_and_respects_caps():
     cfg = _cfg()
     cfg.enableUsageModelV2 = 1

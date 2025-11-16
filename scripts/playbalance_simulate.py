@@ -46,6 +46,9 @@ from playbalance.batter_ai import (
     reset_swing_diagnostics,
     swing_diagnostics_summary,
     auto_take_summary,
+    SWING_PITCH_DIAGNOSTICS,
+    SWING_COUNT_DIAGNOSTICS,
+    AUTO_TAKE_DIAGNOSTICS,
 )
 from utils.lineup_loader import build_default_game_state
 from utils.team_loader import load_teams
@@ -86,7 +89,7 @@ def configure_perf_tuning() -> None:
 
 
 # STAT_KEYS defines the column order for all stat arrays produced by
-# ``_simulate_game``.  The first 17 entries correspond to batting statistics.
+# ``_simulate_game``.  The first 19 entries correspond to batting statistics.
 # The remaining seven indices capture pitching metrics.  Contributors adding
 # new stats should append to this list and update the extraction logic
 # accordingly.
@@ -97,6 +100,7 @@ STAT_KEYS = [
     "h",
     "hr",
     "ab",
+    "r",
     "sf",
     "sb",
     "cs",
@@ -107,6 +111,7 @@ STAT_KEYS = [
     "gb",
     "ld",
     "fb",
+    "roe",
     "gidp",
     "pitches_thrown",
     "zone_pitches",
@@ -171,8 +176,8 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
 
     The returned array has one entry per ``STAT_KEYS`` element.  Rows for
     individual players follow the same layout so they can be summed
-    consistently.  Batting stats occupy indices 0-16, while pitching metrics
-    use 17-23.
+    consistently.  Batting stats occupy indices 0-18, while pitching metrics
+    use 19-25.
     """
 
     home_id, away_id, seed = args
@@ -197,6 +202,7 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
                     bs.h,
                     bs.hr,
                     bs.ab,
+                    bs.r,
                     bs.sf,
                     bs.sb,
                     bs.cs,
@@ -207,16 +213,17 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
                     bs.gb,
                     bs.ld,
                     bs.fb,
+                    bs.roe,
                     bs.gidp,
                 )
             )
             batter_stats = np.fromiter(
-                batter_iter, dtype=np.int64, count=batter_count * 17
-            ).reshape(batter_count, 17)
+                batter_iter, dtype=np.int64, count=batter_count * 19
+            ).reshape(batter_count, 19)
             np.add(
-                totals[:17],
+                totals[:19],
                 batter_stats.sum(axis=0, dtype=np.int64),
-                out=totals[:17],
+                out=totals[:19],
             )
 
         # Gather per-pitcher stats into a 2D array and accumulate.
@@ -239,12 +246,75 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
                 pitcher_iter, dtype=np.int64, count=pitcher_count * 7
             ).reshape(pitcher_count, 7)
             np.add(
-                totals[17:],
+                totals[19:],
                 pitcher_stats.sum(axis=0, dtype=np.int64),
-                out=totals[17:],
+                out=totals[19:],
             )
 
     return totals
+
+
+def _print_config_snapshot(cfg) -> None:
+    """Print high-impact configuration values for tuning."""
+
+    keys = [
+        "swingProbScale",
+        "zSwingProbScale",
+        "oSwingProbScale",
+        "contactFactorBase",
+        "contactFactorDiv",
+        "idRatingEaseScale",
+        "missChanceScale",
+        "twoStrikeContactFloor",
+        "twoStrikeContactQuality",
+        "twoStrikeContactBonus",
+        "twoStrikeSwingBonus",
+        "twoStrikeChaseBonusScale",
+        "ballInPlayPitchPct",
+        "targetPitchesPerPA",
+        "autoTakeDistanceBase",
+        "autoTakeDistanceBallStep",
+        "autoTakeDistanceBuffer",
+        "autoTakeDefaultChaseChance",
+    ]
+    values_dict = getattr(cfg, "values", {}) or {}
+    print("\n[Config] Key tuning values:")
+    for key in keys:
+        value = getattr(cfg, key, None)
+        raw = values_dict.get(key)
+        if raw is not None and raw != value:
+            print(f"  {key}: {value} (override {raw})")
+        else:
+            print(f"  {key}: {value}")
+
+
+def _dump_swing_diagnostics(path: Path) -> None:
+    """Persist raw swing/auto-take diagnostics as JSON."""
+
+    data: dict[str, list[dict[str, float | int | str]]] = {
+        "swing_pitch": [],
+        "swing_count": [],
+        "auto_take": [],
+    }
+    for (pitch_kind, balls, strikes), stats in SWING_PITCH_DIAGNOSTICS.items():
+        entry: dict[str, float | int | str] = {
+            "pitch_kind": pitch_kind,
+            "balls": balls,
+            "strikes": strikes,
+        }
+        entry.update(stats)
+        data["swing_pitch"].append(entry)
+    for (balls, strikes), stats in SWING_COUNT_DIAGNOSTICS.items():
+        entry = {"balls": balls, "strikes": strikes}
+        entry.update(stats)
+        data["swing_count"].append(entry)
+    for (balls, strikes), stats in AUTO_TAKE_DIAGNOSTICS.items():
+        entry = {"balls": balls, "strikes": strikes}
+        entry.update(stats)
+        data["auto_take"].append(entry)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2))
+    print(f"Saved swing diagnostics to {path}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -290,13 +360,56 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="disable pitch calibration and target pitches/PA adjustments",
     )
+    parser.add_argument(
+        "--pitch-calibration",
+        action="store_true",
+        help="enable pitch calibration targeting realistic pitches per PA",
+    )
+    parser.add_argument(
+        "--print-config",
+        action="store_true",
+        help="print key configuration values before running games",
+    )
+    parser.add_argument(
+        "--diag-output",
+        type=Path,
+        default=None,
+        help="optional path to write raw swing/auto-take diagnostics (JSON)",
+    )
     args = parser.parse_args(argv)
 
     configure_perf_tuning()
 
     benchmarks = load_benchmarks()
-    cfg, _ = load_tuned_playbalance_config(apply_benchmarks=True)
-    if args.disable_calibration:
+    cfg, mlb_averages = load_tuned_playbalance_config(apply_benchmarks=True)
+    if args.pitch_calibration and os.getenv("PB_ENABLE_CALIBRATION") != "1":
+        target_source = mlb_averages.get("pitches_per_pa") or getattr(cfg, "pitchCalibrationTarget", 3.9)
+        try:
+            target_value = round(float(target_source) - 0.31, 2)
+        except (TypeError, ValueError):
+            target_value = 3.8
+        cfg.pitchCalibrationEnabled = 1
+        cfg.pitchCalibrationTarget = max(0.0, target_value)
+        cfg.pitchCalibrationTolerance = 0.05
+        cfg.pitchCalibrationPerPlateCap = 2
+        cfg.pitchCalibrationPerGameCap = 0
+        cfg.pitchCalibrationMinPA = max(6, int(getattr(cfg, "pitchCalibrationMinPA", 6) or 6))
+        cfg.pitchCalibrationPreferFoul = 1
+        cfg.pitchCalibrationEmaAlpha = 0.3
+        if hasattr(cfg, "values"):
+            cfg.values.update(
+                {
+                    "pitchCalibrationEnabled": 1,
+                    "pitchCalibrationTarget": cfg.pitchCalibrationTarget,
+                    "pitchCalibrationTolerance": cfg.pitchCalibrationTolerance,
+                    "pitchCalibrationPerPlateCap": cfg.pitchCalibrationPerPlateCap,
+                    "pitchCalibrationPerGameCap": cfg.pitchCalibrationPerGameCap,
+                    "pitchCalibrationMinPA": cfg.pitchCalibrationMinPA,
+                    "pitchCalibrationPreferFoul": cfg.pitchCalibrationPreferFoul,
+                    "pitchCalibrationEmaAlpha": cfg.pitchCalibrationEmaAlpha,
+                }
+            )
+    elif args.disable_calibration:
         if hasattr(cfg, "pitchCalibrationEnabled"):
             cfg.pitchCalibrationEnabled = 0
         if hasattr(cfg, "values"):
@@ -305,6 +418,11 @@ def main(argv: list[str] | None = None) -> int:
             cfg.targetPitchesPerPA = 0
         if hasattr(cfg, "values"):
             cfg.values["targetPitchesPerPA"] = 0
+    cfg.collectSwingDiagnostics = 1 if os.getenv("SWING_DIAGNOSTICS") else getattr(cfg, "collectSwingDiagnostics", 0)
+    if hasattr(cfg, "values"):
+        cfg.values["collectSwingDiagnostics"] = cfg.collectSwingDiagnostics
+    if args.print_config:
+        _print_config_snapshot(cfg)
     if getattr(cfg, "collectSwingDiagnostics", 0):
         reset_swing_diagnostics()
 
@@ -320,6 +438,7 @@ def main(argv: list[str] | None = None) -> int:
 
     chunksize = max(1, len(jobs) // (mp.cpu_count() * 4))
     totals_array = np.zeros(len(STAT_KEYS), dtype=np.int64)
+    sequential = bool(args.diag_output and getattr(cfg, "collectSwingDiagnostics", 0))
 
     if args.perftune:
         try:  # pragma: no cover - optional dependency
@@ -331,14 +450,27 @@ def main(argv: list[str] | None = None) -> int:
         profile_ctx = nullcontext()
 
     with profile_ctx:
-        with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
-            for stats in tqdm(
-                pool.imap_unordered(_simulate_game, jobs, chunksize=chunksize),
-                total=len(jobs),
-                desc="Simulating games",
-                disable=args.no_progress,
-            ):
-                totals_array += stats
+        if sequential:
+            _init_worker(base_states, cfg)
+            iterable = jobs
+            if not args.no_progress:
+                iterable = tqdm(
+                    jobs,
+                    total=len(jobs),
+                    desc="Simulating games",
+                    disable=False,
+                )
+            for job in iterable:
+                totals_array += _simulate_game(job)
+        else:
+            with mp.Pool(initializer=_init_worker, initargs=(base_states, cfg)) as pool:
+                for stats in tqdm(
+                    pool.imap_unordered(_simulate_game, jobs, chunksize=chunksize),
+                    total=len(jobs),
+                    desc="Simulating games",
+                    disable=args.no_progress,
+                ):
+                    totals_array += stats
 
     totals = {k: int(totals_array[i]) for i, k in enumerate(STAT_KEYS)}
 
@@ -368,6 +500,7 @@ def main(argv: list[str] | None = None) -> int:
         else 0.0
     )
     slg = tb / totals["ab"] if totals["ab"] else 0.0
+    iso = slg - avg
     swings = totals["zone_swings"] + totals["o_zone_swings"]
     contacts = totals["zone_contacts"] + totals["o_zone_contacts"]
     swstr_pct = (swings - contacts) / pitches if pitches else 0.0
@@ -398,6 +531,79 @@ def main(argv: list[str] | None = None) -> int:
     sb_attempts = totals["sb"] + totals["cs"]
     sba_rate = sb_attempts / pa
     sb_pct = totals["sb"] / sb_attempts if sb_attempts else 0.0
+    total_runs = totals["r"]
+    games_played = len(schedule)
+    team_games = games_played * 2
+    runs_per_team_game = total_runs / team_games if team_games else 0.0
+    runs_allowed_per_team_game = runs_per_team_game
+    der_den = pa - totals["bb"] - totals["k"] - totals["hbp"] - totals["hr"]
+    defensive_efficiency = (
+        1 - (totals["h"] + totals["roe"]) / der_den if der_den else 0.0
+    )
+
+    metrics = {
+        "runs_per_team_game": runs_per_team_game,
+        "runs_allowed_per_team_game": runs_allowed_per_team_game,
+        "k_pct": k_pct,
+        "bb_pct": bb_pct,
+        "iso": iso,
+        "babip": babip,
+        "bip_gb_pct": bip_gb_pct,
+        "bip_fb_pct": bip_fb_pct,
+        "bip_ld_pct": bip_ld_pct,
+        "pitches_per_pa": pitches_per_pa,
+        "pitches_put_in_play_pct": pitches_put_in_play_pct,
+        "sb_attempts_per_pa": sba_rate,
+        "sb_pct": sb_pct,
+        "defensive_efficiency": defensive_efficiency,
+        "avg": avg,
+        "obp": obp,
+        "slg": slg,
+        "bip_double_play_pct": bip_double_play_pct,
+        "swstr_pct": swstr_pct,
+        "called_third_strike_share_of_so": called_third_strike_share_of_so,
+        "o_swing_pct": o_swing_pct,
+        "z_swing_pct": z_swing_pct,
+        "swing_pct": swing_pct,
+        "z_contact_pct": z_contact_pct,
+        "o_contact_pct": o_contact_pct,
+        "contact_pct": contact_pct,
+    }
+
+    benchmark_keys = {
+        "runs_per_team_game": None,
+        "runs_allowed_per_team_game": None,
+        "k_pct": "k_pct",
+        "bb_pct": "bb_pct",
+        "iso": "iso",
+        "babip": "babip",
+        "bip_gb_pct": "bip_gb_pct",
+        "bip_fb_pct": "bip_fb_pct",
+        "bip_ld_pct": "bip_ld_pct",
+        "pitches_per_pa": "pitches_per_pa",
+        "pitches_put_in_play_pct": "pitches_put_in_play_pct",
+        "sb_attempts_per_pa": "sba_per_pa",
+        "sb_pct": "sb_pct",
+        "defensive_efficiency": "defensive_efficiency",
+        "avg": "avg",
+        "obp": "obp",
+        "slg": "slg",
+        "bip_double_play_pct": "bip_double_play_pct",
+        "swstr_pct": "swstr_pct",
+        "called_third_strike_share_of_so": "called_third_strike_share_of_so",
+        "o_swing_pct": "o_swing_pct",
+        "z_swing_pct": "z_swing_pct",
+        "swing_pct": "swing_pct",
+        "z_contact_pct": "z_contact_pct",
+        "o_contact_pct": "o_contact_pct",
+        "contact_pct": "contact_pct",
+    }
+    benchmark_values = {
+        metric: (
+            league_average(benchmarks, key, default=None) if key else None
+        )
+        for metric, key in benchmark_keys.items()
+    }
 
     results = {
         "pa": totals["pa"],
@@ -408,6 +614,8 @@ def main(argv: list[str] | None = None) -> int:
         "sb_success": totals["sb"],
         "sb_caught": totals["cs"],
     }
+    results["metrics"] = metrics
+    results["benchmarks"] = benchmark_values
 
     if args.output is not None:
         args.output.write_text(json.dumps(results, indent=2))
@@ -504,6 +712,8 @@ def main(argv: list[str] | None = None) -> int:
             print("Auto-take diagnostics:")
             for line in auto_lines:
                 print(f"  {line}")
+        if args.diag_output is not None:
+            _dump_swing_diagnostics(args.diag_output)
 
     return 0
 

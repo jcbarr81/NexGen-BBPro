@@ -598,6 +598,8 @@ class BatterAI:
         else:
             discipline_raw = getattr(batter, "ch", 50) + count_adj
 
+        batter_contact = float(getattr(batter, "ch", 50) or 50)
+
         raw_scale_default = float(self.config.get("disciplineRawScaleDefault", 1.0))
         raw_scale = float(
             self.config.get(f"disciplineRawScale{count_suffix}", raw_scale_default)
@@ -620,6 +622,9 @@ class BatterAI:
         logit_center = float(
             self.config.get(f"disciplineSwingLogitCenter{count_suffix}", logit_center)
         )
+        contact_shift = float(self.config.get("disciplineSwingLogitContactShift", 0.0))
+        if contact_shift:
+            logit_center -= contact_shift * (50.0 - batter_contact)
         logit_slope = float(self.config.get("disciplineSwingLogitSlope", 0.05))
         logit_slope = float(
             self.config.get(f"disciplineSwingLogitSlope{count_suffix}", logit_slope)
@@ -649,7 +654,11 @@ class BatterAI:
         )
         if balls >= 3:
             discipline_bias *= three_ball_logit_scale
-        discipline_logit = max(0.0, min(1.0, 0.5 + discipline_bias))
+        logit_gate = bool(int(getattr(self.config, "enableDisciplineLogitGate", 1)))
+        if logit_gate:
+            discipline_logit = max(0.0, min(1.0, 0.5 + discipline_bias))
+        else:
+            discipline_logit = discipline_bias + 0.5
 
         discipline_adjust = 0.0
         penalty_factor = 1.0
@@ -660,23 +669,24 @@ class BatterAI:
             self.config.get(f"disciplinePenaltyFloor{count_suffix}", penalty_floor)
         )
         if balls >= 3:
-            penalty_floor = max(
-                penalty_floor,
-                float(self.config.get("disciplinePenaltyFloorThreeBall", 0.35)),
+            penalty_floor = float(
+                self.config.get("disciplinePenaltyFloorThreeBall", penalty_floor)
             )
             if strikes >= 2:
-                penalty_floor = max(
-                    penalty_floor,
-                    float(self.config.get("disciplinePenaltyFloorFullCount", 0.45)),
+                penalty_floor = float(
+                    self.config.get("disciplinePenaltyFloorFullCount", penalty_floor)
                 )
         elif balls == 2:
-            penalty_floor = max(
-                penalty_floor, float(self.config.get("disciplinePenaltyFloorTwoBall", 0.2))
+            penalty_floor = float(
+                self.config.get("disciplinePenaltyFloorTwoBall", penalty_floor)
             )
         elif balls == 1:
-            penalty_floor = max(
-                penalty_floor, float(self.config.get("disciplinePenaltyFloorOneBall", 0.05))
+            penalty_floor = float(
+                self.config.get("disciplinePenaltyFloorOneBall", penalty_floor)
             )
+        penalty_cap = getattr(self.config, "disciplinePenaltyFloorCap", None)
+        if penalty_cap is not None:
+            penalty_floor = min(penalty_floor, float(penalty_cap))
 
         if balls >= 3:
             discipline_clamped = 0.5 + (discipline_clamped - 0.5) * three_ball_scale
@@ -699,7 +709,7 @@ class BatterAI:
             penalty_scale = 1.0
 
         if penalty_scale > 0.0:
-            penalty = max(0.0, penalty_source) * disc_pct * ball_penalty * penalty_scale
+            penalty = max(0.0, penalty_source) * disc_pct * penalty_scale
             penalty_multiplier = float(
                 self.config.get(
                     f"disciplinePenaltyMultiplier{count_suffix}",
@@ -714,9 +724,13 @@ class BatterAI:
                         f"disciplineThreeBallPenaltyScale{count_suffix}", 1.0
                     )
                 )
-            penalty_factor = max(penalty_floor, max(0.0, 1.0 - penalty))
+            penalty_factor = 1.0 - penalty
+            penalty_factor = max(penalty_floor, penalty_factor)
             pre_penalty = swing_chance
             swing_chance *= penalty_factor
+            chase_bias = getattr(self.config, "disciplineNegativeFloorChaseBonus", 0.0)
+            if penalty_floor < 0.0 and chase_bias:
+                swing_chance += (chase_bias / 100.0) * abs(penalty_floor)
             penalty_delta = swing_chance - pre_penalty
             breakdown["penalty_multiplier"] = penalty_multiplier
 
@@ -752,6 +766,24 @@ class BatterAI:
             take_bonus = 0.0
         breakdown["take_bonus"] = -take_bonus if take_bonus else 0.0
 
+        if pitch_kind in {"close ball", "sure ball"}:
+            chase_thresh = float(getattr(self.config, "lowContactChaseThreshold", 0) or 0)
+            chase_bonus = float(getattr(self.config, "lowContactChaseBonus", 0) or 0) / 100.0
+            if chase_thresh > 0 and chase_bonus > 0 and batter_contact < chase_thresh:
+                scale = max(0.0, (chase_thresh - batter_contact) / chase_thresh)
+                swing_chance += chase_bonus * scale
+            swing_scale_key = (
+                "ballSwingScaleTwoStrike" if strikes >= 2 else "ballSwingScale"
+            )
+            swing_scale = getattr(self.config, swing_scale_key, 1.0) or 1.0
+            swing_chance *= swing_scale
+            cap_key = (
+                "ballSwingCapTwoStrike" if strikes >= 2 else "ballSwingCap"
+            )
+            cap_value = getattr(self.config, cap_key, 1.0)
+            if cap_value > 0:
+                swing_chance = min(swing_chance, cap_value)
+
         swing_chance = clamp01(swing_chance)
         self.last_swing_chance = swing_chance
         breakdown["pre_two_strike"] = swing_chance
@@ -759,9 +791,34 @@ class BatterAI:
         # Tunable via config key "twoStrikeSwingBonus" (percent additive).
         if strikes >= 2:
             two_strike_bonus = getattr(self.config, "twoStrikeSwingBonus", 0) / 100.0
-            swing_chance += two_strike_bonus
-            breakdown["two_strike_bonus"] = two_strike_bonus
+            chase_scale = float(getattr(self.config, "twoStrikeChaseBonusScale", 0.0) or 0.0)
+            applied_bonus = 0.0
+            if pitch_kind in {"sure strike", "close strike"}:
+                applied_bonus = two_strike_bonus
+            elif chase_scale > 0.0:
+                applied_bonus = two_strike_bonus * chase_scale
+            swing_chance += applied_bonus
+            breakdown["two_strike_bonus"] = applied_bonus
             swing_chance = clamp01(swing_chance)
+        if strikes >= 2:
+            sure_floor = float(getattr(self.config, "twoStrikeSureSwingFloor", 0.0))
+            close_floor = float(
+                getattr(
+                    self.config,
+                    "twoStrikeCloseSwingFloor",
+                    sure_floor if sure_floor > 0.0 else 0.0,
+                )
+            )
+            chase_floor = float(
+                getattr(self.config, "twoStrikeChaseSwingFloor", 0.0)
+            )
+            if pitch_kind == "sure strike" and sure_floor > 0.0:
+                swing_chance = max(swing_chance, sure_floor)
+            elif pitch_kind == "close strike" and close_floor > 0.0:
+                swing_chance = max(swing_chance, close_floor)
+            elif pitch_kind in {"close ball", "sure ball"} and chase_floor > 0.0:
+                swing_chance = max(swing_chance, chase_floor)
+
         breakdown["final"] = swing_chance
         breakdown["discipline"] = discipline_clamped
         breakdown["discipline_pct"] = disc_pct
