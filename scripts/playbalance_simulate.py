@@ -50,6 +50,9 @@ from playbalance.batter_ai import (
     SWING_COUNT_DIAGNOSTICS,
     AUTO_TAKE_DIAGNOSTICS,
 )
+from playbalance.diagnostics.batter_decision import BatterDecisionTracker
+from playbalance.diagnostics.pitch_intent import PitchIntentTracker
+from playbalance.diagnostics.pitch_survival import PitchSurvivalTracker
 from utils.lineup_loader import build_default_game_state
 from utils.team_loader import load_teams
 
@@ -120,6 +123,9 @@ STAT_KEYS = [
     "o_zone_swings",
     "o_zone_contacts",
     "so_looking",
+    "strikes_thrown",
+    "balls_thrown",
+    "first_pitch_strikes",
 ]
 
 STAT_INDEX = {k: i for i, k in enumerate(STAT_KEYS)}
@@ -127,6 +133,9 @@ STAT_INDEX = {k: i for i, k in enumerate(STAT_KEYS)}
 
 BASE_STATES: dict[str, TeamState] = {}
 CFG = None
+BATTER_DECISION_TRACKER: BatterDecisionTracker | None = None
+PITCH_INTENT_TRACKER: PitchIntentTracker | None = None
+PITCH_SURVIVAL_TRACKER: PitchSurvivalTracker | None = None
 
 
 class FastRNG:
@@ -165,6 +174,19 @@ def _init_worker(states: dict[str, bytes], cfg) -> None:
     CFG = cfg
 
 
+def _enable_sim_diagnostics(
+    *,
+    batter_tracker: BatterDecisionTracker | None,
+    pitch_intent_tracker: PitchIntentTracker | None,
+    pitch_survival_tracker: PitchSurvivalTracker | None,
+) -> None:
+    global BATTER_DECISION_TRACKER, PITCH_INTENT_TRACKER
+    global PITCH_SURVIVAL_TRACKER
+    BATTER_DECISION_TRACKER = batter_tracker
+    PITCH_INTENT_TRACKER = pitch_intent_tracker
+    PITCH_SURVIVAL_TRACKER = pitch_survival_tracker
+
+
 def clone_team_state(team_id: str) -> TeamState:
     """Return a fresh ``TeamState`` cloned from the baseline."""
 
@@ -184,6 +206,12 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
     home = clone_team_state(home_id)
     away = clone_team_state(away_id)
     sim = GameSimulation(home, away, CFG, FastRNG(seed))
+    if BATTER_DECISION_TRACKER is not None:
+        sim.set_batter_decision_tracker(BATTER_DECISION_TRACKER)
+    if PITCH_SURVIVAL_TRACKER is not None:
+        sim.set_pitch_survival_tracker(PITCH_SURVIVAL_TRACKER)
+    if PITCH_INTENT_TRACKER is not None:
+        sim.pitcher_ai.set_intent_tracker(PITCH_INTENT_TRACKER)
     sim.simulate_game(persist_stats=False)
 
     totals = np.zeros(len(STAT_KEYS), dtype=np.int64)
@@ -240,11 +268,14 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
                     ps.o_zone_swings,
                     ps.o_zone_contacts,
                     ps.so_looking,
+                    ps.strikes_thrown,
+                    ps.balls_thrown,
+                    ps.first_pitch_strikes,
                 )
             )
             pitcher_stats = np.fromiter(
-                pitcher_iter, dtype=np.int64, count=pitcher_count * 7
-            ).reshape(pitcher_count, 7)
+                pitcher_iter, dtype=np.int64, count=pitcher_count * 10
+            ).reshape(pitcher_count, 10)
             np.add(
                 totals[19:],
                 pitcher_stats.sum(axis=0, dtype=np.int64),
@@ -252,6 +283,188 @@ def _simulate_game(args: tuple[str, str, int]) -> np.ndarray:
             )
 
     return totals
+
+
+def _serialize_batter_decisions(
+    tracker: BatterDecisionTracker | None,
+) -> dict[str, object] | None:
+    if tracker is None:
+        return None
+    counts: list[dict[str, float]] = []
+    for balls, strikes, stats in tracker.iter_rows():
+        pitches = stats.get("pitches", 0.0) or 0.0
+        swings = stats.get("swings", 0.0) or 0.0
+        takes = stats.get("takes", 0.0) or 0.0
+        contact = stats.get("contact", 0.0) or 0.0
+        foul = stats.get("foul", 0.0) or 0.0
+        entry = {
+            "balls": balls,
+            "strikes": strikes,
+            "pitches": pitches,
+            "swings": swings,
+            "takes": takes,
+            "contact": contact,
+            "foul": foul,
+            "ball_in_play": stats.get("ball_in_play", 0.0) or 0.0,
+            "hits": stats.get("hits", 0.0) or 0.0,
+            "balls_called": stats.get("balls", 0.0) or 0.0,
+            "called_strikes": stats.get("called_strikes", 0.0) or 0.0,
+            "walks": stats.get("walks", 0.0) or 0.0,
+            "strikeouts": stats.get("strikeouts", 0.0) or 0.0,
+            "zone_pitches": stats.get("zone_pitches", 0.0) or 0.0,
+            "swing_rate": swings / pitches if pitches else 0.0,
+            "take_rate": takes / pitches if pitches else 0.0,
+            "contact_rate": contact / pitches if pitches else 0.0,
+            "swing_contact_rate": contact / swings if swings else 0.0,
+            "foul_rate": foul / pitches if pitches else 0.0,
+        }
+        dist_sum, dist_count = tracker.distance_totals.get((balls, strikes), [0.0, 0.0])
+        entry["avg_pitch_distance"] = dist_sum / dist_count if dist_count else 0.0
+        counts.append(entry)
+
+    breakdown: list[dict[str, object]] = []
+    for balls, strikes, sample_count, averages, pitch_counts in tracker.iter_breakdown_rows():
+        breakdown.append(
+            {
+                "balls": balls,
+                "strikes": strikes,
+                "samples": sample_count,
+                "averages": averages,
+                "pitch_kind_counts": pitch_counts,
+            }
+        )
+
+    objectives = []
+    for (balls, strikes), bucket in tracker.objective_counts.items():
+        for objective, count in bucket.items():
+            objectives.append(
+                {
+                    "balls": balls,
+                    "strikes": strikes,
+                    "objective": objective,
+                    "count": count,
+                }
+            )
+
+    offsets: list[dict[str, float]] = []
+    for (balls, strikes), totals in tracker.target_offset_totals.items():
+        count = tracker.target_offset_counts.get((balls, strikes), 0)
+        avg_dx = totals[0] / count if count else 0.0
+        avg_dy = totals[1] / count if count else 0.0
+        offsets.append(
+            {
+                "balls": balls,
+                "strikes": strikes,
+                "avg_dx": avg_dx,
+                "avg_dy": avg_dy,
+                "samples": count,
+            }
+        )
+
+    totals_summary = {
+        "pitches": sum(entry["pitches"] for entry in counts),
+        "swings": sum(entry["swings"] for entry in counts),
+        "takes": sum(entry["takes"] for entry in counts),
+    }
+    pitches_total = totals_summary["pitches"] or 0.0
+    totals_summary["swing_rate"] = (
+        totals_summary["swings"] / pitches_total if pitches_total else 0.0
+    )
+    totals_summary["take_rate"] = (
+        totals_summary["takes"] / pitches_total if pitches_total else 0.0
+    )
+
+    distance_histogram = [
+        {"bucket": bucket, "count": count}
+        for bucket, count in sorted(tracker.distance_histogram.items())
+    ]
+
+    return {
+        "counts": counts,
+        "breakdown": breakdown,
+        "objectives": objectives,
+        "target_offsets": offsets,
+        "totals": totals_summary,
+        "distance_histogram": distance_histogram,
+    }
+
+
+def _serialize_pitch_intent(
+    tracker: PitchIntentTracker | None,
+) -> dict[str, object] | None:
+    if tracker is None or tracker.total == 0:
+        return None
+    bucket_rows = [
+        {
+            "balls": balls,
+            "strikes": strikes,
+            "bucket": bucket,
+            "count": count,
+        }
+        for (balls, strikes, bucket), count in sorted(
+            tracker.bucket_counts.items(), key=lambda item: (item[0][0], item[0][1], item[0][2])
+        )
+    ]
+    objective_rows = [
+        {
+            "balls": balls,
+            "strikes": strikes,
+            "objective": objective,
+            "count": count,
+        }
+        for (balls, strikes, objective), count in sorted(
+            tracker.objective_counts.items(), key=lambda item: (item[0][0], item[0][1], item[0][2])
+        )
+    ]
+    pitch_rows = [
+        {
+            "balls": balls,
+            "strikes": strikes,
+            "bucket": bucket,
+            "pitch_type": pitch_type,
+            "count": count,
+        }
+        for (balls, strikes, bucket, pitch_type), count in sorted(
+            tracker.pitch_counts.items(),
+            key=lambda item: (item[0][0], item[0][1], item[0][2], item[0][3]),
+        )
+    ]
+    return {
+        "bucket_counts": bucket_rows,
+        "objective_counts": objective_rows,
+        "pitch_counts": pitch_rows,
+        "bucket_share": tracker.percentage_by_bucket(),
+        "total_logged": tracker.total,
+    }
+
+
+def _serialize_pitch_survival(
+    tracker: PitchSurvivalTracker | None,
+) -> dict[str, object] | None:
+    if tracker is None or tracker.total_plate_appearances == 0:
+        return None
+    return {
+        "distribution": tracker.distribution(),
+        "metrics": tracker.metrics(),
+        "survival_curve": tracker.survival_curve(),
+    }
+
+
+def _pitch_objective_summary(
+    tracker: PitchIntentTracker | None,
+) -> dict[str, int] | None:
+    if tracker is None or tracker.total == 0:
+        return None
+    counts = {"attack": 0, "chase": 0, "waste": 0}
+    for (_, _, bucket), count in tracker.bucket_counts.items():
+        if bucket == "zone":
+            counts["attack"] += count
+        elif bucket == "edge":
+            counts["chase"] += count
+        else:
+            counts["waste"] += count
+    counts["total_logged"] = tracker.total
+    return counts
 
 
 def _print_config_snapshot(cfg) -> None:
@@ -272,10 +485,12 @@ def _print_config_snapshot(cfg) -> None:
         "twoStrikeChaseBonusScale",
         "ballInPlayPitchPct",
         "targetPitchesPerPA",
-        "autoTakeDistanceBase",
-        "autoTakeDistanceBallStep",
-        "autoTakeDistanceBuffer",
-        "autoTakeDefaultChaseChance",
+        "autoTakeCloseBallBaseProb",
+        "autoTakeSureBallBaseProb",
+        "autoTakeBallCountWeight",
+        "autoTakeStrikeCountWeight",
+        "autoTakeDistanceWeight",
+        "autoTakeAggressionWeight",
     ]
     values_dict = getattr(cfg, "values", {}) or {}
     print("\n[Config] Key tuning values:")
@@ -288,10 +503,16 @@ def _print_config_snapshot(cfg) -> None:
             print(f"  {key}: {value}")
 
 
-def _dump_swing_diagnostics(path: Path) -> None:
-    """Persist raw swing/auto-take diagnostics as JSON."""
+def _dump_swing_diagnostics(
+    path: Path,
+    *,
+    batter_tracker: BatterDecisionTracker | None,
+    pitch_intent_tracker: PitchIntentTracker | None,
+    pitch_survival_tracker: PitchSurvivalTracker | None,
+) -> None:
+    """Persist raw diagnostics (swing + pitch intent data) as JSON."""
 
-    data: dict[str, list[dict[str, float | int | str]]] = {
+    data: dict[str, object] = {
         "swing_pitch": [],
         "swing_count": [],
         "auto_take": [],
@@ -312,9 +533,31 @@ def _dump_swing_diagnostics(path: Path) -> None:
         entry = {"balls": balls, "strikes": strikes}
         entry.update(stats)
         data["auto_take"].append(entry)
+
+    batter_payload = _serialize_batter_decisions(batter_tracker)
+    if batter_payload is not None:
+        data["batter_decisions"] = batter_payload
+        distance_hist = batter_payload.get("distance_histogram")
+        if distance_hist:
+            data["pitch_distance_histogram"] = distance_hist
+    pitch_intent_payload = _serialize_pitch_intent(pitch_intent_tracker)
+    if pitch_intent_payload is not None:
+        data["pitch_intent"] = pitch_intent_payload
+    pitch_survival_payload = _serialize_pitch_survival(pitch_survival_tracker)
+    if pitch_survival_payload is not None:
+        data["pitch_survival"] = pitch_survival_payload
+
+    swing_events = data["swing_pitch"] if isinstance(data["swing_pitch"], list) else []
+    if swing_events:
+        data["events"] = swing_events
+    elif batter_payload:
+        data["events"] = batter_payload.get("counts", [])
+    else:
+        data["events"] = []
+
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2))
-    print(f"Saved swing diagnostics to {path}")
+    print(f"Saved diagnostics to {path}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -418,13 +661,28 @@ def main(argv: list[str] | None = None) -> int:
             cfg.targetPitchesPerPA = 0
         if hasattr(cfg, "values"):
             cfg.values["targetPitchesPerPA"] = 0
-    cfg.collectSwingDiagnostics = 1 if os.getenv("SWING_DIAGNOSTICS") else getattr(cfg, "collectSwingDiagnostics", 0)
+    diag_requested = args.diag_output is not None
+    swing_diag_env = bool(os.getenv("SWING_DIAGNOSTICS"))
+    cfg.collectSwingDiagnostics = 1 if (swing_diag_env or diag_requested) else getattr(cfg, "collectSwingDiagnostics", 0)
     if hasattr(cfg, "values"):
         cfg.values["collectSwingDiagnostics"] = cfg.collectSwingDiagnostics
     if args.print_config:
         _print_config_snapshot(cfg)
     if getattr(cfg, "collectSwingDiagnostics", 0):
         reset_swing_diagnostics()
+
+    batter_tracker: BatterDecisionTracker | None = None
+    pitch_intent_tracker: PitchIntentTracker | None = None
+    pitch_survival_tracker: PitchSurvivalTracker | None = None
+    if diag_requested:
+        batter_tracker = BatterDecisionTracker()
+        pitch_intent_tracker = PitchIntentTracker()
+        pitch_survival_tracker = PitchSurvivalTracker()
+        _enable_sim_diagnostics(
+            batter_tracker=batter_tracker,
+            pitch_intent_tracker=pitch_intent_tracker,
+            pitch_survival_tracker=pitch_survival_tracker,
+        )
 
     team_ids = [t.team_id for t in load_teams("data/teams.csv")]
     base_states = {tid: pickle.dumps(build_default_game_state(tid)) for tid in team_ids}
@@ -438,7 +696,7 @@ def main(argv: list[str] | None = None) -> int:
 
     chunksize = max(1, len(jobs) // (mp.cpu_count() * 4))
     totals_array = np.zeros(len(STAT_KEYS), dtype=np.int64)
-    sequential = bool(args.diag_output and getattr(cfg, "collectSwingDiagnostics", 0))
+    sequential = bool(diag_requested)
 
     if args.perftune:
         try:  # pragma: no cover - optional dependency
@@ -570,6 +828,18 @@ def main(argv: list[str] | None = None) -> int:
         "contact_pct": contact_pct,
     }
 
+    total_pitches = totals["pitches_thrown"]
+    total_strikes = totals.get("strikes_thrown", 0)
+    total_balls = totals.get("balls_thrown", 0)
+    pitch_counts = {
+        "pitches_thrown": total_pitches,
+        "strikes_thrown": total_strikes,
+        "balls_thrown": total_balls,
+        "zone_pitches": totals["zone_pitches"],
+        "o_zone_pitches": max(0, total_pitches - totals["zone_pitches"]),
+        "first_pitch_strikes": totals.get("first_pitch_strikes", 0),
+    }
+
     benchmark_keys = {
         "runs_per_team_game": None,
         "runs_allowed_per_team_game": None,
@@ -616,6 +886,10 @@ def main(argv: list[str] | None = None) -> int:
     }
     results["metrics"] = metrics
     results["benchmarks"] = benchmark_values
+    results["pitch_counts"] = pitch_counts
+    pitch_obj_summary = _pitch_objective_summary(pitch_intent_tracker)
+    if pitch_obj_summary is not None:
+        results["pitch_objectives"] = pitch_obj_summary
 
     if args.output is not None:
         args.output.write_text(json.dumps(results, indent=2))
@@ -712,8 +986,13 @@ def main(argv: list[str] | None = None) -> int:
             print("Auto-take diagnostics:")
             for line in auto_lines:
                 print(f"  {line}")
-        if args.diag_output is not None:
-            _dump_swing_diagnostics(args.diag_output)
+    if args.diag_output is not None:
+        _dump_swing_diagnostics(
+            args.diag_output,
+            batter_tracker=batter_tracker,
+            pitch_intent_tracker=pitch_intent_tracker,
+            pitch_survival_tracker=pitch_survival_tracker,
+        )
 
     return 0
 

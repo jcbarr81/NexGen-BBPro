@@ -35,7 +35,9 @@ SWING_PITCH_DIAGNOSTICS: dict[tuple[str, int, int], dict[str, float]] = defaultd
         "swings": 0.0,
         "base_total": 0.0,
         "final_total": 0.0,
-        "penalty_factor_total": 0.0,
+        "aggression_total": 0.0,
+        "zone_push_total": 0.0,
+        "chase_pull_total": 0.0,
         "discipline_adjust_total": 0.0,
         "count_adjust_total": 0.0,
         "take_bonus_total": 0.0,
@@ -90,7 +92,9 @@ def _record_swing_diagnostic(
         data["swings"] += 1.0
     data["base_total"] += breakdown.get("base_lookup", 0.0)
     data["final_total"] += breakdown.get("final", 0.0)
-    data["penalty_factor_total"] += breakdown.get("penalty_factor", 0.0)
+    data["aggression_total"] += breakdown.get("discipline_aggression", 0.0)
+    data["zone_push_total"] += breakdown.get("discipline_zone_component", 0.0)
+    data["chase_pull_total"] += breakdown.get("discipline_chase_component", 0.0)
     data["discipline_adjust_total"] += breakdown.get("discipline_adjust", 0.0)
     data["count_adjust_total"] += breakdown.get("count_adjust", 0.0)
     data["take_bonus_total"] += breakdown.get("take_bonus", 0.0)
@@ -137,7 +141,9 @@ def swing_diagnostics_summary(limit: int | None = None) -> Iterable[str]:
         swing_rate = stats["swings"] / samples
         avg_base = stats["base_total"] / samples
         avg_final = stats["final_total"] / samples
-        avg_penalty = stats["penalty_factor_total"] / samples
+        avg_aggression = stats["aggression_total"] / samples
+        avg_zone = stats["zone_push_total"] / samples
+        avg_chase = stats["chase_pull_total"] / samples
         avg_disc = stats["discipline_adjust_total"] / samples
         avg_count = stats["count_adjust_total"] / samples
         items.append(
@@ -145,7 +151,8 @@ def swing_diagnostics_summary(limit: int | None = None) -> Iterable[str]:
                 samples,
                 f"{pitch_kind} {balls}-{strikes}: n={samples:.0f} "
                 f"swing%={swing_rate:.3f} base={avg_base:.3f} "
-                f"final={avg_final:.3f} pen={avg_penalty:.3f} "
+                f"final={avg_final:.3f} agg={avg_aggression:.3f} "
+                f"zoneAdj={avg_zone:.3f} chaseAdj={avg_chase:.3f} "
                 f"discAdj={avg_disc:.3f} countAdj={avg_count:.3f}",
             )
         )
@@ -172,6 +179,62 @@ def auto_take_summary() -> Iterable[str]:
             f"avgDist={avg_dist:.2f} thresh={avg_thresh:.2f}"
         )
     return lines
+
+
+# ---------------------------------------------------------------------------
+# Swing stage results
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class DisciplineStageResult:
+    swing_chance: float
+    raw: float
+    raw_scaled: float
+    norm: float
+    clamped: float
+    logit: float
+    bias: float
+    bias_scale: float
+    aggression: float
+    aggression_input: float
+    aggression_bias: float
+    aggression_gain: float
+    zone_component: float
+    chase_component: float
+    zone_push: float
+    chase_pull: float
+    protect_scale: float
+    zone_protect_weight: float
+    chase_protect_weight: float
+    zone_bias: float
+    chase_bias: float
+    close_strike_mix: float
+    ball_weight: float
+    ball_take_floor: float
+    discipline_adjust: float
+    logit_offset: float
+    batter_contact: float
+    discipline_norm_scale: float
+
+
+@dataclass
+class TwoStrikeStageResult:
+    pre_two_strike: float
+    bonus_applied: float
+    swing_chance: float
+    sure_floor: float
+    close_floor: float
+    chase_floor: float
+
+
+@dataclass
+class ContactStageResult:
+    prob_contact: float
+    contact_quality: float
+    id_probability: float
+    o_zone_contact_scale: float
+    forced_two_strike_contact: bool
 # ---------------------------------------------------------------------------
 # Strike-zone representation
 # ---------------------------------------------------------------------------
@@ -411,6 +474,629 @@ class BatterAI:
             return "close ball"
         return "sure ball"
 
+    def _auto_take_probability(
+        self,
+        *,
+        batter: Player,
+        balls: int,
+        strikes: int,
+        pitch_kind: str,
+        dist: float,
+        discipline_norm: float,
+    ) -> tuple[float, float]:
+        if pitch_kind not in {"close ball", "sure ball"}:
+            return 0.0, 0.0
+        # Do not auto-take with two strikes to avoid called third inflation.
+        if strikes >= 2:
+            sure_thresh = float(getattr(self.config, "sureStrikeDist", 2.0) or 2.0)
+            close_thresh = float(getattr(self.config, "closeStrikeDist", sure_thresh + 1.0))
+            close_ball_thresh = float(getattr(self.config, "closeBallDist", close_thresh + 1.5))
+            threshold = close_ball_thresh if pitch_kind == "close ball" else close_ball_thresh + 1.0
+            return 0.0, threshold
+        cfg = self.config
+        base_key = (
+            "autoTakeCloseBallBaseProb"
+            if pitch_kind == "close ball"
+            else "autoTakeSureBallBaseProb"
+        )
+        base_prob = float(cfg.get(base_key, 0.4))
+        ball_weight = float(cfg.get("autoTakeBallCountWeight", 0.1))
+        strike_weight = float(cfg.get("autoTakeStrikeCountWeight", -0.05))
+        distance_weight = float(cfg.get("autoTakeDistanceWeight", 0.2))
+        aggression_weight = float(cfg.get("autoTakeAggressionWeight", 0.2))
+        three_ball_bonus = float(cfg.get("autoTakeThreeBallBonus", 0.15))
+        full_count_bonus = float(cfg.get("autoTakeFullCountBonus", 0.08))
+        two_strike_penalty = float(cfg.get("autoTakeTwoStrikePenalty", 0.2))
+        min_prob = float(cfg.get("autoTakeMinProb", 0.0))
+        max_prob = float(cfg.get("autoTakeMaxProb", 0.95))
+        sure_thresh = float(getattr(cfg, "sureStrikeDist", 2.0) or 2.0)
+        close_thresh = float(getattr(cfg, "closeStrikeDist", sure_thresh + 1.0))
+        close_ball_thresh = float(
+            getattr(cfg, "closeBallDist", close_thresh + 1.5)
+        )
+        threshold = (
+            close_ball_thresh
+            if pitch_kind == "close ball"
+            else close_ball_thresh + 1.0
+        )
+        distance_over = max(0.0, float(dist) - threshold)
+        aggression = max(0.0, min(1.0, discipline_norm))
+        prob = (
+            base_prob
+            + balls * ball_weight
+            + strikes * strike_weight
+            + distance_over * distance_weight
+            + aggression * aggression_weight
+        )
+        if balls >= 3:
+            prob += three_ball_bonus
+            if strikes >= 2:
+                prob += full_count_bonus
+        if strikes >= 2:
+            prob -= two_strike_penalty
+        strike_gate_penalty = float(cfg.get("autoTakeStrikeGatePenalty", 0.0))
+        if strike_gate_penalty:
+            prob -= strikes * strike_gate_penalty
+        global_max = float(cfg.get("autoTakeGlobalMaxProb", max_prob))
+        # Hard global cap to avoid excessive forced takes.
+        hard_cap = min(global_max, max_prob, 0.35)
+        prob = max(min_prob, min(hard_cap, prob))
+        return prob, threshold
+
+    def _compute_discipline_stage(
+        self,
+        swing_chance: float,
+        *,
+        batter: Player,
+        balls: int,
+        strikes: int,
+        pitch_kind: str,
+    ) -> DisciplineStageResult:
+        """Return discipline-driven swing adjustments and diagnostics."""
+
+        dis_keys = (
+            "disciplineRatingBase",
+            "disciplineRatingCHPct",
+            "disciplineRatingExpPct",
+        )
+        config_values = getattr(self.config, "values", {})
+        explicit_keys = [key for key in dis_keys if key in config_values]
+        use_config_discipline = any(
+            config_values.get(key, 0) not in (None, 0) for key in explicit_keys
+        )
+        count_adj = getattr(self.config, f"disciplineRating{balls}{strikes}CountAdjust", 0)
+        count_suffix = f"{balls}{strikes}"
+
+        if use_config_discipline:
+            base = getattr(self.config, "disciplineRatingBase", 0)
+            ch_pct = getattr(self.config, "disciplineRatingCHPct", 0)
+            exp_pct = getattr(self.config, "disciplineRatingExpPct", 0)
+            ch_score = getattr(batter, "ch", 50) * ch_pct / 100.0
+            exp_score = getattr(batter, "exp", 50) * exp_pct / 100.0
+            discipline_raw = base + ch_score + exp_score + count_adj
+        else:
+            discipline_raw = getattr(batter, "ch", 50) + count_adj
+
+        batter_contact = float(getattr(batter, "ch", 50) or 50)
+
+        raw_scale_default = float(self.config.get("disciplineRawScaleDefault", 1.0))
+        raw_scale = float(
+            self.config.get(f"disciplineRawScale{count_suffix}", raw_scale_default)
+        )
+        discipline_raw_scaled = discipline_raw * raw_scale
+        discipline_norm = discipline_raw_scaled / 100.0
+        norm_floor = float(self.config.get("disciplineNormFloor", 0.0))
+        norm_ceiling = float(self.config.get("disciplineNormCeil", 1.0))
+        discipline_clamped = clamp01(max(norm_floor, min(norm_ceiling, discipline_norm)))
+
+        three_ball_scale = float(self.config.get("disciplineThreeBallScale", 0.5))
+
+        logit_center = float(self.config.get("disciplineSwingLogitCenter", 110.0))
+        logit_center = float(
+            self.config.get(f"disciplineSwingLogitCenter{count_suffix}", logit_center)
+        )
+        contact_shift = float(self.config.get("disciplineSwingLogitContactShift", 0.0))
+        if contact_shift:
+            logit_center -= contact_shift * (50.0 - batter_contact)
+        logit_slope = float(self.config.get("disciplineSwingLogitSlope", 0.05))
+        logit_slope = float(
+            self.config.get(f"disciplineSwingLogitSlope{count_suffix}", logit_slope)
+        )
+        logit_weight = float(self.config.get("disciplineSwingLogitWeight", 1.0))
+        logit_weight = float(
+            self.config.get(f"disciplineSwingLogitWeight{count_suffix}", logit_weight)
+        )
+        logit_offset = float(
+            self.config.get(f"disciplineSwingLogitOffset{count_suffix}", 0.0)
+        )
+        log_arg = (discipline_raw_scaled - logit_center) * logit_slope + logit_offset
+        if log_arg >= 60:
+            discipline_logit = 1.0
+        elif log_arg <= -60:
+            discipline_logit = 0.0
+        else:
+            discipline_logit = 1.0 / (1.0 + math.exp(-log_arg))
+        discipline_bias = (discipline_logit - 0.5) * logit_weight
+        three_ball_logit_scale = float(
+            self.config.get("disciplineThreeBallLogitScale", three_ball_scale)
+        )
+        three_ball_logit_scale = float(
+            self.config.get(
+                f"disciplineThreeBallLogitScale{count_suffix}", three_ball_logit_scale
+            )
+        )
+        if balls >= 3:
+            discipline_bias *= three_ball_logit_scale
+        logit_gate = bool(int(getattr(self.config, "enableDisciplineLogitGate", 1)))
+        if logit_gate:
+            discipline_logit = max(0.0, min(1.0, 0.5 + discipline_bias))
+        else:
+            discipline_logit = discipline_bias + 0.5
+
+        if balls >= 3:
+            discipline_clamped = 0.5 + (discipline_clamped - 0.5) * three_ball_scale
+
+        zone_bias_default = float(self.config.get("disciplineZoneBiasDefault", 0.16))
+        zone_bias = float(
+            self.config.get(f"disciplineZoneBias{count_suffix}", zone_bias_default)
+        )
+        chase_bias_default = float(self.config.get("disciplineChaseBiasDefault", 0.24))
+        chase_bias = float(
+            self.config.get(f"disciplineChaseBias{count_suffix}", chase_bias_default)
+        )
+        zone_floor_default = float(self.config.get("disciplineZoneFloorDefault", 0.25))
+        zone_floor = float(
+            self.config.get(f"disciplineZoneFloor{count_suffix}", zone_floor_default)
+        )
+        chase_ceiling_default = float(
+            self.config.get("disciplineChaseCeilDefault", 0.28)
+        )
+        chase_ceiling = float(
+            self.config.get(f"disciplineChaseCeil{count_suffix}", chase_ceiling_default)
+        )
+        zone_floor_min = float(self.config.get("swingZoneFloorMin", 0.0))
+        chase_ceiling_max = float(self.config.get("swingChaseCeilMax", 1.0))
+        ball_take_floor = float(self.config.get("disciplineBallTakeFloor", 0.0))
+        close_strike_mix = float(self.config.get("closeStrikeDisciplineMix", 0.35))
+        if strikes >= 2:
+            mix_scale = float(self.config.get("twoStrikeCloseStrikeMixScale", 0.55))
+            close_strike_mix *= clamp01(mix_scale)
+        close_strike_mix = clamp01(close_strike_mix)
+        ball_weight = float(self.config.get("swingBallDisciplineWeight", 0.05) or 0.0)
+        three_ball_weight_scale = float(
+            self.config.get("swingBallThreeBallWeightScale", 0.5)
+        )
+        eff_ball_weight = ball_weight * (three_ball_weight_scale if balls >= 3 else 1.0)
+
+        aggression_bias_default = float(
+            self.config.get("disciplineAggressionBiasDefault", 0.0)
+        )
+        aggression_bias = float(
+            self.config.get(
+                f"disciplineAggressionBias{count_suffix}", aggression_bias_default
+            )
+        )
+        aggression_gain_default = float(
+            self.config.get("disciplineAggressionGainDefault", 1.4)
+        )
+        aggression_gain = float(
+            self.config.get(
+                f"disciplineAggressionGain{count_suffix}", aggression_gain_default
+            )
+        )
+        aggression_input = clamp01(1.0 - discipline_clamped)
+        discipline_aggression = clamp01(
+            aggression_bias + aggression_input * aggression_gain
+        )
+        protect_scale = clamp01(1.0 - discipline_aggression)
+
+        zone_protect_default = float(
+            self.config.get("disciplineZoneProtectWeightDefault", 0.32)
+        )
+        zone_protect_weight = float(
+            self.config.get(
+                f"disciplineZoneProtectWeight{count_suffix}", zone_protect_default
+            )
+        )
+        chase_protect_default = float(
+            self.config.get("disciplineChaseProtectWeightDefault", 0.36)
+        )
+        chase_protect_weight = float(
+            self.config.get(
+                f"disciplineChaseProtectWeight{count_suffix}", chase_protect_default
+            )
+        )
+
+        bias_scale = max(0.0, min(1.0, 0.5 + discipline_bias))
+        zone_push_value = (
+            zone_bias
+            * zone_protect_weight
+            * protect_scale
+            * bias_scale
+            * discipline_clamped
+        )
+        chase_pull_value = (
+            chase_bias
+            * chase_protect_weight
+            * protect_scale
+            * bias_scale
+            * discipline_clamped
+        )
+        zone_component = 0.0
+        chase_component = 0.0
+        if pitch_kind == "sure strike":
+            zone_component = zone_push_value
+            swing_chance = clamp01(swing_chance + zone_component)
+            swing_chance = max(max(zone_floor, zone_floor_min), swing_chance)
+        elif pitch_kind == "close strike":
+            zone_component = zone_push_value * (1.0 - close_strike_mix)
+            chase_component = chase_pull_value * close_strike_mix
+            if eff_ball_weight > 0.0 and discipline_clamped > 0.0:
+                chase_component += eff_ball_weight * discipline_clamped * close_strike_mix
+            swing_chance = clamp01(swing_chance + zone_component - chase_component)
+            blend_floor = max(zone_floor_min, zone_floor * (1.0 - close_strike_mix))
+            swing_chance = max(blend_floor, swing_chance)
+        else:
+            chase_component = chase_pull_value
+            if eff_ball_weight > 0.0 and discipline_clamped > 0.0:
+                chase_component += eff_ball_weight * discipline_clamped
+            swing_chance = clamp01(swing_chance - chase_component)
+            swing_chance = min(min(chase_ceiling, chase_ceiling_max), swing_chance)
+            if ball_take_floor > 0.0 and discipline_clamped >= ball_take_floor:
+                extra_penalty = swing_chance
+                swing_chance = 0.0
+                chase_component += extra_penalty
+
+        discipline_adjust = zone_component - chase_component
+        return DisciplineStageResult(
+            swing_chance=swing_chance,
+            raw=discipline_raw,
+            raw_scaled=discipline_raw_scaled,
+            norm=discipline_norm,
+            clamped=discipline_clamped,
+            logit=discipline_logit,
+            bias=discipline_bias,
+            bias_scale=bias_scale,
+            aggression=discipline_aggression,
+            aggression_input=aggression_input,
+            aggression_bias=aggression_bias,
+            aggression_gain=aggression_gain,
+            zone_component=zone_component,
+            chase_component=chase_component,
+            zone_push=zone_push_value,
+            chase_pull=chase_pull_value,
+            protect_scale=protect_scale,
+            zone_protect_weight=zone_protect_weight,
+            chase_protect_weight=chase_protect_weight,
+            zone_bias=zone_bias,
+            chase_bias=chase_bias,
+            close_strike_mix=close_strike_mix,
+            ball_weight=eff_ball_weight,
+            ball_take_floor=ball_take_floor,
+            discipline_adjust=discipline_adjust,
+            logit_offset=logit_offset,
+            batter_contact=batter_contact,
+            discipline_norm_scale=raw_scale,
+        )
+
+    def _apply_two_strike_stage(
+        self,
+        swing_chance: float,
+        *,
+        pitch_kind: str,
+        strikes: int,
+        discipline_clamped: float,
+        batter_contact: float,
+    ) -> TwoStrikeStageResult:
+        """Apply two-strike resolver (bonus + floors) and return diagnostics."""
+
+        pre_two_strike = clamp01(swing_chance)
+        bonus_applied = 0.0
+        sure_floor_cfg = float(getattr(self.config, "twoStrikeSureSwingFloor", 0.0))
+        close_floor_cfg = float(
+            getattr(
+                self.config,
+                "twoStrikeCloseSwingFloor",
+                sure_floor_cfg if sure_floor_cfg > 0.0 else 0.0,
+            )
+        )
+        chase_floor_cfg = float(getattr(self.config, "twoStrikeChaseSwingFloor", 0.0))
+
+        # Strike floors are modest; chase floor scales down with discipline.
+        sure_floor = min(max(sure_floor_cfg, 0.90), 0.98)
+        close_floor = min(max(close_floor_cfg, 0.78), 0.92)
+        chase_floor = min(max(chase_floor_cfg, 0.36), 0.55)
+        contact_scale = max(0.95, min(1.12, 1.0 + (batter_contact - 50.0) / 300.0))
+        sure_floor = clamp01(sure_floor * contact_scale)
+        close_floor = clamp01(close_floor * contact_scale)
+        chase_floor = clamp01(chase_floor * contact_scale)
+
+        if strikes >= 2:
+            two_strike_bonus = getattr(self.config, "twoStrikeSwingBonus", 0) / 100.0
+            chase_scale = float(
+                getattr(self.config, "twoStrikeChaseBonusScale", 0.0) or 0.0
+            )
+            if pitch_kind in {"sure strike", "close strike"}:
+                bonus_applied = two_strike_bonus
+            elif chase_scale > 0.0 and pitch_kind in {"close ball", "sure ball"}:
+                bonus_applied = two_strike_bonus * chase_scale * (1.0 - discipline_clamped * 0.5)
+            swing_chance = clamp01(swing_chance + bonus_applied)
+
+            if pitch_kind == "sure strike" and sure_floor > 0.0:
+                swing_chance = max(swing_chance, sure_floor)
+            elif pitch_kind == "close strike" and close_floor > 0.0:
+                swing_chance = max(swing_chance, close_floor)
+            elif pitch_kind in {"close ball", "sure ball"} and chase_floor > 0.0:
+                swing_chance = max(swing_chance, chase_floor)
+
+        return TwoStrikeStageResult(
+            pre_two_strike=pre_two_strike,
+            bonus_applied=bonus_applied,
+            swing_chance=clamp01(swing_chance),
+            sure_floor=sure_floor,
+            close_floor=close_floor,
+            chase_floor=chase_floor,
+        )
+
+    def _resolve_contact_stage(
+        self,
+        *,
+        swing: bool,
+        batter: Player,
+        pitcher: Pitcher,
+        pitch_type: str,
+        pitch_kind: str,
+        strikes: int,
+        swing_type: str,
+        dist: int,
+        dist_over_plate: float,
+        objective_lower: str,
+        check_random: float | None,
+        random_value: float | None,
+        balls: int,
+        dx: int | None,
+        dy: int | None,
+    ) -> ContactStageResult:
+        """Resolve contact probability/quality for the swing stage."""
+
+        self.last_contact = False
+        contact_quality = 0.0
+        self.last_contact_probability = None
+
+        if not swing:
+            self.last_contact_probability = None
+            self.last_id_probability = None
+            return ContactStageResult(
+                prob_contact=0.0,
+                contact_quality=0.0,
+                id_probability=0.0,
+                o_zone_contact_scale=1.0,
+                forced_two_strike_contact=False,
+            )
+
+        forced_two_strike_contact = False
+        two_strike_floor = getattr(self.config, "twoStrikeContactFloor", 0.0)
+        two_strike_quality_cap = getattr(self.config, "twoStrikeContactQuality", 0.0)
+        id_prob = 0.0
+        stored_in_zone = getattr(self, "_last_pitch_in_zone", None)
+        if stored_in_zone is None:
+            plate_w = getattr(self.config, "plateWidth", 3)
+            plate_h = getattr(self.config, "plateHeight", 3)
+            in_zone_flag = dist <= max(plate_w, plate_h)
+        else:
+            in_zone_flag = bool(stored_in_zone)
+
+        close_ball_scale = float(getattr(self.config, "closeBallContactScale", 0.6) or 0.6)
+        sure_ball_scale = float(getattr(self.config, "sureBallContactScale", 0.3) or 0.3)
+        waste_contact_scale = float(
+            getattr(self.config, "wasteObjectiveContactScale", 0.6) or 0.6
+        )
+        edge_contact_scale = float(
+            getattr(self.config, "edgeObjectiveContactScale", 0.82) or 0.82
+        )
+        waste_contact_dist_scale = float(
+            getattr(self.config, "wasteObjectiveContactDistanceScale", 0.20) or 0.20
+        )
+        edge_contact_dist_scale = float(
+            getattr(self.config, "edgeObjectiveContactDistanceScale", 0.12) or 0.12
+        )
+        o_zone_contact_scale = 1.0
+        if pitch_kind == "close ball":
+            o_zone_contact_scale = close_ball_scale
+        elif pitch_kind == "sure ball":
+            o_zone_contact_scale = sure_ball_scale
+        if objective_lower == "ball":
+            o_zone_contact_scale *= waste_contact_scale
+            if dist_over_plate > 0.0 and waste_contact_dist_scale > 0.0:
+                o_zone_contact_scale *= math.exp(-waste_contact_dist_scale * dist_over_plate)
+        elif objective_lower == "edge":
+            o_zone_contact_scale *= edge_contact_scale
+            if dist_over_plate > 0.0 and edge_contact_dist_scale > 0.0:
+                o_zone_contact_scale *= math.exp(-edge_contact_dist_scale * dist_over_plate)
+
+        batter_contact = getattr(batter, "ch", 50)
+        pitch_quality = getattr(pitcher, pitch_type, getattr(pitcher, "movement", 50))
+
+        miss_chance = (pitch_quality - batter_contact + 50) / 200.0
+        contact_factor = (
+            self.config.contact_factor_base
+            + (batter_contact - 50) / self.config.contact_factor_div
+        )
+        miss_chance /= contact_factor
+
+        exp = getattr(batter, "exp", 0)
+        base_id = getattr(self.config, "idRatingBase", 0)
+        ch_pct = getattr(self.config, "idRatingCHPct", 0) / 100.0
+        exp_pct = getattr(self.config, "idRatingExpPct", 0) / 100.0
+        rat_pct = getattr(self.config, "idRatingPitchRatPct", 0) / 100.0
+        ease_scale = getattr(self.config, "idRatingEaseScale", 1.0)
+        pitch_rat = getattr(pitcher, pitch_type, getattr(pitcher, "movement", 50))
+        id_score = base_id * ease_scale
+        id_score += batter_contact * ch_pct
+        id_score += exp * exp_pct
+        id_score += ((100 - pitch_rat) / 2.0) * rat_pct
+        self.last_id_probability = clamp01(id_score / 100.0)
+
+        apply_reduction = True
+        if self.last_id_probability >= 1.0:
+            prob_contact = 0.93
+            apply_reduction = False
+        elif self.last_id_probability <= 0.0:
+            floor = getattr(self.config, "minMisreadContact", 0.0) * (batter_contact / 100.0)
+            adj_primary = getattr(
+                self.config, f"lookPrimaryType{0}{strikes}CountAdjust", 0
+            )
+            adj_best = getattr(
+                self.config, f"lookBestType{0}{strikes}CountAdjust", 0
+            )
+            look_adj = max(adj_primary, adj_best)
+            if look_adj > 0:
+                prob_contact = min(1.0, look_adj / 300.0 + 0.09)
+            else:
+                prob_contact = floor
+            apply_reduction = False
+        else:
+            if (
+                getattr(self.config, "idRatingCHPct", 0) == 0
+                and getattr(self.config, "idRatingExpPct", 0) == 0
+                and getattr(self.config, "idRatingPitchRatPct", 0) == 0
+            ):
+                base_id = getattr(self.config, "idRatingBase", 0)
+                if base_id <= getattr(self.config, "timingVeryBadThresh", 0):
+                    base_val = getattr(self.config, "timingVeryBadBase", 0)
+                    faces = getattr(self.config, "timingVeryBadFaces", 1)
+                    count = getattr(self.config, "timingVeryBadCount", 1)
+                elif base_id <= getattr(self.config, "timingBadThresh", 0):
+                    base_val = getattr(self.config, "timingBadBase", 0)
+                    faces = getattr(self.config, "timingBadFaces", 1)
+                    count = getattr(self.config, "timingBadCount", 1)
+                elif base_id <= getattr(self.config, "timingMedThresh", 0):
+                    base_val = getattr(self.config, "timingMedBase", 0)
+                    faces = getattr(self.config, "timingMedFaces", 1)
+                    count = getattr(self.config, "timingMedCount", 1)
+                elif base_id <= getattr(self.config, "timingGoodThresh", 0):
+                    base_val = getattr(self.config, "timingGoodBase", 0)
+                    faces = getattr(self.config, "timingGoodFaces", 1)
+                    count = getattr(self.config, "timingGoodCount", 1)
+                else:
+                    base_val = getattr(self.config, "timingVeryGoodBase", 0)
+                    faces = getattr(self.config, "timingVeryGoodFaces", 1)
+                    count = getattr(self.config, "timingVeryGoodCount", 1)
+                roll_sum = count * 1 if faces == 1 else count
+                offset = abs(roll_sum + base_val)
+                prob_contact = max(0.0, 1.0 - offset / 100.0)
+                if ease_scale > 1.0:
+                    prob_contact = min(1.0, prob_contact + 0.02 * (ease_scale - 1.0))
+                apply_reduction = False
+            else:
+                prob_contact = 0.5 + (16.0 / 3500.0) * id_score
+                prob_contact = round(prob_contact, 2)
+
+        prob_contact *= o_zone_contact_scale
+
+        if apply_reduction:
+            reduction_enabled = getattr(self.config, "enableContactReduction", None)
+            if reduction_enabled is None or reduction_enabled:
+                miss_scale = getattr(self.config, "missChanceScale", None)
+                if miss_scale is None and reduction_enabled is None:
+                    miss_scale = 1.3
+                if not miss_scale:
+                    miss_scale = 1.0
+                # Softer reduction on strikes/two-strike counts.
+                if strikes >= 2:
+                    miss_scale *= 0.7
+                if pitch_kind in {"sure strike", "close strike"}:
+                    miss_scale *= 0.85
+                reduction = max(0.0, min(0.95, miss_chance * miss_scale))
+                prob_contact = max(0.0, min(1.0, prob_contact * (1.0 - reduction)))
+                outcome_scale = getattr(self.config, "contactOutcomeScale", 0.65)
+                if not outcome_scale:
+                    outcome_scale = 0.65
+                prob_contact = max(0.0, min(1.0, prob_contact * outcome_scale))
+
+        waste_contact_cap = getattr(self.config, "wasteObjectiveContactCap", 0.25)
+        waste_contact_ts_cap = getattr(self.config, "wasteObjectiveTwoStrikeContactCap", 0.7)
+        edge_contact_cap = getattr(self.config, "edgeObjectiveContactCap", 0.4)
+        edge_contact_ts_cap = getattr(self.config, "edgeObjectiveTwoStrikeContactCap", 0.86)
+
+        if objective_lower == "ball":
+            cap_value = waste_contact_ts_cap if strikes >= 2 else waste_contact_cap
+            prob_contact = min(prob_contact, cap_value)
+        elif objective_lower == "edge":
+            cap_value = edge_contact_ts_cap if strikes >= 2 else edge_contact_cap
+            prob_contact = min(prob_contact, cap_value)
+
+        if strikes >= 2 and self.last_id_probability > 0.0:
+            bonus = getattr(self.config, "twoStrikeContactBonus", 0.0) / 100.0
+            if bonus:
+                prob_contact = min(1.0, prob_contact + bonus)
+
+        if strikes >= 2 and two_strike_floor > 0 and prob_contact < two_strike_floor:
+            prob_contact = two_strike_floor
+            forced_two_strike_contact = True
+
+        if self.last_misread:
+            floor = getattr(self.config, "minMisreadContact", 0.0) * (
+                batter_contact / 100.0
+            )
+            prob_contact = max(prob_contact, floor)
+
+        if (dx or dy) and check_random is not None and pitch_kind != "sure ball":
+            st = swing_type.lower()
+            kind = st[0].upper() + st[1:]
+            base_key = f"checkChanceBase{kind}"
+            ch_key = f"checkChanceCHPct{kind}"
+            base_chk = getattr(self.config, base_key, 0)
+            ch_chk = getattr(self.config, ch_key, 0)
+            chk = (base_chk + ch_chk * (batter_contact / 100.0)) / 1000.0
+            if check_random < chk:
+                if swing_type.lower() == "contact":
+                    swing = False
+                prob_contact = 0.0
+                self.last_contact = False
+                contact_quality = 0.0
+                self.last_contact_probability = prob_contact
+            else:
+                fail_contact = getattr(self.config, "failedCheckContactChance", 0) / 500.0
+                prob_contact = fail_contact
+                self.last_contact = check_random < fail_contact
+                contact_quality = prob_contact
+                self.last_contact_probability = prob_contact
+        else:
+            rv_contact = random.random() if check_random is None else check_random
+            self.last_contact_probability = prob_contact
+            self.last_contact = rv_contact < prob_contact
+            contact_quality = prob_contact
+            if forced_two_strike_contact and self.last_contact and two_strike_quality_cap > 0:
+                contact_quality = min(contact_quality, two_strike_quality_cap)
+
+        if getattr(self.config, "collectSwingDiagnostics", 0):
+            _record_swing_diagnostic(
+                self.config,
+                balls,
+                strikes,
+                pitch_kind,
+                self.last_swing_breakdown or {},
+                swing,
+            )
+
+        if check_random is None and self.last_id_probability >= 1.0:
+            if random_value is not None and random_value >= 0.15:
+                contact_quality = max(0.0, contact_quality - 0.02)
+        if self.last_contact and not in_zone_flag:
+            dist_penalty = max(0.0, min(dist / 8.0, 0.8))
+            contact_quality *= o_zone_contact_scale * (1.0 - dist_penalty)
+            if strikes < 2:
+                contact_quality *= 0.4
+
+        return ContactStageResult(
+            prob_contact=max(0.0, min(1.0, prob_contact)),
+            contact_quality=max(0.0, min(1.0, contact_quality)),
+            id_probability=self.last_id_probability or 0.0,
+            o_zone_contact_scale=o_zone_contact_scale,
+            forced_two_strike_contact=forced_two_strike_contact,
+        )
+
     def decide_swing(
         self,
         batter: Player,
@@ -441,7 +1127,7 @@ class BatterAI:
         swing = False
         contact_quality = 1.0
         self.last_contact = False
-        apply_reduction = True
+        self.last_contact_probability = None
 
         rv = random.random() if random_value is None else random_value
 
@@ -485,21 +1171,39 @@ class BatterAI:
             "discipline_adjust": 0.0,
             "discipline_bias": 0.0,
             "discipline_logit_offset": 0.0,
-            "penalty_factor": 1.0,
-            "penalty_source": 0.0,
-            "penalty_delta": 0.0,
-            "penalty_floor": 0.0,
-            "penalty_multiplier": 1.0,
+            "discipline_aggression": 0.0,
+            "discipline_aggression_input": 0.0,
+            "discipline_aggression_bias": 0.0,
+            "discipline_aggression_gain": 0.0,
+            "zone_protect_weight": 0.0,
+            "chase_protect_weight": 0.0,
+            "protect_scale": 0.0,
+            "discipline_zone_component": 0.0,
+            "discipline_chase_component": 0.0,
+            "discipline_zone_push": 0.0,
+            "discipline_chase_pull": 0.0,
+            "discipline_bias_scale": 0.0,
+            "zone_bias": 0.0,
+            "chase_bias": 0.0,
             "location_adjust": 0.0,
             "take_bonus": 0.0,
             "two_strike_bonus": 0.0,
             "discipline_raw": 0.0,
+            "discipline_raw_scaled": 0.0,
             "discipline_norm": 0.0,
+            "discipline_norm_scale": 0.0,
             "discipline_clamped": 0.0,
             "discipline_logit": 0.0,
             "close_strike_mix": 0.0,
             "objective_penalty": 0.0,
             "objective": (objective or "").lower() if objective else "",
+            "contact_prob": 0.0,
+            "contact_id_prob": 0.0,
+            "contact_o_zone_scale": 0.0,
+            "forced_two_strike_contact": 0.0,
+            "two_strike_sure_floor": 0.0,
+            "two_strike_close_floor": 0.0,
+            "two_strike_chase_floor": 0.0,
         }
 
         objective_lower = (objective or "").lower() if objective else ""
@@ -559,13 +1263,11 @@ class BatterAI:
         if objective_delta:
             breakdown["objective_penalty"] = objective_delta
 
-        # Count-based adjustment allows tuning per ball-strike count.
         count_key = f"swingProb{balls}{strikes}CountAdjust"
         count_adjust = getattr(self.config, count_key, 0) / 100.0
         swing_chance += count_adjust
         breakdown["count_adjust"] = count_adjust
 
-        # Strike-sensitive bonus for pitches just off the plate.
         if pitch_kind == "close ball":
             close_ball_bonus = strikes * getattr(
                 self.config, "closeBallStrikeBonus", 0
@@ -574,187 +1276,51 @@ class BatterAI:
             breakdown["close_ball_bonus"] = close_ball_bonus
             swing_chance = clamp01(swing_chance)
 
-        dis_keys = (
-            "disciplineRatingBase",
-            "disciplineRatingCHPct",
-            "disciplineRatingExpPct",
+        discipline_stage = self._compute_discipline_stage(
+            swing_chance,
+            batter=batter,
+            balls=balls,
+            strikes=strikes,
+            pitch_kind=pitch_kind,
         )
-        config_values = getattr(self.config, "values", {})
-        explicit_keys = [key for key in dis_keys if key in config_values]
-        use_config_discipline = any(
-            config_values.get(key, 0) not in (None, 0) for key in explicit_keys
-        )
-        count_adj = getattr(self.config, f"disciplineRating{balls}{strikes}CountAdjust", 0)
+        swing_chance = discipline_stage.swing_chance
+        breakdown["discipline_adjust"] = discipline_stage.discipline_adjust
+        breakdown["discipline_bias"] = discipline_stage.bias
+        breakdown["discipline_aggression"] = discipline_stage.aggression
+        breakdown["discipline_aggression_input"] = discipline_stage.aggression_input
+        breakdown["discipline_aggression_bias"] = discipline_stage.aggression_bias
+        breakdown["discipline_aggression_gain"] = discipline_stage.aggression_gain
+        breakdown["zone_protect_weight"] = discipline_stage.zone_protect_weight
+        breakdown["chase_protect_weight"] = discipline_stage.chase_protect_weight
+        breakdown["protect_scale"] = discipline_stage.protect_scale
+        breakdown["discipline_zone_component"] = discipline_stage.zone_component
+        breakdown["discipline_chase_component"] = discipline_stage.chase_component
+        breakdown["discipline_zone_push"] = discipline_stage.zone_push
+        breakdown["discipline_chase_pull"] = discipline_stage.chase_pull
+        breakdown["discipline_bias_scale"] = discipline_stage.bias_scale
+        breakdown["zone_bias"] = discipline_stage.zone_bias
+        breakdown["chase_bias"] = discipline_stage.chase_bias
+        breakdown["discipline_raw"] = discipline_stage.raw
+        breakdown["discipline_raw_scaled"] = discipline_stage.raw_scaled
+        breakdown["discipline_norm"] = discipline_stage.norm
+        breakdown["discipline_norm_scale"] = discipline_stage.discipline_norm_scale
+        breakdown["discipline_clamped"] = discipline_stage.clamped
+        breakdown["discipline_logit"] = discipline_stage.logit
+        breakdown["close_strike_mix"] = discipline_stage.close_strike_mix
+        breakdown["discipline_logit_offset"] = discipline_stage.logit_offset
 
-        count_suffix = f"{balls}{strikes}"
-
-        if use_config_discipline:
-            base = getattr(self.config, "disciplineRatingBase", 0)
-            ch_pct = getattr(self.config, "disciplineRatingCHPct", 0)
-            exp_pct = getattr(self.config, "disciplineRatingExpPct", 0)
-            ch_score = getattr(batter, "ch", 50) * ch_pct / 100.0
-            exp_score = getattr(batter, "exp", 50) * exp_pct / 100.0
-            discipline_raw = base + ch_score + exp_score + count_adj
-        else:
-            discipline_raw = getattr(batter, "ch", 50) + count_adj
-
-        batter_contact = float(getattr(batter, "ch", 50) or 50)
-
-        raw_scale_default = float(self.config.get("disciplineRawScaleDefault", 1.0))
-        raw_scale = float(
-            self.config.get(f"disciplineRawScale{count_suffix}", raw_scale_default)
-        )
-        discipline_raw_scaled = discipline_raw * raw_scale
-        discipline_norm = discipline_raw_scaled / 100.0
-        discipline_clamped = clamp01(discipline_norm)
-
-        three_ball_scale = float(self.config.get("disciplineThreeBallScale", 0.5))
-        zone_weight = float(self.config.get("swingZoneDisciplineWeight", 0.1) or 0.0) or 0.1
-        ball_weight = float(self.config.get("swingBallDisciplineWeight", 0.05) or 0.0) or 0.05
-        three_ball_weight_scale = getattr(
-            self.config, "swingBallThreeBallWeightScale", 0.5
-        )
-        eff_ball_weight = ball_weight * (three_ball_weight_scale if balls >= 3 else 1.0)
-        disc_pct = float(self.config.get("disciplineRatingPct", 0)) / 100.0
-        ball_penalty = float(self.config.get("disciplineBallPenalty", 1.0) or 1.0)
-
-        logit_center = float(self.config.get("disciplineSwingLogitCenter", 110.0))
-        logit_center = float(
-            self.config.get(f"disciplineSwingLogitCenter{count_suffix}", logit_center)
-        )
-        contact_shift = float(self.config.get("disciplineSwingLogitContactShift", 0.0))
-        if contact_shift:
-            logit_center -= contact_shift * (50.0 - batter_contact)
-        logit_slope = float(self.config.get("disciplineSwingLogitSlope", 0.05))
-        logit_slope = float(
-            self.config.get(f"disciplineSwingLogitSlope{count_suffix}", logit_slope)
-        )
-        logit_weight = float(self.config.get("disciplineSwingLogitWeight", 1.0))
-        logit_weight = float(
-            self.config.get(f"disciplineSwingLogitWeight{count_suffix}", logit_weight)
-        )
-        logit_offset = float(
-            self.config.get(f"disciplineSwingLogitOffset{count_suffix}", 0.0)
-        )
-        log_arg = (discipline_raw_scaled - logit_center) * logit_slope + logit_offset
-        if log_arg >= 60:
-            discipline_logit = 1.0
-        elif log_arg <= -60:
-            discipline_logit = 0.0
-        else:
-            discipline_logit = 1.0 / (1.0 + math.exp(-log_arg))
-        discipline_bias = (discipline_logit - 0.5) * logit_weight
-        three_ball_logit_scale = float(
-            self.config.get("disciplineThreeBallLogitScale", three_ball_scale)
-        )
-        three_ball_logit_scale = float(
-            self.config.get(
-                f"disciplineThreeBallLogitScale{count_suffix}", three_ball_logit_scale
-            )
-        )
-        if balls >= 3:
-            discipline_bias *= three_ball_logit_scale
-        logit_gate = bool(int(getattr(self.config, "enableDisciplineLogitGate", 1)))
-        if logit_gate:
-            discipline_logit = max(0.0, min(1.0, 0.5 + discipline_bias))
-        else:
-            discipline_logit = discipline_bias + 0.5
-
-        discipline_adjust = 0.0
-        penalty_factor = 1.0
-        penalty_delta = 0.0
-        penalty_source = discipline_logit
-        penalty_floor = float(self.config.get("disciplinePenaltyFloorDefault", 0.0))
-        penalty_floor = float(
-            self.config.get(f"disciplinePenaltyFloor{count_suffix}", penalty_floor)
-        )
-        if balls >= 3:
-            penalty_floor = float(
-                self.config.get("disciplinePenaltyFloorThreeBall", penalty_floor)
-            )
-            if strikes >= 2:
-                penalty_floor = float(
-                    self.config.get("disciplinePenaltyFloorFullCount", penalty_floor)
-                )
-        elif balls == 2:
-            penalty_floor = float(
-                self.config.get("disciplinePenaltyFloorTwoBall", penalty_floor)
-            )
-        elif balls == 1:
-            penalty_floor = float(
-                self.config.get("disciplinePenaltyFloorOneBall", penalty_floor)
-            )
-        penalty_cap = getattr(self.config, "disciplinePenaltyFloorCap", None)
-        if penalty_cap is not None:
-            penalty_floor = min(penalty_floor, float(penalty_cap))
-
-        if balls >= 3:
-            discipline_clamped = 0.5 + (discipline_clamped - 0.5) * three_ball_scale
-
-        penalty_scale = 0.0
-        close_strike_mix = 0.0
-        if pitch_kind == "sure strike":
-            discipline_adjust = discipline_bias * zone_weight
-            swing_chance += discipline_adjust
-        elif pitch_kind == "close strike":
-            close_strike_mix = float(self.config.get("closeStrikeDisciplineMix", 0.35))
-            zone_component = discipline_bias * zone_weight * max(0.0, 1.0 - close_strike_mix)
-            ball_component = -discipline_bias * eff_ball_weight * max(0.0, min(close_strike_mix, 1.0))
-            discipline_adjust = zone_component + ball_component
-            swing_chance += discipline_adjust
-            penalty_scale = max(0.0, min(close_strike_mix, 1.0))
-        else:
-            discipline_adjust = -discipline_bias * eff_ball_weight
-            swing_chance += discipline_adjust
-            penalty_scale = 1.0
-
-        if penalty_scale > 0.0:
-            penalty = max(0.0, penalty_source) * disc_pct * penalty_scale
-            penalty_multiplier = float(
-                self.config.get(
-                    f"disciplinePenaltyMultiplier{count_suffix}",
-                    self.config.get("disciplinePenaltyMultiplierDefault", 1.0),
-                )
-            )
-            penalty *= max(0.0, penalty_multiplier)
-            if balls >= 3:
-                penalty *= getattr(self.config, "disciplineThreeBallPenaltyScale", 0.5)
-                penalty *= float(
-                    self.config.get(
-                        f"disciplineThreeBallPenaltyScale{count_suffix}", 1.0
-                    )
-                )
-            penalty_factor = 1.0 - penalty
-            penalty_factor = max(penalty_floor, penalty_factor)
-            pre_penalty = swing_chance
-            swing_chance *= penalty_factor
-            chase_bias = getattr(self.config, "disciplineNegativeFloorChaseBonus", 0.0)
-            if penalty_floor < 0.0 and chase_bias:
-                swing_chance += (chase_bias / 100.0) * abs(penalty_floor)
-            penalty_delta = swing_chance - pre_penalty
-            breakdown["penalty_multiplier"] = penalty_multiplier
-
-        breakdown["discipline_adjust"] = discipline_adjust
-        breakdown["discipline_bias"] = discipline_bias
-        breakdown["penalty_source"] = penalty_source
-        breakdown["penalty_factor"] = penalty_factor
-        breakdown["penalty_delta"] = penalty_delta
-        breakdown["penalty_floor"] = penalty_floor
-        breakdown["discipline_raw"] = discipline_raw
-        breakdown["discipline_raw_scaled"] = discipline_raw_scaled
-        breakdown["discipline_norm"] = discipline_norm
-        breakdown["discipline_clamped"] = discipline_clamped
-        breakdown["discipline_logit"] = discipline_logit
-        breakdown["close_strike_mix"] = close_strike_mix
-        breakdown["discipline_logit_offset"] = logit_offset
-
-        # Location-based adjustment penalises pitches further from the target.
         dx_abs = abs(dx) if dx is not None else 0.0
         dy_abs = abs(dy) if dy is not None else 0.0
         loc_factor = getattr(self.config, "swingLocationFactor", 0.0) / 100.0
         location_penalty = (dx_abs + dy_abs) * loc_factor
         swing_chance -= location_penalty
         breakdown["location_adjust"] = -location_penalty
+
+        forced_zone_swing = False
+        two_strike_zone_floor = getattr(self.config, "twoStrikeInZoneSwingFloor", 0.9)
+        if strikes >= 2 and pitch_kind in {"sure strike", "close strike"}:
+            swing_chance = max(swing_chance, two_strike_zone_floor)
+            forced_zone_swing = True
 
         if pitch_kind == "close ball" and strikes < 2:
             take_bonus = getattr(self.config, "closeBallTakeBonus", 0) / 100.0
@@ -766,11 +1332,43 @@ class BatterAI:
             take_bonus = 0.0
         breakdown["take_bonus"] = -take_bonus if take_bonus else 0.0
 
+        auto_take_prob, auto_take_threshold = self._auto_take_probability(
+            batter=batter,
+            balls=balls,
+            strikes=strikes,
+            pitch_kind=pitch_kind,
+            dist=dist,
+            discipline_norm=discipline_stage.clamped,
+        )
+        if forced_zone_swing:
+            auto_take_prob = 0.0
+        breakdown["auto_take_prob"] = auto_take_prob
+        auto_take_roll = None
+        if auto_take_prob > 0.0 and random_value is None:
+            auto_take_roll = random.random()
+            breakdown["auto_take_roll"] = auto_take_roll
+            if auto_take_roll < auto_take_prob:
+                swing = False
+                swing_chance = 0.0
+                breakdown["take_bonus"] = -1.0
+                record_auto_take(
+                    self.config,
+                    balls=balls,
+                    strikes=strikes,
+                    reason="distance",
+                    distance=float(dist),
+                    threshold=float(auto_take_threshold or 0.0),
+                )
+
         if pitch_kind in {"close ball", "sure ball"}:
             chase_thresh = float(getattr(self.config, "lowContactChaseThreshold", 0) or 0)
             chase_bonus = float(getattr(self.config, "lowContactChaseBonus", 0) or 0) / 100.0
-            if chase_thresh > 0 and chase_bonus > 0 and batter_contact < chase_thresh:
-                scale = max(0.0, (chase_thresh - batter_contact) / chase_thresh)
+            if (
+                chase_thresh > 0
+                and chase_bonus > 0
+                and discipline_stage.batter_contact < chase_thresh
+            ):
+                scale = max(0.0, (chase_thresh - discipline_stage.batter_contact) / chase_thresh)
                 swing_chance += chase_bonus * scale
             swing_scale_key = (
                 "ballSwingScaleTwoStrike" if strikes >= 2 else "ballSwingScale"
@@ -787,51 +1385,35 @@ class BatterAI:
         swing_chance = clamp01(swing_chance)
         self.last_swing_chance = swing_chance
         breakdown["pre_two_strike"] = swing_chance
-        # Two-strike protection: become more aggressive to reduce called Ks.
-        # Tunable via config key "twoStrikeSwingBonus" (percent additive).
-        if strikes >= 2:
-            two_strike_bonus = getattr(self.config, "twoStrikeSwingBonus", 0) / 100.0
-            chase_scale = float(getattr(self.config, "twoStrikeChaseBonusScale", 0.0) or 0.0)
-            applied_bonus = 0.0
-            if pitch_kind in {"sure strike", "close strike"}:
-                applied_bonus = two_strike_bonus
-            elif chase_scale > 0.0:
-                applied_bonus = two_strike_bonus * chase_scale
-            swing_chance += applied_bonus
-            breakdown["two_strike_bonus"] = applied_bonus
-            swing_chance = clamp01(swing_chance)
-        if strikes >= 2:
-            sure_floor = float(getattr(self.config, "twoStrikeSureSwingFloor", 0.0))
-            close_floor = float(
-                getattr(
-                    self.config,
-                    "twoStrikeCloseSwingFloor",
-                    sure_floor if sure_floor > 0.0 else 0.0,
-                )
-            )
-            chase_floor = float(
-                getattr(self.config, "twoStrikeChaseSwingFloor", 0.0)
-            )
-            if pitch_kind == "sure strike" and sure_floor > 0.0:
-                swing_chance = max(swing_chance, sure_floor)
-            elif pitch_kind == "close strike" and close_floor > 0.0:
-                swing_chance = max(swing_chance, close_floor)
-            elif pitch_kind in {"close ball", "sure ball"} and chase_floor > 0.0:
-                swing_chance = max(swing_chance, chase_floor)
+
+        two_strike_stage = self._apply_two_strike_stage(
+            swing_chance,
+            pitch_kind=pitch_kind,
+            strikes=strikes,
+            discipline_clamped=discipline_stage.clamped,
+            batter_contact=discipline_stage.batter_contact,
+        )
+        swing_chance = two_strike_stage.swing_chance
+        breakdown["two_strike_bonus"] = two_strike_stage.bonus_applied
+        breakdown["two_strike_sure_floor"] = two_strike_stage.sure_floor
+        breakdown["two_strike_close_floor"] = two_strike_stage.close_floor
+        breakdown["two_strike_chase_floor"] = two_strike_stage.chase_floor
+        breakdown["two_strike_zone_floor"] = two_strike_zone_floor
+        breakdown["two_strike_forced_zone"] = forced_zone_swing
 
         breakdown["final"] = swing_chance
-        breakdown["discipline"] = discipline_clamped
-        breakdown["discipline_pct"] = disc_pct
-        breakdown["discipline_penalty"] = ball_penalty
+        breakdown["discipline"] = discipline_stage.clamped
         breakdown["pitch_kind"] = pitch_kind
+        swing = rv < swing_chance
         self.last_swing_breakdown = breakdown
+
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 (
                     "Swing chance breakdown count=%d-%d pitch=%s swing_type=%s "
-                    "base=%.3f scale=%.2f count_adj=%.3f close_ball=%.3f disc_adj=%.3f pen_factor=%.3f "
-                    "pen_delta=%.3f loc=%.3f take=%.3f two_strike=%.3f final=%.3f "
-                    "disc_raw=%.1f disc_logit=%.3f bias=%.3f disc_pct=%.3f penalty_coef=%.2f floor=%.2f"
+                    "base=%.3f scale=%.2f count_adj=%.3f close_ball=%.3f disc_adj=%.3f zone_comp=%.3f "
+                    "chase_comp=%.3f agg=%.3f loc=%.3f take=%.3f two_strike=%.3f final=%.3f "
+                    "disc_raw=%.1f disc_logit=%.3f bias=%.3f protect=%.3f zone_bias=%.3f chase_bias=%.3f"
                 ),
                 balls,
                 strikes,
@@ -842,8 +1424,9 @@ class BatterAI:
                 breakdown["count_adjust"],
                 breakdown["close_ball_bonus"],
                 breakdown["discipline_adjust"],
-                breakdown["penalty_factor"],
-                breakdown["penalty_delta"],
+                breakdown["discipline_zone_component"],
+                breakdown["discipline_chase_component"],
+                breakdown["discipline_aggression"],
                 breakdown["location_adjust"],
                 breakdown["take_bonus"],
                 breakdown["two_strike_bonus"],
@@ -851,234 +1434,36 @@ class BatterAI:
                 breakdown["discipline_raw"],
                 breakdown["discipline_logit"],
                 breakdown["discipline_bias"],
-                disc_pct,
-                ball_penalty,
-                breakdown["penalty_floor"],
+                breakdown["protect_scale"],
+                breakdown["zone_bias"],
+                breakdown["chase_bias"],
             )
-        if rv < swing_chance:
-            swing = True
 
-        forced_two_strike_contact = False
-        two_strike_floor = getattr(self.config, "twoStrikeContactFloor", 0.0)
-        two_strike_quality_cap = getattr(self.config, "twoStrikeContactQuality", 0.0)
-        id_prob = 0.0
-        stored_in_zone = getattr(self, "_last_pitch_in_zone", None)
-        if stored_in_zone is None:
-            plate_w = getattr(self.config, "plateWidth", 3)
-            plate_h = getattr(self.config, "plateHeight", 3)
-            in_zone_flag = dist <= max(plate_w, plate_h)
-        else:
-            in_zone_flag = bool(stored_in_zone)
-        close_ball_scale = float(getattr(self.config, "closeBallContactScale", 0.6) or 0.6)
-        sure_ball_scale = float(getattr(self.config, "sureBallContactScale", 0.3) or 0.3)
-        waste_contact_scale = float(getattr(self.config, "wasteObjectiveContactScale", 0.6) or 0.6)
-        edge_contact_scale = float(getattr(self.config, "edgeObjectiveContactScale", 0.82) or 0.82)
-        waste_contact_dist_scale = float(
-            getattr(self.config, "wasteObjectiveContactDistanceScale", 0.20) or 0.20
+        contact_stage = self._resolve_contact_stage(
+            swing=swing,
+            batter=batter,
+            pitcher=pitcher,
+            pitch_type=pitch_type,
+            pitch_kind=pitch_kind,
+            strikes=strikes,
+            swing_type=swing_type,
+            dist=dist,
+            dist_over_plate=dist_over_plate,
+            objective_lower=objective_lower,
+            check_random=check_random,
+            random_value=rv,
+            balls=balls,
+            dx=dx,
+            dy=dy,
         )
-        edge_contact_dist_scale = float(
-            getattr(self.config, "edgeObjectiveContactDistanceScale", 0.12) or 0.12
+        contact_quality = contact_stage.contact_quality
+        breakdown["contact_prob"] = contact_stage.prob_contact
+        breakdown["contact_id_prob"] = contact_stage.id_probability
+        breakdown["contact_o_zone_scale"] = contact_stage.o_zone_contact_scale
+        breakdown["forced_two_strike_contact"] = (
+            1.0 if contact_stage.forced_two_strike_contact else 0.0
         )
-        o_zone_contact_scale = 1.0
-        if pitch_kind == "close ball":
-            o_zone_contact_scale = close_ball_scale
-        elif pitch_kind == "sure ball":
-            o_zone_contact_scale = sure_ball_scale
-        if objective_lower == "ball":
-            o_zone_contact_scale *= waste_contact_scale
-            if dist_over_plate > 0.0 and waste_contact_dist_scale > 0.0:
-                o_zone_contact_scale *= math.exp(-waste_contact_dist_scale * dist_over_plate)
-        elif objective_lower == "edge":
-            o_zone_contact_scale *= edge_contact_scale
-            if dist_over_plate > 0.0 and edge_contact_dist_scale > 0.0:
-                o_zone_contact_scale *= math.exp(-edge_contact_dist_scale * dist_over_plate)
-
-        if swing:
-            # Base miss chance shaped by pitch quality vs batter contact
-            batter_contact = getattr(batter, "ch", 50)
-            pitch_quality = getattr(pitcher, pitch_type, getattr(pitcher, "movement", 50))
-
-            miss_chance = (pitch_quality - batter_contact + 50) / 200.0
-            contact_factor = (
-                self.config.contact_factor_base
-                + (batter_contact - 50) / self.config.contact_factor_div
-            )
-            miss_chance /= contact_factor
-
-            # Identification ease reduces miss chance proportionally
-            exp = getattr(batter, "exp", 0)
-            base_id = getattr(self.config, "idRatingBase", 0)
-            ch_pct = getattr(self.config, "idRatingCHPct", 0) / 100.0
-            exp_pct = getattr(self.config, "idRatingExpPct", 0) / 100.0
-            rat_pct = getattr(self.config, "idRatingPitchRatPct", 0) / 100.0
-            ease_scale = getattr(self.config, "idRatingEaseScale", 1.0)
-            pitch_rat = getattr(pitcher, pitch_type, getattr(pitcher, "movement", 50))
-            id_score = base_id * ease_scale
-            id_score += batter_contact * ch_pct
-            id_score += exp * exp_pct
-            id_score += ((100 - pitch_rat) / 2.0) * rat_pct
-            id_prob = clamp01(id_score / 100.0)
-            self.last_id_probability = id_prob
-
-            # Special cases to match expected behaviour in tests
-            if id_prob >= 1.0:
-                # Perfect identification yields a fixed high contact probability
-                prob_contact = 0.93
-                apply_reduction = False
-            elif id_prob <= 0.0:
-                # Complete misread: if the batter was looking for a type, allow
-                # a tiny deterministic contact based on configured look adjust;
-                # otherwise fall back to the scaled floor (often 0 for CH=0).
-                floor = getattr(self.config, "minMisreadContact", 0.0) * (batter_contact / 100.0)
-                adj_primary = getattr(
-                    self.config, f"lookPrimaryType{balls}{strikes}CountAdjust", 0
-                )
-                adj_best = getattr(
-                    self.config, f"lookBestType{balls}{strikes}CountAdjust", 0
-                )
-                look_adj = max(adj_primary, adj_best)
-                if look_adj > 0:
-                    prob_contact = min(1.0, look_adj / 300.0 + 0.09)
-                else:
-                    prob_contact = floor
-                apply_reduction = False
-            else:
-                # When CH/EXP/Pitch weights are disabled, fall back to timing
-                # curve selection using ID base and configured dice. This
-                # produces deterministic contacts for the test harness.
-                if (
-                    getattr(self.config, "idRatingCHPct", 0) == 0
-                    and getattr(self.config, "idRatingExpPct", 0) == 0
-                    and getattr(self.config, "idRatingPitchRatPct", 0) == 0
-                ):
-                    base_id = getattr(self.config, "idRatingBase", 0)
-                    # Select timing curve by threshold
-                    if base_id <= getattr(self.config, "timingVeryBadThresh", 0):
-                        base_val = getattr(self.config, "timingVeryBadBase", 0)
-                        faces = getattr(self.config, "timingVeryBadFaces", 1)
-                        count = getattr(self.config, "timingVeryBadCount", 1)
-                    elif base_id <= getattr(self.config, "timingBadThresh", 0):
-                        base_val = getattr(self.config, "timingBadBase", 0)
-                        faces = getattr(self.config, "timingBadFaces", 1)
-                        count = getattr(self.config, "timingBadCount", 1)
-                    elif base_id <= getattr(self.config, "timingMedThresh", 0):
-                        base_val = getattr(self.config, "timingMedBase", 0)
-                        faces = getattr(self.config, "timingMedFaces", 1)
-                        count = getattr(self.config, "timingMedCount", 1)
-                    elif base_id <= getattr(self.config, "timingGoodThresh", 0):
-                        base_val = getattr(self.config, "timingGoodBase", 0)
-                        faces = getattr(self.config, "timingGoodFaces", 1)
-                        count = getattr(self.config, "timingGoodCount", 1)
-                    else:
-                        base_val = getattr(self.config, "timingVeryGoodBase", 0)
-                        faces = getattr(self.config, "timingVeryGoodFaces", 1)
-                        count = getattr(self.config, "timingVeryGoodCount", 1)
-                    # Deterministic roll for tests: with 1 face always 1
-                    roll_sum = count * 1 if faces == 1 else count  # minimal deterministic
-                    offset = abs(roll_sum + base_val)
-                    prob_contact = max(0.0, 1.0 - offset / 100.0)
-                    # Ease scale provides a small deterministic boost
-                    ease_scale = getattr(self.config, "idRatingEaseScale", 1.0)
-                    if ease_scale > 1.0:
-                        prob_contact = min(1.0, prob_contact + 0.02 * (ease_scale - 1.0))
-                    apply_reduction = False
-                else:
-                    # Map identification score onto contact probability using
-                    # a linear blend chosen to match expected test behaviours.
-                    # Use the un-normalised score to avoid tiny floating errors.
-                    prob_contact = 0.5 + (16.0 / 3500.0) * id_score
-                    prob_contact = round(prob_contact, 2)
-                    apply_reduction = True
-            prob_contact *= o_zone_contact_scale
-
-            if apply_reduction:
-                reduction_enabled = getattr(self.config, "enableContactReduction", None)
-                if reduction_enabled is None or reduction_enabled:
-                    miss_scale = getattr(self.config, "missChanceScale", None)
-                    if miss_scale is None and reduction_enabled is None:
-                        miss_scale = 1.3
-                    if not miss_scale:
-                        miss_scale = 1.0
-                    reduction = max(0.0, min(0.95, miss_chance * miss_scale))
-                    prob_contact = max(0.0, min(1.0, prob_contact * (1.0 - reduction)))
-                    outcome_scale = getattr(self.config, "contactOutcomeScale", 0.65)
-                    if not outcome_scale:
-                        outcome_scale = 0.65
-                    prob_contact = max(0.0, min(1.0, prob_contact * outcome_scale))
-
-            if objective_lower == "ball":
-                cap_value = waste_contact_ts_cap if strikes >= 2 else waste_contact_cap
-                prob_contact = min(prob_contact, cap_value)
-            elif objective_lower == "edge":
-                cap_value = edge_contact_ts_cap if strikes >= 2 else edge_contact_cap
-                prob_contact = min(prob_contact, cap_value)
-
-            if strikes >= 2 and id_prob > 0.0:
-                bonus = getattr(self.config, "twoStrikeContactBonus", 0.0) / 100.0
-                if bonus:
-                    prob_contact = min(1.0, prob_contact + bonus)
-
-            if strikes >= 2 and two_strike_floor > 0 and prob_contact < two_strike_floor:
-                prob_contact = two_strike_floor
-                forced_two_strike_contact = True
-
-            if self.last_misread:
-                floor = getattr(self.config, "minMisreadContact", 0.0) * (batter_contact / 100.0)
-                prob_contact = max(prob_contact, floor)
-
-            if (dx or dy) and check_random is not None and pitch_kind != "sure ball":
-                st = swing_type.lower()
-                kind = st[0].upper() + st[1:]
-                base_key = f"checkChanceBase{kind}"
-                ch_key = f"checkChanceCHPct{kind}"
-                base_chk = getattr(self.config, base_key, 0)
-                ch_chk = getattr(self.config, ch_key, 0)
-                chk = (base_chk + ch_chk * (batter_contact / 100.0)) / 1000.0
-                if check_random < chk:
-                    # Successful check: contact swing types fully hold,
-                    # others register as offers without contact.
-                    if swing_type.lower() == "contact":
-                        swing = False
-                    prob_contact = 0.0
-                    self.last_contact = False
-                    contact_quality = 0.0
-                else:
-                    # Failed check: rarely clip the ball
-                    fail_contact = getattr(self.config, "failedCheckContactChance", 0) / 500.0
-                    prob_contact = fail_contact
-                    self.last_contact = (check_random < fail_contact)
-                    contact_quality = prob_contact
-            else:
-                # Resolve actual contact for tracking; use an independent RNG draw
-                rv_contact = random.random() if check_random is None else check_random
-                self.last_contact_probability = prob_contact
-                self.last_contact = rv_contact < prob_contact
-                contact_quality = prob_contact
-                if forced_two_strike_contact and self.last_contact and two_strike_quality_cap > 0:
-                    contact_quality = min(contact_quality, two_strike_quality_cap)
-            if getattr(self.config, "collectSwingDiagnostics", 0):
-                _record_swing_diagnostic(
-                    self.config,
-                    balls,
-                    strikes,
-                    pitch_kind,
-                    breakdown,
-                    swing,
-                )
-
-            # Add minor variation at perfect-ID to avoid identical values in tests
-            if check_random is None and id_prob >= 1.0:
-                # Different random_value inputs yield slightly different probabilities
-                if rv >= 0.15:
-                    contact_quality = max(0.0, contact_quality - 0.02)
-            if self.last_contact and not in_zone_flag:
-                # Apply additional penalty based on distance for chased pitches.
-                dist_penalty = max(0.0, min(dist / 8.0, 0.8))
-                contact_quality *= o_zone_contact_scale * (1.0 - dist_penalty)
-                if strikes < 2:
-                    contact_quality *= 0.4
-        else:
-            self.last_contact = False
+        self.last_swing_breakdown = breakdown
 
         self.last_decision = (swing, max(0.0, min(1.0, contact_quality)))
         return self.last_decision

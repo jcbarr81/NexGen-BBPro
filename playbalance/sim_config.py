@@ -3,6 +3,7 @@ from __future__ import annotations
 """Helpers for loading and tuning :class:`PlayBalanceConfig`."""
 
 import csv
+import json
 import os
 from typing import Tuple, Dict
 
@@ -168,39 +169,31 @@ def load_tuned_playbalance_config(
         cfg.carryExitVeloBaseline = min(max(cfg.get("carryExitVeloBaseline", 90.0), 93.0), 95.0)
 
         cfg.disciplineRatingPct = max(cfg.disciplineRatingPct, 90)
-        cfg.swingBallDisciplineWeight = max(cfg.swingBallDisciplineWeight, 0.10)
-        cfg.disciplineBallPenalty = max(cfg.disciplineBallPenalty, 0.65)
-        cfg.autoTakeDistanceBase = max(cfg.autoTakeDistanceBase, 4.35)
-        cfg.autoTakeDistanceBallStep = max(cfg.autoTakeDistanceBallStep, 0.30)
-        cfg.autoTakeDistanceMin = max(cfg.autoTakeDistanceMin, 1.5)
-        cfg.autoTakeDistanceBuffer = max(cfg.autoTakeDistanceBuffer, 0.05)
-        cfg.closeBallDist = max(3, min(getattr(cfg, "closeBallDist", 5), 4))
-        cfg.disciplinePenaltyMultiplierDefault = min(
-            max(getattr(cfg, "disciplinePenaltyMultiplierDefault", 0.0), 0.30), 0.30
+        cfg.autoTakeCloseBallBaseProb = max(
+            min(getattr(cfg, "autoTakeCloseBallBaseProb", 0.42), 0.95), 0.05
         )
+        cfg.autoTakeSureBallBaseProb = max(
+            min(getattr(cfg, "autoTakeSureBallBaseProb", 0.68), 0.99), 0.05
+        )
+        cfg.autoTakeBallCountWeight = getattr(cfg, "autoTakeBallCountWeight", 0.1)
+        cfg.autoTakeStrikeCountWeight = getattr(
+            cfg, "autoTakeStrikeCountWeight", -0.06
+        )
+        cfg.autoTakeDistanceWeight = getattr(cfg, "autoTakeDistanceWeight", 0.22)
+        cfg.autoTakeAggressionWeight = getattr(
+            cfg, "autoTakeAggressionWeight", 0.2
+        )
+        cfg.autoTakeThreeBallBonus = getattr(cfg, "autoTakeThreeBallBonus", 0.2)
+        cfg.autoTakeFullCountBonus = getattr(cfg, "autoTakeFullCountBonus", 0.1)
+        cfg.autoTakeTwoStrikePenalty = getattr(
+            cfg, "autoTakeTwoStrikePenalty", 0.25
+        )
+        cfg.autoTakeMinProb = max(getattr(cfg, "autoTakeMinProb", 0.0), 0.0)
+        cfg.autoTakeMaxProb = min(getattr(cfg, "autoTakeMaxProb", 0.95), 0.99)
+        cfg.closeBallDist = max(3, min(getattr(cfg, "closeBallDist", 5), 4))
         cfg.values["disciplineRawScaleDefault"] = float(
             min(getattr(cfg, "disciplineRawScaleDefault", 0.95) or 0.95, 0.88)
         )
-        cfg.autoTakeThreeBallChaseChance = max(
-            getattr(cfg, "autoTakeThreeBallChaseChance", 0.0), 0.68
-        )
-        cfg.autoTakeDefaultChaseChance = max(
-            getattr(cfg, "autoTakeDefaultChaseChance", 0.0), 0.40
-        )
-        chase_defaults = {
-            "00": 0.55,
-            "10": 0.60,
-            "11": 0.64,
-            "12": 0.68,
-            "20": 0.72,
-            "21": 0.78,
-            "22": 0.84,
-            "30": 0.86,
-            "31": 0.92,
-            "32": 0.96,
-        }
-        for suffix, chance in chase_defaults.items():
-            cfg.values[f"autoTakeChaseChance{suffix}"] = float(chance)
 
         # Apply contact-factor adjustments to curb excessive strikeouts observed
         # in full season simulations. Slightly boosting the contact factor nudges
@@ -226,14 +219,17 @@ def load_tuned_playbalance_config(
 
         cfg.closeBallTakeBonus = max(getattr(cfg, "closeBallTakeBonus", 0), 1.5)
         cfg.sureBallTakeBonus = max(getattr(cfg, "sureBallTakeBonus", 0), 6.0)
-        cfg.disciplinePenaltyFloorOneBall = max(
-            getattr(cfg, "disciplinePenaltyFloorOneBall", 0), 0.10
+        cfg.disciplineZoneBiasDefault = max(
+            getattr(cfg, "disciplineZoneBiasDefault", 0.16), 0.05
         )
-        cfg.disciplinePenaltyFloorTwoBall = max(
-            getattr(cfg, "disciplinePenaltyFloorTwoBall", 0), 0.22
+        cfg.disciplineChaseBiasDefault = max(
+            getattr(cfg, "disciplineChaseBiasDefault", 0.24), 0.05
         )
-        cfg.disciplinePenaltyFloorCap = max(
-            getattr(cfg, "disciplinePenaltyFloorCap", 0.0), 0.65
+        cfg.disciplineZoneFloorDefault = max(
+            getattr(cfg, "disciplineZoneFloorDefault", 0.2), 0.0
+        )
+        cfg.disciplineChaseCeilDefault = max(
+            getattr(cfg, "disciplineChaseCeilDefault", 0.18), 0.0
         )
         cfg.closeStrikeDisciplineMix = max(
             getattr(cfg, "closeStrikeDisciplineMix", 0.35), 0.25
@@ -248,50 +244,57 @@ def load_tuned_playbalance_config(
             getattr(cfg, "twoStrikeContactQuality", 0.0), 0.09
         )
         cfg.twoStrikeFoulBonusPct = max(
-            getattr(cfg, "twoStrikeFoulBonusPct", 0.0), 14.0
+            getattr(cfg, "twoStrikeFoulBonusPct", 0.0), 6.0
         )
 
         tuned_overrides = {
-            "sureStrikeDist": 2.4,
-            "closeStrikeDist": 3.4,
-            "closeBallDist": 4.5,
+            "sureStrikeDist": 1.75,
+            "closeStrikeDist": 2.75,
+            "closeBallDist": 4.2,
             "swingProbSureStrike": 0.58,
             "swingProbCloseStrike": 0.42,
             "swingProbCloseBall": 0.14,
             "swingProbSureBall": 0.05,
-            "contactFactorBase": 5.4,
-            "contactFactorDiv": 46,
-            "foulPitchBasePct": 26,
-            "foulStrikeBasePct": 50,
-            "foulProbabilityScale": 1.4,
-            "foulBIPBalance": 0.80,
-            "twoStrikeContactFloor": 0.78,
+            "zSwingProbScale": 1.10,
+            "oSwingProbScale": 1.28,
+            "contactFactorBase": 5.6,
+            "contactFactorDiv": 48,
+            "foulPitchBasePct": 24,
+            "foulStrikeBasePct": 42,
+            "foulProbabilityScale": 0.80,
+            "foulContactWeight": 0.28,
+            "foulContactDeltaWeight": 0.12,
+            "foulDistanceScale": 12.0,
+            "misreadFoulBonusPct": 4.0,
+            "zeroStrikeFoulPenaltyPct": 6.0,
+            "foulProbabilityFloor": 0.03,
+            "foulProbabilityCeil": 0.75,
+            "twoStrikeContactFloor": 0.84,
             "twoStrikeContactQuality": 0.88,
-            "twoStrikeContactBonus": 11.0,
-            "twoStrikeSwingBonus": 8.0,
+            "twoStrikeContactBonus": 8.5,
+            "twoStrikeSwingBonus": 6.0,
             "twoStrikeChaseBonusScale": 0.05,
-            "twoStrikeFoulBonusPct": 96,
-            "twoStrikeFoulFloor": 0.24,
-            "twoStrikeBIPScale": 0.45,
-            "twoStrikeSureSwingFloor": 0.92,
-            "twoStrikeCloseSwingFloor": 0.78,
-            "twoStrikeChaseSwingFloor": 0.18,
-            "missChanceScale": 0.35,
-            "contactOutcomeScale": 1.0,
+            "twoStrikeFoulBonusPct": 8.0,
+            "twoStrikeSureSwingFloor": 0.9,
+            "twoStrikeCloseSwingFloor": 0.8,
+            "twoStrikeChaseSwingFloor": 0.2,
+            "twoStrikeInZoneSwingFloor": 0.90,
+            "missChanceScale": 0.16,
+            "contactOutcomeScale": 0.98,
             "maxHitProb": 0.45,
-            "foulCountMultiplierDefault": 1.0,
-            "foulCountMultiplier00": 1.8,
-            "foulCountMultiplier01": 2.5,
-            "foulCountMultiplier02": 3.5,
-            "foulCountMultiplier10": 2.2,
-            "foulCountMultiplier11": 2.8,
-            "foulCountMultiplier12": 3.8,
-            "foulCountMultiplier20": 2.0,
-            "foulCountMultiplier21": 3.0,
-            "foulCountMultiplier22": 4.2,
-            "foulCountMultiplier30": 0.6,
-            "foulCountMultiplier31": 4.2,
-            "foulCountMultiplier32": 4.0,
+            "foulCountMultiplierDefault": 0.85,
+            "foulCountMultiplier00": 0.78,
+            "foulCountMultiplier01": 0.88,
+            "foulCountMultiplier02": 1.04,
+            "foulCountMultiplier10": 0.78,
+            "foulCountMultiplier11": 0.92,
+            "foulCountMultiplier12": 1.12,
+            "foulCountMultiplier20": 0.72,
+            "foulCountMultiplier21": 0.84,
+            "foulCountMultiplier22": 1.02,
+            "foulCountMultiplier30": 0.62,
+            "foulCountMultiplier31": 0.84,
+            "foulCountMultiplier32": 0.98,
             "swingProb00CountAdjust": 0.08,
             "swingProb01CountAdjust": 0.04,
             "swingProb10CountAdjust": 0.06,
@@ -304,15 +307,22 @@ def load_tuned_playbalance_config(
             "swingProb32CountAdjust": 0.44,
             "closeBallTakeBonus": 4.5,
             "sureBallTakeBonus": 12.0,
-            "autoTakeDistanceBase": 5.9,
-            "autoTakeDistanceBallStep": 0.55,
-            "autoTakeDistanceBuffer": 0.45,
-            "autoTakeDefaultChaseChance": 0.15,
-            "swingBallDisciplineWeight": 0.22,
-            "swingZoneDisciplineWeight": 0.18,
+            "autoTakeCloseBallBaseProb": 0.44,
+            "autoTakeSureBallBaseProb": 0.68,
+            "autoTakeBallCountWeight": 0.12,
+            "autoTakeStrikeCountWeight": -0.04,
+            "autoTakeDistanceWeight": 0.25,
+            "autoTakeAggressionWeight": 0.22,
+            "autoTakeThreeBallBonus": 0.22,
+            "autoTakeFullCountBonus": 0.10,
+            "autoTakeTwoStrikePenalty": 0.25,
+            "disciplineZoneBiasDefault": 0.18,
+            "disciplineChaseBiasDefault": 0.2,
+            "disciplineZoneFloorDefault": 0.22,
+            "disciplineChaseCeilDefault": 0.18,
             "closeStrikeDisciplineMix": 0.25,
-            "plateWidth": 2.9,
-            "plateHeight": 2.9,
+            "plateWidth": 2.05,
+            "plateHeight": 2.05,
         }
         for key, value in tuned_overrides.items():
             setattr(cfg, key, value)
@@ -361,6 +371,17 @@ def load_tuned_playbalance_config(
         cfg.throwSuccessScale = min(max(cfg.get("throwSuccessScale", 1.0), 0.98), 1.05)
         cfg.hbpBaseChance = max(0.0, float(cfg.get("hbpBaseChance", 0.0)))
         cfg.hbpBatterStepOutChance = min(max(cfg.get("hbpBatterStepOutChance", 0), 0), 2)
+
+        overrides_path = base / "data" / "playbalance_overrides.json"
+        if overrides_path.exists():
+            try:
+                with overrides_path.open("r", encoding="utf-8") as ovf:
+                    overrides = json.load(ovf)
+            except (OSError, json.JSONDecodeError):
+                overrides = None
+            if isinstance(overrides, dict):
+                for key, value in overrides.items():
+                    setattr(cfg, key, value)
 
         cfg.collectSwingDiagnostics = int(os.getenv("SWING_DIAGNOSTICS", "0"))
 

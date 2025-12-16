@@ -7,33 +7,34 @@ import pytest
 
 def test_playbalance_config_defaults():
     cfg = PlayBalanceConfig.from_dict({})
+    defaults = playbalance_config._DEFAULTS
 
     # Physics defaults
-    assert cfg.speedBase == 19
-    assert cfg.swingAngleTenthDegreesBase == 44
-    assert cfg.exit_velo_base == 0
-    assert cfg.exit_velo_ph_pct == 0
-    assert cfg.exit_velo_power_pct == 85
-    assert cfg.exit_velo_normal_pct == 85
-    assert cfg.exit_velo_contact_pct == 100
-    assert cfg.vert_angle_gf_pct == 0
-    assert cfg.spray_angle_pl_pct == 0
-    assert cfg.ground_ball_base_rate == 41
-    assert cfg.fly_ball_base_rate == 35
-    assert cfg.hit_prob_base == pytest.approx(0.12)
-    assert cfg.foulPitchBasePct == 16
-    assert cfg.foulStrikeBasePct == 31
-    assert cfg.foulContactTrendPct == 2.0
-    assert cfg.minMisreadContact == 0.3
+    assert cfg.speedBase == defaults["speedBase"]
+    assert cfg.swingAngleTenthDegreesBase == defaults["swingAngleTenthDegreesBase"]
+    assert cfg.exit_velo_base == defaults["exitVeloBase"]
+    assert cfg.exit_velo_ph_pct == defaults["exitVeloPHPct"]
+    assert cfg.exit_velo_power_pct == defaults["exitVeloPowerPct"]
+    assert cfg.exit_velo_normal_pct == defaults["exitVeloNormalPct"]
+    assert cfg.exit_velo_contact_pct == defaults["exitVeloContactPct"]
+    assert cfg.vert_angle_gf_pct == defaults["vertAngleGFPct"]
+    assert cfg.spray_angle_pl_pct == defaults["sprayAnglePLPct"]
+    assert cfg.ground_ball_base_rate == defaults["groundBallBaseRate"]
+    assert cfg.fly_ball_base_rate == defaults["flyBallBaseRate"]
+    assert cfg.hit_prob_base == pytest.approx(defaults["hitProbBase"] * 0.1)
+    assert cfg.foulPitchBasePct == defaults["foulPitchBasePct"]
+    assert cfg.foulStrikeBasePct == defaults["foulStrikeBasePct"]
+    assert cfg.foulContactTrendPct == defaults["foulContactTrendPct"]
+    assert cfg.minMisreadContact == defaults["minMisreadContact"]
 
     # Pitcher AI defaults
-    assert cfg.pitchRatVariationCount == 1
-    assert cfg.pitchObj00CountEstablishWeight == 0
+    assert cfg.pitchRatVariationCount == defaults["pitchRatVariationCount"]
+    assert cfg.pitchObj00CountEstablishWeight == defaults["pitchObj00CountEstablishWeight"]
 
     # Batter AI defaults
-    assert cfg.sureStrikeDist == 4
-    assert cfg.lookPrimaryType00CountAdjust == 0
-    assert cfg.lookBestType30CountAdjust == 15
+    assert cfg.sureStrikeDist == pytest.approx(defaults["sureStrikeDist"])
+    assert cfg.lookPrimaryType00CountAdjust == defaults["lookPrimaryType00CountAdjust"]
+    assert cfg.lookBestType30CountAdjust == defaults["lookBestType30CountAdjust"]
 
 
 def test_save_and_load_overrides(tmp_path, monkeypatch):

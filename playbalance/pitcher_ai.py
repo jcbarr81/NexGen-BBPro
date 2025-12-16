@@ -98,6 +98,42 @@ def objective_weights_by_count(
     return {"attack": 1.0, "chase": 0.5, "waste": 0.0}
 
 
+def _apply_strike_bias(
+    weights: Dict[str, float], *, cfg: PlayBalanceConfig, balls: int, strikes: int
+) -> Dict[str, float]:
+    """Bias objective weights toward attacking the zone.
+
+    Uses ``leagueStrikePct`` as a coarse target and reduces chase/waste
+    especially when behind in the count to avoid free passes.
+    """
+
+    target_strike_pct = float(getattr(cfg, "leagueStrikePct", 62.0) or 62.0)
+    # Map 60-75% strike target into a 0..0.35 bias factor.
+    bias = max(0.0, min(0.35, (target_strike_pct - 60.0) / 15.0 * 0.35))
+
+    attack_boost = 1.0 + bias
+    chase_cut = max(0.2, 1.0 - bias)
+    waste_cut = max(0.1, 1.0 - bias * 1.5)
+
+    # If behind in count, further suppress chase/waste to reduce walks.
+    if balls > strikes:
+        chase_cut *= 0.6
+        waste_cut *= 0.4
+        attack_boost *= 1.15
+    elif strikes > balls:
+        # Slightly allow chase when ahead.
+        chase_cut *= 1.05
+
+    biased = {
+        "attack": max(0.0, weights.get("attack", 0.0) * attack_boost),
+        "chase": max(0.0, weights.get("chase", 0.0) * chase_cut),
+        "waste": max(0.0, weights.get("waste", 0.0) * waste_cut),
+    }
+    if sum(biased.values()) <= 0:
+        biased["attack"] = 1.0
+    return biased
+
+
 # ---------------------------------------------------------------------------
 # Decision flow
 # ---------------------------------------------------------------------------
@@ -128,6 +164,7 @@ def select_pitch(
 
     # Determine objective via weighted randomness using count specific weights.
     weights = objective_weights_by_count(cfg, balls, strikes)
+    weights = _apply_strike_bias(dict(weights), cfg=cfg, balls=balls, strikes=strikes)
     total = sum(weights.values())
     roll = rng.random() * total if total > 0 else 0.0
     objective = "attack"
@@ -219,8 +256,6 @@ class PitcherAI:
 
         prefix = f"pitchObj{balls}{strikes}Count"
         outside_weight = self.config.get(prefix + "OutsideWeight", 0)
-        if strikes > balls:
-            outside_weight *= 2
         weights = [
             ("establish", self.config.get(prefix + "EstablishWeight", 0)),
             ("outside", outside_weight),
@@ -230,9 +265,26 @@ class PitcherAI:
             ("plus", self.config.get(prefix + "PlusWeight", 0)),
         ]
 
+        weights_map = {k: v for k, v in weights}
+        weights_map = _apply_strike_bias(weights_map, cfg=self.config, balls=balls, strikes=strikes)
+        weights = list(weights_map.items())
+
         total = sum(weight for _, weight in weights)
         objective = "establish"
         if total > 0:
+            # Optional zone-target floor: bias "establish" weight up to reach floor share.
+            zone_floor = float(getattr(self.config, "pitchZoneTargetFloor", 0.0) or 0.0)
+            if zone_floor > 0:
+                establish_idx = next(
+                    (i for i, (obj, _) in enumerate(weights) if obj == "establish"),
+                    None,
+                )
+                if establish_idx is not None:
+                    establish_weight = weights[establish_idx][1]
+                    need = max(0.0, zone_floor * total - establish_weight)
+                    if need > 0:
+                        weights[establish_idx] = ("establish", establish_weight + need)
+                        total += need
             roll = self.rng.random() * total
             cumulative = 0
             for obj, weight in weights:

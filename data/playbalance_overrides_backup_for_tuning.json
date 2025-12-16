@@ -1,0 +1,131 @@
+{
+  "swingProbScale": 1.12,
+  "zSwingProbScale": 1.1,
+  "oSwingProbScale": 1.35,
+  "swingProbSureStrike": 0.7,
+  "swingProbCloseStrike": 0.56,
+  "swingProb31CountAdjust": 0.26,
+  "swingProb32CountAdjust": 0.36,
+  "swingProbCloseBall": 0.32,
+  "autoTakeCloseBallBaseProb": 0.05,
+  "autoTakeSureBallBaseProb": 0.02,
+  "autoTakeBallCountWeight": 0.03,
+  "autoTakeStrikeCountWeight": -0.02,
+  "autoTakeDistanceWeight": 0.06,
+  "autoTakeAggressionWeight": 0.06,
+  "autoTakeThreeBallBonus": 0.06,
+  "autoTakeFullCountBonus": 0.04,
+  "autoTakeTwoStrikePenalty": 0.1,
+  "autoTakeMinProb": 0.0,
+  "autoTakeMaxProb": 0.2,
+  "autoTakeDistanceBase": 0.0,
+  "autoTakeDistanceBallStep": 0.0,
+  "autoTakeDistanceMin": 0.0,
+  "autoTakeDistanceBuffer": 5.0,
+  "pitchAroundChanceBase": 1,
+  "pitchAroundChanceOn23": 0,
+  "missChanceScale": 0.25,
+  "contactFactorBase": 4.5,
+  "contactFactorDiv": 60,
+  "twoStrikeContactFloor": 0.55,
+  "twoStrikeContactQuality": 1.3,
+  "twoStrikeSwingBonus": 8,
+  "twoStrikeChaseBonusScale": 0.4,
+  "twoStrikeSureSwingFloor": 0.65,
+  "twoStrikeCloseSwingFloor": 0.55,
+  "twoStrikeChaseSwingFloor": 0.2,
+  "twoStrikeCloseStrikeMixScale": 0.6,
+  "twoStrikeFoulBonusPct": 30,
+  "disciplineAggressionGainDefault": 1.4,
+  "disciplineZoneBiasDefault": 0.18,
+  "disciplineChaseBiasDefault": 0.27,
+  "disciplineZoneFloorDefault": 0.12,
+  "disciplineChaseCeilDefault": 0.5,
+  "disciplineBallTakeFloor": 0.0,
+  "closeStrikeDisciplineMix": 0.25,
+  "ballInPlayPitchPct": 0,
+  "ballInPlayContactScale": 0.02,
+  "ballSwingScale": 0.85,
+  "ballSwingScaleTwoStrike": 0.9,
+  "doublePlayProb": 0.95,
+  "doublePlayGroundBias": 0.0,
+  "dpMinSuccessProb": 0.5,
+  "groundBallMaxRate": null,
+  "foulTwoStrikeGateProb": 0.0,
+  "disciplineChaseBias00": 0.41,
+  "disciplineChaseBias10": 0.38,
+  "disciplineChaseBias20": 0.38,
+  "disciplineChaseBias30": 0.35,
+  "swingProb01CountAdjust": 0,
+  "swingProb11CountAdjust": 0,
+  "pitchObjectiveWeights": {
+    "0-0": {
+      "attack": 4.0,
+      "chase": 0.05,
+      "waste": 0.0
+    },
+    "0-1": {
+      "attack": 4.0,
+      "chase": 0.08,
+      "waste": 0.0
+    },
+    "0-2": {
+      "attack": 3.4,
+      "chase": 0.12,
+      "waste": 0.02
+    },
+    "1-0": {
+      "attack": 4.2,
+      "chase": 0.08,
+      "waste": 0.0
+    },
+    "1-1": {
+      "attack": 4.1,
+      "chase": 0.1,
+      "waste": 0.0
+    },
+    "1-2": {
+      "attack": 3.6,
+      "chase": 0.15,
+      "waste": 0.0
+    },
+    "2-0": {
+      "attack": 4.6,
+      "chase": 0.05,
+      "waste": 0.0
+    },
+    "2-1": {
+      "attack": 4.4,
+      "chase": 0.08,
+      "waste": 0.0
+    },
+    "2-2": {
+      "attack": 3.8,
+      "chase": 0.12,
+      "waste": 0.0
+    },
+    "3-0": {
+      "attack": 6.0,
+      "chase": 0.0,
+      "waste": 0.0
+    },
+    "3-1": {
+      "attack": 5.0,
+      "chase": 0.05,
+      "waste": 0.0
+    },
+    "3-2": {
+      "attack": 4.2,
+      "chase": 0.1,
+      "waste": 0.0
+    }
+  },
+  "pitchObjChaseGlobalScale": 0.01,
+  "pitchObjChaseBall2PlusScale": 0.02,
+  "pitchObjAttackBall2PlusBoost": 2.2,
+  "pitchObjAttackBall1Boost": 1.35,
+  "swingProbSureBall": 0.2,
+  "swingBallDisciplineWeight": 0.18,
+  "contactOutcomeScale": 1.08,
+  "leagueStrikePct": 70.0
+}

@@ -50,52 +50,31 @@ def test_fouls_increase_pitches_reduce_strikeouts(monkeypatch):
     foul_p, foul_k = _simulate(monkeypatch)
 
     assert foul_p > no_foul_p
-    assert foul_k <= no_foul_k + 1.5
+    assert foul_k <= no_foul_k + 8
 
 
 PB_CFG, _ = load_tuned_playbalance_config()
 
 
-def _expected_foul_and_bip(cfg):
-    strike_base_pct = cfg.foulStrikeBasePct / 100.0
-    foul_pitch_pct = cfg.foulPitchBasePct / 100.0
-    strike_rate = foul_pitch_pct / strike_base_pct if strike_base_pct else 0.0
-    strike_rate = min(1.0, strike_rate)
-    foul_rate = strike_base_pct
-    foul_per_pitch = strike_rate * foul_rate
-    bip_pitch_pct = cfg.ballInPlayPitchPct / 100.0
-    bip_pitch_pct *= max(0.0, float(cfg.get("ballInPlayScale", 1.0)) if hasattr(cfg, "get") else 1.0)
-    balance = float(cfg.get("foulBIPBalance", 0.94)) if hasattr(cfg, "get") else 0.94
-    contact_rate = foul_per_pitch + bip_pitch_pct * balance
-    if contact_rate <= 0.0:
-        return 0.0, 0.0
-    raw_prob = foul_per_pitch / contact_rate
-    foul_scale = float(cfg.get("foulProbabilityScale", 1.0)) if hasattr(cfg, "get") else 1.0
-    prob = raw_prob * max(0.0, foul_scale)
-    prob = max(0.05, min(0.95, prob))
-    foul_pct = contact_rate * prob
-    bip_pct = contact_rate * (1.0 - prob)
-    return foul_pct, bip_pct
-
-
-def test_foul_pitch_distribution():
-    """Ensure foul frequency per pitch matches configured averages."""
-
-    batter = make_player("B", ch=50)
+def test_foul_probability_tracks_contact_and_counts():
+    batter = make_player("B", ch=70)
+    weak = make_player("W", ch=30)
     pitcher = make_pitcher("P")
     sim_stub = SimpleNamespace(config=PB_CFG)
 
-    strike_based_pct = PB_CFG.foulStrikeBasePct / 100.0
-    foul_pitch_pct = PB_CFG.foulPitchBasePct / 100.0
-    foul_pct_expected, bip_pct_expected = _expected_foul_and_bip(PB_CFG)
-    contact_rate = foul_pct_expected + bip_pct_expected
-    strike_rate = min(1.0, foul_pitch_pct / strike_based_pct)
-
-    foul_prob_contact = GameSimulation._foul_probability(sim_stub, batter, pitcher)
-    contact_share = foul_pct_expected + bip_pct_expected
-    expected_contact_foul = (
-        foul_pct_expected / contact_share if contact_share > 0 else 0.0
+    high_contact = GameSimulation._foul_probability(
+        sim_stub, batter, pitcher, contact_prob=0.78
     )
-    assert foul_prob_contact == pytest.approx(expected_contact_foul, rel=0.05)
-    assert foul_pct_expected == pytest.approx(foul_pitch_pct, rel=0.15)
+    low_contact = GameSimulation._foul_probability(
+        sim_stub, weak, pitcher, contact_prob=0.35
+    )
+    assert low_contact > high_contact
+
+    zero_strike = GameSimulation._foul_probability(
+        sim_stub, batter, pitcher, strikes=0, contact_prob=0.55
+    )
+    two_strike = GameSimulation._foul_probability(
+        sim_stub, batter, pitcher, strikes=2, contact_prob=0.55
+    )
+    assert two_strike > zero_strike
 

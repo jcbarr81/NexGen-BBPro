@@ -186,14 +186,19 @@ _DEFAULTS: Dict[str, Any] = {
     # ``0.12`` in the simulation.
     "hitProbBase": 1.35,
     # Boost contact to raise overall zone contact rate closer to MLB levels
-    "contactFactorBase": 1.62,
+    "contactFactorBase": 1.80,
     # Lower divisor so contact-heavy hitters see a larger boost
     # from their ``CH`` rating in hit probability calculations.
-    "contactFactorDiv": 120,
+    "contactFactorDiv": 100,
     "movementFactorMin": 0.18,
     "movementImpactScale": 0.6,
     # Cap on final hit probability to prevent excessive offense
     "hitProbCap": 0.80,
+    # Discipline clamps and swing probability bounds
+    "disciplineNormFloor": 0.0,
+    "disciplineNormCeil": 1.0,
+    "swingZoneFloorMin": 0.0,
+    "swingChaseCeilMax": 1.0,
     # Scales applied to swing probability on balls before and after two strikes.
     "ballSwingScale": 0.55,
     "ballSwingScaleTwoStrike": 0.85,
@@ -232,6 +237,9 @@ _DEFAULTS: Dict[str, Any] = {
     "ballInPlayScale": 1.0,
     "foulStrikePctScale": 1.0,
     "foulPitchPctScale": 1.0,
+    "foulPreBIPScale": 1.0,
+    "foulPreBIPTwoStrikeScale": 1.0,
+    "foulTwoStrikeGateProb": 0.0,
     "extraZSwingScaleMin": 0.78,
     "extraZSwingScaleMax": 1.04,
     "extraOSwingScaleMin": 1.32,
@@ -241,10 +249,12 @@ _DEFAULTS: Dict[str, Any] = {
     # Target roughly 17% of all pitches being put into play
     "ballInPlayPitchPct": 9,
     "ballInPlayOuts": 0,
+    "groundBallMaxRate": None,
     "carryDistanceScale": 0.85,
     "carryExitVeloBaseline": 90.0,
     # Probability that a ground ball with a force at second becomes a double play
     "doublePlayProb": 0.70,
+    "dpMinSuccessProb": 0.35,
     # Baseline aggression for runners attempting extra bases
     "baserunningAggression": 0.42,
     # Baseline steal success rate (as percent, before arm/speed mods)
@@ -268,6 +278,7 @@ _DEFAULTS: Dict[str, Any] = {
     "pitchObj10CountOutsideWeight": 30,
     "pitchObj11CountOutsideWeight": 30,
     "pitchObj20CountOutsideWeight": 30,
+    "pitchZoneTargetFloor": 0.0,
     # Pitcher target tuning; offsets expressed in strike-zone distance units.
     "pitchTargetEdgeOffset": 3.6,
     "pitchTargetWasteOffset": 6.3,
@@ -280,13 +291,13 @@ _DEFAULTS: Dict[str, Any] = {
     # Baseline swing probabilities reflecting MLB averages
     "swingProbSureStrike": 0.43,
     "swingProbCloseStrike": 0.29,
-    "swingProbCloseBall": 0.40,
-    "swingProbSureBall": 0.18,
+    "swingProbCloseBall": 0.28,
+    "swingProbSureBall": 0.12,
     # Global swing probability scaling factors (tests expect base values only)
     "swingProbScale": 1.0,
     # Separate scaling factors for pitches in and out of the zone
     "zSwingProbScale": 1.0,
-    "oSwingProbScale": 1.0,
+    "oSwingProbScale": 0.7,
     # Additional tuning applied after benchmark adjustments
     "extraZSwingScale": 1.0,
     "extraOSwingScale": 1.0,
@@ -376,16 +387,22 @@ _DEFAULTS: Dict[str, Any] = {
     "disciplineRating32CountAdjust": 15,
     "disciplineThreeBallScale": 0.5,
     "disciplineThreeBallPenaltyScale": 0.5,
-    "swingBallThreeBallWeightScale": 0.5,
+    "swingBallDisciplineWeight": 0.20,
+    "swingBallThreeBallWeightScale": 0.6,
+    "disciplineZoneProtectWeightDefault": 0.34,
+    "disciplineChaseProtectWeightDefault": 0.52,
+    "disciplineZoneBiasDefault": 0.16,
+    "disciplineChaseBiasDefault": 0.24,
     # Baseline contact chance when the batter misreads the pitch
     "minMisreadContact": 0.3,
     # Final contact multiplier applied to swing decisions
     # Lowered to reintroduce swing-and-miss outcomes while keeping run scoring in line
     "contactQualityScale": 1.34,
+    "contactOutcomeScale": 0.70,
     # Scaling factors for batter skills impacting contact quality
     "contactAbilityScale": 0.4,
     "contactDisciplineScale": 0.3,
-    "missChanceScale": 2.05,
+    "missChanceScale": 1.6,
     # Check-swing tuning ---------------------------------------------------
     "checkChanceBasePower": 150,
     "checkChanceBaseNormal": 250,
@@ -435,6 +452,16 @@ _DEFAULTS: Dict[str, Any] = {
     "stealMinSuccessProb": 0.65,
     "closeBallTakeBonus": 0.0,
     "sureBallTakeBonus": 0.0,
+    "autoTakeCloseBallBaseProb": 0.55,
+    "autoTakeSureBallBaseProb": 0.35,
+    "autoTakeDistanceWeight": 0.25,
+    "autoTakeBallCountWeight": 0.14,
+    "autoTakeStrikeCountWeight": -0.08,
+    "autoTakeAggressionWeight": 0.25,
+    "autoTakeThreeBallBonus": 0.20,
+    "autoTakeFullCountBonus": 0.12,
+    "autoTakeTwoStrikePenalty": 0.10,
+    "autoTakeGlobalMaxProb": 0.90,
     "twoStrikeContactFloor": 0.0,
     "twoStrikeContactQuality": 0.0,
     "stealSuccessTagOutPct": 18,

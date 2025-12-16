@@ -33,6 +33,12 @@ class BatterDecisionTracker:
     target_offset_counts: Dict[CountKey, int] = field(
         default_factory=lambda: defaultdict(int)
     )
+    distance_totals: Dict[CountKey, list[float]] = field(
+        default_factory=lambda: defaultdict(lambda: [0.0, 0.0])
+    )
+    distance_histogram: Dict[int, int] = field(
+        default_factory=lambda: defaultdict(int)
+    )
     total_pitches: int = 0
 
     def record(
@@ -54,6 +60,9 @@ class BatterDecisionTracker:
         breakdown: Dict[str, float | str] | None = None,
         objective: str | None = None,
         target_offset: Tuple[float, float] | None = None,
+        pitch_distance: float | None = None,
+        pitch_dx: float | None = None,
+        pitch_dy: float | None = None,
     ) -> None:
         """Record a single pitch decision."""
 
@@ -81,6 +90,12 @@ class BatterDecisionTracker:
             totals[0] += float(target_offset[0])
             totals[1] += float(target_offset[1])
             self.target_offset_counts[key] += 1
+        if pitch_distance is not None:
+            dist_totals = self.distance_totals[key]
+            dist_totals[0] += float(pitch_distance)
+            dist_totals[1] += 1.0
+            bucket = int(round(pitch_distance))
+            self.distance_histogram[bucket] += 1
 
         self.total_pitches += 1
         if breakdown:

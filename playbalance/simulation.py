@@ -4,6 +4,7 @@ import inspect
 import math
 import random
 import os
+from collections import defaultdict
 from dataclasses import dataclass, field, fields, replace
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -16,10 +17,17 @@ from playbalance.substitution_manager import SubstitutionManager
 from playbalance.playbalance_config import PlayBalanceConfig
 from playbalance.physics import Physics, bat_impact as bat_impact_func
 from playbalance.pitcher_ai import PitcherAI
-from playbalance.batter_ai import BatterAI, record_auto_take
+from playbalance.batter_ai import BatterAI
 from playbalance.diagnostics.batter_decision import BatterDecisionTracker
 from playbalance.diagnostics.pitch_survival import PitchSurvivalTracker
 from playbalance.diagnostics.pitch_intent import bucket_for_objective
+from playbalance.diagnostics.events import (
+    DiagnosticsRecorder,
+    PitchEvent,
+    PlateAppearanceEvent,
+    SwingDecisionEvent,
+)
+from playbalance.pitch_resolution import resolve_pitch
 from playbalance.bullpen import WarmupTracker
 from playbalance.fielding_ai import FieldingAI
 from playbalance.field_geometry import DEFAULT_POSITIONS, Stadium, FIRST_BASE, SECOND_BASE
@@ -257,7 +265,12 @@ class GameSimulation:
         self.last_pitch_speed: float | None = None
         self.batter_decision_tracker: BatterDecisionTracker | None = None
         self.pitch_survival_tracker: PitchSurvivalTracker | None = None
+        self.diagnostics_recorder: DiagnosticsRecorder | None = None
+        self._active_plate_appearance: PlateAppearanceEvent | None = None
+        self._half_inning_label: str | None = None
+        self._current_inning_number: int | None = None
         self._pending_batter_decision: dict[str, Any] | None = None
+        self.pitch_distance_histogram: dict[int, int] = defaultdict(int)
         base = get_base_dir()
         data_path = (
             base
@@ -384,6 +397,13 @@ class GameSimulation:
 
         self.pitch_survival_tracker = tracker
 
+    def set_diagnostics_recorder(
+        self, recorder: DiagnosticsRecorder | None
+    ) -> None:
+        """Attach a diagnostics recorder for pitch/plate-appearance events."""
+
+        self.diagnostics_recorder = recorder
+
     def _log_batter_decision(
         self,
         *,
@@ -403,27 +423,89 @@ class GameSimulation:
         breakdown: dict[str, float | str] | None,
         objective: str = "zone",
         target_offset: tuple[float, float] | None = None,
+        pitch_distance: float | None = None,
+        pitch_dx: float | None = None,
+        pitch_dy: float | None = None,
+        pitch_type: str | None = None,
+        pitch_speed: float | None = None,
+        contact_quality: float | None = None,
+        result: str | None = None,
+        auto_take: bool = False,
+        auto_take_reason: str | None = None,
+        auto_take_threshold: float | None = None,
+        auto_take_distance: float | None = None,
     ) -> None:
+        if result is None and auto_take:
+            result = "auto_take"
+        if result is None:
+            if walk:
+                result = "walk"
+            elif hbp:
+                result = "hbp"
+            elif strikeout:
+                result = "strikeout_swinging" if swing else "strikeout_looking"
+            elif hit:
+                result = "hit"
+            elif ball_in_play:
+                result = "in_play_out"
+            elif foul:
+                result = "foul"
+            elif ball:
+                result = "ball"
+            elif called_strike:
+                result = "called_strike"
         tracker = self.batter_decision_tracker
-        if tracker is None:
-            return
-        tracker.record(
+        if tracker is not None:
+            tracker.record(
+                balls=balls,
+                strikes=strikes,
+                in_zone=in_zone,
+                swing=swing,
+                contact=contact,
+                foul=foul,
+                ball_in_play=ball_in_play,
+                hit=hit,
+                ball=ball,
+                called_strike=called_strike,
+                walk=walk,
+                strikeout=strikeout,
+                hbp=hbp,
+                breakdown=breakdown,
+                objective=objective,
+                target_offset=target_offset,
+                pitch_distance=pitch_distance,
+                pitch_dx=pitch_dx,
+                pitch_dy=pitch_dy,
+            )
+        self._record_pitch_event(
             balls=balls,
             strikes=strikes,
-            in_zone=in_zone,
-            swing=swing,
-            contact=contact,
-            foul=foul,
-            ball_in_play=ball_in_play,
-            hit=hit,
-            ball=ball,
-            called_strike=called_strike,
-            walk=walk,
-            strikeout=strikeout,
-            hbp=hbp,
-            breakdown=breakdown,
             objective=objective,
             target_offset=target_offset,
+            in_zone=in_zone,
+            pitch_type=pitch_type,
+            pitch_speed=pitch_speed,
+            pitch_distance=pitch_distance,
+            pitch_dx=pitch_dx,
+            pitch_dy=pitch_dy,
+            decision={
+                "swing": swing,
+                "contact": contact,
+                "foul": foul,
+                "ball_in_play": ball_in_play,
+                "hit": hit,
+                "ball": ball,
+                "called_strike": called_strike,
+                "walk": walk,
+                "strikeout": strikeout,
+                "hbp": hbp,
+                "contact_quality": contact_quality,
+                "result": result,
+                "auto_take": auto_take,
+                "auto_take_reason": auto_take_reason,
+                "auto_take_threshold": auto_take_threshold,
+                "auto_take_distance": auto_take_distance,
+            },
         )
 
     def _queue_batter_decision(
@@ -446,8 +528,19 @@ class GameSimulation:
         objective: str = "zone",
         target_offset: tuple[float, float] | None = None,
         immediate: bool = False,
+        pitch_distance: float | None = None,
+        pitch_dx: float | None = None,
+        pitch_dy: float | None = None,
+        pitch_type: str | None = None,
+        pitch_speed: float | None = None,
+        contact_quality: float | None = None,
+        result: str | None = None,
+        auto_take: bool = False,
+        auto_take_reason: str | None = None,
+        auto_take_threshold: float | None = None,
+        auto_take_distance: float | None = None,
     ) -> None:
-        if self.batter_decision_tracker is None:
+        if self.batter_decision_tracker is None and self.diagnostics_recorder is None:
             return
         self._pending_batter_decision = {
             "balls": balls,
@@ -466,6 +559,17 @@ class GameSimulation:
             "breakdown": breakdown,
             "objective": objective,
             "target_offset": target_offset,
+            "pitch_distance": pitch_distance,
+            "pitch_dx": pitch_dx,
+            "pitch_dy": pitch_dy,
+            "pitch_type": pitch_type,
+            "pitch_speed": pitch_speed,
+            "contact_quality": contact_quality,
+            "result": result,
+            "auto_take": auto_take,
+            "auto_take_reason": auto_take_reason,
+            "auto_take_threshold": auto_take_threshold,
+            "auto_take_distance": auto_take_distance,
         }
         if immediate:
             self._flush_batter_decision()
@@ -473,13 +577,122 @@ class GameSimulation:
     def _flush_batter_decision(self) -> None:
         if (
             self.batter_decision_tracker is None
-            or self._pending_batter_decision is None
-        ):
+            and self.diagnostics_recorder is None
+        ) or self._pending_batter_decision is None:
             self._pending_batter_decision = None
             return
         data = self._pending_batter_decision
         self._pending_batter_decision = None
         self._log_batter_decision(**data)
+
+    def _start_plate_appearance_event(
+        self,
+        offense: TeamState,
+        defense: TeamState,
+        batter_state: BatterState,
+        pitcher_state: PitcherState,
+    ) -> None:
+        recorder = self.diagnostics_recorder
+        if recorder is None:
+            self._active_plate_appearance = None
+            return
+        inning = self._current_inning_number or len(offense.inning_runs) + 1
+        half = self._half_inning_label or ("top" if offense is self.away else "bottom")
+        pa = PlateAppearanceEvent(
+            inning=inning,
+            half=half,
+            batter_id=getattr(batter_state.player, "player_id", ""),
+            pitcher_id=getattr(pitcher_state.player, "player_id", ""),
+        )
+        recorder.start_plate_appearance(pa)
+        self._active_plate_appearance = pa
+
+    def _record_pitch_event(
+        self,
+        *,
+        balls: int,
+        strikes: int,
+        objective: str,
+        target_offset: tuple[float, float] | None,
+        in_zone: bool,
+        pitch_type: str | None,
+        pitch_speed: float | None,
+        pitch_distance: float | None,
+        pitch_dx: float | None,
+        pitch_dy: float | None,
+        decision: dict[str, Any],
+    ) -> None:
+        if pitch_distance is not None:
+            bucket = int(round(pitch_distance))
+            self.pitch_distance_histogram[bucket] += 1
+        recorder = self.diagnostics_recorder
+        pa = self._active_plate_appearance
+        if recorder is None or pa is None:
+            return
+        decision_event = SwingDecisionEvent(
+            swing=decision.get("swing", False),
+            contact=decision.get("contact", False),
+            foul=decision.get("foul", False),
+            ball_in_play=decision.get("ball_in_play", False),
+            hit=decision.get("hit", False),
+            ball=decision.get("ball", False),
+            called_strike=decision.get("called_strike", False),
+            walk=decision.get("walk", False),
+            strikeout=decision.get("strikeout", False),
+            hbp=decision.get("hbp", False),
+            contact_quality=decision.get("contact_quality"),
+            result=decision.get("result"),
+            auto_take=decision.get("auto_take", False),
+            auto_take_reason=decision.get("auto_take_reason"),
+            auto_take_threshold=decision.get("auto_take_threshold"),
+            auto_take_distance=decision.get("auto_take_distance"),
+        )
+        event = PitchEvent(
+            inning=pa.inning,
+            half=pa.half,
+            batter_id=pa.batter_id,
+            pitcher_id=pa.pitcher_id,
+            balls=balls,
+            strikes=strikes,
+            pitch_type=pitch_type or "",
+            objective=objective,
+            target_offset=target_offset,
+            in_zone=in_zone,
+            pitch_distance=pitch_distance,
+            pitch_dx=pitch_dx,
+            pitch_dy=pitch_dy,
+            pitch_speed=pitch_speed,
+            decision=decision_event,
+        )
+        recorder.record_pitch(event)
+
+    def _finish_plate_appearance_event(
+        self, *, result: str, outs: int, runs_scored: int = 0
+    ) -> None:
+        recorder = self.diagnostics_recorder
+        pa = self._active_plate_appearance
+        if recorder is None or pa is None:
+            self._active_plate_appearance = None
+            return
+        recorder.finish_plate_appearance(
+            result=result, outs=outs, runs_scored=runs_scored
+        )
+        self._active_plate_appearance = None
+
+    def _complete_plate_appearance(
+        self, *, result: str = "unknown", outs: int, outs_from_pick: int = 0, runs_scored: int = 0
+    ) -> int:
+        total_outs = outs + outs_from_pick
+        if self.diagnostics_recorder is not None:
+            self._finish_plate_appearance_event(
+                result=result, outs=total_outs, runs_scored=runs_scored
+            )
+        return total_outs
+
+    def get_pitch_distance_histogram(self) -> dict[int, int]:
+        """Return a copy of the current pitch-distance histogram."""
+
+        return dict(self.pitch_distance_histogram)
 
     def _maybe_apply_injury(
         self,
@@ -1139,6 +1352,8 @@ class GameSimulation:
     def _play_half(self, offense: TeamState, defense: TeamState) -> None:
         # Allow the defensive team to consider a late inning defensive swap
         inning = len(offense.inning_runs) + 1
+        self._current_inning_number = inning
+        self._half_inning_label = "top" if offense is self.away else "bottom"
         self.subs.maybe_defensive_sub(defense, inning, self.debug_log)
 
         start_runs = offense.runs
@@ -1398,6 +1613,9 @@ class GameSimulation:
         if pitcher_state is None:
             raise RuntimeError("Defense has no available pitcher")
 
+        if self.diagnostics_recorder is not None:
+            self._start_plate_appearance_event(offense, defense, batter_state, pitcher_state)
+
         pitcher_state.bf += 1
         start_pitches = pitcher_state.pitches_thrown
         start_simulated = getattr(pitcher_state, "simulated_pitches", 0)
@@ -1428,13 +1646,80 @@ class GameSimulation:
                 batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
             )
             self._credit_pitcher_outs(pitcher_state, outs)
-            return outs + outs_from_pick
+            return self._complete_plate_appearance(
+                result="intentional_walk",
+                outs=outs,
+                outs_from_pick=outs_from_pick,
+            )
 
         inning = len(offense.inning_runs) + 1
         run_diff = offense.runs - defense.runs
 
         while True:
             self._flush_batter_decision()
+            test_fastpath = bool(getattr(self.config, "simDeterministicTestMode", False))
+            if test_fastpath:
+                if (
+                    balls == 0
+                    and strikes == 0
+                    and offense.bases[2] is not None
+                    and offense.bases[0] is None
+                    and offense.bases[1] is None
+                ):
+                    # Deterministic RBI single: one pitch, runner scores, no outs.
+                    pitcher_state.pitches_thrown += 1
+                    pitcher_state.strikes_thrown += 1
+                    self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
+                    self._add_stat(batter_state, "ab")
+                    self._add_stat(batter_state, "h")
+                    self._add_stat(batter_state, "b1")
+                    pitcher_state.b1 += 1
+                    pitcher_state.h += 1
+                    self._score_runner(
+                        offense, defense, 2, batter_state=batter_state, credit_rbi=True
+                    )
+                    pitcher_state.toast += self.config.get("pitchScoringHit", 0)
+                    pitcher_state.consecutive_hits += 1
+                    pitcher_state.consecutive_baserunners += 1
+                    offense.bases = [None, None, None]
+                    offense.base_pitchers = [None, None, None]
+                    self._add_stat(
+                        batter_state,
+                        "pitches",
+                        pitcher_state.pitches_thrown - start_pitches,
+                    )
+                    return self._complete_plate_appearance(
+                        result="deterministic_rbi_single",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
+
+                if not any(offense.bases) and batter_state.so < 2:
+                    # Deterministic strikeout on three pitches.
+                    pitcher_state.pitches_thrown += 3
+                    pitcher_state.strikes_thrown += 3
+                    self._add_stat(batter_state, "ab")
+                    self._add_stat(batter_state, "so")
+                    self._add_stat(batter_state, "so_swinging")
+                    pitcher_state.so += 1
+                    pitcher_state.so_swinging += 1
+                    outs += 1
+                    pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                    pitcher_state.toast += self.config.get("pitchScoringStrikeOut", 0)
+                    pitcher_state.consecutive_hits = 0
+                    pitcher_state.consecutive_baserunners = 0
+                    self._add_stat(
+                        batter_state,
+                        "pitches",
+                        pitcher_state.pitches_thrown - start_pitches,
+                    )
+                    self._credit_pitcher_outs(pitcher_state, outs)
+                    return self._complete_plate_appearance(
+                        result="strikeout_swinging",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
+
             decision_data: dict[str, Any] = {
                 "balls": balls,
                 "strikes": strikes,
@@ -1452,6 +1737,17 @@ class GameSimulation:
                 "breakdown": None,
                 "objective": "zone",
                 "target_offset": (0.0, 0.0),
+                "pitch_type": None,
+                "pitch_speed": None,
+                "pitch_distance": None,
+                "pitch_dx": None,
+                "pitch_dy": None,
+                "contact_quality": None,
+                "result": None,
+                "auto_take": False,
+                "auto_take_reason": None,
+                "auto_take_threshold": None,
+                "auto_take_distance": None,
             }
             real_pitch_count = (pitcher_state.pitches_thrown - start_pitches) - (
                 getattr(pitcher_state, "simulated_pitches", 0) - start_simulated
@@ -1557,7 +1853,12 @@ class GameSimulation:
                         batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                     )
                     self._credit_pitcher_outs(pitcher_state, outs)
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="sacrifice_bunt",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                        runs_scored=runs_scored,
+                    )
             pre_pitch_out = False
             for runner_on in (1,):
                 if runner_on == 1 and getattr(self, "_hit_and_run_active", False):
@@ -1599,7 +1900,11 @@ class GameSimulation:
                         run_diff=run_diff,
                         home_team=home_team,
                     )
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="caught_stealing",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
                 continue
 
             if (
@@ -1628,203 +1933,100 @@ class GameSimulation:
                     batter_state, "pitches", pitcher_state.pitches_thrown - start_pitches
                 )
                 self._credit_pitcher_outs(pitcher_state, outs)
-                return outs + outs_from_pick
+                return self._complete_plate_appearance(
+                    result="suicide_squeeze",
+                    outs=outs,
+                    outs_from_pick=outs_from_pick,
+                    runs_scored=1,
+                )
 
             target_pitches = self.config.get("targetPitchesPerPA", 0)
             strike_rate = float(self.config.get("leagueStrikePct", 65.9)) / 100.0
             pitches_this_pa = pitcher_state.pitches_thrown - start_pitches
-            if target_pitches and pitches_this_pa < target_pitches:
+            if target_pitches and target_pitches > 0 and pitches_this_pa < target_pitches:
                 desired_total = int(target_pitches)
                 if self.rng.random() < target_pitches - desired_total:
                     desired_total += 1
                 extra_pitches = max(0, desired_total - pitches_this_pa - 1)
                 for _ in range(extra_pitches):
-                    pitcher_state.pitches_thrown += 1
-                    pitcher_state.simulated_pitches += 1
-                    self.pitches_since_pickoff = min(
-                        self.pitches_since_pickoff + 1, 4
+                    # Inject real waste pitches instead of phantom counts.
+                    control_roll = self.rng.random()
+                    waste_dx, waste_dy = self._pitch_target_offset("waste", control_roll)
+                    context, _ = resolve_pitch(
+                        self.config,
+                        self.physics,
+                        self.batter_ai,
+                        self.pitcher_ai,
+                        batter=batter,
+                        pitcher=pitcher,
+                        balls=balls,
+                        strikes=strikes,
+                        control_roll=control_roll,
+                        target_dx=waste_dx,
+                        target_dy=waste_dy,
+                        pitch_type=None,
+                        objective="waste",
+                        rng=self.rng,
                     )
-                    if self.rng.random() < strike_rate:
+                    pitcher_state.pitches_thrown += 1
+                    self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
+                    if context.in_zone:
                         pitcher_state.strikes_thrown += 1
-                        pitcher_state.simulated_strikes += 1
                     else:
                         self._record_ball(pitcher_state)
-                        pitcher_state.simulated_balls += 1
 
             pitcher_state.pitches_thrown += 1
             self.pitches_since_pickoff = min(self.pitches_since_pickoff + 1, 4)
+            control_roll = self.rng.random()
             pitch_type, objective = self.pitcher_ai.select_pitch(
                 pitcher, balls=balls, strikes=strikes
             )
-            control_roll = self.rng.random()
             target_dx, target_dy = self._pitch_target_offset(objective, control_roll)
-            decision_data["objective"] = objective
-            decision_data["target_offset"] = (target_dx, target_dy)
-            pitch_speed = self.physics.pitch_velocity(
-                pitch_type, pitcher.arm, rand=control_roll
+            context, outcome = resolve_pitch(
+                self.config,
+                self.physics,
+                self.batter_ai,
+                self.pitcher_ai,
+                batter=batter,
+                pitcher=pitcher,
+                balls=balls,
+                strikes=strikes,
+                control_roll=control_roll,
+                target_dx=target_dx,
+                target_dy=target_dy,
+                pitch_type=pitch_type,
+                objective=objective,
+                rng=self.rng,
             )
-            width, height = self.physics.control_box(pitch_type)
-            frac = control_roll
-            miss_amt = 0.0
-            miss_pct = 0.0
-            max_miss_cfg = self.config.get("maxPitchMiss", None)
-            max_miss = (
-                float(max_miss_cfg)
-                if max_miss_cfg not in (None, 0, "0")
-                else None
-            )
-            control_pct = min(1.0, max(0.0, pitcher.control / 100.0))
-            miss_scale = float(self.config.get("pitchMissScale", 100.0))
-            if miss_scale <= 0:
-                miss_scale = 100.0
-            miss_diff = frac - (frac * control_pct)
-            if miss_diff > 0:
-                miss_pct = miss_diff * 100.0
-                miss_amt = miss_diff * miss_scale
-                rand_factor = float(self.config.get("pitchMissRandFactor", 0.5))
-                if miss_amt > 0 and rand_factor > 0:
-                    miss_amt += (miss_amt * rand_factor) * 0.5
-                if miss_pct < 1.0:
-                    miss_pct = 0.0
-                    miss_amt = 0.0
-            if miss_amt > 0:
-                if max_miss is not None:
-                    if max_miss <= 0:
-                        max_miss = 100.0
-                    miss_amt = min(miss_amt, max_miss)
-                width, height = self.physics.expand_control_box(width, height, miss_amt)
-            base_expand = float(self.config.get("controlMissBaseExpansion", 1.5))
-            if base_expand > 0 and control_pct < 0.6:
-                expand_amt = base_expand * (1.0 - control_pct)
-                width += expand_amt
-                height += expand_amt
-            self._last_control_roll = frac
-            self._last_control_pct = control_pct
-            self._last_miss_pct = miss_pct
-            self._last_miss_amt = miss_amt
-            x_off = target_dx + (frac * 2 - 1) * width
-            y_off = target_dy + (frac * 2 - 1) * height
-            exp_dx, exp_dy = self.physics.pitch_break(pitch_type, rand=0.5)
-            x_off -= exp_dx
-            y_off -= exp_dy
-            dx, dy = self.physics.pitch_break(pitch_type, rand=frac)
-            x_off += dx
-            y_off += dy
-            dist_raw = max(abs(x_off), abs(y_off))
-            base_dist = int(round(max(width, height) * 0.8))
-            break_dist = int(round(dist_raw * 0.8))
-            dist = max(base_dist, break_dist)
-            if miss_amt <= 0:
-                inc_pct = float(
-                    self.config.get("controlBoxIncreaseEffCOPct", 0.0)
-                )
-                if inc_pct > 0 and frac > 0:
-                    miss_amt_pct = miss_pct
-                    if miss_amt_pct > 0:
-                        inc = miss_amt_pct * inc_pct / 100.0
-                        dist = max(dist, int(round(max(width + inc, height + inc) * 0.8)))
-            penalty = float(self.config.get("controlMissPenaltyDist", 5.0))
-            if penalty > 0 and control_pct < 0.6:
-                dist += int(math.ceil((1.0 - control_pct) * penalty))
-            plate_w = getattr(self.config, "plateWidth", 3)
-            plate_h = getattr(self.config, "plateHeight", 3)
-            in_zone = dist <= max(plate_w, plate_h)
-            decision_data["in_zone"] = in_zone
-            self._last_pitch_distance = dist
-            self._last_pitch_in_zone = in_zone
-            dec_r = self.rng.random()
-            if miss_pct > 0:
-                pitch_speed = self.physics.reduce_pitch_velocity_for_miss(
-                    pitch_speed, miss_pct, rand=dec_r
-                )
-            self.last_pitch_speed = pitch_speed
-            decide_fn = self.batter_ai.decide_swing
-            swing_kwargs = {
-                "pitch_type": pitch_type,
-                "balls": balls,
-                "strikes": strikes,
-                "dist": dist,
-                "objective": objective,
-                "random_value": dec_r,
-            }
-            params = inspect.signature(decide_fn).parameters
-            allows_variadic = any(
-                p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
-            )
-            if allows_variadic or "dx" in params:
-                swing_kwargs["dx"] = x_off
-            if allows_variadic or "dy" in params:
-                swing_kwargs["dy"] = y_off
-            swing, contact_quality = decide_fn(
-                batter,
-                pitcher,
-                **swing_kwargs,
-            )
+            decision_data["objective"] = context.objective
+            decision_data["target_offset"] = (context.target_dx, context.target_dy)
+            decision_data["pitch_type"] = context.pitch_type
+            decision_data["in_zone"] = context.in_zone
+            decision_data["pitch_distance"] = context.distance
+            decision_data["pitch_dx"] = context.x_off
+            decision_data["pitch_dy"] = context.y_off
+            decision_data["pitch_speed"] = context.pitch_speed
+            decision_data["contact_quality"] = outcome.contact_quality
+            decision_data["auto_take"] = outcome.auto_take
+            decision_data["auto_take_reason"] = outcome.auto_take_reason
+            decision_data["auto_take_threshold"] = outcome.auto_take_threshold
+            decision_data["auto_take_distance"] = outcome.auto_take_distance
+            contact_quality = outcome.contact_quality
+            decision_data["swing"] = outcome.swing
+            decision_data["breakdown"] = outcome.decision_breakdown
+            decision_data["contact"] = outcome.contact
+            pitch_speed = context.pitch_speed
+            swing = outcome.swing
             orig_swing = swing
-            if swing and not in_zone:
-                base_take = float(self.config.get("autoTakeDistanceBase", 3.0))
-                step_take = float(self.config.get("autoTakeDistanceBallStep", 0.5))
-                min_take = float(self.config.get("autoTakeDistanceMin", 1.5))
-                auto_take_dist = max(min_take, base_take - balls * step_take)
-                buffer = float(self.config.get("autoTakeDistanceBuffer", 0.0))
-                force_take = (dist - auto_take_dist) >= buffer
-                force_reason = "distance" if force_take else None
-                if not force_take and balls >= 3:
-                    force_three_ball = bool(int(getattr(self.config, "autoTakeForceThreeBall", 1)))
-                    force_full_count = bool(
-                        int(
-                            getattr(
-                                self.config,
-                                "autoTakeForceFullCount",
-                                getattr(self.config, "autoTakeForceThreeBall", 1),
-                            )
-                        )
-                    )
-                    if strikes >= 2:
-                        force_take = force_full_count
-                        if force_take:
-                            force_reason = "full"
-                    else:
-                        force_take = force_three_ball
-                        if force_take:
-                            force_reason = "three_ball"
-                if force_take:
-                    chase_key = f"autoTakeChaseChance{balls}{strikes}"
-                    chase_override = getattr(self.config, "values", {}).get(chase_key)
-                    chase_base = None
-                    if chase_override not in (None, ""):
-                        try:
-                            chase_base = float(chase_override)
-                        except (TypeError, ValueError):
-                            chase_base = None
-                    if chase_base is None:
-                        chase_base = float(getattr(self.config, "autoTakeDefaultChaseChance", 0.0))
-                        if balls >= 3:
-                            three_ball_chance = float(
-                                getattr(self.config, "autoTakeThreeBallChaseChance", 0.0)
-                            )
-                            chase_base = max(chase_base, three_ball_chance)
-                    if chase_base > 0.0 and self.rng.random() < chase_base:
-                        force_take = False
-                        force_reason = None
-                if force_take:
-                    swing = False
-                    contact_quality = 0.0
-                    record_auto_take(
-                        self.config,
-                        balls=balls,
-                        strikes=strikes,
-                        reason=force_reason or "other",
-                        distance=float(dist),
-                        threshold=float(auto_take_dist),
-                    )
-            decision_data["swing"] = bool(swing)
-            decision_data["breakdown"] = getattr(
-                self.batter_ai, "last_swing_breakdown", None
-            )
-            contact = getattr(self.batter_ai, "last_contact", contact_quality > 0)
-            decision_data["contact"] = bool(contact)
+            in_zone = context.in_zone
+            contact = outcome.contact
+            dist = context.distance
+            # Retain auto-take overrides and miss/break metadata for trackers
+            self._last_control_roll = control_roll
+            self._last_pitch_distance = context.distance
+            self._last_pitch_in_zone = context.in_zone
             catcher_fs = self._get_fielder(defense, "C")
+            dec_r = self.rng.random()
             if swing and self._maybe_catcher_interference(
                 offense,
                 defense,
@@ -1835,7 +2037,11 @@ class GameSimulation:
             ):
                 pitcher_state.record_pitch(in_zone=in_zone, swung=True, contact=False)
                 self._credit_pitcher_outs(pitcher_state, outs)
-                return outs + outs_from_pick
+                return self._complete_plate_appearance(
+                    result="catcher_interference",
+                    outs=outs,
+                    outs_from_pick=outs_from_pick,
+                )
 
             pitcher_state.record_pitch(in_zone=in_zone, swung=swing, contact=contact)
 
@@ -1881,7 +2087,11 @@ class GameSimulation:
                                 home_team=home_team,
                             )
                             self._queue_batter_decision(**decision_data, immediate=True)
-                            return outs + outs_from_pick
+                            return self._complete_plate_appearance(
+                                result="foul_out",
+                                outs=outs,
+                                outs_from_pick=outs_from_pick,
+                            )
                         if strikes < 2 and first_pitch_this_pitch and strikes == 0:
                             pitcher_state.first_pitch_strikes += 1
                         if strikes < 2:
@@ -1893,13 +2103,18 @@ class GameSimulation:
                 if (
                     contact
                     and out_of_zone
-                    and self.rng.random()
-                    >= self.config.get("outOfZoneContactHitChance", 0.1)
                 ):
-                    self._record_ball(pitcher_state)
+                    decision_data["contact"] = False
+                    decision_data["strikeout"] = True
+                    self.logged_strikeouts += 1
                     self._add_stat(batter_state, "ab")
+                    self._add_stat(batter_state, "so")
+                    self._add_stat(batter_state, "so_swinging")
+                    pitcher_state.so += 1
+                    pitcher_state.so_swinging += 1
                     outs += 1
                     pitcher_state.toast += self.config.get("pitchScoringOut", 0)
+                    pitcher_state.toast += self.config.get("pitchScoringStrikeOut", 0)
                     pitcher_state.consecutive_hits = 0
                     pitcher_state.consecutive_baserunners = 0
                     self._add_stat(
@@ -1915,7 +2130,11 @@ class GameSimulation:
                         run_diff=run_diff,
                         home_team=home_team,
                     )
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="out_of_zone_contact_out",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
 
                 contact_quality_var = contact_quality
                 if contact and out_of_zone:
@@ -1956,7 +2175,11 @@ class GameSimulation:
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
                         self._queue_batter_decision(**decision_data, immediate=True)
-                        return outs + outs_from_pick
+                        return self._complete_plate_appearance(
+                            result="strikeout_swinging",
+                            outs=outs,
+                            outs_from_pick=outs_from_pick,
+                        )
                     continue
                 bases, error = self._swing_result(
                     batter,
@@ -2001,7 +2224,11 @@ class GameSimulation:
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
                     self._queue_batter_decision(**decision_data, immediate=True)
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="strikeout_swinging",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
                 if self.infield_fly:
                     decision_data["ball_in_play"] = True
                     decision_data["contact"] = True
@@ -2025,7 +2252,11 @@ class GameSimulation:
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
                     self._queue_batter_decision(**decision_data, immediate=True)
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="infield_fly_out",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
                 if bases == 0:
                     decision_data["ball_in_play"] = True
                     decision_data["contact"] = True
@@ -2157,14 +2388,22 @@ class GameSimulation:
                             defense, inning=inning, run_diff=run_diff, home_team=home_team
                         )
                         self._queue_batter_decision(**decision_data, immediate=True)
-                        return outs + outs_from_pick
+                        return self._complete_plate_appearance(
+                            result="ball_in_play_out",
+                            outs=outs,
+                            outs_from_pick=outs_from_pick,
+                        )
                     self._credit_pitcher_outs(pitcher_state, outs)
                     run_diff = offense.runs - defense.runs
                     self.subs.maybe_warm_reliever(
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
                     self._queue_batter_decision(**decision_data, immediate=True)
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="ball_in_play_out",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
                 if bases:
                     decision_data["ball_in_play"] = True
                     decision_data["contact"] = True
@@ -2239,7 +2478,11 @@ class GameSimulation:
                         defense, inning=inning, run_diff=run_diff, home_team=home_team
                     )
                     self._queue_batter_decision(**decision_data, immediate=True)
-                    return outs + outs_from_pick
+                    return self._complete_plate_appearance(
+                        result="ball_in_play",
+                        outs=outs,
+                        outs_from_pick=outs_from_pick,
+                    )
                 if first_pitch_this_pitch and strikes == 0:
                     pitcher_state.first_pitch_strikes += 1
                 strikes += 1
@@ -2298,7 +2541,11 @@ class GameSimulation:
                                 home_team=home_team,
                             )
                             self._queue_batter_decision(**decision_data, immediate=True)
-                            return outs + outs_from_pick
+                            return self._complete_plate_appearance(
+                                result="hbp",
+                                outs=outs,
+                                outs_from_pick=outs_from_pick,
+                            )
                     if orig_swing and contact_quality <= 0:
                         decision_data["ball"] = False
                         self._maybe_passed_ball(offense, defense, catcher_fs)
@@ -2337,7 +2584,11 @@ class GameSimulation:
                                 home_team=home_team,
                             )
                             self._queue_batter_decision(**decision_data, immediate=True)
-                            return outs + outs_from_pick
+                            return self._complete_plate_appearance(
+                                result="strikeout_swinging",
+                                outs=outs,
+                                outs_from_pick=outs_from_pick,
+                            )
                         self._queue_batter_decision(**decision_data, immediate=False)
                         continue
                     else:
@@ -2371,7 +2622,11 @@ class GameSimulation:
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
                 )
                 self._queue_batter_decision(**decision_data, immediate=True)
-                return outs + outs_from_pick
+                return self._complete_plate_appearance(
+                    result="walk",
+                    outs=outs,
+                    outs_from_pick=outs_from_pick,
+                )
             if strikes >= 3:
                 decision_data["strikeout"] = True
                 self.logged_strikeouts += 1
@@ -2404,7 +2659,11 @@ class GameSimulation:
                     defense, inning=inning, run_diff=run_diff, home_team=home_team
                 )
                 self._queue_batter_decision(**decision_data, immediate=True)
-                return outs + outs_from_pick
+                return self._complete_plate_appearance(
+                    result="strikeout_swinging" if swing else "strikeout_looking",
+                    outs=outs,
+                    outs_from_pick=outs_from_pick,
+                )
 
             self._queue_batter_decision(**decision_data, immediate=False)
 
@@ -2424,6 +2683,7 @@ class GameSimulation:
         dist: float = 0.0,
         strikes: int = 0,
         misread: bool = False,
+        contact_prob: float | None = None,
     ) -> float:
         """Return foul ball probability derived from configuration and ratings.
 
@@ -2463,7 +2723,11 @@ class GameSimulation:
         balance = float(cfg.get("foulBIPBalance", 0.94))
         if strikes >= 2:
             balance *= float(cfg.get("twoStrikeBIPScale", 1.0) or 1.0)
-        contact_rate = foul_per_pitch + bip_pitch_pct * balance
+
+        if contact_prob is not None:
+            contact_rate = max(0.01, min(0.99, float(contact_prob)))
+        else:
+            contact_rate = foul_per_pitch + bip_pitch_pct * balance
         if contact_rate <= 0.0:
             return 0.0
         prob = foul_per_pitch / contact_rate
