@@ -21,11 +21,19 @@ class ParkInfo:
 
 
 def _park_config_path() -> Path:
-    return get_base_dir() / "data" / "parks" / "ParkConfig.csv"
+    base = get_base_dir()
+    primary = base / "data" / "parks" / "ParkConfig.csv"
+    if primary.exists():
+        return primary
+    return base / "data" / "ballparks" / "ParkConfig.csv"
 
 
 def _park_factors_path() -> Path:
-    return get_base_dir() / "data" / "parks" / "ParkFactors.csv"
+    base = get_base_dir()
+    primary = base / "data" / "parks" / "ParkFactors.csv"
+    if primary.exists():
+        return primary
+    return base / "data" / "ballparks" / "ParkFactors.csv"
 
 
 def _norm(s: str) -> str:

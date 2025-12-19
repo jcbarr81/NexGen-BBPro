@@ -1342,6 +1342,9 @@ class BatterAI:
         )
         if forced_zone_swing:
             auto_take_prob = 0.0
+        elif strikes >= 2:
+            scale = getattr(self.config, "twoStrikeAutoTakeScale", 0.0)
+            auto_take_prob = max(0.0, auto_take_prob * scale)
         breakdown["auto_take_prob"] = auto_take_prob
         auto_take_roll = None
         if auto_take_prob > 0.0 and random_value is None:
