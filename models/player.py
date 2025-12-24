@@ -9,6 +9,7 @@ class Player(BasePlayer):
         "ch",
         "ph",
         "sp",
+        "eye",
         "pl",
         "vl",
         "sc",
@@ -17,6 +18,7 @@ class Player(BasePlayer):
         "pot_ch",
         "pot_ph",
         "pot_sp",
+        "pot_eye",
         "pot_fa",
         "pot_arm",
         "pot_sc",
@@ -27,10 +29,12 @@ class Player(BasePlayer):
     skin_tone: str = ""
     hair_color: str = ""
     facial_hair: str = ""
+    hitter_archetype: str = ""
 
     ch: int = 0
     ph: int = 0
     sp: int = 0
+    eye: int = 0
     pl: int = 0
     vl: int = 0
     sc: int = 0
@@ -41,6 +45,7 @@ class Player(BasePlayer):
     pot_ch: int = 0
     pot_ph: int = 0
     pot_sp: int = 0
+    pot_eye: int = 0
     pot_fa: int = 0
     pot_arm: int = 0
     pot_sc: int = 0

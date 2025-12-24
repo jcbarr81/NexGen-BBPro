@@ -138,7 +138,7 @@ def main() -> None:
         )
         fh.write("rating distribution coverage.\n\n")
         write_section(fh, "Hitters", hitters, HITTER_METRICS)
-    hitter_arche = archetype_counts(hitters, "hitters")
+        hitter_arche = archetype_counts(hitters, "hitters")
         fh.write("### Hitter Archetype Split\n\n")
         fh.write("| Archetype | Count |\n|---|---:|\n")
         for key, count in sorted(hitter_arche.items(), key=lambda kv: kv[0]):

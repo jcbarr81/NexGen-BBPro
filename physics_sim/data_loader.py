@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from .models import BatterRatings, PitcherRatings
 
@@ -21,3 +21,15 @@ def load_players(csv_path: Path) -> Tuple[List[BatterRatings], List[PitcherRatin
             else:
                 batters.append(BatterRatings.from_row(row))
     return batters, pitchers
+
+
+def load_players_by_id(
+    csv_path: Path,
+) -> Tuple[Dict[str, BatterRatings], Dict[str, PitcherRatings]]:
+    """Load players and return dictionaries keyed by player_id."""
+
+    batters, pitchers = load_players(csv_path)
+    return (
+        {b.player_id: b for b in batters},
+        {p.player_id: p for p in pitchers},
+    )

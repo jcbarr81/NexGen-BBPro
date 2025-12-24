@@ -1,6 +1,7 @@
 import colorsys
 import csv
 import json
+import os
 import random
 import shutil
 from datetime import date
@@ -101,6 +102,7 @@ def _dict_to_model(data: dict):
             kn=data.get("kn", 0),
             arm=arm,
             fa=data.get("fa", 0),
+            pitcher_archetype=data.get("pitcher_archetype", ""),
             potential=potentials,
         )
     else:
@@ -109,6 +111,8 @@ def _dict_to_model(data: dict):
             ch=data.get("ch", 0),
             ph=data.get("ph", 0),
             sp=data.get("sp", 0),
+            eye=data.get("eye", data.get("ch", 0)),
+            hitter_archetype=data.get("hitter_archetype", ""),
             pl=data.get("pl", 0),
             vl=data.get("vl", 0),
             sc=data.get("sc", 0),
@@ -241,7 +245,12 @@ def _initialize_league_state(base_dir: Path) -> None:
     except Exception:
         pass
 
-def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str]]], league_name: str):
+def create_league(
+    base_dir: str | Path,
+    divisions: Dict[str, List[Tuple[str, str]]],
+    league_name: str,
+    rating_profile: str | None = None,
+):
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
     _purge_old_league(base_dir)
@@ -270,6 +279,12 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
         used_ids.add(pid)
         return player
 
+    profile = (
+        rating_profile or os.getenv("PB_RATING_PROFILE", "normalized")
+    ).strip().lower()
+    if profile not in {"arr", "normalized"}:
+        profile = "normalized"
+
     def generate_roster(
         num_pitchers: int,
         num_hitters: int,
@@ -280,24 +295,42 @@ def create_league(base_dir: str | Path, divisions: Dict[str, List[Tuple[str, str
         players = []
         closer_quota = max(0, min(closers, num_pitchers))
         for _ in range(closer_quota):
-            data = generate_player(is_pitcher=True, age_range=age_range, pitcher_archetype="closer")
+            data = generate_player(
+                is_pitcher=True,
+                age_range=age_range,
+                pitcher_archetype="closer",
+                rating_profile=profile,
+            )
             data["is_pitcher"] = True
             players.append(_ensure_unique_id(data))
         for _ in range(num_pitchers - closer_quota):
-            data = generate_player(is_pitcher=True, age_range=age_range)
+            data = generate_player(
+                is_pitcher=True,
+                age_range=age_range,
+                rating_profile=profile,
+            )
             data["is_pitcher"] = True
             players.append(_ensure_unique_id(data))
         if ensure_positions:
             positions = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"]
             for pos in positions:
-                data = generate_player(is_pitcher=False, age_range=age_range, primary_position=pos)
+                data = generate_player(
+                    is_pitcher=False,
+                    age_range=age_range,
+                    primary_position=pos,
+                    rating_profile=profile,
+                )
                 data["is_pitcher"] = False
                 players.append(_ensure_unique_id(data))
             remaining = num_hitters - len(positions)
         else:
             remaining = num_hitters
         for _ in range(remaining):
-            data = generate_player(is_pitcher=False, age_range=age_range)
+            data = generate_player(
+                is_pitcher=False,
+                age_range=age_range,
+                rating_profile=profile,
+            )
             data["is_pitcher"] = False
             players.append(_ensure_unique_id(data))
         return players

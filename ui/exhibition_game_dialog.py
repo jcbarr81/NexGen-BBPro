@@ -11,19 +11,10 @@ from PyQt6.QtCore import Qt
 from typing import Dict
 
 from utils.team_loader import load_teams
-from utils.player_loader import load_players_from_csv
-from utils.roster_loader import load_roster
 from datetime import datetime
 
-from playbalance.simulation import (
-    GameSimulation,
-    TeamState,
-    generate_boxscore,
-    render_boxscore_html,
-    save_boxscore_html,
-)
-from models.pitcher import Pitcher
-from playbalance.playbalance_config import PlayBalanceConfig
+from playbalance.game_runner import run_single_game
+from playbalance.simulation import save_boxscore_html
 from utils.path_utils import get_base_dir
 
 
@@ -76,57 +67,26 @@ class ExhibitionGameDialog(QDialog):
             and self.home_combo.currentData() != self.away_combo.currentData()
         )
 
-    def _build_state(self, team_id: str) -> TeamState:
-        players = {
-            p.player_id: p
-            for p in load_players_from_csv(self._data_dir / "players.csv")
-        }
-        roster = load_roster(team_id, self._data_dir / "rosters")
-
-        lineup = []
-        bench = []
-        pitchers = []
-        for pid in roster.act:
-            player = players.get(pid)
-            if not player:
-                continue
-            if isinstance(player, Pitcher):
-                pitchers.append(player)
-            elif len(lineup) < 9:
-                lineup.append(player)
-            else:
-                bench.append(player)
-
-        if len(lineup) < 9:
-            raise ValueError(f"Team {team_id} does not have enough position players")
-        if not pitchers:
-            raise ValueError(f"Team {team_id} does not have any pitchers")
-
-        return TeamState(lineup=lineup, bench=bench, pitchers=pitchers)
-
     def _simulate(self) -> None:
         home_id = self.home_combo.currentData()
         away_id = self.away_combo.currentData()
         if home_id is None or away_id is None:
             return
         try:
-            home_state = self._build_state(home_id)
-            away_state = self._build_state(away_id)
-            cfg = PlayBalanceConfig.from_file(get_base_dir() / "playbalance" / "PBINI.txt")
-            sim = GameSimulation(home_state, away_state, cfg)
-            sim.simulate_game()
-            box = generate_boxscore(home_state, away_state)
+            home_state, away_state, box, html, meta = run_single_game(
+                home_id,
+                away_id,
+                players_file=str(self._data_dir / "players.csv"),
+                roster_dir=str(self._data_dir / "rosters"),
+                lineup_dir=str(self._data_dir / "lineups"),
+            )
             text = self._format_box_score(home_id, away_id, box)
             # Render and save an HTML version of the box score
-            html = render_boxscore_html(
-                box,
-                home_name=self._teams.get(home_id, home_id),
-                away_name=self._teams.get(away_id, away_id),
-            )
             save_boxscore_html("exhibition", html, datetime.now().strftime("%Y%m%d_%H%M%S"))
-            if sim.debug_log:
-                text += "\n\nStrategy Log:\n" + "\n".join(sim.debug_log)
-            positions = sim.defense.set_field_positions()
+            debug_log = meta.get("debug_log") if isinstance(meta, dict) else None
+            if debug_log:
+                text += "\n\nStrategy Log:\n" + "\n".join(debug_log)
+            positions = meta.get("field_positions") if isinstance(meta, dict) else None
             if positions:
                 text += "\n\nField Positions:\n"
                 for sit, pos in positions.items():

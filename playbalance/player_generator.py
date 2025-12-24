@@ -1,7 +1,7 @@
 # ARR-inspired Player Generator Script
 import random
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Set, Optional
+from typing import Any, Dict, List, Tuple, Set, Optional
 import csv
 from pathlib import Path
 
@@ -16,6 +16,7 @@ from utils.path_utils import get_base_dir
 BASE_DIR = get_base_dir()
 NAME_PATH = BASE_DIR / "data" / "names.csv"
 PLAYER_PATH = BASE_DIR / "data" / "players.csv"
+NORMALIZED_PLAYER_PATH = BASE_DIR / "data" / "players_normalized.csv"
 POSITION_AVERAGE_PATH = (
     BASE_DIR
     / "data"
@@ -65,6 +66,752 @@ if not POSITION_AVERAGES:
         "DH": {"AVG": 0.249, "OBP": 0.330, "SLG": 0.442, "OPS": 0.772, "wRC+": 114.0},
         "P": {"AVG": 0.108, "OBP": 0.147, "SLG": 0.137, "OPS": 0.284},
     }
+
+
+HITTER_RATING_KEYS = (
+    "ch",
+    "ph",
+    "sp",
+    "eye",
+    "gf",
+    "pl",
+    "vl",
+    "sc",
+    "fa",
+    "arm",
+    "durability",
+)
+PITCHER_RATING_KEYS = (
+    "endurance",
+    "control",
+    "movement",
+    "hold_runner",
+    "fa",
+    "arm",
+    "gf",
+    "vl",
+    "durability",
+)
+PITCHER_PITCH_KEYS = ("fb", "cu", "cb", "sl", "si", "scb", "kn")
+_RATING_DISTRIBUTIONS: Optional[Dict[str, Any]] = None
+
+PLAYER_CSV_DEFAULTS: Dict[str, Any] = {
+    "player_id": "",
+    "first_name": "",
+    "last_name": "",
+    "birthdate": "",
+    "height": 72,
+    "weight": 195,
+    "ethnicity": "",
+    "skin_tone": "",
+    "hair_color": "",
+    "facial_hair": "",
+    "bats": "R",
+    "primary_position": "",
+    "other_positions": [],
+    "is_pitcher": False,
+    "role": "",
+    "preferred_pitching_role": "",
+    "pitcher_archetype": "",
+    "hitter_archetype": "",
+    "ch": 0,
+    "ph": 0,
+    "sp": 0,
+    "eye": 0,
+    "gf": 0,
+    "pl": 0,
+    "vl": 0,
+    "sc": 0,
+    "fa": 0,
+    "arm": 0,
+    "endurance": 0,
+    "control": 0,
+    "movement": 0,
+    "hold_runner": 0,
+    "fb": 0,
+    "cu": 0,
+    "cb": 0,
+    "sl": 0,
+    "si": 0,
+    "scb": 0,
+    "kn": 0,
+    "pot_ch": 0,
+    "pot_ph": 0,
+    "pot_sp": 0,
+    "pot_eye": 0,
+    "pot_gf": 0,
+    "pot_pl": 0,
+    "pot_vl": 0,
+    "pot_sc": 0,
+    "pot_fa": 0,
+    "pot_arm": 0,
+    "pot_control": 0,
+    "pot_movement": 0,
+    "pot_endurance": 0,
+    "pot_hold_runner": 0,
+    "pot_fb": 0,
+    "pot_cu": 0,
+    "pot_cb": 0,
+    "pot_sl": 0,
+    "pot_si": 0,
+    "pot_scb": 0,
+    "pot_kn": 0,
+    "injured": False,
+    "injury_description": "",
+    "return_date": "",
+    "ready": False,
+    "injury_list": "",
+    "injury_start_date": "",
+    "injury_minimum_days": "",
+    "injury_eligible_date": "",
+    "injury_rehab_assignment": "",
+    "injury_rehab_days": 0,
+    "durability": 50,
+}
+
+
+def _apply_player_defaults(player: Dict[str, Any]) -> None:
+    for key, default in PLAYER_CSV_DEFAULTS.items():
+        if key in player:
+            continue
+        if isinstance(default, list):
+            player[key] = list(default)
+        else:
+            player[key] = default
+    if not player.get("height"):
+        player["height"] = PLAYER_CSV_DEFAULTS["height"]
+    if not player.get("weight"):
+        player["weight"] = PLAYER_CSV_DEFAULTS["weight"]
+
+
+def _parse_int_field(row: Dict[str, str], key: str) -> Optional[int]:
+    raw = row.get(key)
+    if raw in (None, ""):
+        return None
+    try:
+        return int(round(float(raw)))
+    except (TypeError, ValueError):
+        return None
+
+
+def _derive_eye_rating(ch: int, sc: int, jitter: float = 0.0) -> int:
+    base = (ch * 0.6) + (sc * 0.4)
+    if jitter:
+        base += random.uniform(-jitter, jitter)
+    return max(10, min(99, int(round(base))))
+
+
+def _empty_rating_bucket(keys: Tuple[str, ...]) -> Dict[str, List[int]]:
+    return {key: [] for key in keys}
+
+
+def _load_rating_distributions(path: Path) -> Dict[str, Any]:
+    pools: Dict[str, Any] = {
+        "hitters": {"ALL": _empty_rating_bucket(HITTER_RATING_KEYS), "by_pos": {}},
+        "pitchers": {
+            "ALL": _empty_rating_bucket(PITCHER_RATING_KEYS),
+            "SP": _empty_rating_bucket(PITCHER_RATING_KEYS),
+            "RP": _empty_rating_bucket(PITCHER_RATING_KEYS),
+        },
+        "pitches": {
+            "ALL": _empty_rating_bucket(PITCHER_PITCH_KEYS),
+            "SP": _empty_rating_bucket(PITCHER_PITCH_KEYS),
+            "RP": _empty_rating_bucket(PITCHER_PITCH_KEYS),
+        },
+    }
+    for pos in PRIMARY_POSITION_WEIGHTS:
+        pools["hitters"]["by_pos"][pos] = _empty_rating_bucket(HITTER_RATING_KEYS)
+    if not path.exists():
+        return pools
+    with path.open(newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            is_pitcher = str(row.get("is_pitcher", "0")).strip().lower() in {
+                "1",
+                "true",
+                "yes",
+            }
+            if is_pitcher:
+                endurance_val = _parse_int_field(row, "endurance")
+                role = (
+                    row.get("preferred_pitching_role")
+                    or row.get("role")
+                    or ""
+                ).strip().upper()
+                if role.startswith("SP"):
+                    bucket = "SP"
+                elif role in {"CL", "SU", "RP", "MR", "LR"}:
+                    bucket = "RP"
+                else:
+                    bucket = "SP" if (endurance_val or 0) >= 60 else "RP"
+                for key in PITCHER_RATING_KEYS:
+                    value = _parse_int_field(row, key)
+                    if value is None:
+                        continue
+                    pools["pitchers"]["ALL"][key].append(value)
+                    pools["pitchers"][bucket][key].append(value)
+                for key in PITCHER_PITCH_KEYS:
+                    value = _parse_int_field(row, key)
+                    if value is None or value <= 0:
+                        continue
+                    pools["pitches"]["ALL"][key].append(value)
+                    pools["pitches"][bucket][key].append(value)
+            else:
+                pos = (row.get("primary_position") or "CF").strip().upper()
+                pos_bucket = pools["hitters"]["by_pos"].setdefault(
+                    pos, _empty_rating_bucket(HITTER_RATING_KEYS)
+                )
+                ch_val = _parse_int_field(row, "ch") or 50
+                sc_val = _parse_int_field(row, "sc") or 50
+                eye_val = _derive_eye_rating(ch_val, sc_val)
+                for key in HITTER_RATING_KEYS:
+                    if key == "eye":
+                        value = eye_val
+                    else:
+                        value = _parse_int_field(row, key)
+                    if value is None:
+                        continue
+                    pools["hitters"]["ALL"][key].append(value)
+                    pos_bucket[key].append(value)
+    for bucket in pools["hitters"]["ALL"].values():
+        bucket.sort()
+    for pos_bucket in pools["hitters"]["by_pos"].values():
+        for values in pos_bucket.values():
+            values.sort()
+    for group in ("ALL", "SP", "RP"):
+        for values in pools["pitchers"][group].values():
+            values.sort()
+        for values in pools["pitches"][group].values():
+            values.sort()
+    return pools
+
+
+def _rating_distributions() -> Dict[str, Any]:
+    global _RATING_DISTRIBUTIONS
+    if _RATING_DISTRIBUTIONS is None:
+        source_path = (
+            NORMALIZED_PLAYER_PATH
+            if NORMALIZED_PLAYER_PATH.exists()
+            else PLAYER_PATH
+        )
+        _RATING_DISTRIBUTIONS = _load_rating_distributions(source_path)
+    return _RATING_DISTRIBUTIONS
+
+
+def _percentile_value(values: List[int], pct: float) -> int:
+    if not values:
+        return 50
+    idx = int(round(pct * (len(values) - 1)))
+    idx = max(0, min(idx, len(values) - 1))
+    return values[idx]
+
+
+def _sample_from_values(
+    values: List[int],
+    band: Tuple[float, float],
+    *,
+    jitter: float = 2.5,
+    fallback: int = 50,
+) -> int:
+    if not values:
+        base = fallback
+    else:
+        low, high = band
+        if low > high:
+            low, high = high, low
+        pct = random.uniform(low, high)
+        base = _percentile_value(values, pct)
+    if jitter:
+        base += random.uniform(-jitter, jitter)
+    return max(10, min(99, int(round(base))))
+
+
+def _sample_from_distribution(
+    key: str,
+    *,
+    position: Optional[str] = None,
+    role: Optional[str] = None,
+    band: Tuple[float, float] = (0.35, 0.65),
+    jitter: float = 2.5,
+    fallback: int = 50,
+) -> int:
+    dist = _rating_distributions()
+    values: List[int]
+    if key in PITCHER_PITCH_KEYS:
+        values = dist["pitches"].get(role or "ALL", {}).get(key, []) or dist["pitches"]["ALL"].get(key, [])
+    elif role:
+        values = dist["pitchers"].get(role, {}).get(key, []) or dist["pitchers"]["ALL"].get(key, [])
+    elif position:
+        values = (
+            dist["hitters"]["by_pos"].get(position, {}).get(key, [])
+            or dist["hitters"]["ALL"].get(key, [])
+        )
+    else:
+        values = dist["hitters"]["ALL"].get(key, [])
+    return _sample_from_values(values, band, jitter=jitter, fallback=fallback)
+
+
+HITTER_TEMPLATES: Dict[str, Dict[str, Any]] = {
+    "power": {
+        "weight": 0.22,
+        "bands": {
+            "ph": (0.82, 0.98),
+            "ch": (0.35, 0.65),
+            "sp": (0.2, 0.6),
+            "eye": (0.3, 0.6),
+            "pl": (0.6, 0.9),
+            "gf": (0.2, 0.45),
+        },
+    },
+    "average": {
+        "weight": 0.18,
+        "bands": {
+            "ch": (0.4, 0.65),
+            "ph": (0.4, 0.65),
+            "sp": (0.35, 0.6),
+            "eye": (0.4, 0.65),
+            "pl": (0.4, 0.65),
+            "gf": (0.45, 0.7),
+        },
+    },
+    "spray": {
+        "weight": 0.18,
+        "bands": {
+            "ch": (0.7, 0.95),
+            "ph": (0.3, 0.6),
+            "sp": (0.45, 0.8),
+            "eye": (0.6, 0.9),
+            "pl": (0.1, 0.4),
+            "gf": (0.55, 0.85),
+        },
+    },
+    "balanced": {
+        "weight": 0.26,
+        "bands": {
+            "ch": (0.48, 0.78),
+            "ph": (0.48, 0.78),
+            "sp": (0.4, 0.7),
+            "eye": (0.45, 0.72),
+            "pl": (0.4, 0.7),
+            "gf": (0.4, 0.65),
+        },
+    },
+    "speed": {
+        "weight": 0.16,
+        "bands": {
+            "ch": (0.55, 0.8),
+            "ph": (0.2, 0.5),
+            "sp": (0.85, 0.99),
+            "eye": (0.55, 0.85),
+            "pl": (0.2, 0.55),
+            "gf": (0.6, 0.9),
+        },
+    },
+}
+
+
+HITTER_POSITION_TEMPLATE_WEIGHTS: Dict[str, Dict[str, float]] = {
+    "C": {"average": 0.32, "balanced": 0.28, "spray": 0.2, "power": 0.12, "speed": 0.08},
+    "1B": {"power": 0.38, "balanced": 0.2, "average": 0.15, "spray": 0.12, "speed": 0.05},
+    "2B": {"balanced": 0.3, "spray": 0.25, "speed": 0.2, "average": 0.15, "power": 0.1},
+    "SS": {"spray": 0.28, "balanced": 0.28, "speed": 0.22, "average": 0.14, "power": 0.08},
+    "3B": {"balanced": 0.3, "power": 0.25, "average": 0.2, "spray": 0.15, "speed": 0.1},
+    "LF": {"power": 0.33, "balanced": 0.22, "average": 0.18, "spray": 0.15, "speed": 0.12},
+    "CF": {"balanced": 0.28, "speed": 0.26, "spray": 0.2, "average": 0.16, "power": 0.1},
+    "RF": {"power": 0.35, "balanced": 0.22, "average": 0.18, "spray": 0.15, "speed": 0.1},
+    "DH": {"power": 0.4, "balanced": 0.2, "average": 0.2, "spray": 0.12, "speed": 0.08},
+}
+
+
+PITCHER_TEMPLATES: Dict[str, Dict[str, Any]] = {
+    "power_sp": {
+        "role": "SP",
+        "weight": 0.25,
+        "pitch_profile": "power",
+        "bands": {
+            "arm": (0.8, 0.98),
+            "control": (0.45, 0.7),
+            "movement": (0.55, 0.8),
+            "endurance": (0.7, 0.92),
+            "hold_runner": (0.4, 0.7),
+            "gf": (0.35, 0.6),
+        },
+    },
+    "finesse_sp": {
+        "role": "SP",
+        "weight": 0.2,
+        "pitch_profile": "finesse",
+        "bands": {
+            "arm": (0.45, 0.7),
+            "control": (0.75, 0.95),
+            "movement": (0.7, 0.9),
+            "endurance": (0.65, 0.88),
+            "hold_runner": (0.6, 0.8),
+            "gf": (0.4, 0.65),
+        },
+    },
+    "groundball_sp": {
+        "role": "SP",
+        "weight": 0.18,
+        "pitch_profile": "groundball",
+        "bands": {
+            "arm": (0.55, 0.8),
+            "control": (0.55, 0.78),
+            "movement": (0.65, 0.85),
+            "endurance": (0.65, 0.88),
+            "hold_runner": (0.5, 0.75),
+            "gf": (0.75, 0.95),
+        },
+    },
+    "balanced_sp": {
+        "role": "SP",
+        "weight": 0.22,
+        "pitch_profile": "balanced",
+        "bands": {
+            "arm": (0.6, 0.82),
+            "control": (0.6, 0.8),
+            "movement": (0.6, 0.82),
+            "endurance": (0.65, 0.88),
+            "hold_runner": (0.45, 0.7),
+            "gf": (0.45, 0.7),
+        },
+    },
+    "workhorse_sp": {
+        "role": "SP",
+        "weight": 0.15,
+        "pitch_profile": "balanced",
+        "bands": {
+            "arm": (0.55, 0.78),
+            "control": (0.6, 0.8),
+            "movement": (0.6, 0.82),
+            "endurance": (0.82, 0.99),
+            "hold_runner": (0.45, 0.7),
+            "gf": (0.45, 0.7),
+        },
+    },
+    "closer": {
+        "role": "RP",
+        "preferred_role": "CL",
+        "weight": 0.12,
+        "pitch_profile": "closer",
+        "bands": {
+            "arm": (0.9, 0.99),
+            "control": (0.55, 0.75),
+            "movement": (0.7, 0.92),
+            "endurance": (0.2, 0.45),
+            "hold_runner": (0.5, 0.75),
+            "gf": (0.35, 0.6),
+        },
+    },
+    "power_rp": {
+        "role": "RP",
+        "weight": 0.22,
+        "pitch_profile": "power",
+        "bands": {
+            "arm": (0.78, 0.97),
+            "control": (0.45, 0.7),
+            "movement": (0.55, 0.8),
+            "endurance": (0.32, 0.6),
+            "hold_runner": (0.45, 0.7),
+            "gf": (0.35, 0.6),
+        },
+    },
+    "finesse_rp": {
+        "role": "RP",
+        "weight": 0.2,
+        "pitch_profile": "finesse",
+        "bands": {
+            "arm": (0.5, 0.75),
+            "control": (0.7, 0.92),
+            "movement": (0.68, 0.88),
+            "endurance": (0.32, 0.6),
+            "hold_runner": (0.55, 0.78),
+            "gf": (0.4, 0.65),
+        },
+    },
+    "groundball_rp": {
+        "role": "RP",
+        "weight": 0.18,
+        "pitch_profile": "groundball",
+        "bands": {
+            "arm": (0.6, 0.82),
+            "control": (0.55, 0.78),
+            "movement": (0.6, 0.84),
+            "endurance": (0.32, 0.6),
+            "hold_runner": (0.5, 0.75),
+            "gf": (0.75, 0.95),
+        },
+    },
+    "long_relief": {
+        "role": "RP",
+        "preferred_role": "LR",
+        "weight": 0.08,
+        "pitch_profile": "balanced",
+        "bands": {
+            "arm": (0.55, 0.78),
+            "control": (0.6, 0.8),
+            "movement": (0.6, 0.82),
+            "endurance": (0.6, 0.82),
+            "hold_runner": (0.45, 0.7),
+            "gf": (0.45, 0.7),
+        },
+    },
+}
+
+
+PITCH_PROFILES: Dict[str, Dict[str, Any]] = {
+    "power": {
+        "primary": ["sl", "cb"],
+        "secondary": ["si", "cu", "scb"],
+        "fb_band": (0.8, 0.98),
+        "primary_band": (0.7, 0.9),
+        "secondary_band": (0.45, 0.7),
+    },
+    "finesse": {
+        "primary": ["cu", "cb"],
+        "secondary": ["sl", "si", "scb"],
+        "fb_band": (0.55, 0.78),
+        "primary_band": (0.68, 0.88),
+        "secondary_band": (0.5, 0.75),
+    },
+    "groundball": {
+        "primary": ["si"],
+        "secondary": ["sl", "cb", "cu"],
+        "fb_band": (0.6, 0.82),
+        "primary_band": (0.7, 0.9),
+        "secondary_band": (0.45, 0.7),
+    },
+    "balanced": {
+        "primary": ["sl", "cb", "cu"],
+        "secondary": ["si", "scb"],
+        "fb_band": (0.6, 0.85),
+        "primary_band": (0.6, 0.82),
+        "secondary_band": (0.45, 0.7),
+    },
+    "closer": {
+        "primary": ["sl"],
+        "secondary": ["cb", "cu"],
+        "fb_band": (0.9, 0.99),
+        "primary_band": (0.75, 0.95),
+        "secondary_band": (0.55, 0.78),
+    },
+}
+
+
+def _choose_hitter_template(primary_pos: str, archetype: Optional[str] = None) -> str:
+    if archetype and archetype in HITTER_TEMPLATES:
+        return archetype
+    weights = HITTER_POSITION_TEMPLATE_WEIGHTS.get(primary_pos)
+    names = list(HITTER_TEMPLATES.keys())
+    weight_list = []
+    for name in names:
+        if weights and name in weights:
+            weight_list.append(weights[name])
+        else:
+            weight_list.append(HITTER_TEMPLATES[name]["weight"])
+    return random.choices(names, weights=weight_list)[0]
+
+
+def _adjust_hitter_constraints(
+    template_name: str,
+    ch: int,
+    ph: int,
+    sp: int,
+    eye: int,
+    pl: int,
+    gf: int,
+) -> Tuple[int, int, int, int, int, int]:
+    if template_name in {"power"} and ph < ch + 6:
+        ph = min(99, ch + random.randint(6, 12))
+    if template_name in {"spray"} and ch < ph + 6:
+        ch = min(99, ph + random.randint(6, 12))
+    if template_name in {"balanced", "average"} and abs(ch - ph) > 10:
+        mid = int(round((ch + ph) / 2))
+        ch = min(99, max(10, mid + random.randint(-4, 4)))
+        ph = min(99, max(10, mid + random.randint(-4, 4)))
+    if template_name == "speed":
+        sp = max(sp, 70)
+    eye = max(10, min(99, eye))
+    pl = max(10, min(99, pl))
+    gf = max(10, min(99, gf))
+    return ch, ph, sp, eye, pl, gf
+
+
+def _sample_normalized_hitter(
+    primary_pos: str,
+    bats: str,
+    archetype: Optional[str] = None,
+) -> Dict[str, Any] | None:
+    template = _choose_hitter_template(primary_pos, archetype)
+    bands = HITTER_TEMPLATES[template]["bands"]
+    ch = _sample_from_distribution("ch", position=primary_pos, band=bands.get("ch", (0.4, 0.7)))
+    ph = _sample_from_distribution("ph", position=primary_pos, band=bands.get("ph", (0.4, 0.7)))
+    sp = _sample_from_distribution("sp", position=primary_pos, band=bands.get("sp", (0.35, 0.65)))
+    pl = _sample_from_distribution("pl", position=primary_pos, band=bands.get("pl", (0.4, 0.7)))
+    gf = _sample_from_distribution("gf", position=primary_pos, band=bands.get("gf", (0.4, 0.7)))
+    sc = _sample_from_distribution("sc", position=primary_pos, band=bands.get("sc", (0.4, 0.7)))
+    eye_raw = _sample_from_distribution("eye", position=primary_pos, band=bands.get("eye", (0.4, 0.7)))
+    eye = int(round((eye_raw * 0.7) + (ch * 0.3)))
+    fa = _sample_from_distribution("fa", position=primary_pos, band=bands.get("fa", (0.4, 0.7)))
+    arm = _sample_from_distribution("arm", position=primary_pos, band=bands.get("arm", (0.4, 0.7)))
+    vl = _sample_from_distribution("vl", position=primary_pos, band=bands.get("vl", (0.4, 0.7)))
+    if bats == "L":
+        vl = max(30, vl - 4)
+    elif bats == "R":
+        vl = min(99, vl + 4)
+    ch, ph, sp, eye, pl, gf = _adjust_hitter_constraints(
+        template, ch, ph, sp, eye, pl, gf
+    )
+    return {
+        "ch": ch,
+        "ph": ph,
+        "sp": sp,
+        "eye": eye,
+        "gf": gf,
+        "pl": pl,
+        "vl": vl,
+        "sc": sc,
+        "fa": fa,
+        "arm": arm,
+        "hitter_archetype": template,
+    }
+
+
+def _choose_pitcher_template(archetype: Optional[str] = None) -> str:
+    if archetype:
+        normalized = archetype.strip().lower()
+        aliases = {
+            "power": "power_sp",
+            "finesse": "finesse_sp",
+            "groundball": "groundball_sp",
+            "balanced": "balanced_sp",
+            "workhorse": "workhorse_sp",
+            "closer": "closer",
+            "setup": "closer",
+            "long_relief": "long_relief",
+        }
+        name = aliases.get(normalized, normalized)
+        if name in PITCHER_TEMPLATES:
+            return name
+    role_pool = "SP" if random.random() < 0.6 else "RP"
+    candidates = [
+        name for name, spec in PITCHER_TEMPLATES.items() if spec["role"] == role_pool
+    ]
+    weights = [PITCHER_TEMPLATES[name]["weight"] for name in candidates]
+    return random.choices(candidates, weights=weights)[0]
+
+
+def _sample_pitch_mix(
+    *,
+    role: str,
+    profile: str,
+    arm: int,
+    template_name: str,
+) -> Dict[str, int]:
+    profile_cfg = PITCH_PROFILES.get(profile, PITCH_PROFILES["balanced"])
+    if role == "SP":
+        pitch_count = random.randint(3, 5)
+    else:
+        pitch_count = random.randint(2, 4)
+    selected: List[str] = ["fb"]
+    primary_pool = list(profile_cfg.get("primary", []))
+    secondary_pool = list(profile_cfg.get("secondary", []))
+    if template_name == "closer" and "sl" in primary_pool and "sl" not in selected:
+        selected.append("sl")
+    while len(selected) < pitch_count:
+        if primary_pool:
+            pitch = random.choice(primary_pool)
+            primary_pool.remove(pitch)
+        elif secondary_pool:
+            pitch = random.choice(secondary_pool)
+            secondary_pool.remove(pitch)
+        else:
+            pitch = random.choice([p for p in PITCHER_PITCH_KEYS if p not in selected])
+        if pitch not in selected:
+            selected.append(pitch)
+    ratings = {key: 0 for key in PITCHER_PITCH_KEYS}
+    for pitch in selected:
+        if pitch == "fb":
+            band = profile_cfg.get("fb_band", (0.6, 0.85))
+            rating = _sample_from_distribution(pitch, role=role, band=band, fallback=arm)
+            rating = max(rating, arm - random.randint(0, 6))
+        elif pitch in profile_cfg.get("primary", []):
+            rating = _sample_from_distribution(
+                pitch,
+                role=role,
+                band=profile_cfg.get("primary_band", (0.6, 0.82)),
+                fallback=60,
+            )
+        else:
+            rating = _sample_from_distribution(
+                pitch,
+                role=role,
+                band=profile_cfg.get("secondary_band", (0.45, 0.7)),
+                fallback=55,
+            )
+        ratings[pitch] = rating
+    if template_name == "closer":
+        ratings["sl"] = max(ratings.get("sl", 0), 65)
+    return ratings
+
+
+def _sample_normalized_pitcher(
+    archetype: Optional[str],
+    throws: str,
+) -> Dict[str, Any] | None:
+    template = _choose_pitcher_template(archetype)
+    spec = PITCHER_TEMPLATES[template]
+    role = spec["role"]
+    bands = spec["bands"]
+    arm = _sample_from_distribution("arm", role=role, band=bands.get("arm", (0.55, 0.85)))
+    control = _sample_from_distribution(
+        "control", role=role, band=bands.get("control", (0.55, 0.8))
+    )
+    movement = _sample_from_distribution(
+        "movement", role=role, band=bands.get("movement", (0.55, 0.85))
+    )
+    endurance = _sample_from_distribution(
+        "endurance", role=role, band=bands.get("endurance", (0.55, 0.85))
+    )
+    hold_runner = _sample_from_distribution(
+        "hold_runner", role=role, band=bands.get("hold_runner", (0.45, 0.7))
+    )
+    gf = _sample_from_distribution("gf", role=role, band=bands.get("gf", (0.4, 0.7)))
+    fa = _sample_from_distribution("fa", role=role, band=bands.get("fa", (0.4, 0.7)))
+    vl = _sample_from_distribution("vl", role=role, band=bands.get("vl", (0.4, 0.7)))
+    if throws == "L":
+        vl = min(99, vl + 4)
+    else:
+        vl = max(30, vl - 2)
+    control = max(50, control)
+    movement = max(52, movement)
+    if template == "closer":
+        endurance = min(endurance, 55)
+        if movement < control:
+            movement = min(99, control + random.randint(2, 8))
+    pitch_profile = spec.get("pitch_profile", "balanced")
+    pitch_ratings = _sample_pitch_mix(
+        role=role,
+        profile=pitch_profile,
+        arm=arm,
+        template_name=template,
+    )
+    preferred_role = spec.get("preferred_role", "")
+    data: Dict[str, Any] = {
+        "endurance": endurance,
+        "control": control,
+        "movement": movement,
+        "hold_runner": hold_runner,
+        "arm": arm,
+        "fa": fa,
+        "gf": gf,
+        "vl": vl,
+        "role": role,
+        "preferred_pitching_role": preferred_role,
+        "pitcher_archetype": template,
+    }
+    data.update(pitch_ratings)
+    return data
 
 
 def _stat_bounds(field: str, include_pitchers: bool = False) -> Tuple[float, float]:
@@ -619,10 +1366,12 @@ def _generate_hitter_ratings(primary_pos: str) -> Dict[str, int]:
         spread=5.5,
         outlier_bounds=(74, 92),
     )
+    eye = _derive_eye_rating(contact, int(round((contact + power) / 2)), jitter=4.0)
     return {
         "ch": contact,
         "ph": power,
         "sp": speed,
+        "eye": eye,
         "fa": fielding,
         "arm": arm,
     }
@@ -760,6 +1509,18 @@ def _weighted_choice(weight_dict: Dict[str, int]) -> str:
     return item  # pragma: no cover
 
 
+def _estimate_zone_bounds(height_in: int) -> tuple[float, float]:
+    base_bottom = 1.5
+    base_top = 3.5
+    bottom = base_bottom + (height_in - 72) * 0.01
+    top = base_top + (height_in - 72) * 0.015
+    bottom = max(1.2, bottom)
+    top = min(4.3, top)
+    if top - bottom < 1.8:
+        top = bottom + 1.8
+    return round(bottom, 3), round(top, 3)
+
+
 def generate_pitches(throws: str, delivery: str, age: int):
     """Generate pitch ratings without exceeding rating caps.
 
@@ -810,10 +1571,10 @@ def _maybe_add_hitting(player: Dict, age: int, allocation: float = 0.75) -> None
         return
 
     attrs = {}
-    for key in ["ch", "ph", "sp", "gf", "pl", "vl", "sc"]:
+    for key in ["ch", "ph", "sp", "eye", "gf", "pl", "vl", "sc"]:
         rating = int(bounded_rating() * allocation)
         attrs[key] = rating
-        if key in {"ch", "ph", "sp", "gf", "sc"}:
+        if key in {"ch", "ph", "sp", "eye", "gf", "sc"}:
             attrs[f"pot_{key}"] = bounded_potential(rating, age)
 
     player.update(attrs)
@@ -867,6 +1628,8 @@ def generate_player(
     primary_position: Optional[str] = None,
     player_type: Optional[str] = None,
     pitcher_archetype: Optional[str] = None,
+    hitter_archetype: Optional[str] = None,
+    rating_profile: str = "normalized",
 ) -> Dict:
     """Generate a single player record.
 
@@ -892,6 +1655,12 @@ def generate_player(
     pitcher_archetype: Optional[str]
         When generating pitchers, optionally choose a specific archetype such
         as ``\"closer\"`` to bias the ratings/traits toward that profile.
+    hitter_archetype: Optional[str]
+        When generating hitters, optionally choose a specific archetype
+        (power, balanced, spray, etc.) to bias ratings toward that profile.
+    rating_profile: str
+        Rating profile to use for core attributes. Supports ``\"arr\"`` or
+        ``\"normalized\"``.
 
     Returns
     -------
@@ -914,6 +1683,10 @@ def generate_player(
     skin_tone = assign_skin_tone(ethnicity)
     hair_color = assign_hair_color(ethnicity)
     facial_hair = assign_facial_hair(ethnicity, age)
+    profile = (rating_profile or "normalized").strip().lower()
+    if profile not in {"arr", "normalized"}:
+        profile = "normalized"
+    use_normalized = profile == "normalized"
 
     # Situational modifiers derived from ARR tables (lines 199-225)
     mo = roll_dice(35, 5, 5)  # monthly
@@ -928,32 +1701,85 @@ def generate_player(
         bats, throws = assign_bats_throws("P")
         # Expand pitcher platoon splits for more variation
         vl = roll_dice(20, 10, 6) if throws == "L" else roll_dice(10, 10, 6)
-        # Allocate pitching related ratings from a shared pool using the ARR
-        # derived weights.  A second pool is used to determine the pitcher's
-        # fielding ability.
-        core_ratings = _generate_pitcher_core_ratings(throws, archetype=pitcher_archetype)
-        endurance = core_ratings["endurance"]
-        control = core_ratings["control"]
-        movement = core_ratings["movement"]
-        hold_runner = core_ratings["hold_runner"]
-        arm = core_ratings["arm"]
-        fa = core_ratings["fa"]
+        pitcher_archetype_label = ""
+        normalized_pitcher = (
+            _sample_normalized_pitcher(pitcher_archetype, throws)
+            if use_normalized
+            else None
+        )
+        if normalized_pitcher:
+            endurance = normalized_pitcher["endurance"]
+            control = normalized_pitcher["control"]
+            movement = normalized_pitcher["movement"]
+            hold_runner = normalized_pitcher["hold_runner"]
+            arm = normalized_pitcher["arm"]
+            fa = normalized_pitcher["fa"]
+            gf = normalized_pitcher["gf"]
+            vl = normalized_pitcher["vl"]
+            durability = normalized_pitcher.get("durability") or _generate_durability(
+                age, True
+            )
+            preferred_pitching_role = (
+                str(
+                    normalized_pitcher.get("preferred_pitching_role")
+                    or normalized_pitcher.get("role")
+                    or ""
+                )
+                .strip()
+                .upper()
+            )
+            role = "SP" if endurance > 55 else "RP"
+            if preferred_pitching_role in {"CL", "SU", "RP", "MR", "LR"}:
+                role = "RP"
+            if pitcher_archetype == "closer" and not preferred_pitching_role:
+                preferred_pitching_role = "CL"
+                role = "RP"
+            delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
+            pitcher_archetype_label = str(
+                normalized_pitcher.get("pitcher_archetype") or ""
+            )
+            pitch_ratings = {
+                key: int(normalized_pitcher.get(key, 0))
+                for key in PITCHER_PITCH_KEYS
+            }
+            pitch_pots = {
+                f"pot_{p}": bounded_potential(pitch_ratings[p], age)
+                if pitch_ratings[p]
+                else 0
+                for p in PITCHER_PITCH_KEYS
+            }
+        else:
+            # Allocate pitching related ratings from a shared pool using the ARR
+            # derived weights.  A second pool is used to determine the pitcher's
+            # fielding ability.
+            core_ratings = _generate_pitcher_core_ratings(
+                throws, archetype=pitcher_archetype
+            )
+            endurance = core_ratings["endurance"]
+            control = core_ratings["control"]
+            movement = core_ratings["movement"]
+            hold_runner = core_ratings["hold_runner"]
+            arm = core_ratings["arm"]
+            fa = core_ratings["fa"]
 
-        role = "SP" if endurance > 55 else "RP"
-        preferred_pitching_role = ""
-        if pitcher_archetype == "closer":
-            role = "RP"
-            preferred_pitching_role = "CL"
-            endurance = min(endurance, 55)
-        delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
-        pitch_ratings, pitch_pots = generate_pitches(throws, delivery, age)
-        if pitcher_archetype == "closer":
-            pitch_ratings["fb"] = max(pitch_ratings.get("fb", 0), 85)
-            slider_floor = bounded_rating(65, 90)
-            pitch_ratings["sl"] = max(pitch_ratings.get("sl", 0), slider_floor)
-            pitch_ratings["si"] = max(pitch_ratings.get("si", 0), 60)
+            role = "SP" if endurance > 55 else "RP"
+            preferred_pitching_role = ""
+            if pitcher_archetype == "closer":
+                role = "RP"
+                preferred_pitching_role = "CL"
+                endurance = min(endurance, 55)
+            delivery = random.choices(["overhand", "sidearm"], weights=[95, 5])[0]
+            pitch_ratings, pitch_pots = generate_pitches(throws, delivery, age)
+            if pitcher_archetype == "closer":
+                pitch_ratings["fb"] = max(pitch_ratings.get("fb", 0), 85)
+                slider_floor = bounded_rating(65, 90)
+                pitch_ratings["sl"] = max(pitch_ratings.get("sl", 0), slider_floor)
+                pitch_ratings["si"] = max(pitch_ratings.get("si", 0), 60)
 
-        durability = _generate_durability(age, True)
+            durability = _generate_durability(age, True)
+            if pitcher_archetype:
+                pitcher_archetype_label = pitcher_archetype
+        zone_bottom, zone_top = _estimate_zone_bounds(height)
 
         player = {
             "first_name": first_name,
@@ -983,6 +1809,9 @@ def generate_player(
             "durability": durability,
             "height": height,
             "weight": weight,
+            "zone_bottom": zone_bottom,
+            "zone_top": zone_top,
+            "pitcher_archetype": pitcher_archetype_label,
             "ethnicity": ethnicity,
             "skin_tone": skin_tone,
             "hair_color": hair_color,
@@ -1006,6 +1835,7 @@ def generate_player(
         if pitcher_archetype == "closer":
             player["cl"] = max(player["cl"], 65)
             player["gf"] = max(player["gf"], 55)
+        _apply_player_defaults(player)
         return player
 
     else:
@@ -1020,13 +1850,41 @@ def generate_player(
         else:
             vl = roll_dice(18, 10, 6)
         other_pos = assign_secondary_positions(primary_pos)
-        ratings = _generate_hitter_ratings(primary_pos)
-        ch = ratings["ch"]
-        ph = ratings["ph"]
-        sp = ratings["sp"]
-        fa = ratings["fa"]
-        arm = ratings["arm"]
-        durability = _generate_durability(age, False)
+        hitter_archetype_label = ""
+        normalized_hitter = (
+            _sample_normalized_hitter(primary_pos, bats, hitter_archetype)
+            if use_normalized
+            else None
+        )
+        if normalized_hitter:
+            ch = normalized_hitter["ch"]
+            ph = normalized_hitter["ph"]
+            sp = normalized_hitter["sp"]
+            eye = normalized_hitter["eye"]
+            gf = normalized_hitter["gf"]
+            pl = normalized_hitter["pl"]
+            vl = normalized_hitter["vl"]
+            sc = normalized_hitter["sc"]
+            fa = normalized_hitter["fa"]
+            arm = normalized_hitter["arm"]
+            durability = normalized_hitter.get("durability") or _generate_durability(
+                age, False
+            )
+            hitter_archetype_label = str(
+                normalized_hitter.get("hitter_archetype") or ""
+            )
+        else:
+            ratings = _generate_hitter_ratings(primary_pos)
+            ch = ratings["ch"]
+            ph = ratings["ph"]
+            sp = ratings["sp"]
+            eye = ratings["eye"]
+            fa = ratings["fa"]
+            arm = ratings["arm"]
+            durability = _generate_durability(age, False)
+            if hitter_archetype:
+                hitter_archetype_label = hitter_archetype
+        zone_bottom, zone_top = _estimate_zone_bounds(height)
 
         player = {
             "first_name": first_name,
@@ -1042,6 +1900,7 @@ def generate_player(
             "ch": ch,
             "ph": ph,
             "sp": sp,
+            "eye": eye,
             "gf": gf,
             "pl": pl,
             "vl": vl,
@@ -1054,6 +1913,9 @@ def generate_player(
             "durability": durability,
             "height": height,
             "weight": weight,
+            "zone_bottom": zone_bottom,
+            "zone_top": zone_top,
+            "hitter_archetype": hitter_archetype_label,
             "ethnicity": ethnicity,
             "skin_tone": skin_tone,
             "hair_color": hair_color,
@@ -1063,6 +1925,7 @@ def generate_player(
             "pot_ch": bounded_potential(ch, age),
             "pot_ph": bounded_potential(ph, age),
             "pot_sp": bounded_potential(sp, age),
+            "pot_eye": bounded_potential(eye, age),
             "pot_fa": bounded_potential(fa, age),
             "pot_arm": bounded_potential(arm, age),
             "pot_sc": sc,
@@ -1072,6 +1935,7 @@ def generate_player(
             "ch",
             "ph",
             "sp",
+            "eye",
             "gf",
             "pl",
             "vl",
@@ -1082,6 +1946,7 @@ def generate_player(
             "pot_ch",
             "pot_ph",
             "pot_sp",
+            "pot_eye",
             "pot_fa",
             "pot_arm",
             "pot_sc",
@@ -1091,10 +1956,14 @@ def generate_player(
             player.setdefault(key, 0)
         _maybe_add_pitching(player, age, throws)
         player["pot_fielding"] = generate_fielding_potentials(primary_pos, player["other_positions"])
+        _apply_player_defaults(player)
         return player
 
 
-def generate_draft_pool(num_players: int = 75) -> List[Dict]:
+def generate_draft_pool(
+    num_players: int = 75,
+    rating_profile: str = "normalized",
+) -> List[Dict]:
     players = []
     hitter_weight = sum(PRIMARY_POSITION_WEIGHTS.values())
     pitcher_weight = hitter_weight * (PITCHER_RATE / (1 - PITCHER_RATE))
@@ -1115,9 +1984,22 @@ def generate_draft_pool(num_players: int = 75) -> List[Dict]:
     for idx, flag in enumerate(role_flags):
         if flag == "pitcher":
             archetype = "closer" if idx in closer_indices else None
-            players.append(generate_player(is_pitcher=True, for_draft=True, pitcher_archetype=archetype))
+            players.append(
+                generate_player(
+                    is_pitcher=True,
+                    for_draft=True,
+                    pitcher_archetype=archetype,
+                    rating_profile=rating_profile,
+                )
+            )
         else:
-            players.append(generate_player(is_pitcher=False, for_draft=True))
+            players.append(
+                generate_player(
+                    is_pitcher=False,
+                    for_draft=True,
+                    rating_profile=rating_profile,
+                )
+            )
     # Ensure all players have all keys filled
     all_keys = set(k for player in players for k in player.keys())
     for player in players:

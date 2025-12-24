@@ -51,6 +51,22 @@ def _read_players_header() -> list[str]:
 def _default_row_from_pool(pool_row: Dict[str, Any]) -> Dict[str, Any]:
     # Map DraftProspect fields to players.csv schema; fill with defaults where needed
     row: Dict[str, Any] = {}
+
+    def _as_int(key: str, default: int = 0) -> int:
+        value = pool_row.get(key, default)
+        if value in ("", None):
+            return default
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return default
+
+    def _as_text(key: str, default: str = "") -> str:
+        value = pool_row.get(key, default)
+        if value is None:
+            return default
+        return str(value)
+
     pid = pool_row.get("player_id", "")
     first = pool_row.get("first_name", "Prospect")
     last = pool_row.get("last_name", "")
@@ -58,25 +74,45 @@ def _default_row_from_pool(pool_row: Dict[str, Any]) -> Dict[str, Any]:
     is_pitcher = str(pool_row.get("is_pitcher", "0")).lower() in {"1", "true", "yes"}
     primary = pool_row.get("primary_position", "P" if is_pitcher else "SS")
     other = pool_row.get("other_positions", "")
-    ch = int(pool_row.get("ch", 50) or 50)
-    ph = int(pool_row.get("ph", 50) or 50)
-    sp = int(pool_row.get("sp", 50) or 50)
-    fa = int(pool_row.get("fa", 50) or 50)
-    arm = int(pool_row.get("arm", 50) or 50)
-    endurance = int(pool_row.get("endurance", 0) or 0)
-    control = int(pool_row.get("control", 0) or 0)
-    movement = int(pool_row.get("movement", 0) or 0)
-    hold = int(pool_row.get("hold_runner", 0) or 0)
+    ch = _as_int("ch", 50)
+    ph = _as_int("ph", 50)
+    sp = _as_int("sp", 50)
+    eye = _as_int("eye", ch)
+    gf = _as_int("gf", 50)
+    pl = _as_int("pl", 50)
+    vl = _as_int("vl", 50)
+    sc = _as_int("sc", 50)
+    fa = _as_int("fa", 50)
+    arm = _as_int("arm", 50)
+    endurance = _as_int("endurance", 0)
+    control = _as_int("control", 0)
+    movement = _as_int("movement", 0)
+    hold = _as_int("hold_runner", 0)
+    fb = _as_int("fb", 0)
+    cu = _as_int("cu", 0)
+    cb = _as_int("cb", 0)
+    sl = _as_int("sl", 0)
+    si = _as_int("si", 0)
+    scb = _as_int("scb", 0)
+    kn = _as_int("kn", 0)
+    durability = _as_int("durability", 50)
+    preferred_role = _as_text("preferred_pitching_role", "").strip()
+    if not preferred_role:
+        archetype = _as_text("pitcher_archetype", "").strip().lower()
+        if archetype == "closer":
+            preferred_role = "CL"
 
     # Defaults
-    height = 72
-    weight = 195
-    ethnicity = "Anglo"
-    skin_tone = "medium"
-    hair_color = "brown"
-    facial_hair = "clean_shaven"
-    bats = pool_row.get("bats", "R")
-    role = "SP" if is_pitcher and endurance >= 70 else ("RP" if is_pitcher else "")
+    height = _as_int("height", 72)
+    weight = _as_int("weight", 195)
+    ethnicity = _as_text("ethnicity", "Anglo")
+    skin_tone = _as_text("skin_tone", "medium")
+    hair_color = _as_text("hair_color", "brown")
+    facial_hair = _as_text("facial_hair", "clean_shaven")
+    bats = _as_text("bats", "R")
+    role = _as_text("role", "").strip()
+    if not role:
+        role = "SP" if is_pitcher and endurance >= 55 else ("RP" if is_pitcher else "")
 
     row.update(
         {
@@ -92,51 +128,57 @@ def _default_row_from_pool(pool_row: Dict[str, Any]) -> Dict[str, Any]:
             "facial_hair": facial_hair,
             "bats": bats,
             "primary_position": primary,
-            "other_positions": other if isinstance(other, str) else "|".join(other or []),
+            "other_positions": (
+                other if isinstance(other, str) else "|".join(other or [])
+            ),
             "is_pitcher": 1 if is_pitcher else 0,
             "role": role,
+            "preferred_pitching_role": preferred_role,
             "ch": ch,
             "ph": ph,
             "sp": sp,
-            "gf": 50,
-            "pl": 50,
-            "vl": 50,
-            "sc": 50,
+            "eye": eye,
+            "gf": gf,
+            "pl": pl,
+            "vl": vl,
+            "sc": sc,
             "fa": fa,
             "arm": arm,
             "endurance": endurance,
             "control": control,
             "movement": movement,
             "hold_runner": hold,
+            "durability": durability,
             # Pitches (defaults)
-            "fb": 50,
-            "cu": 0,
-            "cb": 0,
-            "sl": 0,
-            "si": 0,
-            "scb": 0,
-            "kn": 0,
+            "fb": fb,
+            "cu": cu,
+            "cb": cb,
+            "sl": sl,
+            "si": si,
+            "scb": scb,
+            "kn": kn,
             # Potentials: mirror current ratings as a baseline
-            "pot_ch": ch,
-            "pot_ph": ph,
-            "pot_sp": sp,
-            "pot_gf": 50,
-            "pot_pl": 50,
-            "pot_vl": 50,
-            "pot_sc": 50,
-            "pot_fa": fa,
-            "pot_arm": arm,
-            "pot_control": control,
-            "pot_movement": movement,
-            "pot_endurance": endurance,
-            "pot_hold_runner": hold,
-            "pot_fb": 50,
-            "pot_cu": 0,
-            "pot_cb": 0,
-            "pot_sl": 0,
-            "pot_si": 0,
-            "pot_scb": 0,
-            "pot_kn": 0,
+            "pot_ch": _as_int("pot_ch", ch),
+            "pot_ph": _as_int("pot_ph", ph),
+            "pot_sp": _as_int("pot_sp", sp),
+            "pot_eye": _as_int("pot_eye", eye),
+            "pot_gf": _as_int("pot_gf", gf),
+            "pot_pl": _as_int("pot_pl", pl),
+            "pot_vl": _as_int("pot_vl", vl),
+            "pot_sc": _as_int("pot_sc", sc),
+            "pot_fa": _as_int("pot_fa", fa),
+            "pot_arm": _as_int("pot_arm", arm),
+            "pot_control": _as_int("pot_control", control),
+            "pot_movement": _as_int("pot_movement", movement),
+            "pot_endurance": _as_int("pot_endurance", endurance),
+            "pot_hold_runner": _as_int("pot_hold_runner", hold),
+            "pot_fb": _as_int("pot_fb", fb),
+            "pot_cu": _as_int("pot_cu", cu),
+            "pot_cb": _as_int("pot_cb", cb),
+            "pot_sl": _as_int("pot_sl", sl),
+            "pot_si": _as_int("pot_si", si),
+            "pot_scb": _as_int("pot_scb", scb),
+            "pot_kn": _as_int("pot_kn", kn),
             "injured": False,
             "injury_description": "",
             "return_date": "",

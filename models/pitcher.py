@@ -26,6 +26,7 @@ class Pitcher(BasePlayer):
     skin_tone: str = ""
     hair_color: str = ""
     facial_hair: str = ""
+    pitcher_archetype: str = ""
 
     endurance: int = 0
     control: int = 0

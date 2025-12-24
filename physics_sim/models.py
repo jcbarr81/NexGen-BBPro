@@ -21,7 +21,11 @@ class BatterRatings:
     fielding: float  # FA
     arm: float  # ARM
     speed: float  # SP
+    eye: float
+    height: float
     durability: float
+    zone_bottom: Optional[float] = None
+    zone_top: Optional[float] = None
 
     @classmethod
     def from_row(cls, row: Dict[str, str]) -> "BatterRatings":
@@ -30,18 +34,27 @@ class BatterRatings:
                 return float(row.get(key, default))
             except (TypeError, ValueError):
                 return default
+        def opt_float(key: str) -> Optional[float]:
+            value = row.get(key)
+            if value in (None, ""):
+                return None
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
 
         other_positions = [
             p.strip()
             for p in (row.get("other_positions") or "").split(",")
             if p.strip()
         ]
+        contact = f("ch")
         return cls(
             player_id=str(row.get("player_id", "")),
             bats=str(row.get("bats", "") or "R").upper(),
             primary_position=str(row.get("primary_position", "") or ""),
             other_positions=other_positions,
-            contact=f("ch"),
+            contact=contact,
             power=f("ph"),
             gb_tendency=f("gf"),
             pull_tendency=f("pl"),
@@ -49,7 +62,11 @@ class BatterRatings:
             fielding=f("fa"),
             arm=f("arm"),
             speed=f("sp"),
+            eye=f("eye", contact),
+            height=f("height", 72.0),
             durability=f("durability", 50.0),
+            zone_bottom=opt_float("zone_bottom"),
+            zone_top=opt_float("zone_top"),
         )
 
 
@@ -57,6 +74,8 @@ class BatterRatings:
 class PitcherRatings:
     player_id: str
     bats: str
+    role: str
+    preferred_role: str
     velocity: float  # derived from arm
     control: float
     movement: float
@@ -81,6 +100,8 @@ class PitcherRatings:
         return cls(
             player_id=str(row.get("player_id", "")),
             bats=str(row.get("bats", "") or "R").upper(),
+            role=str(row.get("role", "") or "").upper(),
+            preferred_role=str(row.get("preferred_pitching_role", "") or "").upper(),
             velocity=f("arm"),
             control=f("control"),
             movement=f("movement"),

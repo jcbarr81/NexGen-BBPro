@@ -234,6 +234,7 @@ def _read_players_from_csv(csv_path: Path):
                     kn=kn,
                     role=role,
                     preferred_pitching_role=preferred_role,
+                    pitcher_archetype=row.get("pitcher_archetype", ""),
                     arm=arm,
                     fa=fa,
                     potential={
@@ -258,6 +259,7 @@ def _read_players_from_csv(csv_path: Path):
                 ch = _required_int(row, "ch")
                 ph = _required_int(row, "ph")
                 sp = _required_int(row, "sp")
+                eye = _optional_int(row, "eye", ch)
                 pl = _required_int(row, "pl")
                 vl = _required_int(row, "vl")
                 sc = _required_int(row, "sc")
@@ -268,6 +270,8 @@ def _read_players_from_csv(csv_path: Path):
                     ch=ch,
                     ph=ph,
                     sp=sp,
+                    eye=eye,
+                    hitter_archetype=row.get("hitter_archetype", ""),
                     pl=pl,
                     vl=vl,
                     sc=sc,
@@ -277,6 +281,7 @@ def _read_players_from_csv(csv_path: Path):
                         "ch": _optional_int(row, "pot_ch", ch),
                         "ph": _optional_int(row, "pot_ph", ph),
                         "sp": _optional_int(row, "pot_sp", sp),
+                        "eye": _optional_int(row, "pot_eye", eye),
                         "gf": _optional_int(row, "pot_gf", gf),
                         "pl": _optional_int(row, "pot_pl", pl),
                         "vl": _optional_int(row, "pot_vl", vl),

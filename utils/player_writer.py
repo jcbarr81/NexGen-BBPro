@@ -7,16 +7,17 @@ def save_players_to_csv(players, file_path):
         "player_id", "first_name", "last_name", "birthdate", "height", "weight",
         "ethnicity", "skin_tone", "hair_color", "facial_hair", "bats",
         "primary_position", "other_positions", "is_pitcher", "role", "preferred_pitching_role",
-        "ch", "ph", "sp", "gf", "pl", "vl", "sc", "fa", "arm",
+        "ch", "ph", "sp", "eye", "gf", "pl", "vl", "sc", "fa", "arm",
         "endurance", "control", "movement", "hold_runner",
         "fb", "cu", "cb", "sl", "si", "scb", "kn",
-        "pot_ch", "pot_ph", "pot_sp", "pot_gf", "pot_pl", "pot_vl", "pot_sc", "pot_fa", "pot_arm",
+        "pot_ch", "pot_ph", "pot_sp", "pot_eye", "pot_gf", "pot_pl", "pot_vl", "pot_sc", "pot_fa", "pot_arm",
         "pot_control", "pot_movement", "pot_endurance", "pot_hold_runner",
         "pot_fb", "pot_cu", "pot_cb", "pot_sl", "pot_si", "pot_scb", "pot_kn",
         "injured", "injury_description", "return_date", "ready",
         "injury_list", "injury_start_date", "injury_minimum_days", "injury_eligible_date",
         "injury_rehab_assignment", "injury_rehab_days",
         "durability",
+        "pitcher_archetype", "hitter_archetype",
     ]
 
     with open(file_path, mode="w", newline="") as csvfile:
@@ -53,6 +54,8 @@ def save_players_to_csv(players, file_path):
                 "injury_rehab_assignment": p.injury_rehab_assignment or "",
                 "injury_rehab_days": str(getattr(p, "injury_rehab_days", 0)),
                 "durability": getattr(p, "durability", 50),
+                "pitcher_archetype": getattr(p, "pitcher_archetype", ""),
+                "hitter_archetype": getattr(p, "hitter_archetype", ""),
             }
 
             if is_pitcher:
@@ -83,12 +86,15 @@ def save_players_to_csv(players, file_path):
                 })
             else:
                 row.update({
-                    "ch": p.ch, "ph": p.ph, "sp": p.sp,
+                    "ch": p.ch, "ph": p.ph, "sp": p.sp, "eye": getattr(p, "eye", 0),
                     "gf": p.gf, "pl": p.pl, "vl": p.vl, "sc": p.sc,
                     "fa": p.fa, "arm": p.arm,
                     "pot_ch": p.potential.get("ch", p.ch),
                     "pot_ph": p.potential.get("ph", p.ph),
                     "pot_sp": p.potential.get("sp", p.sp),
+                    "pot_eye": p.potential.get(
+                        "eye", getattr(p, "pot_eye", getattr(p, "eye", 0))
+                    ),
                     "pot_gf": p.potential.get("gf", p.gf),
                     "pot_pl": p.potential.get("pl", p.pl),
                     "pot_vl": p.potential.get("vl", p.vl),

@@ -6,7 +6,8 @@ import random
 from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
+from types import SimpleNamespace
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from models.pitcher import Pitcher
 from models.team import Team
@@ -33,6 +34,52 @@ LineupEntry = Tuple[str, str]
 
 MAX_PITCHERS_ON_DL = int(os.getenv("PB_MAX_PITCHERS_ON_DL", "5") or 5)
 DAY_TO_DAY_MAX_DAYS = int(os.getenv("PB_DAY_TO_DAY_MAX_DAYS", "5") or 5)
+_PHYSICS_USAGE_STATE = None
+_PHYSICS_USAGE_DAY_MAP: Dict[str, int] = {}
+_PHYSICS_USAGE_YEAR: Optional[int] = None
+_PHYSICS_USAGE_LAST_DATE: Optional[str] = None
+
+
+def _physics_usage_context(
+    date_token: str | None,
+) -> tuple[object | None, int | None]:
+    if not date_token:
+        return None, None
+    global _PHYSICS_USAGE_STATE, _PHYSICS_USAGE_DAY_MAP, _PHYSICS_USAGE_YEAR, _PHYSICS_USAGE_LAST_DATE
+    try:
+        year = int(str(date_token).split("-")[0])
+    except Exception:
+        year = None
+    reset = _PHYSICS_USAGE_STATE is None
+    if year is not None and _PHYSICS_USAGE_YEAR not in (None, year):
+        reset = True
+    if _PHYSICS_USAGE_LAST_DATE and date_token < _PHYSICS_USAGE_LAST_DATE:
+        reset = True
+    if reset:
+        from physics_sim.usage import UsageState
+
+        _PHYSICS_USAGE_STATE = UsageState()
+        _PHYSICS_USAGE_DAY_MAP = {}
+        _PHYSICS_USAGE_YEAR = year
+    if date_token not in _PHYSICS_USAGE_DAY_MAP:
+        _PHYSICS_USAGE_DAY_MAP[date_token] = len(_PHYSICS_USAGE_DAY_MAP)
+    _PHYSICS_USAGE_LAST_DATE = date_token
+    return _PHYSICS_USAGE_STATE, _PHYSICS_USAGE_DAY_MAP[date_token]
+
+
+def _resolve_game_engine(engine: str | None) -> str:
+    raw = engine or os.getenv("PB_GAME_ENGINE") or os.getenv("PB_SIM_ENGINE")
+    token = str(raw or "legacy").strip().lower()
+    if token in {"physics", "phys", "new", "next"}:
+        return "physics"
+    return "legacy"
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return str(val).strip().lower() in {"1", "true", "yes", "on"}
 
 
 @lru_cache(maxsize=1)
@@ -379,6 +426,667 @@ def _sanitize_lineup(
     return list(lineup)
 
 
+def _player_for_boxscore(
+    player_id: str,
+    players_lookup: Mapping[str, object],
+) -> object:
+    player = players_lookup.get(player_id)
+    if player is None:
+        return SimpleNamespace(
+            player_id=player_id,
+            first_name="Unknown",
+            last_name=str(player_id),
+            primary_position="",
+            position="",
+        )
+    if not getattr(player, "position", None):
+        try:
+            setattr(player, "position", getattr(player, "primary_position", "") or "")
+        except Exception:
+            pass
+    return player
+
+
+def _hydrate_physics_boxscore(
+    box: dict[str, object],
+    players_lookup: Mapping[str, object],
+) -> dict[str, object]:
+    from playbalance.stats import (
+        compute_batting_derived,
+        compute_batting_rates,
+        compute_fielding_derived,
+        compute_fielding_rates,
+        compute_pitching_derived,
+        compute_pitching_rates,
+    )
+
+    def _int(value: object) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    for side in ("home", "away"):
+        side_data = box.get(side, {}) if isinstance(box.get(side), dict) else {}
+        batting = side_data.get("batting", []) if isinstance(side_data.get("batting"), list) else []
+        pitching = (
+            side_data.get("pitching", [])
+            if isinstance(side_data.get("pitching"), list)
+            else []
+        )
+        fielding = (
+            side_data.get("fielding", [])
+            if isinstance(side_data.get("fielding"), list)
+            else []
+        )
+
+        for entry in batting:
+            if not isinstance(entry, dict):
+                continue
+            pid = str(entry.get("player_id") or "")
+            entry["player"] = _player_for_boxscore(pid, players_lookup)
+            state = SimpleNamespace(
+                b1=_int(entry.get("1b", entry.get("b1", 0))),
+                b2=_int(entry.get("2b", entry.get("b2", 0))),
+                b3=_int(entry.get("3b", entry.get("b3", 0))),
+                hr=_int(entry.get("hr", 0)),
+                lob=_int(entry.get("lob", 0)),
+                pitches=_int(entry.get("pitches", 0)),
+                pa=_int(entry.get("pa", 0)),
+                ab=_int(entry.get("ab", 0)),
+                h=_int(entry.get("h", 0)),
+                bb=_int(entry.get("bb", 0)),
+                hbp=_int(entry.get("hbp", 0)),
+                sf=_int(entry.get("sf", 0)),
+                so=_int(entry.get("so", 0)),
+                so_looking=_int(entry.get("so_looking", 0)),
+                sb=_int(entry.get("sb", 0)),
+                cs=_int(entry.get("cs", 0)),
+                gb=_int(entry.get("gb", 0)),
+                ld=_int(entry.get("ld", 0)),
+                fb=_int(entry.get("fb", 0)),
+            )
+            entry.update(compute_batting_derived(state))
+            entry.update(compute_batting_rates(state))
+            entry["2b"] = _int(entry.get("2b", entry.get("b2", 0)))
+            entry["3b"] = _int(entry.get("3b", entry.get("b3", 0)))
+
+        for entry in pitching:
+            if not isinstance(entry, dict):
+                continue
+            pid = str(entry.get("player_id") or "")
+            entry["player"] = _player_for_boxscore(pid, players_lookup)
+            state = SimpleNamespace(
+                outs=_int(entry.get("outs", 0)),
+                gs=_int(entry.get("gs", 0)),
+                gf=_int(entry.get("gf", 0)),
+                r=_int(entry.get("r", 0)),
+                er=_int(entry.get("er", 0)),
+                so=_int(entry.get("so", 0)),
+                bb=_int(entry.get("bb", 0)),
+                hbp=_int(entry.get("hbp", 0)),
+                hr=_int(entry.get("hr", 0)),
+                h=_int(entry.get("h", 0)),
+                gb=_int(entry.get("gb", 0)),
+                ld=_int(entry.get("ld", 0)),
+                fb=_int(entry.get("fb", 0)),
+                pitches_thrown=_int(entry.get("pitches", 0)),
+                bf=_int(entry.get("bf", 0)),
+                first_pitch_strikes=_int(entry.get("first_pitch_strikes", 0)),
+                zone_pitches=_int(entry.get("zone_pitches", 0)),
+                o_zone_pitches=_int(entry.get("o_zone_pitches", 0)),
+                zone_swings=_int(entry.get("zone_swings", 0)),
+                o_zone_swings=_int(entry.get("o_zone_swings", 0)),
+                zone_contacts=_int(entry.get("zone_contacts", 0)),
+                o_zone_contacts=_int(entry.get("o_zone_contacts", 0)),
+                so_looking=_int(entry.get("so_looking", 0)),
+            )
+            entry.update(compute_pitching_derived(state))
+            entry.update(compute_pitching_rates(state))
+
+        for entry in fielding:
+            if not isinstance(entry, dict):
+                continue
+            pid = str(entry.get("player_id") or "")
+            player = _player_for_boxscore(pid, players_lookup)
+            entry["player"] = player
+            state = SimpleNamespace(
+                player=player,
+                g=_int(entry.get("g", 0)),
+                po=_int(entry.get("po", 0)),
+                a=_int(entry.get("a", 0)),
+                e=_int(entry.get("e", 0)),
+                dp=_int(entry.get("dp", 0)),
+                tp=_int(entry.get("tp", 0)),
+                pk=_int(entry.get("pk", 0)),
+                pb=_int(entry.get("pb", 0)),
+                ci=_int(entry.get("ci", 0)),
+                cs=_int(entry.get("cs", 0)),
+                sba=_int(entry.get("sba", 0)),
+            )
+            entry.update(compute_fielding_derived(state))
+            entry.update(compute_fielding_rates(state))
+
+    return box
+
+
+def _persist_physics_stats(
+    *,
+    metadata: dict[str, Any],
+    players_lookup: Mapping[str, object],
+    home_team: Team | None,
+    away_team: Team | None,
+) -> None:
+    from playbalance.stats import (
+        compute_batting_derived,
+        compute_batting_rates,
+        compute_fielding_derived,
+        compute_fielding_rates,
+        compute_pitching_derived,
+        compute_pitching_rates,
+        compute_team_rates,
+    )
+    from utils.stats_persistence import save_stats
+
+    def _int(value: object) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    batting_lines = metadata.get("batting_lines", {}) or {}
+    if not isinstance(batting_lines, dict):
+        batting_lines = {}
+    pitcher_lines = metadata.get("pitcher_lines", {}) or {}
+    if not isinstance(pitcher_lines, dict):
+        pitcher_lines = {}
+    fielding_lines = metadata.get("fielding_lines", {}) or {}
+    if not isinstance(fielding_lines, dict):
+        fielding_lines = {}
+    score = metadata.get("score", {}) or {}
+    if not isinstance(score, dict):
+        score = {}
+
+    updated_players: dict[str, object] = {}
+
+    def _player_and_season(pid: str) -> tuple[object, dict[str, Any]] | None:
+        player = players_lookup.get(pid)
+        if player is None:
+            return None
+        season = getattr(player, "season_stats", None)
+        if not isinstance(season, dict):
+            season = {}
+        player.season_stats = season
+        updated_players[pid] = player
+        return player, season
+
+    batting_fields = (
+        "g",
+        "gs",
+        "pa",
+        "ab",
+        "r",
+        "h",
+        "b1",
+        "b2",
+        "b3",
+        "hr",
+        "rbi",
+        "bb",
+        "ibb",
+        "hbp",
+        "so",
+        "so_looking",
+        "so_swinging",
+        "sh",
+        "sf",
+        "roe",
+        "fc",
+        "ci",
+        "gidp",
+        "sb",
+        "cs",
+        "po",
+        "pocs",
+        "pitches",
+        "lob",
+        "lead",
+        "gb",
+        "ld",
+        "fb",
+    )
+
+    for side, lines in batting_lines.items():
+        if not isinstance(lines, list):
+            continue
+        for line in lines:
+            if not isinstance(line, dict):
+                continue
+            pid = str(line.get("player_id") or "")
+            payload = _player_and_season(pid)
+            if payload is None:
+                continue
+            _, season = payload
+            for key in batting_fields:
+                season[key] = season.get(key, 0) + _int(line.get(key, 0))
+            state = SimpleNamespace(
+                b1=_int(season.get("b1", 0)),
+                b2=_int(season.get("b2", 0)),
+                b3=_int(season.get("b3", 0)),
+                hr=_int(season.get("hr", 0)),
+                lob=_int(season.get("lob", 0)),
+                pitches=_int(season.get("pitches", 0)),
+                pa=_int(season.get("pa", 0)),
+                ab=_int(season.get("ab", 0)),
+                h=_int(season.get("h", 0)),
+                bb=_int(season.get("bb", 0)),
+                hbp=_int(season.get("hbp", 0)),
+                sf=_int(season.get("sf", 0)),
+                so=_int(season.get("so", 0)),
+                so_looking=_int(season.get("so_looking", 0)),
+                sb=_int(season.get("sb", 0)),
+                cs=_int(season.get("cs", 0)),
+                gb=_int(season.get("gb", 0)),
+                ld=_int(season.get("ld", 0)),
+                fb=_int(season.get("fb", 0)),
+            )
+            season.update(compute_batting_derived(state))
+            season.update(compute_batting_rates(state))
+            season["2b"] = season.get("b2", 0)
+            season["3b"] = season.get("b3", 0)
+
+    pitching_field_map = {
+        "g": "g",
+        "gs": "gs",
+        "w": "w",
+        "l": "l",
+        "gf": "gf",
+        "sv": "sv",
+        "svo": "svo",
+        "hld": "hld",
+        "bs": "bs",
+        "ir": "ir",
+        "irs": "irs",
+        "bf": "bf",
+        "outs": "outs",
+        "r": "r",
+        "er": "er",
+        "h": "h",
+        "1b": "b1",
+        "2b": "b2",
+        "3b": "b3",
+        "hr": "hr",
+        "bb": "bb",
+        "ibb": "ibb",
+        "so": "so",
+        "so_looking": "so_looking",
+        "so_swinging": "so_swinging",
+        "hbp": "hbp",
+        "wp": "wp",
+        "bk": "bk",
+        "pk": "pk",
+        "pocs": "pocs",
+        "pitches": "pitches_thrown",
+        "balls": "balls_thrown",
+        "strikes": "strikes_thrown",
+        "first_pitch_strikes": "first_pitch_strikes",
+        "zone_pitches": "zone_pitches",
+        "o_zone_pitches": "o_zone_pitches",
+        "zone_swings": "zone_swings",
+        "o_zone_swings": "o_zone_swings",
+        "zone_contacts": "zone_contacts",
+        "o_zone_contacts": "o_zone_contacts",
+        "gb": "gb",
+        "ld": "ld",
+        "fb": "fb",
+    }
+
+    for side, lines in pitcher_lines.items():
+        if not isinstance(lines, list):
+            continue
+        for line in lines:
+            if not isinstance(line, dict):
+                continue
+            pid = str(line.get("player_id") or "")
+            payload = _player_and_season(pid)
+            if payload is None:
+                continue
+            _, season = payload
+            for key, season_key in pitching_field_map.items():
+                season[season_key] = season.get(season_key, 0) + _int(line.get(key, 0))
+            state = SimpleNamespace(
+                outs=_int(season.get("outs", 0)),
+                gs=_int(season.get("gs", 0)),
+                gf=_int(season.get("gf", 0)),
+                r=_int(season.get("r", 0)),
+                er=_int(season.get("er", 0)),
+                so=_int(season.get("so", 0)),
+                bb=_int(season.get("bb", 0)),
+                hbp=_int(season.get("hbp", 0)),
+                hr=_int(season.get("hr", 0)),
+                h=_int(season.get("h", 0)),
+                gb=_int(season.get("gb", 0)),
+                ld=_int(season.get("ld", 0)),
+                fb=_int(season.get("fb", 0)),
+                pitches_thrown=_int(season.get("pitches_thrown", 0)),
+                bf=_int(season.get("bf", 0)),
+                first_pitch_strikes=_int(season.get("first_pitch_strikes", 0)),
+                zone_pitches=_int(season.get("zone_pitches", 0)),
+                o_zone_pitches=_int(season.get("o_zone_pitches", 0)),
+                zone_swings=_int(season.get("zone_swings", 0)),
+                o_zone_swings=_int(season.get("o_zone_swings", 0)),
+                zone_contacts=_int(season.get("zone_contacts", 0)),
+                o_zone_contacts=_int(season.get("o_zone_contacts", 0)),
+                so_looking=_int(season.get("so_looking", 0)),
+            )
+            season.update(compute_pitching_derived(state))
+            season.update(compute_pitching_rates(state))
+
+    fielding_fields = (
+        "g",
+        "gs",
+        "po",
+        "a",
+        "e",
+        "dp",
+        "tp",
+        "pk",
+        "pb",
+        "ci",
+        "cs",
+        "sba",
+    )
+
+    for side, lines in fielding_lines.items():
+        if not isinstance(lines, list):
+            continue
+        for line in lines:
+            if not isinstance(line, dict):
+                continue
+            pid = str(line.get("player_id") or "")
+            payload = _player_and_season(pid)
+            if payload is None:
+                continue
+            player, season = payload
+            is_pitcher = bool(getattr(player, "is_pitcher", False))
+            for key in fielding_fields:
+                if is_pitcher and key in {"g", "gs"}:
+                    continue
+                season[key] = season.get(key, 0) + _int(line.get(key, 0))
+            state = SimpleNamespace(
+                player=player,
+                g=_int(season.get("g", 0)),
+                po=_int(season.get("po", 0)),
+                a=_int(season.get("a", 0)),
+                e=_int(season.get("e", 0)),
+                dp=_int(season.get("dp", 0)),
+                tp=_int(season.get("tp", 0)),
+                pk=_int(season.get("pk", 0)),
+                pb=_int(season.get("pb", 0)),
+                ci=_int(season.get("ci", 0)),
+                cs=_int(season.get("cs", 0)),
+                sba=_int(season.get("sba", 0)),
+            )
+            season.update(compute_fielding_derived(state))
+            season.update(compute_fielding_rates(state))
+
+    def _update_team(team: Team | None, runs: int, opp_runs: int, lob: int, opp_lines: list[dict]) -> None:
+        if team is None:
+            return
+        season = dict(getattr(team, "season_stats", {}) or {})
+        if runs > opp_runs:
+            season["w"] = season.get("w", 0) + 1
+        elif runs < opp_runs:
+            season["l"] = season.get("l", 0) + 1
+        season["g"] = season.get("g", 0) + 1
+        season["r"] = season.get("r", 0) + runs
+        season["ra"] = season.get("ra", 0) + opp_runs
+        season["lob"] = season.get("lob", 0) + lob
+
+        def _sum(field: str) -> int:
+            return sum(_int(line.get(field, 0)) for line in opp_lines if isinstance(line, dict))
+
+        season["opp_pa"] = season.get("opp_pa", 0) + _sum("pa")
+        season["opp_h"] = season.get("opp_h", 0) + _sum("h")
+        season["opp_bb"] = season.get("opp_bb", 0) + _sum("bb")
+        season["opp_so"] = season.get("opp_so", 0) + _sum("so")
+        season["opp_hbp"] = season.get("opp_hbp", 0) + _sum("hbp")
+        season["opp_hr"] = season.get("opp_hr", 0) + _sum("hr")
+        season["opp_roe"] = season.get("opp_roe", 0) + _sum("roe")
+        season.update(compute_team_rates(season))
+        team.season_stats = season
+
+    home_runs = _int(score.get("home", 0))
+    away_runs = _int(score.get("away", 0))
+    home_batting = batting_lines.get("home", []) if isinstance(batting_lines, dict) else []
+    away_batting = batting_lines.get("away", []) if isinstance(batting_lines, dict) else []
+
+    def _lob(lines: list[dict]) -> int:
+        return sum(_int(line.get("lob", 0)) for line in lines if isinstance(line, dict))
+
+    _update_team(
+        home_team,
+        home_runs,
+        away_runs,
+        _lob(home_batting),
+        away_batting,
+    )
+    _update_team(
+        away_team,
+        away_runs,
+        home_runs,
+        _lob(away_batting),
+        home_batting,
+    )
+
+    teams = [team for team in (home_team, away_team) if team is not None]
+    save_stats(updated_players.values(), teams)
+
+
+def _run_physics_game(
+    *,
+    home_id: str,
+    away_id: str,
+    home_state: TeamState,
+    away_state: TeamState,
+    players_file: str,
+    roster_dir: str | Path,
+    seed: int | None,
+    date_token: str | None,
+    tracker: PitcherRecoveryTracker | None,
+    players_lookup: Mapping[str, object],
+    persist_stats: bool,
+) -> tuple[TeamState, TeamState, dict[str, object], str, dict[str, object]]:
+    from physics_sim.data_loader import load_players_by_id
+    from physics_sim.engine import simulate_game
+    from physics_sim.outputs import serialize_game_result
+
+    base_dir = get_base_dir()
+    players_path = Path(players_file)
+    if not players_path.is_absolute():
+        players_path = base_dir / players_path
+
+    batters_by_id, pitchers_by_id = load_players_by_id(players_path)
+
+    def _ratings_from_players(
+        roster: Sequence[object],
+        pool: Mapping[str, object],
+    ) -> list[object]:
+        items: list[object] = []
+        for player in roster:
+            pid = getattr(player, "player_id", None)
+            if not pid:
+                continue
+            rating = pool.get(pid)
+            if rating is not None:
+                items.append(rating)
+        return items
+
+    def _positions_from_players(roster: Sequence[object]) -> dict[str, str]:
+        positions: dict[str, str] = {}
+        for player in roster:
+            pid = getattr(player, "player_id", None)
+            if not pid:
+                continue
+            pos = getattr(player, "position", None) or getattr(
+                player, "primary_position", ""
+            )
+            if pos:
+                positions[pid] = str(pos)
+        return positions
+
+    away_lineup = _ratings_from_players(away_state.lineup, batters_by_id)
+    home_lineup = _ratings_from_players(home_state.lineup, batters_by_id)
+    away_positions = _positions_from_players(away_state.lineup)
+    home_positions = _positions_from_players(home_state.lineup)
+    away_bench = _ratings_from_players(away_state.bench, batters_by_id)
+    home_bench = _ratings_from_players(home_state.bench, batters_by_id)
+    away_pitchers = _ratings_from_players(away_state.pitchers, pitchers_by_id)
+    home_pitchers = _ratings_from_players(home_state.pitchers, pitchers_by_id)
+
+    if len(away_lineup) != 9 or len(home_lineup) != 9:
+        raise ValueError("Physics sim requires complete 9-player lineups")
+    if not away_pitchers or not home_pitchers:
+        raise ValueError("Physics sim requires pitching staffs for both teams")
+
+    away_roles: dict[str, str] = {}
+    for pitcher in away_state.pitchers:
+        role = str(
+            getattr(pitcher, "assigned_pitching_role", "")
+            or getattr(pitcher, "role", "")
+            or ""
+        )
+        away_roles[pitcher.player_id] = role
+    home_roles: dict[str, str] = {}
+    for pitcher in home_state.pitchers:
+        role = str(
+            getattr(pitcher, "assigned_pitching_role", "")
+            or getattr(pitcher, "role", "")
+            or ""
+        )
+        home_roles[pitcher.player_id] = role
+
+    park_name = None
+    if home_state.team is not None:
+        park_name = getattr(home_state.team, "stadium", None)
+
+    usage_state, game_day = _physics_usage_context(date_token)
+
+    result = simulate_game(
+        away_lineup=away_lineup,
+        home_lineup=home_lineup,
+        away_lineup_positions=away_positions,
+        home_lineup_positions=home_positions,
+        away_bench=away_bench,
+        home_bench=home_bench,
+        away_pitchers=away_pitchers,
+        home_pitchers=home_pitchers,
+        away_pitcher_roles=away_roles,
+        home_pitcher_roles=home_roles,
+        park_name=park_name,
+        seed=seed,
+        usage_state=usage_state,
+        game_day=game_day,
+    )
+
+    payload = serialize_game_result(result)
+    metadata = (
+        payload.get("metadata", {})
+        if isinstance(payload.get("metadata"), dict)
+        else {}
+    )
+    boxscore = (
+        payload.get("boxscore", {})
+        if isinstance(payload.get("boxscore"), dict)
+        else {}
+    )
+    box = _hydrate_physics_boxscore(boxscore, players_lookup)
+
+    score = (
+        metadata.get("score", {}) if isinstance(metadata.get("score"), dict) else {}
+    )
+    home_runs = int(score.get("home", 0) or 0)
+    away_runs = int(score.get("away", 0) or 0)
+    home_state.runs = home_runs
+    away_state.runs = away_runs
+    inning_runs = metadata.get("inning_runs", {}) or {}
+    if isinstance(inning_runs, dict):
+        home_state.inning_runs = list(inning_runs.get("home", []) or [])
+        away_state.inning_runs = list(inning_runs.get("away", []) or [])
+
+    home_name = home_state.team.name if home_state.team else home_id
+    away_name = away_state.team.name if away_state.team else away_id
+    html = render_boxscore_html(
+        box,
+        home_name=home_name,
+        away_name=away_name,
+    )
+
+    meta = {
+        "home_innings": len(home_state.inning_runs),
+        "away_innings": len(away_state.inning_runs),
+        "extra_innings": max(len(home_state.inning_runs), len(away_state.inning_runs)) > 9,
+        "home_starter_hand": _starter_hand(home_state),
+        "away_starter_hand": _starter_hand(away_state),
+        "engine": "physics",
+    }
+
+    injury_events = metadata.get("injury_events", []) if isinstance(metadata, dict) else []
+    if not isinstance(injury_events, list):
+        injury_events = []
+    _apply_injury_events(
+        injury_events,
+        players_file=str(players_file),
+        roster_dir=str(roster_dir),
+        game_date=date_token,
+    )
+
+    if persist_stats:
+        _persist_physics_stats(
+            metadata=metadata,
+            players_lookup=players_lookup,
+            home_team=home_state.team,
+            away_team=away_state.team,
+        )
+
+    if tracker and date_token:
+        def _states_from_lines(lines: list[dict[str, Any]]) -> list[SimpleNamespace]:
+            output: list[SimpleNamespace] = []
+            for line in lines:
+                if not isinstance(line, dict):
+                    continue
+                pid = str(line.get("player_id") or "")
+                player = players_lookup.get(pid)
+                if player is None:
+                    continue
+                pitches = int(line.get("pitches", 0) or 0)
+                output.append(
+                    SimpleNamespace(player=player, pitches_thrown=pitches, simulated_pitches=0)
+                )
+            return output
+
+        pitcher_lines = metadata.get("pitcher_lines", {}) if isinstance(metadata, dict) else {}
+        if isinstance(pitcher_lines, dict):
+            home_lines = pitcher_lines.get("home", []) if isinstance(pitcher_lines.get("home"), list) else []
+            away_lines = pitcher_lines.get("away", []) if isinstance(pitcher_lines.get("away"), list) else []
+            tracker.record_game(
+                home_id,
+                date_token,
+                _states_from_lines(home_lines),
+                players_file,
+                str(roster_dir),
+            )
+            tracker.record_game(
+                away_id,
+                date_token,
+                _states_from_lines(away_lines),
+                players_file,
+                str(roster_dir),
+            )
+
+    return home_state, away_state, box, html, meta
+
+
 def run_single_game(
     home_id: str,
     away_id: str,
@@ -392,9 +1100,11 @@ def run_single_game(
     lineup_dir: str | Path = "data/lineups",
     game_date: str | date | None = None,
     seed: int | None = None,
+    engine: str | None = None,
 ) -> tuple[TeamState, TeamState, dict[str, object], str, dict[str, object]]:
     """Simulate a single game and return team states, box score, HTML and metadata."""
 
+    engine_name = _resolve_game_engine(engine)
     date_token = _normalize_game_date(game_date)
     tracker = PitcherRecoveryTracker.instance() if date_token else None
     if tracker and date_token:
@@ -499,18 +1209,27 @@ def run_single_game(
     )
     _log_bullpen_status(away_id, away_state, date_token)
 
+    persist_stats = _env_flag("PB_PERSIST_STATS", True)
+    if engine_name == "physics":
+        return _run_physics_game(
+            home_id=home_id,
+            away_id=away_id,
+            home_state=home_state,
+            away_state=away_state,
+            players_file=players_file,
+            roster_dir=roster_dir,
+            seed=seed,
+            date_token=date_token,
+            tracker=tracker,
+            players_lookup=players_lookup,
+            persist_stats=persist_stats,
+        )
+
     cfg, _ = load_tuned_playbalance_config()
     sim = GameSimulation(home_state, away_state, cfg, rng, game_date=date_token)
 
     # Allow heavy simulation runs to disable per-game persistence via env var.
     # PB_PERSIST_STATS: "1"/"true"/"yes" to persist; "0"/"false"/"no" to skip.
-    def _env_flag(name: str, default: bool) -> bool:
-        val = os.getenv(name)
-        if val is None:
-            return default
-        return str(val).strip().lower() in {"1", "true", "yes", "on"}
-
-    persist_stats = _env_flag("PB_PERSIST_STATS", True)
     sim.simulate_game(persist_stats=persist_stats)
     _apply_injury_events(
         getattr(sim, "injury_events", []),
@@ -533,7 +1252,16 @@ def run_single_game(
         "extra_innings": max(len(home_state.inning_runs), len(away_state.inning_runs)) > 9,
         "home_starter_hand": _starter_hand(home_state),
         "away_starter_hand": _starter_hand(away_state),
+        "engine": "legacy",
     }
+    if getattr(sim, "debug_log", None):
+        meta["debug_log"] = list(sim.debug_log)
+    try:
+        field_positions = sim.defense.set_field_positions()
+        if field_positions:
+            meta["field_positions"] = field_positions
+    except Exception:
+        pass
     if tracker and date_token:
         tracker.record_game(
             home_id,
@@ -706,6 +1434,7 @@ def simulate_game_scores(
     roster_dir: str = "data/rosters",
     lineup_dir: str | Path = "data/lineups",
     game_date: str | date | None = None,
+    engine: str | None = None,
 ) -> tuple[int, int, str, dict[str, object]]:
     """Return the final score, rendered HTML and metadata for a matchup."""
 
@@ -717,6 +1446,7 @@ def simulate_game_scores(
         roster_dir=roster_dir,
         lineup_dir=lineup_dir,
         game_date=game_date,
+        engine=engine,
     )
     return home_state.runs, away_state.runs, html, meta
 

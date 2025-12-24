@@ -1,0 +1,30 @@
+name: Physics Sim KPI
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  physics-sim-kpis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run KPI harness
+        env:
+          PYTHONHASHSEED: "0"
+        run: |
+          mkdir -p tmp
+          python scripts/physics_sim_season_kpis.py \
+            --games 50 \
+            --seed 1 \
+            --players data/players_normalized.csv \
+            --ensure-lineups \
+            --output tmp/physics_kpis.json \
+            --strict

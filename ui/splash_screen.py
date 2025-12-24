@@ -182,8 +182,14 @@ class SplashScreen(QWidget):
             return
 
         last_error: Optional[Exception] = None
+        prefer_pygame = self._running_in_wsl() or (
+            os.environ.get("NEXGEN_AUDIO_BACKEND", "").strip().lower() == "pygame"
+        )
 
-        if QMediaPlayer is not None and QAudioOutput is not None:
+        def _try_qt() -> bool:
+            nonlocal last_error
+            if QMediaPlayer is None or QAudioOutput is None:
+                return False
             try:
                 player = QMediaPlayer(self)
                 audio_output = QAudioOutput(self)
@@ -236,15 +242,19 @@ class SplashScreen(QWidget):
                 self._music_player = player
                 self._audio_output = audio_output
                 self._music_backend = "qt"
-                return
+                return True
             except Exception as exc:  # pragma: no cover - environment dependent
                 last_error = exc
                 logger.warning("Failed to start splash music via Qt multimedia: %s", exc)
                 self._music_player = None
                 self._audio_output = None
                 self._music_backend = None
+                return False
 
-        if pygame is not None:
+        def _try_pygame() -> bool:
+            nonlocal last_error
+            if pygame is None:
+                return False
             try:
                 self._init_pygame_mixer()
                 pygame.mixer.music.load(str(audio))  # type: ignore[attr-defined]
@@ -257,7 +267,7 @@ class SplashScreen(QWidget):
                 self._music_player = "pygame"
                 self._audio_output = None
                 self._music_backend = "pygame"
-                return
+                return True
             except Exception as exc:  # pragma: no cover - environment dependent
                 last_error = exc
                 logger.warning("Failed to start splash music via pygame: %s", exc)
@@ -267,6 +277,14 @@ class SplashScreen(QWidget):
                     pass
                 self._music_player = None
                 self._music_backend = None
+                return False
+
+        if prefer_pygame:
+            if _try_pygame() or _try_qt():
+                return
+        else:
+            if _try_qt() or _try_pygame():
+                return
 
         if last_error is not None:
             logger.info(

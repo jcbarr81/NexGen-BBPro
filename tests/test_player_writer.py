@@ -113,3 +113,59 @@ def test_round_trip_preserves_appearance(tmp_path):
         assert loaded_player.skin_tone == original.skin_tone
         assert loaded_player.hair_color == original.hair_color
         assert loaded_player.facial_hair == original.facial_hair
+
+
+def test_round_trip_preserves_archetypes(tmp_path):
+    file_path = tmp_path / "players.csv"
+    pitcher = Pitcher(
+        player_id="p2",
+        first_name="Ace",
+        last_name="Arm",
+        birthdate="1992-03-03",
+        height=74,
+        weight=200,
+        bats="R",
+        primary_position="P",
+        other_positions=[],
+        gf=12,
+        arm=70,
+        endurance=60,
+        control=65,
+        movement=62,
+        hold_runner=50,
+        fb=80,
+        cu=65,
+        cb=55,
+        sl=70,
+        si=60,
+        scb=50,
+        kn=0,
+        role="SP",
+        pitcher_archetype="power_sp",
+    )
+    hitter = Player(
+        player_id="h2",
+        first_name="Slug",
+        last_name="Ger",
+        birthdate="1994-04-04",
+        height=72,
+        weight=210,
+        bats="L",
+        primary_position="RF",
+        other_positions=[],
+        gf=18,
+        arm=65,
+        ch=55,
+        ph=80,
+        sp=45,
+        pl=70,
+        vl=50,
+        sc=55,
+        fa=50,
+        hitter_archetype="power",
+    )
+    save_players_to_csv([pitcher, hitter], file_path)
+    loaded = load_players_from_csv(file_path)
+    loaded_dict = {p.player_id: p for p in loaded}
+    assert loaded_dict["p2"].pitcher_archetype == "power_sp"
+    assert loaded_dict["h2"].hitter_archetype == "power"

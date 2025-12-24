@@ -65,7 +65,7 @@ def test_pitcher_role_sp_when_endurance_high(monkeypatch):
         }
 
     monkeypatch.setattr(pg, "_generate_pitcher_core_ratings", fake_core)
-    player = generate_player(is_pitcher=True)
+    player = generate_player(is_pitcher=True, rating_profile="arr")
     assert player["endurance"] == 60
     assert player["role"] == "SP"
 
@@ -82,7 +82,7 @@ def test_pitcher_role_rp_when_endurance_low(monkeypatch):
         }
 
     monkeypatch.setattr(pg, "_generate_pitcher_core_ratings", fake_core)
-    player = generate_player(is_pitcher=True)
+    player = generate_player(is_pitcher=True, rating_profile="arr")
     assert player["endurance"] == 55
     assert player["role"] == "RP"
 
@@ -174,31 +174,23 @@ def test_hitter_modifier_ranges(monkeypatch):
     monkeypatch.setattr(pg, "_maybe_add_pitching", lambda *args, **kwargs: None)
     player = generate_player(is_pitcher=False)
     assert 40 <= player["mo"] <= 60
-    assert 35 <= player["gf"] <= 65
+    assert 20 <= player["gf"] <= 90
     assert 40 <= player["cl"] <= 60
     assert 40 <= player["hm"] <= 60
-    assert 40 <= player["sc"] <= 60
-    assert 30 <= player["pl"] <= 75
-    if player["bats"] == "L":
-        assert 30 <= player["vl"] <= 60
-    elif player["bats"] == "R":
-        assert 40 <= player["vl"] <= 70
-    else:
-        assert 35 <= player["vl"] <= 65
+    assert 20 <= player["sc"] <= 90
+    assert 20 <= player["pl"] <= 90
+    assert 20 <= player["vl"] <= 90
 
 
 def test_pitcher_modifier_ranges(monkeypatch):
     monkeypatch.setattr(pg, "_maybe_add_hitting", lambda *args, **kwargs: None)
     player = generate_player(is_pitcher=True)
     assert 40 <= player["mo"] <= 60
-    assert 35 <= player["gf"] <= 65
+    assert 20 <= player["gf"] <= 95
     assert 40 <= player["cl"] <= 60
     assert 40 <= player["hm"] <= 60
     assert 30 <= player["pl"] <= 75
-    if player["throws"] == "L":
-        assert 40 <= player["vl"] <= 70
-    else:
-        assert 30 <= player["vl"] <= 60
+    assert 20 <= player["vl"] <= 90
 
 
 def test_skin_tone_distribution_matches_weights():

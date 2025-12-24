@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Normalize player ratings using shared archetype definitions.
+"""Normalize player ratings using shared template sampling.
 
 This script rewrites ``data/players.csv`` (or a provided CSV) so that hitter
-and pitcher ratings align with the archetype blueprint documented under
-``docs/player_archetypes.md``.  Existing IDs/names/biographical data are
-preserved; only the core ratings are resampled.
+and pitcher ratings align with the template sampling used by the runtime
+generator. Existing IDs/names/biographical data are preserved; only ratings
+are resampled.
 
 Usage examples::
 
@@ -23,49 +23,94 @@ from pathlib import Path
 from typing import Dict
 
 import sys
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 
-from playbalance import archetypes
+from playbalance import player_generator as pg
 
 
-HITTER_FIELDS = ("ch", "ph", "sp", "vl")
-PITCHER_FIELDS = ("control", "movement", "endurance", "hold_runner", "fb")
+HITTER_FIELDS = ("ch", "ph", "sp", "eye", "gf", "pl", "vl", "sc", "fa", "arm")
+PITCHER_FIELDS = (
+    "endurance",
+    "control",
+    "movement",
+    "hold_runner",
+    "arm",
+    "fa",
+    "gf",
+    "vl",
+    "fb",
+    "cu",
+    "cb",
+    "sl",
+    "si",
+    "scb",
+    "kn",
+)
 
 
 def _clamp(val: int, low: int = 30, high: int = 99) -> int:
     return max(low, min(high, val))
 
 
+def _infer_hitter_template(row: Dict[str, str]) -> str:
+    try:
+        ch = float(row.get("ch") or 0)
+        ph = float(row.get("ph") or 0)
+        sp = float(row.get("sp") or 0)
+    except (TypeError, ValueError):
+        return "balanced"
+    if sp >= 75:
+        return "speed"
+    if ph >= ch + 8:
+        return "power"
+    if ch >= ph + 8:
+        return "spray"
+    if ch < 58 and ph < 58:
+        return "average"
+    return "balanced"
+
+
 def normalize_hitter(row: Dict[str, str]) -> None:
-    archetype_name = row.get("hitter_archetype") or archetypes.infer_hitter_archetype(row)
-    ratings = archetypes.sample_hitter_ratings(archetype_name)
-    row["hitter_archetype"] = ratings["archetype"]
-    contact = ratings["contact"]
-    power = ratings["power"]
-    speed = ratings["speed"]
-    discipline = ratings["discipline"]
-    row["ch"] = str(_clamp(contact))
-    row["ph"] = str(_clamp(power))
-    row["sp"] = str(_clamp(speed))
-    row["vl"] = str(_clamp(discipline))
+    position = (row.get("primary_position") or "CF").strip().upper()
+    bats = (row.get("bats") or "R").strip().upper()
+    archetype = row.get("hitter_archetype") or _infer_hitter_template(row)
+    ratings = pg._sample_normalized_hitter(position, bats, archetype)
+    if not ratings:
+        return
+    row["hitter_archetype"] = ratings["hitter_archetype"]
+    for key in HITTER_FIELDS:
+        if key in ratings:
+            row[key] = str(_clamp(int(ratings[key])))
 
 
 def normalize_pitcher(row: Dict[str, str]) -> None:
-    archetype_name = row.get("pitcher_archetype") or row.get("preferred_pitching_role")
-    archetype_name = archetype_name.lower() if archetype_name else None
-    ratings = archetypes.sample_pitcher_core(archetype_name)
-    row["pitcher_archetype"] = ratings["archetype"]
-    row["control"] = str(_clamp(int(ratings["control"])))
-    row["movement"] = str(_clamp(int(ratings["movement"])))
-    row["endurance"] = str(_clamp(int(ratings["endurance"])))
-    row["hold_runner"] = str(_clamp(int(ratings["hold_runner"])))
-    row["fb"] = str(_clamp(int(ratings["velocity"])))
-    if ratings.get("preferred_role"):
-        row["preferred_pitching_role"] = ratings["preferred_role"]
+    archetype = (
+        row.get("pitcher_archetype")
+        or row.get("preferred_pitching_role")
+        or row.get("role")
+        or ""
+    ).strip().lower()
+    archetype = archetype or None
+    throws = (row.get("bats") or "R").strip().upper()
+    ratings = pg._sample_normalized_pitcher(archetype, throws)
+    if not ratings:
+        return
+    row["pitcher_archetype"] = ratings.get("pitcher_archetype", "")
+    for key in PITCHER_FIELDS:
+        if key in ratings:
+            row[key] = str(_clamp(int(ratings[key])))
+    preferred = ratings.get("preferred_pitching_role") or ""
+    if preferred:
+        row["preferred_pitching_role"] = preferred
+    role = ratings.get("role")
+    if role:
+        row["role"] = role
 
 
 def normalize(players_path: Path, output_path: Path) -> None:
+    pg._RATING_DISTRIBUTIONS = pg._load_rating_distributions(players_path)
     with players_path.open(newline="", encoding="utf-8") as source:
         reader = csv.DictReader(source)
         rows = list(reader)

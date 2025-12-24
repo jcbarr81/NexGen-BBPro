@@ -28,7 +28,7 @@ _HITTER_TRACKS: Dict[str, Tuple[str, ...]] = {
     "contact": ("ch", "vl", "pl"),
     "power": ("ph", "fa"),
     "speed": ("sp",),
-    "discipline": ("sc",),
+    "discipline": ("eye",),
     "defense": ("fa", "arm", "gf"),
 }
 

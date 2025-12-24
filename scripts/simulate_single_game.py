@@ -62,6 +62,11 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         help="Optional random seed for reproducible simulations",
     )
     parser.add_argument(
+        "--engine",
+        choices=["legacy", "physics"],
+        help="Simulation engine override (default: PB_GAME_ENGINE or legacy)",
+    )
+    parser.add_argument(
         "--html-output",
         type=Path,
         help="Optional path to save the rendered ESPN-style box score HTML",
@@ -85,6 +90,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         players_file=args.players_file,
         roster_dir=args.roster_dir,
         seed=args.seed,
+        engine=args.engine,
     )
 
     if args.html_output:

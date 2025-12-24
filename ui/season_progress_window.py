@@ -2,6 +2,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
+import os
 
 try:
     from PyQt6.QtWidgets import (
@@ -179,6 +180,7 @@ from playbalance.orchestrator import (
     simulate_week as pb_simulate_week,
     simulate_month as pb_simulate_month,
 )
+from playbalance.game_runner import simulate_game_scores
 from utils.team_loader import load_teams
 from utils.roster_loader import load_roster
 from utils.lineup_loader import load_lineup
@@ -257,6 +259,9 @@ class SeasonProgressWindow(QDialog):
 
         self.manager = SeasonManager()
         self._simulate_game = simulate_game
+        self._engine_choice = self._normalize_engine_choice(
+            os.getenv("PB_GAME_ENGINE") or os.getenv("PB_SIM_ENGINE")
+        )
         if schedule is None and SCHEDULE_FILE.exists():
             with SCHEDULE_FILE.open(newline="") as fh:
                 reader = csv.DictReader(fh)
@@ -267,21 +272,14 @@ class SeasonProgressWindow(QDialog):
         draft_date = self._compute_draft_date((schedule or [{}])[0].get("date") if schedule else None)
         self._draft_date = draft_date
         self._season_year_hint: Optional[int] = None
-        if simulate_game is not None:
-            self.simulator = SeasonSimulator(
-                schedule or [],
-                simulate_game,
-                on_draft_day=self._on_draft_day,
-                draft_date=draft_date,
-                after_game=self._record_game,
-            )
-        else:
-            self.simulator = SeasonSimulator(
-                schedule or [],
-                on_draft_day=self._on_draft_day,
-                draft_date=draft_date,
-                after_game=self._record_game,
-            )
+        sim_fn = self._resolve_simulate_game()
+        self.simulator = SeasonSimulator(
+            schedule or [],
+            sim_fn,
+            on_draft_day=self._on_draft_day,
+            draft_date=draft_date,
+            after_game=self._record_game,
+        )
         self._season_year_hint = self._infer_schedule_year()
         self._cancel_requested = False
         # Track season standings with detailed splits so that schedule and
@@ -367,6 +365,23 @@ class SeasonProgressWindow(QDialog):
             pass
         self._update_auto_activate_tip()
         layout.addWidget(self.auto_activate_checkbox)
+
+        self.engine_toggle = QCheckBox("Use Physics Engine (experimental)")
+        try:
+            self.engine_toggle.setChecked(self._engine_choice == "physics")
+            self.engine_toggle.toggled.connect(self._on_engine_toggle)
+            if self._simulate_game is not None:
+                self.engine_toggle.setEnabled(False)
+                self.engine_toggle.setToolTip(
+                    "Simulation engine is controlled by the caller."
+                )
+            else:
+                self.engine_toggle.setToolTip(
+                    "Toggle between the legacy and physics simulation engines."
+                )
+        except Exception:
+            pass
+        layout.addWidget(self.engine_toggle)
 
         self.simulate_day_button = QPushButton("Simulate Day")
         self.simulate_day_button.clicked.connect(self._simulate_day)
@@ -624,6 +639,37 @@ class SeasonProgressWindow(QDialog):
 
         self._invoke_on_gui_thread(apply)
 
+    def _normalize_engine_choice(self, value: str | None) -> str:
+        token = str(value or "").strip().lower()
+        if token in {"physics", "phys", "new", "next"}:
+            return "physics"
+        return "legacy"
+
+    def _engine_simulate_game(
+        self,
+        home_id: str,
+        away_id: str,
+        *,
+        seed: int | None = None,
+        game_date: str | None = None,
+    ) -> tuple[int, int, str, dict[str, object]]:
+        return simulate_game_scores(
+            home_id,
+            away_id,
+            seed=seed,
+            game_date=game_date,
+            engine=self._engine_choice,
+        )
+
+    def _resolve_simulate_game(self):
+        return self._simulate_game or self._engine_simulate_game
+
+    def _on_engine_toggle(self, checked: bool) -> None:
+        if self._simulate_game is not None:
+            return
+        self._engine_choice = "physics" if checked else "legacy"
+        os.environ["PB_GAME_ENGINE"] = self._engine_choice
+
     def _infer_schedule_year(self) -> Optional[int]:
         """Best-effort inference of the active season year from schedule data."""
 
@@ -867,6 +913,25 @@ class SeasonProgressWindow(QDialog):
         self.simulate_to_draft_button.setVisible(is_regular)
         self.simulate_to_playoffs_button.setVisible(is_regular or is_playoffs)
         self.repair_lineups_button.setVisible(is_regular)
+        try:
+            self.engine_toggle.setVisible(is_regular)
+            if is_regular:
+                if self._simulate_game is not None:
+                    self._set_button_state(
+                        self.engine_toggle,
+                        False,
+                        "Simulation engine is controlled by the caller.",
+                    )
+                else:
+                    enabled = self._active_future is None
+                    reason = (
+                        "A simulation is already running. Please wait for it to finish."
+                        if self._active_future is not None
+                        else ""
+                    )
+                    self._set_button_state(self.engine_toggle, enabled, reason)
+        except Exception:
+            pass
         playoffs_bracket = bracket
         draft_locked = bool(self._draft_blocked)
         if is_regular:
@@ -1519,10 +1584,14 @@ class SeasonProgressWindow(QDialog):
                 "schedule": False,
             }
             self._playoffs_done = False
-            if self._simulate_game is not None:
-                self.simulator = SeasonSimulator([], self._simulate_game)
-            else:
-                self.simulator = SeasonSimulator([])
+            sim_fn = self._resolve_simulate_game()
+            self.simulator = SeasonSimulator(
+                [],
+                sim_fn,
+                on_draft_day=self._on_draft_day,
+                draft_date=self._draft_date,
+                after_game=self._record_game,
+            )
             self._season_year_hint = self._infer_schedule_year()
             note = f"Retired Players: {len(retired)}"
         elif self.manager.phase == SeasonPhase.REGULAR_SEASON:
@@ -1728,11 +1797,17 @@ class SeasonProgressWindow(QDialog):
         start = date(date.today().year, 4, 1)
         schedule = generate_mlb_schedule(teams, start)
         save_schedule(schedule, SCHEDULE_FILE)
+        first_date = (
+            str(schedule[0].get("date") or "").strip()
+            if schedule
+            else ""
+        )
+        draft_date = self._compute_draft_date(first_date or None)
+        self._draft_date = draft_date
         try:
             from playbalance.season_context import SeasonContext as _SeasonContext
 
             if schedule:
-                first_date = str(schedule[0].get("date") or "").strip()
                 if first_date:
                     try:
                         year = int(first_date.split("-")[0])
@@ -1742,14 +1817,14 @@ class SeasonProgressWindow(QDialog):
                     ctx.ensure_current_season(league_year=year, started_on=first_date)
         except Exception:
             pass
-        if self._simulate_game is not None:
-            self.simulator = SeasonSimulator(
-                schedule, self._simulate_game, after_game=self._record_game
-            )
-        else:
-            self.simulator = SeasonSimulator(
-                schedule, after_game=self._record_game
-            )
+        sim_fn = self._resolve_simulate_game()
+        self.simulator = SeasonSimulator(
+            schedule,
+            sim_fn,
+            on_draft_day=self._on_draft_day,
+            draft_date=draft_date,
+            after_game=self._record_game,
+        )
         self._season_year_hint = self._infer_schedule_year()
         message = f"Schedule generated with {len(schedule)} games."
         log_news_event(f"Generated regular season schedule with {len(schedule)} games")
@@ -2123,6 +2198,17 @@ class SeasonProgressWindow(QDialog):
             self.repair_lineups_button,
         ):
             self._set_button_state(btn, enabled, reason)
+        try:
+            if enabled and self._simulate_game is not None:
+                self._set_button_state(
+                    self.engine_toggle,
+                    False,
+                    "Simulation engine is controlled by the caller.",
+                )
+            else:
+                self._set_button_state(self.engine_toggle, enabled, reason)
+        except Exception:
+            pass
         if not enabled:
             self._set_button_state(self.next_button, False, reason)
 

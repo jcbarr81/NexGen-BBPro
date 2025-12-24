@@ -67,9 +67,9 @@ Goal: make every in-game outcome visibly driven by player ratings and keep the s
   Acceptance: (a) `BatterAI.decide_swing` split into stages: rating normalization, count/leverage adjustments, swing/take logits for zone vs. chase, two-strike resolver, contact-quality calc; (b) Each stage exposes rating-derived terms (`ch`, discipline) in diagnostics; (c) Config clamps exist for floors/caps; (d) Tests proving monotonicity: higher `ch` → lower K% and higher contact quality at fixed pitch mix.
 - **Task 4: Pitcher objective upgrade** — *Status: Not started*  
   Acceptance: (a) `PitcherAI` objective selection uses leverage (base/out/score), handedness, recent swing aggression, control/fatigue; (b) Default tables live in `playbalance/playbalance_config.py` with clamps; (c) Diagnostics report objective frequencies vs. counts; (d) Tests showing higher-control pitchers attack more often until behind, and leverage shifts toward chase/waste.
-- **Task 5: Baserunning/fielding rating hooks** — *Status: Not started*  
+- **Task 5: Baserunning/fielding rating hooks** — *Status: Completed*  
   Acceptance: (a) Steal attempt/success uses runner `sp` vs. catcher/pitcher `arm/fa/hold_runner`, with documented floors/ceilings; (b) DP/force/tag decisions use timing based on fielder range/arm and runner speed; (c) Fielding AI catch/throw/error paths take fielder ratings as inputs; (d) Tests showing faster runners steal/tag more successfully and stronger arms suppress attempts.
-- **Task 6: Season integration & KPI harness** — *Status: Not started*  
+- **Task 6: Season integration & KPI harness** — *Status: Completed*  
   Acceptance: (a) `simulate_game` remains the entry point; season stats persistence unchanged; (b) Add a deterministic mini-season harness that outputs KPIs and rating-stratified splits (top vs. bottom decile contact/power/control); (c) Target tolerances defined for P/PA, zone%, Z/O-swing, foul%, BIP%, BB%, K%, HR/FB, BABIP, steals/CS, DP/G; (d) CI/test hook fails when metrics drift beyond tolerances; (e) Doc update describing how to run/interpret the harness.
 
 ### Notes

@@ -341,9 +341,14 @@ def _ensure_pitcher_depth(roster: Roster, *, min_pitchers: int = MIN_ACTIVE_PITC
     if min_pitchers <= 0:
         return False
 
-    players = {
-        p.player_id: p for p in load_players_from_csv(_PLACEHOLDER_PLAYERS_FILE)
-    }
+    try:
+        players = {
+            p.player_id: p
+            for p in load_players_from_csv(_PLACEHOLDER_PLAYERS_FILE)
+        }
+    except Exception:
+        # If placeholder data is unavailable, skip depth enforcement.
+        return False
 
     def _is_pitcher(pid: str) -> bool:
         player = players.get(pid)

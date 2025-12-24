@@ -25,12 +25,14 @@ def _hitter(**overrides) -> Player:
         ch=45,
         ph=70,
         sp=55,
+        eye=50,
         sc=40,
         fa=60,
         arm=55,
         pot_ch=75,
         pot_ph=72,
         pot_sp=60,
+        pot_eye=55,
     )
     data.update(overrides)
     return Player(**data)

@@ -16,6 +16,7 @@ Task 1 requires a concrete strategy for moving from today's flat rating distri
   - Re-samples ratings using the rules in `docs/player_archetypes.md` and writes a new CSV (keeping IDs/names intact).
 - Keep the original file under version control; commit the updated CSV once the report confirms the desired distributions.
 - Document the script usage in `docs/player_archetypes.md` so future seasons can regenerate the pool.
+- The runtime generator will prefer `data/players_normalized.csv` when present, so sims do not require re-running the normalization script each time.
 
 ## Step 2: Generator integration
 
