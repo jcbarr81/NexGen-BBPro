@@ -1,9 +1,9 @@
 """Utilities for handling player injuries and disabled list logistics.
 
 This module keeps a consistent contract between the roster and player data
-when someone is moved to or from a disabled list (15/45-day) or injured
-reserve. It tracks minimum stint lengths, start dates, and provides helpers
-for UI/simulation layers to reason about eligibility.
+when someone is moved to or from the 15-day disabled list or injured reserve.
+It tracks minimum stint lengths, start dates, and provides helpers for
+UI/simulation layers to reason about eligibility.
 """
 
 from __future__ import annotations
@@ -15,13 +15,9 @@ from models.player import Player
 from models.roster import Roster
 from services.depth_chart_manager import promote_depth_chart_replacement
 
-DL_MINIMUM_DAYS = {
-    "dl15": 15,
-    "dl45": 45,
-}
+DL_MINIMUM_DAYS = {"dl15": 15}
 DL_LABELS = {
     "dl15": "15-Day DL",
-    "dl45": "45-Day DL",
     "ir": "Injured Reserve",
 }
 
@@ -44,10 +40,10 @@ def _normalize_list_name(list_name: str) -> str:
     if normalized in {"dl", "dl15", "15", "15-day", "15 day"}:
         return "dl15"
     if normalized in {"dl45", "45", "45-day", "45 day"}:
-        return "dl45"
+        return "ir"
     if normalized in {"ir", "injured reserve"}:
         return "ir"
-    raise ValueError("list_name must be one of dl15, dl45 or ir")
+    raise ValueError("list_name must be one of dl15 or ir")
 
 
 def disabled_list_label(list_name: Optional[str]) -> str:
@@ -55,7 +51,10 @@ def disabled_list_label(list_name: Optional[str]) -> str:
 
     if not list_name:
         return ""
-    return DL_LABELS.get(list_name.strip().lower(), list_name.upper())
+    normalized = list_name.strip().lower()
+    if normalized in {"dl45", "45", "45-day", "45 day"}:
+        return DL_LABELS.get("ir", "Injured Reserve")
+    return DL_LABELS.get(normalized, list_name.upper())
 
 
 def disabled_list_days_remaining(player: Player, today: Optional[date] = None) -> Optional[int]:

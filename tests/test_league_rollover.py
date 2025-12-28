@@ -152,7 +152,7 @@ def test_league_rollover_archives_and_resets(sandbox, monkeypatch):
     )
 
     class _StubAwards:
-        def __init__(self, players, batting, pitching):
+        def __init__(self, players, batting, pitching, **_kwargs):
             self.players = players
 
         def select_award_winners(self):

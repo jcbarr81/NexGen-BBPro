@@ -117,10 +117,13 @@ class LeagueLeadersWindow(QDialog):
             max_g = max(games_list) if games_list else 0
         except Exception:
             max_g = 0
-        # MLB guidelines: 3.1 PA per game and 1.0 IP per game; we approximate
-        # PA with AB here per request, using 2.7 AB per game as a rough proxy.
-        self._min_ab = max(1, int(round(max_g * 2.7)))
-        self._min_ip = max(1, int(round(max_g * 1.0)))
+        # MLB guidelines: 3.1 PA per game and 1.0 IP per game.
+        if max_g:
+            self._min_pa = max(1, int(round(max_g * 3.1)))
+            self._min_ip = max(1, int(round(max_g * 1.0)))
+        else:
+            self._min_pa = 0
+            self._min_ip = 0
 
         tabs = QTabWidget()
         layout.addWidget(tabs)
@@ -226,34 +229,40 @@ class LeagueLeadersWindow(QDialog):
         descending: bool,
         limit: int,
     ) -> List[Tuple[BasePlayer, Any]]:
-        leaders = [
-            (player, value)
-            for player, value in top_players(
-                players,
+        apply_qualifier = key != "sv"
+
+        def collect_leaders(pool: Iterable[BasePlayer]) -> List[Tuple[BasePlayer, Any]]:
+            pool_list = list(pool)
+            if not pool_list:
+                return []
+            candidates = top_players(
+                pool_list,
                 key,
                 pitcher_only=pitcher_only,
                 descending=descending,
-                limit=limit,
+                limit=len(pool_list),
             )
-            if self._has_stat_sample(player, key)
-        ]
+            return [
+                (player, value)
+                for player, value in candidates
+                if self._has_stat_sample(
+                    player,
+                    key,
+                    pitcher_only=pitcher_only,
+                    apply_qualifier=apply_qualifier,
+                )
+            ]
+
+        leaders = collect_leaders(players)
         if len(leaders) >= limit:
-            return leaders
+            return leaders[:limit]
         fallback_list = list(fallback_players)
         if not fallback_list:
             return leaders
         existing = {
             getattr(player, "player_id", None) or id(player) for player, _ in leaders
         }
-        for candidate, value in top_players(
-            fallback_list,
-            key,
-            pitcher_only=pitcher_only,
-            descending=descending,
-            limit=limit * 2,
-        ):
-            if not self._has_stat_sample(candidate, key):
-                continue
+        for candidate, value in collect_leaders(fallback_list):
             identifier = getattr(candidate, "player_id", None) or id(candidate)
             if identifier in existing:
                 continue
@@ -271,8 +280,23 @@ class LeagueLeadersWindow(QDialog):
         except (TypeError, ValueError):
             return 0.0
 
-    def _has_stat_sample(self, player: BasePlayer, key: str) -> bool:
+    def _has_stat_sample(
+        self,
+        player: BasePlayer,
+        key: str,
+        *,
+        pitcher_only: bool,
+        apply_qualifier: bool,
+    ) -> bool:
         stats = getattr(player, "season_stats", {}) or {}
+        min_ip = self.__dict__.get("_min_ip", 0)
+        min_pa = self.__dict__.get("_min_pa", 0)
+        if pitcher_only and apply_qualifier and min_ip:
+            if self._pitcher_ip(stats) < min_ip:
+                return False
+        if not pitcher_only and apply_qualifier and min_pa:
+            if self._batter_pa(stats) < min_pa:
+                return False
         if key in {"era", "whip"}:
             ip = stats.get("ip")
             if ip is None:
@@ -316,39 +340,53 @@ class LeagueLeadersWindow(QDialog):
     # ------------------------------------------------------------------
     # Qualification helpers
     def _qualified_batters(self, players: List[BasePlayer]) -> List[BasePlayer]:
-        min_ab = getattr(self, "_min_ab", 0)
+        min_pa = self.__dict__.get("_min_pa", 0)
         qualified: List[BasePlayer] = []
         for p in players:
             stats = getattr(p, "season_stats", {}) or {}
-            try:
-                ab = int(stats.get("ab", 0) or 0)
-            except Exception:
-                ab = 0
-            if ab >= min_ab:
+            if self._batter_pa(stats) >= min_pa:
                 qualified.append(p)
         # Fall back to all hitters if no one qualifies
         return qualified or players
 
     def _qualified_pitchers(self, players: List[BasePlayer]) -> List[BasePlayer]:
-        min_ip = getattr(self, "_min_ip", 0)
+        min_ip = self.__dict__.get("_min_ip", 0)
         qualified: List[BasePlayer] = []
         for p in players:
             stats = getattr(p, "season_stats", {}) or {}
-            ip = stats.get("ip")
-            if ip is None:
-                outs = stats.get("outs")
-                try:
-                    ip = (outs or 0) / 3.0
-                except Exception:
-                    ip = 0.0
-            try:
-                ip_val = float(ip or 0)
-            except Exception:
-                ip_val = 0.0
-            if ip_val >= min_ip:
+            if self._pitcher_ip(stats) >= min_ip:
                 qualified.append(p)
         # Fall back to all pitchers if no one qualifies
         return qualified or players
+
+    @staticmethod
+    def _batter_pa(stats: Dict[str, Any]) -> int:
+        pa = stats.get("pa")
+        if pa is None:
+            ab = stats.get("ab", 0) or 0
+            bb = stats.get("bb", 0) or 0
+            hbp = stats.get("hbp", 0) or 0
+            sf = stats.get("sf", 0) or 0
+            ci = stats.get("ci", 0) or 0
+            pa = ab + bb + hbp + sf + ci
+        try:
+            return int(pa or 0)
+        except Exception:
+            return 0
+
+    @staticmethod
+    def _pitcher_ip(stats: Dict[str, Any]) -> float:
+        ip = stats.get("ip")
+        if ip is None:
+            outs = stats.get("outs")
+            try:
+                ip = (outs or 0) / 3.0
+            except Exception:
+                ip = 0.0
+        try:
+            return float(ip or 0)
+        except Exception:
+            return 0.0
 
     def _open_player_from_table(self, item: QTableWidgetItem, table: QTableWidget) -> None:
         try:

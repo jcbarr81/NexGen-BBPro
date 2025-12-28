@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from datetime import date, datetime
+import os
 from typing import Iterable
 
 from models.pitcher import Pitcher
@@ -82,8 +83,25 @@ def calculate_age(birthdate: str) -> int:
     """Return age in years given a birthdate ISO string."""
 
     born = datetime.strptime(birthdate, "%Y-%m-%d").date()
-    today = date.today()
+    today = _resolve_sim_date() or date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+
+def _resolve_sim_date() -> date | None:
+    raw = os.getenv("PB_SIM_DATE")
+    if raw:
+        try:
+            return date.fromisoformat(raw.strip())
+        except ValueError:
+            pass
+    raw_year = os.getenv("PB_SIM_YEAR")
+    if raw_year:
+        try:
+            year = int(str(raw_year).strip())
+        except ValueError:
+            return None
+        return date(year, 7, 1)
+    return None
 
 
 def age_player(player) -> None:

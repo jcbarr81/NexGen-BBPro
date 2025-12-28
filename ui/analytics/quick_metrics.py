@@ -523,9 +523,29 @@ def _collect_team_leaders(
     raw_player_stats = (
         stats_payload.get("players", {}) if isinstance(stats_payload, Mapping) else {}
     )
+    team_stats = (
+        stats_payload.get("teams", {}) if isinstance(stats_payload, Mapping) else {}
+    )
+    team_games = 0
+    try:
+        team_id = getattr(roster, "team_id", None)
+        if team_id and isinstance(team_stats, Mapping):
+            team_entry = team_stats.get(str(team_id), {}) or {}
+            team_games = int(team_entry.get("g", team_entry.get("games", 0)) or 0)
+        if not team_games and isinstance(team_stats, Mapping):
+            games_list = [
+                int(v.get("g", v.get("games", 0)) or 0) for v in team_stats.values()
+            ]
+            team_games = max(games_list) if games_list else 0
+    except Exception:
+        team_games = 0
+    min_pa = int(round(team_games * 3.1)) if team_games else 0
+    min_ip = float(round(team_games * 1.0, 2)) if team_games else 0.0
 
-    hitters: list[tuple[Any, Mapping[str, Any]]] = []
-    pitchers: list[tuple[Any, Mapping[str, Any]]] = []
+    hitters_all: list[tuple[Any, Mapping[str, Any]]] = []
+    hitters_qualified: list[tuple[Any, Mapping[str, Any]]] = []
+    pitchers_all: list[tuple[Any, Mapping[str, Any]]] = []
+    pitchers_qualified: list[tuple[Any, Mapping[str, Any]]] = []
     for pid in candidate_ids:
         player = players.get(pid)
         if player is None:
@@ -539,17 +559,25 @@ def _collect_team_leaders(
                 stats = local_stats
         if _is_pitcher_type(player):
             if _has_pitcher_sample(stats):
-                pitchers.append((player, stats))
+                pitchers_all.append((player, stats))
+                if _qualifies_pitcher(stats, min_ip):
+                    pitchers_qualified.append((player, stats))
         else:
             if _has_batter_sample(stats):
-                hitters.append((player, stats))
+                hitters_all.append((player, stats))
+                if _qualifies_batter(stats, min_pa):
+                    hitters_qualified.append((player, stats))
+
+    hitters = hitters_qualified or hitters_all
+    pitchers = pitchers_qualified or pitchers_all
+    save_pool = pitchers_all or pitchers
 
     avg_leader = _find_avg_leader(hitters)
     hr_leader = _find_stat_leader(hitters, ("hr", "HR"))
     rbi_leader = _find_stat_leader(hitters, ("rbi", "RBI"))
     win_leader = _find_stat_leader(pitchers, ("w", "wins", "W"))
     so_leader = _find_stat_leader(pitchers, ("so", "SO", "k", "K"))
-    save_leader = _find_stat_leader(pitchers, ("sv", "SV", "saves", "S"))
+    save_leader = _find_stat_leader(save_pool, ("sv", "SV", "saves", "S"))
 
     batting["avg"], meta_entry = _format_leader_entry(avg_leader, stat="avg")
     if meta_entry and meta_entry.get("player_id"):
@@ -588,6 +616,38 @@ def _has_pitcher_sample(stats: Mapping[str, Any]) -> bool:
         if ip_val is not None:
             outs = ip_val * 3.0
     return outs is not None and outs > 0
+
+
+def _batter_pa(stats: Mapping[str, Any]) -> float:
+    pa = _safe_float(_first_value(stats, ("pa", "PA")))
+    if pa is not None:
+        return pa
+    ab = _safe_float(_first_value(stats, ("ab", "AB"))) or 0.0
+    bb = _safe_float(_first_value(stats, ("bb", "BB"))) or 0.0
+    hbp = _safe_float(_first_value(stats, ("hbp", "HBP"))) or 0.0
+    sf = _safe_float(_first_value(stats, ("sf", "SF"))) or 0.0
+    ci = _safe_float(_first_value(stats, ("ci", "CI"))) or 0.0
+    return ab + bb + hbp + sf + ci
+
+
+def _pitcher_ip(stats: Mapping[str, Any]) -> float:
+    ip_val = _safe_float(_first_value(stats, ("ip", "IP")))
+    if ip_val is not None:
+        return ip_val
+    outs = _safe_float(_first_value(stats, ("outs", "OUTS")))
+    return (outs / 3.0) if outs is not None else 0.0
+
+
+def _qualifies_batter(stats: Mapping[str, Any], min_pa: int) -> bool:
+    if min_pa <= 0:
+        return True
+    return _batter_pa(stats) >= min_pa
+
+
+def _qualifies_pitcher(stats: Mapping[str, Any], min_ip: float) -> bool:
+    if min_ip <= 0:
+        return True
+    return _pitcher_ip(stats) >= min_ip
 
 
 def _find_avg_leader(

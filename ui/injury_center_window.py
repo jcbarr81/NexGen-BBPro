@@ -100,13 +100,6 @@ from services.injury_manager import (
     place_on_injury_list,
     recover_from_injury,
 )
-from services.rehab_assignments import (
-    REHAB_READY_DAYS,
-    assign_rehab,
-    cancel_rehab,
-    rehab_status,
-    VALID_REHAB_LEVELS,
-)
 from utils.news_logger import log_news_event
 try:
     from services.roster_auto_assign import ACTIVE_MAX, AAA_MAX, LOW_MAX
@@ -114,10 +107,7 @@ except Exception:  # sensible defaults
     ACTIVE_MAX, AAA_MAX, LOW_MAX = 25, 15, 10
 
 
-_DL_CHOICES = [
-    ("dl15", DL_LABELS.get("dl15", "15-Day DL")),
-    ("dl45", DL_LABELS.get("dl45", "45-Day DL")),
-]
+_DL_CHOICES = [("dl15", DL_LABELS.get("dl15", "15-Day DL"))]
 
 
 class InjuryCenterWindow(QDialog):
@@ -146,9 +136,9 @@ class InjuryCenterWindow(QDialog):
         header.addWidget(self.refresh_btn)
         root.addLayout(header)
 
-        self.table = QTableWidget(0, 8)
+        self.table = QTableWidget(0, 7)
         self.table.setHorizontalHeaderLabels(
-            ["Player", "Team", "List", "Days Remaining", "Rehab", "Position", "Description", "Return Date"]
+            ["Player", "Team", "List", "Days Remaining", "Position", "Description", "Return Date"]
         )
         try:
             self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -196,7 +186,7 @@ class InjuryCenterWindow(QDialog):
         try:
             for code, label in _DL_CHOICES:
                 self.list_combo.addItem(label, code)
-            self.list_combo.setToolTip("Choose between the 15-day or 45-day disabled list")
+            self.list_combo.setToolTip("15-day disabled list")
         except Exception:
             try:
                 self.list_combo.addItems([label for _, label in _DL_CHOICES])
@@ -213,26 +203,12 @@ class InjuryCenterWindow(QDialog):
             pass
         form.addWidget(self.dest_combo, 1, 4)
 
-        form.addWidget(QLabel("Rehab Level"), 0, 5)
-        self.rehab_combo = QComboBox()
-        try:
-            for code in VALID_REHAB_LEVELS:
-                label = f"{code.upper()} Rehab"
-                self.rehab_combo.addItem(label, code)
-            self.rehab_combo.setToolTip("Assign players to an AAA or Low rehab stint")
-        except Exception:
-            try:
-                self.rehab_combo.addItems(["AAA Rehab", "Low Rehab"])
-            except Exception:
-                pass
-        form.addWidget(self.rehab_combo, 1, 5)
         try:
             form.setColumnStretch(0, 3)
             form.setColumnStretch(1, 0)
             form.setColumnStretch(2, 1)
             form.setColumnStretch(3, 1)
             form.setColumnStretch(4, 1)
-            form.setColumnStretch(5, 1)
         except Exception:
             pass
 
@@ -240,8 +216,6 @@ class InjuryCenterWindow(QDialog):
         self.btn_place_ir = QPushButton("Place on IR")
         self.btn_recover = QPushButton("Recover to Destination")
         self.btn_promote_best = QPushButton("Promote Best Replacement")
-        self.btn_start_rehab = QPushButton("Start Rehab")
-        self.btn_cancel_rehab = QPushButton("End Rehab")
         self.role_hint_label = QLabel("Recommended: --")
         try:
             self.role_hint_label.setStyleSheet("color: #888888; font-size: 11px;")
@@ -254,8 +228,6 @@ class InjuryCenterWindow(QDialog):
             # Live date validation styling
             self.ret_edit.textChanged.connect(self._on_date_changed)
             self.btn_promote_best.clicked.connect(self._promote_best)
-            self.btn_start_rehab.clicked.connect(self._start_rehab)
-            self.btn_cancel_rehab.clicked.connect(self._cancel_rehab)
         except Exception:
             pass
         buttons_grid = QGridLayout()
@@ -271,8 +243,6 @@ class InjuryCenterWindow(QDialog):
             (self.btn_place_ir, 0, 1),
             (self.btn_recover, 0, 2),
             (self.btn_promote_best, 1, 0),
-            (self.btn_start_rehab, 1, 1),
-            (self.btn_cancel_rehab, 1, 2),
         ):
             buttons_grid.addWidget(btn, row, col)
         try:
@@ -420,11 +390,9 @@ class InjuryCenterWindow(QDialog):
             days_remaining = disabled_list_days_remaining(p)
             days_text = str(days_remaining) if days_remaining is not None else ""
             self.table.setItem(row, 3, QTableWidgetItem(days_text))
-            rehab_text = rehab_status(p, ready_threshold=REHAB_READY_DAYS) or ""
-            self.table.setItem(row, 4, QTableWidgetItem(rehab_text))
-            self.table.setItem(row, 5, QTableWidgetItem(str(pos)))
-            self.table.setItem(row, 6, QTableWidgetItem(desc))
-            self.table.setItem(row, 7, QTableWidgetItem(ret))
+            self.table.setItem(row, 4, QTableWidgetItem(str(pos)))
+            self.table.setItem(row, 5, QTableWidgetItem(desc))
+            self.table.setItem(row, 6, QTableWidgetItem(ret))
             self._rows.append({"player_id": pid, "team_id": team_id, "list": list_code})
 
         if self._team_filter:
@@ -730,78 +698,6 @@ class InjuryCenterWindow(QDialog):
             self.refresh()
         except Exception as exc:
             self.status.setText(f"Failed: {exc}")
-
-    def _start_rehab(self) -> None:
-        pid, team_hint = self._selected()
-        if not pid:
-            self.status.setText("Select a player first.")
-            return
-        player = self._players_index.get(pid)
-        if player is None:
-            self.status.setText("Player not found in database.")
-            return
-        if not getattr(player, "injured", False):
-            self.status.setText("Player must be injured to begin rehab.")
-            return
-        team_id, roster = (team_hint, None)
-        if not team_id:
-            team_id, roster = self._find_team_and_roster(pid)
-        if not team_id:
-            self.status.setText("Could not determine player's team.")
-            return
-        if roster is None:
-            try:
-                roster = load_roster(team_id)
-            except Exception as exc:
-                self.status.setText(f"Failed to load roster: {exc}")
-                return
-        if pid not in getattr(roster, "dl", []):
-            self.status.setText("Only players on the DL can start rehab.")
-            return
-        try:
-            level = self.rehab_combo.currentData()
-        except Exception:
-            level = None
-        if not level:
-            try:
-                text = self.rehab_combo.currentText().lower()
-                level = "low" if "low" in text else "aaa"
-            except Exception:
-                level = "aaa"
-        try:
-            assigned = assign_rehab(player, level)
-        except ValueError as exc:
-            self.status.setText(str(exc))
-            return
-        self._persist_player(player)
-        log_news_event(
-            f"Started {assigned.upper()} rehab assignment for {getattr(player,'first_name','')} {getattr(player,'last_name','')} ({team_id})",
-            category="injury",
-        )
-        self.status.setText(f"Rehab assignment started at {assigned.upper()}.")
-        self.refresh()
-
-    def _cancel_rehab(self) -> None:
-        pid, _team_hint = self._selected()
-        if not pid:
-            self.status.setText("Select a player first.")
-            return
-        player = self._players_index.get(pid)
-        if player is None:
-            self.status.setText("Player not found in database.")
-            return
-        if not getattr(player, "injury_rehab_assignment", None):
-            self.status.setText("Player has no active rehab assignment.")
-            return
-        level = getattr(player, "injury_rehab_assignment", "").upper()
-        cancel_rehab(player)
-        self._persist_player(player)
-        log_news_event(
-            f"Ended {level} rehab assignment for {getattr(player,'first_name','')} {getattr(player,'last_name','')}",
-            category="injury",
-        )
-        self.status.setText("Rehab assignment cleared.")
-        self.refresh()
 
     def _recover(self) -> None:
         pid, team_hint = self._selected()

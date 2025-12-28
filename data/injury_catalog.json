@@ -99,7 +99,7 @@
         "major": {
           "min_days": 30,
           "max_days": 45,
-          "dl_tier": "dl45",
+          "dl_tier": "ir",
           "description": "Severe tendinitis",
           "attributes_penalty": {
             "vel": -5,

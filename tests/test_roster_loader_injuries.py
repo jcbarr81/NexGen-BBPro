@@ -19,10 +19,9 @@ def test_load_roster_promotes_replacements(tmp_path):
 
     roster = load_roster("T", roster_dir=tmp_path)
 
-    assert roster.dl == ["p3", "p4"]
+    assert roster.dl == ["p3"]
     assert roster.dl_tiers["p3"] == "dl15"
-    assert roster.dl_tiers["p4"] == "dl45"
-    assert roster.ir == ["p5"]
+    assert roster.ir == ["p4", "p5"]
     assert "p2" in roster.act
     assert "p6" in roster.act
     assert roster.aaa == []

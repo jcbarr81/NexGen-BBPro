@@ -144,6 +144,24 @@ def _sp_sort_key(role: str) -> Tuple[int, str]:
     return 99, role
 
 
+def _normalize_assignment_role(role: str) -> str:
+    role = (role or "").strip().upper()
+    if role in {"RP", "R"}:
+        return "MR"
+    return role
+
+
+def _normalize_extra_role(role: str) -> str:
+    role = _normalize_assignment_role(role)
+    if not role:
+        return "MR"
+    if role.startswith("SP"):
+        return "MR"
+    if role in {"CL", "SU", "MR", "LR"}:
+        return role
+    return "MR"
+
+
 def build_staff(
     assignments: Iterable[PitcherAssignment],
     pitchers_by_id: Dict[str, PitcherRatings],
@@ -154,6 +172,7 @@ def build_staff(
     bullpen: List[PitcherRatings] = []
     roles_by_id: Dict[str, str] = {}
     missing: List[str] = []
+    assigned_ids: set[str] = set()
 
     for assignment in assignments:
         if active_ids is not None and assignment.player_id not in active_ids:
@@ -162,10 +181,25 @@ def build_staff(
         if pitcher is None:
             missing.append(assignment.player_id)
             continue
-        roles_by_id[pitcher.player_id] = assignment.role
-        if assignment.role.startswith("SP"):
-            starters.append((assignment.role, pitcher))
+        role = _normalize_assignment_role(assignment.role)
+        roles_by_id[pitcher.player_id] = role
+        assigned_ids.add(pitcher.player_id)
+        if role.startswith("SP"):
+            starters.append((role, pitcher))
         else:
+            bullpen.append(pitcher)
+
+    if active_ids is not None:
+        for player_id in sorted(active_ids):
+            if player_id in assigned_ids:
+                continue
+            pitcher = pitchers_by_id.get(player_id)
+            if pitcher is None:
+                continue
+            role = _normalize_extra_role(
+                pitcher.preferred_role or pitcher.role or ""
+            )
+            roles_by_id[pitcher.player_id] = role
             bullpen.append(pitcher)
 
     starters_sorted = sorted(starters, key=lambda item: _sp_sort_key(item[0]))

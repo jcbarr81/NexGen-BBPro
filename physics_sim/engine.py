@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Dict, Any, List
 import random
+import re
 
 from .config import load_tuning, TuningConfig
 from .data_loader import load_players_by_id
@@ -81,6 +82,7 @@ class PitcherState:
     used: bool = False
     available: bool = True
     staff_role: str = ""
+    rest_role: str = ""
     in_save_situation: bool = False
     entered_save_opp: bool = False
 
@@ -206,7 +208,10 @@ class TeamPitchingState:
 
 
 def _pitcher_usage_limits(
-    pitcher: PitcherRatings, tuning: TuningConfig
+    pitcher: PitcherRatings,
+    tuning: TuningConfig,
+    *,
+    role: str = "",
 ) -> tuple[float, float]:
     endurance = pitcher.endurance if pitcher.endurance > 0 else 50.0
     start_base = tuning.get("fatigue_start_base", 50.0)
@@ -215,7 +220,135 @@ def _pitcher_usage_limits(
     limit_scale = tuning.get("fatigue_limit_endurance_scale", 0.0)
     fatigue_start = start_base + (endurance * start_scale)
     fatigue_limit = fatigue_start + limit_base + (endurance * limit_scale)
+    role = (role or "").upper()
+    if role in {"CL", "SU", "MR"}:
+        start_scale = tuning.get("reliever_fatigue_start_scale", 0.5)
+        limit_scale = tuning.get("reliever_fatigue_limit_scale", 0.5)
+        fatigue_start *= start_scale
+        span = max(5.0, fatigue_limit - fatigue_start)
+        fatigue_limit = fatigue_start + span * limit_scale
+    elif role == "LR":
+        start_scale = tuning.get("long_reliever_fatigue_start_scale", 0.75)
+        limit_scale = tuning.get("long_reliever_fatigue_limit_scale", 0.75)
+        fatigue_start *= start_scale
+        span = max(5.0, fatigue_limit - fatigue_start)
+        fatigue_limit = fatigue_start + span * limit_scale
+    fatigue_limit = max(fatigue_start + 5.0, fatigue_limit)
     return fatigue_start, fatigue_limit
+
+
+def _sp_sort_key(role: str) -> tuple[int, str]:
+    match = re.match(r"SP(\d+)", role or "")
+    if match:
+        return int(match.group(1)), role
+    return 99, role
+
+
+def _rest_days_for_role(role: str, tuning: TuningConfig) -> int:
+    role = (role or "").upper()
+    if role.startswith("SP"):
+        return int(tuning.get("starter_rest_days", 4.0))
+    if role == "CL":
+        return int(tuning.get("closer_rest_days", 1.0))
+    return int(tuning.get("reliever_rest_days", 0.0))
+
+
+def _pitcher_days_since_use(
+    pitcher_id: str,
+    *,
+    usage_state: UsageState | None,
+    game_day: int | None,
+) -> int | None:
+    if usage_state is None or game_day is None:
+        return None
+    workload = usage_state.workload_for(pitcher_id)
+    if workload.last_used_day is None:
+        return None
+    return game_day - workload.last_used_day
+
+
+def _pitcher_is_rested(
+    *,
+    pitcher_id: str,
+    role: str,
+    usage_state: UsageState | None,
+    game_day: int | None,
+    tuning: TuningConfig,
+) -> bool:
+    days_since = _pitcher_days_since_use(
+        pitcher_id, usage_state=usage_state, game_day=game_day
+    )
+    if days_since is None:
+        return True
+    return days_since >= _rest_days_for_role(role, tuning)
+
+
+def _order_pitchers_for_game(
+    pitchers: List[PitcherRatings],
+    *,
+    roles_by_id: Dict[str, str] | None,
+    usage_state: UsageState | None,
+    game_day: int | None,
+    tuning: TuningConfig,
+) -> List[PitcherRatings]:
+    if not pitchers:
+        return []
+    roles_by_id = roles_by_id or {}
+    starters: list[tuple[str, PitcherRatings]] = []
+    bullpen: list[PitcherRatings] = []
+    for pitcher in pitchers:
+        role = roles_by_id.get(pitcher.player_id, "")
+        if not role:
+            role = pitcher.preferred_role or pitcher.role or ""
+        role = role.upper()
+        if role.startswith("SP"):
+            starters.append((role, pitcher))
+        else:
+            bullpen.append(pitcher)
+    if not starters:
+        return list(pitchers)
+
+    starters_sorted = sorted(starters, key=lambda item: _sp_sort_key(item[0]))
+    rotation = [pitcher for _, pitcher in starters_sorted]
+    start_index = 0
+    if game_day is not None:
+        start_index = game_day % len(rotation)
+    chosen_index = start_index
+
+    if usage_state is not None and game_day is not None:
+        available_indices = [
+            idx
+            for idx, (role, pitcher) in enumerate(starters_sorted)
+            if _pitcher_is_rested(
+                pitcher_id=pitcher.player_id,
+                role=role,
+                usage_state=usage_state,
+                game_day=game_day,
+                tuning=tuning,
+            )
+        ]
+        if available_indices:
+            for offset in range(len(rotation)):
+                idx = (start_index + offset) % len(rotation)
+                if idx in available_indices:
+                    chosen_index = idx
+                    break
+        else:
+            def rest_score(idx: int) -> int:
+                pitcher = rotation[idx]
+                days_since = _pitcher_days_since_use(
+                    pitcher.player_id,
+                    usage_state=usage_state,
+                    game_day=game_day,
+                )
+                return days_since if days_since is not None else -1
+
+            chosen_index = max(range(len(rotation)), key=rest_score)
+
+    rotation = rotation[chosen_index:] + rotation[:chosen_index]
+    ordered = list(rotation)
+    ordered.extend(bullpen)
+    return ordered
 
 
 def _fatigue_penalty(state: PitcherState, tuning: TuningConfig) -> float:
@@ -272,7 +405,35 @@ def _apply_usage_state(
     state.fatigue_limit = max(
         state.fatigue_start + 5.0, state.fatigue_limit * (1.0 - ratio * limit_reduction)
     )
-    state.available = ratio <= 1.0
+    rest_role = state.rest_role or state.staff_role
+    availability_ratio = 1.0
+    if rest_role == "CL":
+        availability_ratio = tuning.get("closer_availability_ratio", 1.3)
+    state.available = ratio <= availability_ratio
+    rest_days = _rest_days_for_role(rest_role, tuning)
+    if (
+        game_day is not None
+        and rest_days > 0
+        and workload.last_used_day is not None
+    ):
+        days_since = game_day - workload.last_used_day
+        if days_since < rest_days:
+            state.available = False
+            rest_penalty = tuning.get("short_rest_penalty", 0.35)
+            rest_deficit = rest_days - days_since
+            scaled = rest_penalty * (rest_deficit / max(1.0, float(rest_days)))
+            state.pregame_penalty = max(state.pregame_penalty, scaled)
+    if rest_role == "CL":
+        max_consecutive = int(tuning.get("closer_max_consecutive_days", 2.0))
+        if max_consecutive > 0 and workload.last_used_day is not None:
+            if game_day is not None and game_day - workload.last_used_day == 1:
+                if workload.consecutive_days_used >= max_consecutive:
+                    state.available = False
+        max_ratio = float(tuning.get("closer_max_appearances_ratio", 0.0))
+        if max_ratio > 0.0 and game_day is not None:
+            max_apps = max(1, int((game_day + 1) * max_ratio))
+            if workload.appearances >= max_apps:
+                state.available = False
 
 
 def _line_for_pitcher(
@@ -344,6 +505,19 @@ def _should_hook_pitcher(
         if no_hit and pitcher_state.pitches <= tuning.get("nohit_pitch_limit", 160.0):
             return False
 
+    role = (pitcher_state.staff_role or "").upper()
+    if role in {"CL", "SU", "MR", "LR"}:
+        if role == "CL":
+            max_outs = int(tuning.get("closer_max_outs", 3.0))
+        elif role == "SU":
+            max_outs = int(tuning.get("setup_max_outs", 3.0))
+        elif role == "MR":
+            max_outs = int(tuning.get("middle_reliever_max_outs", 6.0))
+        else:
+            max_outs = int(tuning.get("long_reliever_max_outs", 9.0))
+        if max_outs > 0 and line.outs >= max_outs:
+            return True
+
     pitch_cap = pitcher_state.fatigue_limit
     if innings_pitched >= achievement_inning:
         if line.runs == 0:
@@ -402,7 +576,12 @@ def _should_hook_pitcher(
     return hook_score - leash_bonus >= tuning.get("hook_threshold", 1.6)
 
 
-def _reliever_score(pitcher_state: PitcherState, leverage: str) -> float:
+def _reliever_score(
+    pitcher_state: PitcherState,
+    leverage: str,
+    *,
+    score_diff: int,
+) -> float:
     pitcher = pitcher_state.pitcher
     stuff = (pitcher.control + pitcher.movement + pitcher.arm) / 3.0
     endurance = pitcher.endurance
@@ -410,22 +589,28 @@ def _reliever_score(pitcher_state: PitcherState, leverage: str) -> float:
     role = (pitcher_state.staff_role or "").upper()
     if leverage == "high":
         score = stuff * 1.1 + endurance * 0.1
-        if role in {"CL", "SU"}:
-            score += 8.0
-        elif role == "MR":
-            score += 3.0
-        elif role in {"LR"} or role.startswith("SP"):
-            score -= 4.0
+        if score_diff > 0:
+            if role in {"CL", "SU"}:
+                score += 8.0
+            elif role == "MR":
+                score += 3.0
+            elif role in {"LR"} or role.startswith("SP"):
+                score -= 4.0
+        else:
+            if role in {"CL", "SU"}:
+                score -= 6.0
     elif leverage == "long":
         score = endurance * 0.7 + stuff * 0.3
         if role == "LR" or role.startswith("SP"):
             score += 6.0
         elif role in {"CL", "SU"}:
-            score -= 4.0
+            score -= 6.0
     else:
         score = stuff * 0.6 + endurance * 0.4
         if role in {"MR", "SU"}:
             score += 2.0
+        elif role == "CL":
+            score -= 4.0
     return score * freshness
 
 
@@ -455,6 +640,8 @@ def _select_reliever(
     team_state: TeamPitchingState,
     leverage: str,
     *,
+    inning: int,
+    score_diff: int,
     upcoming_batters: List[BatterRatings] | None = None,
     tuning: TuningConfig | None = None,
 ) -> PitcherState:
@@ -465,8 +652,37 @@ def _select_reliever(
     ]
     if not candidates:
         return team_state.current
+    if not (leverage == "high" and score_diff > 0):
+        non_cl = [
+            pitcher
+            for pitcher in candidates
+            if (pitcher.staff_role or "").upper() != "CL"
+        ]
+        if non_cl:
+            candidates = non_cl
+    if leverage == "high" and score_diff > 0:
+        closer_inning = int(
+            (tuning.get("closer_inning_min", 9.0) if tuning else 9.0)
+        )
+        closers: list[PitcherState] = []
+        if inning >= closer_inning:
+            closers = [
+                pitcher
+                for pitcher in candidates
+                if (pitcher.staff_role or "").upper() == "CL"
+            ]
+            if closers:
+                candidates = closers
+        if not closers:
+            setup = [
+                pitcher
+                for pitcher in candidates
+                if (pitcher.staff_role or "").upper() == "SU"
+            ]
+            if setup:
+                candidates = setup
     def score(candidate: PitcherState) -> float:
-        base = _reliever_score(candidate, leverage)
+        base = _reliever_score(candidate, leverage, score_diff=score_diff)
         if tuning is None or not upcoming_batters:
             return base
         matchup = _matchup_score(candidate, upcoming_batters, tuning)
@@ -476,6 +692,9 @@ def _select_reliever(
 
 
 def _leverage_type(inning: int, score_diff: int, tuning: TuningConfig) -> str:
+    save_diff = int(tuning.get("save_opportunity_run_diff", 3.0))
+    if inning >= 8 and score_diff > 0 and score_diff <= save_diff:
+        return "high"
     close_diff = tuning.get("close_game_run_diff", 2.0)
     close_game = abs(score_diff) <= close_diff
     if close_game and inning >= 8:
@@ -513,10 +732,27 @@ def _enter_pitcher(
     team_state.current = pitcher_state
 
 
-def _save_opportunity(lead: int, inning: int, tuning: TuningConfig) -> bool:
+def _save_opportunity(
+    *,
+    lead: int,
+    inning: int,
+    bases: BaseState,
+    tuning: TuningConfig,
+) -> bool:
     save_diff = int(tuning.get("save_opportunity_run_diff", 3.0))
-    min_inning = int(tuning.get("save_opportunity_inning", 7.0))
-    return lead > 0 and inning >= min_inning and lead <= save_diff
+    min_inning = int(tuning.get("save_opportunity_inning", 1.0))
+    if lead <= 0 or inning < min_inning:
+        return False
+    if lead <= save_diff:
+        return True
+    runners_on = sum(
+        1 for runner in (bases.first, bases.second, bases.third) if runner is not None
+    )
+    if lead == save_diff + 1 and runners_on >= 2:
+        return True
+    if lead == save_diff + 2 and runners_on >= 3:
+        return True
+    return False
 
 
 def _pitcher_exit_stats(
@@ -567,7 +803,7 @@ def _pitcher_enter_stats(
         line.ir += inherited
         line.inning_baserunners += inherited
     lead = defense_score - offense_score
-    save_opp = _save_opportunity(lead, inning, tuning)
+    save_opp = _save_opportunity(lead=lead, inning=inning, bases=bases, tuning=tuning)
     pitcher_state.entered_save_opp = save_opp
     pitcher_state.in_save_situation = save_opp
     if save_opp:
@@ -586,35 +822,69 @@ def _build_team_pitching_state(
 ) -> TeamPitchingState:
     if not pitchers:
         raise ValueError("At least one pitcher is required to simulate a game.")
-    starter_limits = _pitcher_usage_limits(pitchers[0], tuning)
     starter_role = ""
     if roles_by_id is not None:
         starter_role = roles_by_id.get(pitchers[0].player_id, "")
     if not starter_role:
         starter_role = pitchers[0].preferred_role or pitchers[0].role
+    starter_limits = _pitcher_usage_limits(
+        pitchers[0],
+        tuning,
+        role=starter_role,
+    )
     starter_state = PitcherState(
         pitcher=pitchers[0],
         fatigue_start=starter_limits[0],
         fatigue_limit=starter_limits[1],
         staff_role=starter_role,
+        rest_role=starter_role,
     )
     _apply_usage_state(starter_state, usage_state, game_day, tuning)
-    bullpen = []
+    bullpen: list[PitcherState] = []
     for pitcher in pitchers[1:]:
-        fatigue_start, fatigue_limit = _pitcher_usage_limits(pitcher, tuning)
         staff_role = ""
         if roles_by_id is not None:
             staff_role = roles_by_id.get(pitcher.player_id, "")
         if not staff_role:
             staff_role = pitcher.preferred_role or pitcher.role
+        if staff_role.upper().startswith("SP"):
+            continue
+        bullpen_role = staff_role
+        fatigue_start, fatigue_limit = _pitcher_usage_limits(
+            pitcher,
+            tuning,
+            role=bullpen_role,
+        )
         reliever_state = PitcherState(
             pitcher=pitcher,
             fatigue_start=fatigue_start,
             fatigue_limit=fatigue_limit,
-            staff_role=staff_role,
+            staff_role=bullpen_role,
+            rest_role=staff_role,
         )
         _apply_usage_state(reliever_state, usage_state, game_day, tuning)
         bullpen.append(reliever_state)
+    if not bullpen:
+        for pitcher in pitchers[1:]:
+            staff_role = ""
+            if roles_by_id is not None:
+                staff_role = roles_by_id.get(pitcher.player_id, "")
+            if not staff_role:
+                staff_role = pitcher.preferred_role or pitcher.role
+            fatigue_start, fatigue_limit = _pitcher_usage_limits(
+                pitcher,
+                tuning,
+                role="LR",
+            )
+            reliever_state = PitcherState(
+                pitcher=pitcher,
+                fatigue_start=fatigue_start,
+                fatigue_limit=fatigue_limit,
+                staff_role="LR",
+                rest_role=staff_role,
+            )
+            _apply_usage_state(reliever_state, usage_state, game_day, tuning)
+            bullpen.append(reliever_state)
     team_state = TeamPitchingState(
         starter=starter_state,
         bullpen=bullpen,
@@ -1128,6 +1398,37 @@ def _advance_on_hit(
         else:
             bases.second = runner_first
     return runs, outs, events, scored, error_advances
+
+
+def _maybe_upgrade_hit(
+    *,
+    hit_type: str,
+    batter: BatterRatings,
+    ball_type: str | None,
+    defense_arm: float,
+    tuning: TuningConfig,
+) -> str:
+    if hit_type not in {"single", "double"}:
+        return hit_type
+    if ball_type not in {"ld", "fb"}:
+        return hit_type
+    speed_norm = max(0.0, (batter.speed - 50.0) / 50.0)
+    if hit_type == "single":
+        base = tuning.get("stretch_double_base", 0.0)
+        speed_scale = tuning.get("stretch_double_speed_scale", 0.0)
+        arm_scale = tuning.get("stretch_double_arm_scale", 0.0)
+        upgrade_to = "double"
+    else:
+        base = tuning.get("stretch_triple_base", 0.0)
+        speed_scale = tuning.get("stretch_triple_speed_scale", 0.0)
+        arm_scale = tuning.get("stretch_triple_arm_scale", 0.0)
+        upgrade_to = "triple"
+    chance = base + speed_norm * speed_scale
+    arm_penalty = 1.0 - (defense_arm / 100.0) * arm_scale
+    chance *= max(0.1, arm_penalty)
+    if random.random() < chance:
+        return upgrade_to
+    return hit_type
 
 
 def _credit_outs_on_base(
@@ -2469,6 +2770,67 @@ def _maybe_injure_player(
     return event
 
 
+def _batter_fatigue_penalty(
+    batter: BatterRatings,
+    *,
+    usage_state: UsageState | None,
+    game_day: int | None,
+    tuning: TuningConfig,
+) -> float:
+    if usage_state is None or game_day is None:
+        return 0.0
+    workload = usage_state.batter_workload_for(batter.player_id)
+    threshold = tuning.get("batter_fatigue_threshold_base", 35.0)
+    threshold += batter.durability * tuning.get("batter_fatigue_threshold_scale", 0.45)
+    if threshold <= 0.0:
+        return 0.0
+    over = max(0.0, workload.fatigue_debt - threshold)
+    ratio = over / threshold
+    penalty = ratio * tuning.get("batter_fatigue_penalty_scale", 0.5)
+    cap = tuning.get("batter_fatigue_penalty_cap", 0.35)
+    return max(0.0, min(cap, penalty))
+
+
+def _apply_batter_fatigue(
+    batters: List[BatterRatings],
+    *,
+    usage_state: UsageState | None,
+    game_day: int | None,
+    tuning: TuningConfig,
+) -> List[BatterRatings]:
+    if usage_state is None or game_day is None:
+        return list(batters)
+
+    adjusted: List[BatterRatings] = []
+    for batter in batters:
+        penalty = _batter_fatigue_penalty(
+            batter, usage_state=usage_state, game_day=game_day, tuning=tuning
+        )
+        if penalty <= 0.0:
+            adjusted.append(batter)
+            continue
+        offense_scale = 1.0 - penalty * tuning.get("batter_fatigue_offense_scale", 0.8)
+        eye_scale = 1.0 - penalty * tuning.get("batter_fatigue_eye_scale", 0.7)
+        speed_scale = 1.0 - penalty * tuning.get("batter_fatigue_speed_scale", 0.5)
+        defense_scale = 1.0 - penalty * tuning.get("batter_fatigue_defense_scale", 0.4)
+
+        def clamp(value: float) -> float:
+            return max(1.0, min(100.0, value))
+
+        updated = replace(
+            batter,
+            contact=clamp(batter.contact * offense_scale),
+            power=clamp(batter.power * offense_scale),
+            eye=clamp(batter.eye * eye_scale),
+            speed=clamp(batter.speed * speed_scale),
+            fielding=clamp(batter.fielding * defense_scale),
+            arm=clamp(batter.arm * defense_scale),
+        )
+        setattr(updated, "fatigue_penalty", penalty)
+        adjusted.append(updated)
+    return adjusted
+
+
 def _maybe_pitcher_overuse_injury(
     *,
     injury_sim: InjurySimulator | None,
@@ -2528,6 +2890,8 @@ def _maybe_pitcher_overuse_injury(
     next_pitcher = _select_reliever(
         pitching_state,
         leverage,
+        inning=inning,
+        score_diff=score_diff,
         upcoming_batters=upcoming_batters,
         tuning=tuning,
     )
@@ -2751,14 +3115,6 @@ def simulate_game(
     injury_events: list[dict[str, Any]] = []
     injured_players: set[str] = set()
 
-    if usage_state is not None and game_day is not None:
-        usage_pitchers: List[PitcherRatings] = []
-        if away_pitchers is not None and home_pitchers is not None:
-            usage_pitchers = list(away_pitchers) + list(home_pitchers)
-        elif pitchers is not None:
-            usage_pitchers = list(pitchers)
-        usage_state.advance_day(day=game_day, pitchers=usage_pitchers, tuning=tuning)
-
     totals = {
         "pa": 0,
         "ab": 0,
@@ -2828,6 +3184,78 @@ def simulate_game(
     home_lineup_ids = {b.player_id for b in home_lineup}
     away_bench = [b for b in away_bench if b.player_id not in away_lineup_ids]
     home_bench = [b for b in home_bench if b.player_id not in home_lineup_ids]
+
+    if away_pitchers is None or home_pitchers is None:
+        if not pitchers:
+            raise ValueError("Pitchers are required when explicit staffs are not set.")
+        if len(pitchers) >= 4:
+            midpoint = len(pitchers) // 2
+            away_pitchers = pitchers[:midpoint]
+            home_pitchers = pitchers[midpoint:]
+        elif len(pitchers) >= 2:
+            away_pitchers = [pitchers[0]]
+            home_pitchers = [pitchers[1]]
+        else:
+            away_pitchers = pitchers[:1]
+            home_pitchers = pitchers[:1]
+    if not away_pitchers or not home_pitchers:
+        raise ValueError("Both teams must have at least one pitcher.")
+
+    if usage_state is not None and game_day is not None:
+        usage_pitchers = list(away_pitchers) + list(home_pitchers)
+        usage_batters = (
+            list(away_lineup)
+            + list(home_lineup)
+            + list(away_bench)
+            + list(home_bench)
+        )
+        usage_state.advance_day(
+            day=game_day,
+            pitchers=usage_pitchers,
+            batters=usage_batters,
+            tuning=tuning,
+        )
+
+        away_lineup = _apply_batter_fatigue(
+            list(away_lineup),
+            usage_state=usage_state,
+            game_day=game_day,
+            tuning=tuning,
+        )
+        home_lineup = _apply_batter_fatigue(
+            list(home_lineup),
+            usage_state=usage_state,
+            game_day=game_day,
+            tuning=tuning,
+        )
+        away_bench = _apply_batter_fatigue(
+            list(away_bench),
+            usage_state=usage_state,
+            game_day=game_day,
+            tuning=tuning,
+        )
+        home_bench = _apply_batter_fatigue(
+            list(home_bench),
+            usage_state=usage_state,
+            game_day=game_day,
+            tuning=tuning,
+        )
+
+    away_pitchers = _order_pitchers_for_game(
+        list(away_pitchers),
+        roles_by_id=away_pitcher_roles,
+        usage_state=usage_state,
+        game_day=game_day,
+        tuning=tuning,
+    )
+    home_pitchers = _order_pitchers_for_game(
+        list(home_pitchers),
+        roles_by_id=home_pitcher_roles,
+        usage_state=usage_state,
+        game_day=game_day,
+        tuning=tuning,
+    )
+
     away_state = LineupState(
         lineup=list(away_lineup),
         positions=dict(away_positions),
@@ -2846,22 +3274,6 @@ def simulate_game(
         for player_id, pos in state.positions.items():
             if pos and pos.upper() != "DH":
                 _fielding_line(state, player_id, starting=True)
-
-    if away_pitchers is None or home_pitchers is None:
-        if not pitchers:
-            raise ValueError("Pitchers are required when explicit staffs are not set.")
-        if len(pitchers) >= 4:
-            midpoint = len(pitchers) // 2
-            away_pitchers = pitchers[:midpoint]
-            home_pitchers = pitchers[midpoint:]
-        elif len(pitchers) >= 2:
-            away_pitchers = [pitchers[0]]
-            home_pitchers = [pitchers[1]]
-        else:
-            away_pitchers = pitchers[:1]
-            home_pitchers = pitchers[:1]
-    if not away_pitchers or not home_pitchers:
-        raise ValueError("Both teams must have at least one pitcher.")
 
     away_staff = _build_team_pitching_state(
         away_pitchers,
@@ -2942,6 +3354,78 @@ def simulate_game(
             ghost = lineup[(batter_index - 1) % len(lineup)]
             bases.second = ghost
             unearned_runners.add(ghost.player_id)
+
+        if inning >= 9:
+            lead = defense_score - offense_score
+            if lead > 0:
+                save_opp = _save_opportunity(
+                    lead=lead,
+                    inning=inning,
+                    bases=bases,
+                    tuning=tuning,
+                )
+                current_role = (pitching_state.current.staff_role or "").upper()
+                if save_opp and current_role != "CL":
+                    upcoming = [
+                        lineup[(batter_index + offset) % len(lineup)]
+                        for offset in range(min(3, len(lineup)))
+                    ]
+                    leverage = _leverage_type(inning, lead, tuning)
+                    closer_candidates = [
+                        pitcher
+                        for pitcher in pitching_state.bullpen
+                        if (pitcher.staff_role or "").upper() == "CL"
+                        and not pitcher.used
+                    ]
+                    available_closers = [
+                        pitcher for pitcher in closer_candidates if pitcher.available
+                    ]
+                    if available_closers:
+                        next_pitcher = max(
+                            available_closers,
+                            key=lambda candidate: _reliever_score(
+                                candidate, leverage, score_diff=lead
+                            ),
+                        )
+                    elif closer_candidates:
+                        next_pitcher = max(
+                            closer_candidates,
+                            key=lambda candidate: _reliever_score(
+                                candidate, leverage, score_diff=lead
+                            ),
+                        )
+                    else:
+                        next_pitcher = _select_reliever(
+                            pitching_state,
+                            leverage,
+                            inning=inning,
+                            score_diff=lead,
+                            upcoming_batters=upcoming,
+                            tuning=tuning,
+                        )
+                    if next_pitcher is not pitching_state.current:
+                        line = _line_for_pitcher(
+                            pitching_state, pitching_state.current, inning
+                        )
+                        _pitcher_exit_stats(
+                            pitcher_state=pitching_state.current,
+                            line=line,
+                            defense_score=defense_score,
+                            offense_score=offense_score,
+                            game_finished=False,
+                        )
+                        _pitcher_enter_stats(
+                            pitching_state=pitching_state,
+                            pitcher_state=next_pitcher,
+                            lineup_state=defense_state,
+                            inning=inning,
+                            score_diff=lead,
+                            defense_score=defense_score,
+                            offense_score=offense_score,
+                            bases=bases,
+                            postseason=postseason,
+                            tuning=tuning,
+                        )
 
         def record_runs(
             runs_scored: int,
@@ -3418,6 +3902,7 @@ def simulate_game(
                     "batter_chase_rate": chase_rate,
                     "last_pitch_type": last_pitch_type,
                     "last_pitch_repeat": last_pitch_repeat,
+                    "foul_territory_scale": park.foul_territory_scale,
                 }
                 res: PitchResult = simulate_pitch(
                     batter=_batter_context(batter, pitcher, tuning),
@@ -3591,7 +4076,6 @@ def simulate_game(
                         pitch_log[-1]["strikeout"] = True
                         pitch_log[-1]["strikeout_type"] = "called"
                         before_ids = _base_runner_ids(bases)
-                        before_ids = _base_runner_ids(bases)
                         reached, outs_added, runs_scored, miss_event, scored = (
                             _resolve_dropped_third_strike(
                                 bases=bases,
@@ -3606,14 +4090,6 @@ def simulate_game(
                                 zone_top=zone_top,
                             )
                         )
-                        _reconcile_runner_pitchers(
-                            runner_pitchers,
-                            before_ids=before_ids,
-                            bases=bases,
-                            scored=scored,
-                        )
-                        if reached:
-                            runner_pitchers[batter.player_id] = line
                         _reconcile_runner_pitchers(
                             runner_pitchers,
                             before_ids=before_ids,
@@ -3714,6 +4190,9 @@ def simulate_game(
                         spray_angle=res.spray_angle or 0.0,
                         park=park,
                         tuning=tuning,
+                        batter_speed=batter.speed,
+                        batter_contact=batter.contact,
+                        batter_power=batter.power,
                     )
                     res.distance = dist
                     res.ball_type = ball_type
@@ -3787,20 +4266,6 @@ def simulate_game(
                             line.inning_baserunners += 1
                             line.consecutive_hits += 1
                             batter_line.h += 1
-                            resolved_hit = hit_type or "single"
-                            if resolved_hit == "double":
-                                batter_line.b2 += 1
-                                line.b2 += 1
-                                totals["b2"] += 1
-                            elif resolved_hit == "triple":
-                                batter_line.b3 += 1
-                                line.b3 += 1
-                                totals["b3"] += 1
-                            else:
-                                batter_line.b1 += 1
-                                line.b1 += 1
-                                totals["b1"] += 1
-                            before_ids = _base_runner_ids(bases)
                             advance_infield = ball_type == "gb"
                             advance_pos = _fielder_position_for_ball(
                                 ball_type=ball_type,
@@ -3831,6 +4296,26 @@ def simulate_game(
                                 fallback_arm=defense_ratings.arm,
                                 tuning=tuning,
                             )
+                            resolved_hit = _maybe_upgrade_hit(
+                                hit_type=hit_type or "single",
+                                batter=batter,
+                                ball_type=ball_type,
+                                defense_arm=advance_arm,
+                                tuning=tuning,
+                            )
+                            if resolved_hit == "double":
+                                batter_line.b2 += 1
+                                line.b2 += 1
+                                totals["b2"] += 1
+                            elif resolved_hit == "triple":
+                                batter_line.b3 += 1
+                                line.b3 += 1
+                                totals["b3"] += 1
+                            else:
+                                batter_line.b1 += 1
+                                line.b1 += 1
+                                totals["b1"] += 1
+                            before_ids = _base_runner_ids(bases)
                             (
                                 runs_scored,
                                 outs_added,
@@ -4536,6 +5021,8 @@ def simulate_game(
                 next_pitcher = _select_reliever(
                     pitching_state,
                     leverage,
+                    inning=inning,
+                    score_diff=score_diff,
                     upcoming_batters=upcoming,
                     tuning=tuning,
                 )
@@ -4626,16 +5113,36 @@ def simulate_game(
                 losing_state.lines[losing_pid] = loss_line
             loss_line.l += 1
 
+        def award_save(
+            *,
+            final_pitcher: PitcherState,
+            line: PitcherLine,
+            winning_pitcher_id: str | None,
+            lead: int,
+        ) -> bool:
+            if final_pitcher.pitcher.player_id == winning_pitcher_id:
+                return False
+            if final_pitcher.entered_save_opp:
+                return True
+            long_innings = int(tuning.get("save_long_innings", 3.0))
+            if long_innings > 0 and lead > 0 and line.outs >= long_innings * 3:
+                return True
+            return False
+
         if winner_key == "home":
-            if (
-                final_home.pitcher.player_id != winning_pid
-                and final_home.entered_save_opp
+            if award_save(
+                final_pitcher=final_home,
+                line=home_line,
+                winning_pitcher_id=winning_pid,
+                lead=score_home - score_away,
             ):
                 home_line.sv += 1
         else:
-            if (
-                final_away.pitcher.player_id != winning_pid
-                and final_away.entered_save_opp
+            if award_save(
+                final_pitcher=final_away,
+                line=away_line,
+                winning_pitcher_id=winning_pid,
+                lead=score_away - score_home,
             ):
                 away_line.sv += 1
 
@@ -4649,6 +5156,34 @@ def simulate_game(
                     multiplier=state.usage_multiplier,
                     tuning=tuning,
                 )
+        batter_lookup: dict[str, BatterRatings] = {
+            batter.player_id: batter
+            for batter in (
+                list(away_state.lineup)
+                + list(away_state.bench)
+                + list(home_state.lineup)
+                + list(home_state.bench)
+            )
+        }
+        batter_ids = set(away_state.batting_lines.keys())
+        batter_ids.update(home_state.batting_lines.keys())
+        batter_ids.update(away_state.fielding_lines.keys())
+        batter_ids.update(home_state.fielding_lines.keys())
+        for event in away_state.substitutions + home_state.substitutions:
+            if isinstance(event, dict):
+                player_id = event.get("new_player_id")
+                if player_id:
+                    batter_ids.add(str(player_id))
+        for player_id in batter_ids:
+            batter = batter_lookup.get(player_id)
+            if batter is None:
+                continue
+            usage_state.record_batter_game(
+                player_id=player_id,
+                day=game_day,
+                durability=batter.durability,
+                tuning=tuning,
+            )
 
     return GameResult(
         totals=totals,

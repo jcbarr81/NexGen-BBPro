@@ -835,6 +835,15 @@ def simulate_pitch(
                 foul_rate *= tuning.get("foul_chase_scale", 1.05)
             if strikes >= 2:
                 foul_rate *= tuning.get("two_strike_foul_scale", 1.0)
+            foul_territory = 1.0
+            if context:
+                try:
+                    foul_territory = float(context.get("foul_territory_scale", 1.0))
+                except (TypeError, ValueError):
+                    foul_territory = 1.0
+            foul_rate *= 1.0 + (foul_territory - 1.0) * tuning.get(
+                "foul_territory_scale", 1.0
+            )
             foul_rate *= _count_modifier(
                 tuning.values.get("count_foul_scale"),
                 count_key=count_key,
@@ -918,7 +927,16 @@ def estimate_carry_distance(
     theta = math.radians(max(1.0, min(60.0, launch_angle)))
     g = 32.17
     carry_scale = 0.75 * tuning.get("hr_scale", 1.0) * tuning.get("offense_scale", 1.0)
-    carry_scale *= tuning.get("altitude_scale", 1.0) * park.park_factor
+    altitude_ft = 0.0
+    try:
+        altitude_ft = float(getattr(park, "altitude_ft", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        altitude_ft = 0.0
+    altitude_factor = 1.0 + altitude_ft * tuning.get("altitude_ft_scale", 0.0)
+    altitude_factor = max(0.9, min(1.25, altitude_factor))
+    park_factor_scale = tuning.get("park_factor_scale", 1.0)
+    park_factor = 1.0 + (park.park_factor - 1.0) * park_factor_scale
+    carry_scale *= tuning.get("altitude_scale", 1.0) * park_factor * altitude_factor
     return (ev_ft_s**2 / g) * math.sin(2 * theta) * carry_scale
 
 
@@ -929,19 +947,57 @@ def resolve_batted_ball(
     spray_angle: float,
     park: Park,
     tuning: TuningConfig,
+    batter_speed: float | None = None,
+    batter_contact: float | None = None,
+    batter_power: float | None = None,
 ) -> tuple[float, bool, str, str | None]:
     """Return (distance, is_hr, ball_type, hit_type)."""
 
     ball_type = classify_ball_type(launch_angle, tuning)
     dist = estimate_carry_distance(exit_velo, launch_angle, tuning, park)
     angle = spray_to_field_angle(spray_angle)
-    wall = park.stadium.wall_distance(angle) * tuning.get("park_size_scale", 1.0)
+    park_scale = tuning.get("park_size_scale", 1.0)
+    wall = park.stadium.wall_distance(angle) * park_scale
     if dist > wall:
         return dist, True, ball_type, "hr"
     # Non-HR hit type determined by wall-relative distance.
-    if dist >= park.stadium.triple_distance(angle):
+    speed_norm = 0.0
+    if batter_speed is not None:
+        try:
+            speed_norm = (float(batter_speed) - 50.0) / 50.0
+        except (TypeError, ValueError):
+            speed_norm = 0.0
+        speed_norm = max(-1.0, min(1.0, speed_norm))
+    gap_norm = 0.0
+    if batter_contact is not None or batter_power is not None:
+        try:
+            contact = float(batter_contact) if batter_contact is not None else 50.0
+            power = float(batter_power) if batter_power is not None else 50.0
+        except (TypeError, ValueError):
+            contact = 50.0
+            power = 50.0
+        gap_norm = ((contact + power) / 2.0 - 50.0) / 50.0
+        gap_norm = max(-1.0, min(1.0, gap_norm))
+    double_scale = tuning.get("double_distance_scale", 1.0)
+    triple_scale = tuning.get("triple_distance_scale", 1.0)
+    double_speed = 1.0 - speed_norm * tuning.get("double_speed_scale", 0.0)
+    triple_speed = 1.0 - speed_norm * tuning.get("triple_speed_scale", 0.0)
+    double_gap = 1.0 - gap_norm * tuning.get("double_gap_scale", 0.0)
+    double_threshold = (
+        park.stadium.double_distance(angle)
+        * park_scale
+        * double_scale
+        * double_speed
+        * double_gap
+    )
+    triple_threshold = (
+        park.stadium.triple_distance(angle) * park_scale * triple_scale * triple_speed
+    )
+    if triple_threshold <= double_threshold:
+        triple_threshold = double_threshold + 1.0
+    if dist >= triple_threshold:
         hit_type = "triple"
-    elif dist >= park.stadium.double_distance(angle):
+    elif dist >= double_threshold:
         hit_type = "double"
     else:
         hit_type = "single"

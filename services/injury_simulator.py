@@ -98,7 +98,7 @@ _FALLBACK_INJURY_CATALOG: Dict[str, Any] = {
                 "major": {
                     "min_days": 30,
                     "max_days": 45,
-                    "dl_tier": "dl45",
+                    "dl_tier": "ir",
                     "description": "Severe tendinitis",
                     "attributes_penalty": {"vel": -5, "sta": -4},
                 },
@@ -197,6 +197,21 @@ class InjurySimulator:
         self.rng = rng or random.Random()
         self.severity_weights = dict(severity_weights or DEFAULT_SEVERITY_WEIGHTS)
 
+    @staticmethod
+    def _normalize_tier(value: str | None) -> str:
+        """Map legacy tiers to the simplified DL/IR scheme."""
+
+        tier = (value or "dl15").strip().lower()
+        if tier in {"dl45", "45", "45-day", "45 day"}:
+            return "ir"
+        if tier in {"dl15", "dl", "15", "15-day", "15 day"}:
+            return "dl15"
+        if tier in {"ir", "injured reserve"}:
+            return "ir"
+        if tier == "none":
+            return "none"
+        return "dl15"
+
     def available_triggers(self) -> List[str]:
         return list(self.triggers.keys())
 
@@ -251,7 +266,7 @@ class InjurySimulator:
         min_days = int(profile.get("min_days", 1))
         max_days = int(max(min_days, profile.get("max_days", min_days)))
         days = self.rng.randint(min_days, max_days)
-        dl_tier = profile.get("dl_tier") or "dl15"
+        dl_tier = self._normalize_tier(profile.get("dl_tier"))
         attributes_penalty = profile.get("attributes_penalty", {})
         description = profile.get("description") or injury.get("name", "Injury")
 

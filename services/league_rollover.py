@@ -132,7 +132,7 @@ class LeagueRolloverService:
         transactions_path = self._archive_file(_TRANSACTIONS_PATH, season_dir / "transactions.csv", artifacts, "transactions")
         self._archive_draft_assets(season_dir, artifacts, league_year)
 
-        awards_path = self._archive_awards(season_dir, stats_payload.get("players", {}), artifacts)
+        awards_path = self._archive_awards(season_dir, stats_payload, artifacts)
 
         ended_val = ended_on or get_current_sim_date() or datetime.utcnow().date().isoformat()
         metadata = {
@@ -237,15 +237,17 @@ class LeagueRolloverService:
     def _archive_awards(
         self,
         season_dir: Path,
-        player_stats: Dict[str, Dict[str, Any]],
+        stats_payload: Dict[str, Any],
         artifacts: Dict[str, str],
     ) -> Optional[Path]:
         try:
             players = load_players_from_csv("data/players.csv")
         except Exception:
             players = []
+        player_stats: Dict[str, Dict[str, Any]] = stats_payload.get("players", {})
         if not players or not player_stats:
             return None
+        team_stats: Dict[str, Dict[str, Any]] = stats_payload.get("teams", {})
         player_lookup = {p.player_id: p for p in players}
         batting = {
             pid: stats
@@ -259,9 +261,26 @@ class LeagueRolloverService:
         }
         if not batting or not pitching:
             return None
+        max_games = 0
+        try:
+            games_list = [
+                int(v.get("g", v.get("games", 0)) or 0)
+                for v in team_stats.values()
+            ]
+            max_games = max(games_list) if games_list else 0
+        except Exception:
+            max_games = 0
+        min_pa = int(round(max_games * 3.1)) if max_games else 0
+        min_ip = float(round(max_games * 1.0, 2)) if max_games else 0.0
         awards = {}
         try:
-            manager = AwardsManager(player_lookup, batting, pitching)
+            manager = AwardsManager(
+                player_lookup,
+                batting,
+                pitching,
+                min_pa=min_pa,
+                min_ip=min_ip,
+            )
             winners = manager.select_award_winners()
             for name, winner in winners.items():
                 player = winner.player

@@ -396,8 +396,19 @@ HITTER_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "gf": (0.4, 0.65),
         },
     },
+    "gap": {
+        "weight": 0.12,
+        "bands": {
+            "ch": (0.68, 0.92),
+            "ph": (0.62, 0.88),
+            "sp": (0.4, 0.7),
+            "eye": (0.55, 0.82),
+            "pl": (0.3, 0.6),
+            "gf": (0.25, 0.55),
+        },
+    },
     "speed": {
-        "weight": 0.16,
+        "weight": 0.15,
         "bands": {
             "ch": (0.55, 0.8),
             "ph": (0.2, 0.5),
@@ -407,19 +418,102 @@ HITTER_TEMPLATES: Dict[str, Dict[str, Any]] = {
             "gf": (0.6, 0.9),
         },
     },
+    "elite_speed": {
+        "weight": 0.05,
+        "bands": {
+            "ch": (0.5, 0.78),
+            "ph": (0.15, 0.45),
+            "sp": (0.92, 1.0),
+            "eye": (0.5, 0.82),
+            "pl": (0.2, 0.5),
+            "gf": (0.45, 0.75),
+        },
+    },
 }
 
 
 HITTER_POSITION_TEMPLATE_WEIGHTS: Dict[str, Dict[str, float]] = {
-    "C": {"average": 0.32, "balanced": 0.28, "spray": 0.2, "power": 0.12, "speed": 0.08},
-    "1B": {"power": 0.38, "balanced": 0.2, "average": 0.15, "spray": 0.12, "speed": 0.05},
-    "2B": {"balanced": 0.3, "spray": 0.25, "speed": 0.2, "average": 0.15, "power": 0.1},
-    "SS": {"spray": 0.28, "balanced": 0.28, "speed": 0.22, "average": 0.14, "power": 0.08},
-    "3B": {"balanced": 0.3, "power": 0.25, "average": 0.2, "spray": 0.15, "speed": 0.1},
-    "LF": {"power": 0.33, "balanced": 0.22, "average": 0.18, "spray": 0.15, "speed": 0.12},
-    "CF": {"balanced": 0.28, "speed": 0.26, "spray": 0.2, "average": 0.16, "power": 0.1},
-    "RF": {"power": 0.35, "balanced": 0.22, "average": 0.18, "spray": 0.15, "speed": 0.1},
-    "DH": {"power": 0.4, "balanced": 0.2, "average": 0.2, "spray": 0.12, "speed": 0.08},
+    "C": {
+        "average": 0.3,
+        "balanced": 0.25,
+        "spray": 0.18,
+        "power": 0.12,
+        "speed": 0.07,
+        "gap": 0.06,
+        "elite_speed": 0.02,
+    },
+    "1B": {
+        "power": 0.36,
+        "balanced": 0.18,
+        "average": 0.12,
+        "spray": 0.1,
+        "speed": 0.05,
+        "gap": 0.18,
+        "elite_speed": 0.01,
+    },
+    "2B": {
+        "balanced": 0.27,
+        "spray": 0.22,
+        "speed": 0.18,
+        "average": 0.12,
+        "power": 0.08,
+        "gap": 0.09,
+        "elite_speed": 0.04,
+    },
+    "SS": {
+        "spray": 0.24,
+        "balanced": 0.24,
+        "speed": 0.2,
+        "average": 0.12,
+        "power": 0.06,
+        "gap": 0.1,
+        "elite_speed": 0.04,
+    },
+    "3B": {
+        "balanced": 0.26,
+        "power": 0.22,
+        "average": 0.18,
+        "spray": 0.14,
+        "speed": 0.08,
+        "gap": 0.09,
+        "elite_speed": 0.03,
+    },
+    "LF": {
+        "power": 0.28,
+        "balanced": 0.2,
+        "average": 0.16,
+        "spray": 0.14,
+        "speed": 0.1,
+        "gap": 0.09,
+        "elite_speed": 0.03,
+    },
+    "CF": {
+        "balanced": 0.24,
+        "speed": 0.22,
+        "spray": 0.18,
+        "average": 0.14,
+        "power": 0.08,
+        "gap": 0.1,
+        "elite_speed": 0.04,
+    },
+    "RF": {
+        "power": 0.3,
+        "balanced": 0.2,
+        "average": 0.16,
+        "spray": 0.13,
+        "speed": 0.08,
+        "gap": 0.1,
+        "elite_speed": 0.03,
+    },
+    "DH": {
+        "power": 0.34,
+        "balanced": 0.18,
+        "average": 0.18,
+        "spray": 0.1,
+        "speed": 0.05,
+        "gap": 0.14,
+        "elite_speed": 0.01,
+    },
 }
 
 
@@ -629,11 +723,41 @@ def _adjust_hitter_constraints(
         mid = int(round((ch + ph) / 2))
         ch = min(99, max(10, mid + random.randint(-4, 4)))
         ph = min(99, max(10, mid + random.randint(-4, 4)))
+    if template_name == "gap" and abs(ch - ph) > 8:
+        mid = int(round((ch + ph) / 2))
+        ch = min(99, max(10, mid + random.randint(-3, 3)))
+        ph = min(99, max(10, mid + random.randint(-3, 3)))
     if template_name == "speed":
         sp = max(sp, 70)
+    if template_name == "elite_speed":
+        sp = max(sp, 85)
     eye = max(10, min(99, eye))
     pl = max(10, min(99, pl))
     gf = max(10, min(99, gf))
+    return ch, ph, sp, eye, pl, gf
+
+
+def _apply_hitter_tail_boost(
+    template_name: str,
+    ch: int,
+    ph: int,
+    sp: int,
+    eye: int,
+    pl: int,
+    gf: int,
+) -> Tuple[int, int, int, int, int, int]:
+    roll = random.random()
+    if template_name == "gap" and roll < 0.22:
+        bump = random.randint(6, 12)
+        ch = min(99, ch + bump)
+        ph = min(99, ph + bump)
+    elif template_name == "elite_speed" and roll < 0.15:
+        sp = min(99, sp + random.randint(6, 10))
+        ch = min(99, ch + random.randint(2, 5))
+    elif template_name == "speed" and roll < 0.12:
+        sp = min(99, sp + random.randint(4, 8))
+    elif template_name == "spray" and roll < 0.12:
+        ch = min(99, ch + random.randint(4, 8))
     return ch, ph, sp, eye, pl, gf
 
 
@@ -660,6 +784,9 @@ def _sample_normalized_hitter(
     elif bats == "R":
         vl = min(99, vl + 4)
     ch, ph, sp, eye, pl, gf = _adjust_hitter_constraints(
+        template, ch, ph, sp, eye, pl, gf
+    )
+    ch, ph, sp, eye, pl, gf = _apply_hitter_tail_boost(
         template, ch, ph, sp, eye, pl, gf
     )
     return {

@@ -808,9 +808,8 @@ def _persist_physics_stats(
             if payload is None:
                 continue
             player, season = payload
-            is_pitcher = bool(getattr(player, "is_pitcher", False))
             for key in fielding_fields:
-                if is_pitcher and key in {"g", "gs"}:
+                if key in {"g", "gs"}:
                     continue
                 season[key] = season.get(key, 0) + _int(line.get(key, 0))
             state = SimpleNamespace(
@@ -1365,6 +1364,10 @@ def _apply_injury_events(
             team_rosters[team_id_str] = roster
             pitcher_dl_counts[team_id_str] = _pitchers_on_dl(roster, team_id_str)
         dl_tier = str(event.get("dl_tier") or "").lower()
+        if dl_tier in {"dl45", "45", "45-day", "45 day"}:
+            dl_tier = "ir"
+        elif dl_tier in {"dl", "dl15", "15", "15-day", "15 day"}:
+            dl_tier = "dl15"
         days = int(event.get("days") or 0)
         description = str(event.get("description") or "Injury")
         player.injured = True
@@ -1400,7 +1403,8 @@ def _apply_injury_events(
 
         if dl_tier and dl_tier != "none":
             place_on_injury_list(player, roster, list_name=dl_tier)
-            player.return_date = eligible.isoformat()
+            if dl_tier == "dl15":
+                player.return_date = eligible.isoformat()
         log_news_event(
             f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')} injured ({description})",
             category="injury",

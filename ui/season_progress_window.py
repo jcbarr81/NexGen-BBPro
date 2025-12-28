@@ -1284,10 +1284,6 @@ class SeasonProgressWindow(QDialog):
             pieces.append(f"{len(summary.alerts)} ready")
         if summary.blocked:
             pieces.append(f"{len(summary.blocked)} blocked")
-        if summary.rehab_ready:
-            pieces.append(f"{len(summary.rehab_ready)} rehab done")
-        elif summary.rehab_progressed:
-            pieces.append(f"{summary.rehab_progressed} rehab day(s)")
         if not pieces:
             return
         note = "DL updates: " + ", ".join(pieces)

@@ -466,8 +466,7 @@ def _load_roster_from_storage(team_id: str, roster_dir: Path) -> Roster:
                 dl.append(pid)
                 dl_tiers[pid] = "dl15"
             elif level == "DL45":
-                dl.append(pid)
-                dl_tiers[pid] = "dl45"
+                ir.append(pid)
             elif level == "IR":
                 ir.append(pid)
 
@@ -514,10 +513,14 @@ def save_roster(team_id, roster: Roster):
             for player_id in group:
                 writer.writerow([player_id, level])
 
+        ir_ids = set(roster.ir)
         for player_id in roster.dl:
             tier = (roster.dl_tiers or {}).get(player_id, "dl15")
-            level = "DL45" if tier == "dl45" else "DL15"
-            writer.writerow([player_id, level])
+            if tier == "dl15":
+                writer.writerow([player_id, "DL15"])
+            else:
+                if player_id not in ir_ids:
+                    writer.writerow([player_id, "IR"])
 
         for player_id in roster.ir:
             writer.writerow([player_id, "IR"])

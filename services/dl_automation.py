@@ -11,10 +11,6 @@ from services.injury_manager import (
     disabled_list_label,
     recover_from_injury,
 )
-from services.rehab_assignments import (
-    REHAB_READY_DAYS,
-    advance_rehab_days,
-)
 from services.roster_auto_assign import ACTIVE_MAX, AAA_MAX, LOW_MAX
 from utils.news_logger import log_news_event
 from utils.path_utils import get_base_dir
@@ -78,7 +74,7 @@ def process_disabled_lists(
     days_elapsed: int = 1,
     auto_activate: bool = True,
 ) -> DLAutomationSummary:
-    """Progress rehab assignments and optionally activate eligible players."""
+    """Progress disabled list eligibility and optionally activate players."""
 
     summary = DLAutomationSummary()
     target_date = _coerce_date(today)
@@ -111,28 +107,12 @@ def process_disabled_lists(
             if player is None:
                 continue
             days_remaining = disabled_list_days_remaining(player, today=target_date)
-            rehab_assignment = getattr(player, "injury_rehab_assignment", None)
-            threshold_crossed = False
-            if rehab_assignment:
-                if advance_rehab_days(player, days_elapsed):
-                    summary.rehab_ready.append(
-                        f"{_player_name(player)} finished rehab at {rehab_assignment.upper()} ({team_id})"
-                    )
-                summary.rehab_progressed += 1
-                mutated_players.add(pid)
-                threshold_crossed = player.injury_rehab_days >= REHAB_READY_DAYS
-
             ready_for_return = False
             if days_remaining is not None and days_remaining <= 0:
-                # Require rehab completion when assigned; otherwise allow straight activation.
-                rehab_done = (not rehab_assignment) or threshold_crossed or (
-                    getattr(player, "injury_rehab_days", 0) >= REHAB_READY_DAYS
-                )
-                if rehab_done:
-                    ready_for_return = True
-                    if not getattr(player, "ready", False):
-                        player.ready = True
-                        mutated_players.add(pid)
+                ready_for_return = True
+                if not getattr(player, "ready", False):
+                    player.ready = True
+                    mutated_players.add(pid)
 
             if not ready_for_return:
                 continue

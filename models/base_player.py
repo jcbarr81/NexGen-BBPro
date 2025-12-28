@@ -23,7 +23,7 @@ class BasePlayer:
     injured: bool = False
     injury_description: Optional[str] = None
     return_date: Optional[str] = None
-    injury_list: Optional[str] = None  # e.g. dl15, dl45, ir
+    injury_list: Optional[str] = None  # e.g. dl15, ir
     injury_start_date: Optional[str] = None
     injury_minimum_days: Optional[int] = None
     injury_eligible_date: Optional[str] = None

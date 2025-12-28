@@ -29,7 +29,7 @@ def _abbr(city: str, name: str, existing: set) -> str:
     a number if necessary to ensure uniqueness. The *name* parameter is
     ignored but kept for backward compatibility with callers.
     """
-    base = city[:3].upper()
+    base = "".join(city.split())[:3].upper() or city[:3].upper().strip()
     candidate = base
     i = 1
     while candidate in existing:
@@ -93,6 +93,8 @@ def _dict_to_model(data: dict):
             control=data.get("control", 0),
             movement=data.get("movement", 0),
             hold_runner=data.get("hold_runner", 0),
+            role=data.get("role", ""),
+            preferred_pitching_role=data.get("preferred_pitching_role", ""),
             fb=data.get("fb", 0),
             cu=data.get("cu", 0),
             cb=data.get("cb", 0),
@@ -169,6 +171,67 @@ def _ensure_act_positions(players: List[dict]) -> None:
         raise ValueError(
             "ACT roster missing positions: " + ", ".join(sorted(missing))
         )
+
+
+def _build_pitching_staff(players: List[dict]) -> List[tuple[str, str]]:
+    """Return ordered (player_id, role) entries for a pitching staff."""
+
+    pitchers = [p for p in players if p.get("is_pitcher")]  # type: ignore[truthy-bool]
+    if not pitchers:
+        return []
+
+    def rating(p: dict) -> float:
+        return (
+            float(p.get("arm", 0)) * 0.5
+            + float(p.get("movement", 0)) * 0.3
+            + float(p.get("control", 0)) * 0.2
+        )
+
+    starters = sorted(
+        pitchers, key=lambda p: float(p.get("endurance", 0)), reverse=True
+    )[:5]
+    starter_ids = {p["player_id"] for p in starters}
+    bullpen = [p for p in pitchers if p["player_id"] not in starter_ids]
+
+    closer_candidates = [
+        p
+        for p in bullpen
+        if str(p.get("preferred_pitching_role", "")).upper() == "CL"
+        or str(p.get("pitcher_archetype", "")).lower() == "closer"
+    ]
+    if not closer_candidates:
+        closer_candidates = bullpen[:]
+    closer = max(closer_candidates, key=rating) if closer_candidates else None
+
+    bullpen = [
+        p
+        for p in bullpen
+        if closer is None or p["player_id"] != closer["player_id"]
+    ]
+    long_relief = (
+        max(bullpen, key=lambda p: float(p.get("endurance", 0))) if bullpen else None
+    )
+    bullpen = [
+        p
+        for p in bullpen
+        if long_relief is None or p["player_id"] != long_relief["player_id"]
+    ]
+    setup = sorted(bullpen, key=rating, reverse=True)[:2]
+    setup_ids = {p["player_id"] for p in setup}
+    bullpen_rest = [p for p in bullpen if p["player_id"] not in setup_ids]
+
+    staff: List[tuple[str, str]] = []
+    for idx, pitcher in enumerate(starters, start=1):
+        staff.append((pitcher["player_id"], f"SP{idx}"))
+    if closer is not None:
+        staff.append((closer["player_id"], "CL"))
+    for pitcher in setup:
+        staff.append((pitcher["player_id"], "SU"))
+    if long_relief is not None:
+        staff.append((long_relief["player_id"], "LR"))
+    for pitcher in bullpen_rest:
+        staff.append((pitcher["player_id"], "MR"))
+    return staff
 
 
 
@@ -371,6 +434,14 @@ def create_league(
                 for level, players in roster_levels.items():
                     for p in players:
                         writer.writerow([p["player_id"], level])
+
+            pitching_staff = _build_pitching_staff(act_players)
+            if pitching_staff:
+                staff_file = rosters_dir / f"{abbr}_pitching.csv"
+                with staff_file.open("w", newline="") as f:
+                    writer = csv.writer(f)
+                    for player_id, role in pitching_staff:
+                        writer.writerow([player_id, role])
 
             generated_rosters[abbr] = Roster(
                 team_id=abbr,

@@ -12,7 +12,6 @@ from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from services.injury_manager import disabled_list_days_remaining, disabled_list_label
-from services.rehab_assignments import REHAB_READY_DAYS, rehab_status
 from services.training_history import load_player_training_history
 
 try:
@@ -790,7 +789,6 @@ class PlayerProfileDialog(QDialog):
     def _build_injury_status_label(self) -> QLabel | None:
         injured = bool(getattr(self.player, 'injured', False))
         list_name = getattr(self.player, 'injury_list', None)
-        rehab_text = rehab_status(self.player, ready_threshold=REHAB_READY_DAYS) or ""
         return_date = getattr(self.player, 'return_date', None) or ""
         ready_flag = getattr(self.player, 'ready', True)
         info: List[str] = []
@@ -811,9 +809,6 @@ class PlayerProfileDialog(QDialog):
         elif injured:
             desc = getattr(self.player, 'injury_description', None) or "Injured"
             info.append(f"Injury: {desc}")
-
-        if rehab_text:
-            info.append(f"Rehab: {rehab_text}")
 
         if return_date:
             info.append(f"ETA: {return_date}")

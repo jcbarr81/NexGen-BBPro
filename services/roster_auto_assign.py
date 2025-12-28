@@ -195,13 +195,17 @@ def _pick_active_roster(
     # Ensure at least 11 hitters overall; if short on hitters in org,
     # reduce pitchers to keep ACT at 25 while maximizing hitters.
     while len(active_hitters) < 11 and hitters_sorted:
-        # Add next best hitter not already selected
+        # Add next best hitter not already selected; bail if none remain.
+        added = False
         for h in hitters_sorted:
             pid = getattr(h, "player_id")
             if pid not in selected_ids:
                 active_hitters.append(h)
                 selected_ids.add(pid)
+                added = True
                 break
+        if not added:
+            break
         # Trim one pitcher if we somehow exceeded 13 earlier (safety)
         if len(active_pitchers) + len(active_hitters) > ACTIVE_MAX and active_pitchers:
             active_pitchers.pop()

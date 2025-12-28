@@ -472,7 +472,7 @@ class OwnerDashboard(QMainWindow):
             ),
             TutorialStep(
                 "Review & Sort",
-                "<p>Sort the columns to check return dates, rehab readiness, and DL tiers."
+                "<p>Sort the columns to check return dates and list assignments."
                 " The fields underneath let you revise the description, target return date, list tier, and"
                 " preferred destination for the selected player. Roster counts and the legend update as you click.</p>",
             ),
@@ -480,7 +480,7 @@ class OwnerDashboard(QMainWindow):
                 "Managing Injuries",
                 "<p>Once a player is highlighted, use the action row:</p>"
                 "<ul>"
-                "<li><b>Place on DL</b> moves the player to the chosen 15- or 45-day list and opens a roster spot by"
+                "<li><b>Place on DL</b> moves the player to the 15-day list and opens a roster spot by"
                 " promoting a depth chart replacement.</li>"
                 "<li><b>Place on IR</b> stashes long-term injuries on injured reserve without a fixed return window,"
                 " freeing the active roster until you manually bring them back.</li>"
@@ -488,18 +488,13 @@ class OwnerDashboard(QMainWindow):
                 " <b>Destination</b>, enforcing DL minimums unless they have served the required days.</li>"
                 "<li><b>Promote Best Replacement</b> pulls the next healthy option from your depth chart to keep the"
                 " active roster full.</li>"
-                "<li><b>Start Rehab</b> launches an AAA or Low rehab assignment (chosen in <b>Rehab Level</b>) and tracks"
-                " the simulated days needed before the player is marked ready. Plan to begin rehab roughly five"
-                " simulated days ahead of the DL eligibility date so both clocks finish together.</li>"
-                "<li><b>End Rehab</b> stops an active rehab stint and resets its day counter.</li>"
                 "</ul>",
             ),
             TutorialStep(
                 "Tracking Progress",
-                "<p>Watch the roster counts footer and the Rehab column to know when someone is coming back."
-                " A player must satisfy both the DL minimum and the five-day rehab window before <b>Recover to"
-                " Destination</b> will clear them. Each move is also written to the news feed so owners can audit what"
-                " happened and when.</p>",
+                "<p>Watch the roster counts footer and the return date column to know when someone is coming back."
+                " A player must satisfy the DL minimum before <b>Recover to Destination</b> will clear them. Each"
+                " move is also written to the news feed so owners can audit what happened and when.</p>",
             ),
         ]
         self._run_tutorial(self._tutorial_keys["injury_center"], "Injury Center Guide", steps, force=force)
@@ -547,9 +542,9 @@ class OwnerDashboard(QMainWindow):
                 " Avoid using arms that show red fatigue indicators to prevent injuries.</p>",
             ),
             TutorialStep(
-                "Rehab & Recovery",
-                "<p>Pitchers returning from rehab show readiness in the Injury Center."
-                " Activate them here and drop them into the bullpen or rotation slots.</p>",
+                "Injury Returns",
+                "<p>Pitchers marked ready in the Injury Center can be activated and slotted"
+                " back into the bullpen or rotation.</p>",
             ),
         ]
         self._run_tutorial(self._tutorial_keys["pitching"], "Pitching Staff Tutorial", steps, force=force)

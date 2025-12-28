@@ -4026,6 +4026,9 @@ def render_boxscore_html(
 ) -> str:
     """Render ``box`` using the ``espn_boxscore_template.html`` sample."""
 
+    if str(os.getenv("PB_SKIP_BOXSCORE_HTML", "")).lower() in {"1", "true", "yes", "on"}:
+        return ""
+
     home_abbr = home_abbr or home_name
     away_abbr = away_abbr or away_name
 

@@ -77,31 +77,28 @@ def test_process_disabled_lists_activates_players(tmp_path, monkeypatch):
     assert activated.ready is True
 
 
-def test_process_disabled_lists_tracks_rehab(tmp_path, monkeypatch):
+def test_process_disabled_lists_skips_ir_auto_activation(tmp_path, monkeypatch):
     data = _prepare_env(tmp_path, monkeypatch)
     start = date(2025, 4, 1)
-    player = _make_player("PREH", injury_list="dl45", start=start, minimum=10)
-    player.injury_rehab_assignment = "aaa"
-    player.injury_rehab_days = 3
+    player = _make_player("PREH", injury_list="ir", start=start, minimum=10)
     save_players_to_csv([player], str(data / "players.csv"))
     roster_path = data / "rosters" / "TST.csv"
     roster_path.write_text(
         "PACT1,ACT\n"
         "PAAA1,AAA\n"
-        "PREH,DL45\n",
+        "PREH,IR\n",
         encoding="utf-8",
     )
 
     summary = process_disabled_lists(
         today="2025-04-20",
         days_elapsed=2,
-        auto_activate=False,
+        auto_activate=True,
     )
 
-    assert summary.rehab_ready or summary.alerts
+    assert not summary.activated
     roster = load_roster("TST")
-    assert "PREH" in roster.dl  # still awaiting manual activation
+    assert "PREH" in roster.ir
     players = load_players_from_csv("data/players.csv")
-    rehab_player = next(p for p in players if p.player_id == "PREH")
-    assert rehab_player.injury_rehab_days >= 5
-    assert rehab_player.ready is True
+    ir_player = next(p for p in players if p.player_id == "PREH")
+    assert ir_player.injured is True

@@ -195,6 +195,16 @@ def _team_ids() -> list[str]:
     return sorted(teams)
 
 
+def _team_parks() -> dict[str, str]:
+    parks: dict[str, str] = {}
+    for team in load_teams():
+        team_id = _normalize_team_id(team.team_id)
+        park_name = (team.stadium or "").strip()
+        if team_id and park_name:
+            parks[team_id] = park_name
+    return parks
+
+
 def _decile_groups(values: dict[str, float]) -> tuple[set[str], set[str]]:
     if not values:
         return set(), set()
@@ -257,11 +267,9 @@ def _summarize(
     bip = sum(bip_counts.values())
     hits = totals.get("h", 0)
     hr = totals.get("hr", 0)
-    doubles = hit_types.get("double", 0)
-    triples = hit_types.get("triple", 0)
-    singles = hits - doubles - triples - hr
-    if singles < 0:
-        singles = 0
+    singles = totals.get("b1", 0)
+    doubles = totals.get("b2", 0)
+    triples = totals.get("b3", 0)
     tb = singles + 2 * doubles + 3 * triples + 4 * hr
 
     obp_den = ab + totals.get("bb", 0) + totals.get("hbp", 0) + totals.get("sf", 0)
@@ -477,8 +485,14 @@ def evaluate_tolerances(
     return failures
 
 
-def run_sim(games_per_team: int, seed: int, players_path: Path) -> dict[str, object]:
+def run_sim(
+    games_per_team: int,
+    seed: int,
+    players_path: Path,
+    tuning_overrides: dict[str, float] | None = None,
+) -> dict[str, object]:
     teams = _team_ids()
+    parks_by_team = _team_parks()
     schedule = generate_mlb_schedule(teams, date(2025, 4, 1), games_per_team)
 
     usage_state = UsageState()
@@ -565,14 +579,21 @@ def run_sim(games_per_team: int, seed: int, players_path: Path) -> dict[str, obj
     fielding_keys = ["g", "gs", "po", "a", "e", "dp", "tp", "pk", "pb", "ci", "cs", "sba"]
 
     rng = random.Random(seed)
+    day_map: dict[str, int] = {}
     for idx, game in enumerate(schedule):
+        date_token = str(game.get("date") or idx)
+        if date_token not in day_map:
+            day_map[date_token] = len(day_map)
+        game_day = day_map[date_token]
         result = simulate_matchup_from_files(
             away_team=game["away"],
             home_team=game["home"],
             players_path=players_path,
+            park_name=parks_by_team.get(game["home"]),
             seed=rng.randrange(2**32),
+            tuning_overrides=tuning_overrides,
             usage_state=usage_state,
-            game_day=idx,
+            game_day=game_day,
         )
         totals.update(result.totals)
         meta = result.metadata or {}
@@ -742,6 +763,8 @@ def run_sim(games_per_team: int, seed: int, players_path: Path) -> dict[str, obj
             "name": player_names.get(player_id, player_id),
             "team": player_teams.get(player_id, ""),
             "ip": rates["ip"],
+            "g": stats.get("g", 0),
+            "gs": stats.get("gs", 0),
             "w": stats.get("w", 0),
             "sv": stats.get("sv", 0),
             "so": stats.get("so", 0),
@@ -753,6 +776,7 @@ def run_sim(games_per_team: int, seed: int, players_path: Path) -> dict[str, obj
         }
         pitching_entries.append(entry)
 
+    summary["pitching_entries"] = pitching_entries
     qualified_batters = [e for e in batting_entries if e.get("pa", 0) >= min_pa]
     qualified_pitchers = [e for e in pitching_entries if e.get("ip", 0.0) >= min_ip]
     summary["leaders"]["batting"] = {
@@ -804,6 +828,11 @@ def main() -> None:
         action="store_true",
         help="Create missing roster/lineup aliases or auto-fill lineups as needed.",
     )
+    parser.add_argument(
+        "--disable-park-factors",
+        action="store_true",
+        help="Disable park factor scaling while preserving park geometry.",
+    )
     args = parser.parse_args()
 
     players_path = args.players
@@ -814,7 +843,10 @@ def main() -> None:
         for team in load_teams():
             _ensure_team_files(team.team_id, players_path=players_path, base_dir=BASE_DIR)
 
-    summary = run_sim(args.games, args.seed, players_path)
+    tuning_overrides = None
+    if args.disable_park_factors:
+        tuning_overrides = {"park_factor_scale": 0.0}
+    summary = run_sim(args.games, args.seed, players_path, tuning_overrides)
     benchmarks = _load_benchmarks(
         BASE_DIR / "data" / "MLB_avg" / "mlb_league_benchmarks_2025_filled.csv"
     )
