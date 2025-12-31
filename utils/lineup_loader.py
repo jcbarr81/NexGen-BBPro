@@ -1,4 +1,5 @@
 import csv
+import random
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, List, Tuple
@@ -90,7 +91,9 @@ def _load_pitching_staff(
     return entries
 
 
-def _build_default_lists(team_id: str, players_file: str, roster_dir: str) -> Tuple[List[Player], List[Player], List[Pitcher]]:
+def _build_default_lists(
+    team_id: str, players_file: str, roster_dir: str
+) -> Tuple[List[Player], List[Player], List[Pitcher]]:
     """Return ``(lineup, bench, pitchers)`` for ``team_id``.
 
     The active roster is loaded from ``roster_dir`` and players are resolved via
@@ -99,15 +102,41 @@ def _build_default_lists(team_id: str, players_file: str, roster_dir: str) -> Tu
     single starter first followed by the remaining bullpen arms.
     """
 
-    all_players = {
-        p.player_id: p for p in load_players_from_csv(players_file)
-    }
+    all_players = {p.player_id: p for p in load_players_from_csv(players_file)}
     roster = load_roster(team_id, roster_dir)
 
-    active = [all_players.get(pid) for pid in roster.act]
-    active = [p for p in active if p is not None]
+    candidate_ids = []
+    for group in (roster.act, roster.aaa, roster.low, roster.dl, roster.ir):
+        candidate_ids.extend(group)
+    seen_ids: set[str] = set()
+    candidates: List[Player] = []
+    for pid in candidate_ids:
+        if pid in seen_ids:
+            continue
+        seen_ids.add(pid)
+        player = all_players.get(pid)
+        if player is not None:
+            candidates.append(player)
 
-    hitters, pitchers = _separate_players(active)
+    hitters, pitchers = _separate_players(candidates)
+    if len(hitters) < 9 or not pitchers:
+        all_hitters, all_pitchers = _separate_players(all_players.values())
+        used_ids = {p.player_id for p in hitters + pitchers}
+        if len(hitters) < 9:
+            fallback_hitters = [p for p in all_hitters if p.player_id not in used_ids]
+            rng = random.Random(f"{team_id}-fallback-hitters")
+            rng.shuffle(fallback_hitters)
+            needed = 9 - len(hitters)
+            hitters.extend(fallback_hitters[:needed])
+            used_ids.update(p.player_id for p in fallback_hitters[:needed])
+        if not pitchers:
+            fallback_pitchers = [
+                p for p in all_pitchers if p.player_id not in used_ids
+            ]
+            rng = random.Random(f"{team_id}-fallback-pitchers")
+            rng.shuffle(fallback_pitchers)
+            pitchers.extend(fallback_pitchers[:10])
+            used_ids.update(p.player_id for p in fallback_pitchers[:10])
 
     hitters.sort(key=lambda p: getattr(p, "ph", 0), reverse=True)
     lineup = hitters[:9]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import random
 from pathlib import Path
 from typing import Dict
 
@@ -43,7 +44,7 @@ def auto_fill_lineup_for_team(
 
     players: Dict[str, object] = {p.player_id: p for p in load_players_from_csv(str(players_path))}
     roster = load_roster(team_id, roster_root)
-    act_ids = list(roster.act)
+    act_ids = [pid for pid in roster.act if pid in players]
     try:
         depth_chart = load_depth_chart(team_id)
     except Exception:
@@ -95,7 +96,11 @@ def auto_fill_lineup_for_team(
             continue
         candidates = [pid for pid in act_ids if pid not in used and eligible_for(pid, pos)]
         if not candidates:
-            candidates = [pid for pid in act_ids if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))]
+            candidates = [
+                pid
+                for pid in act_ids
+                if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))
+            ]
         if not candidates:
             continue
         best = max(candidates, key=hitter_score)
@@ -107,14 +112,20 @@ def auto_fill_lineup_for_team(
         dh_pref = [
             pid
             for pid in depth_order_for_position(depth_chart, "DH")
-            if pid in act_ids and pid not in used and (players.get(pid) and not is_pitcher(players[pid]))
+            if pid in act_ids
+            and pid not in used
+            and (players.get(pid) and not is_pitcher(players[pid]))
         ]
         if dh_pref:
             best = dh_pref[0]
             lineup.append((best, "DH"))
             used.add(best)
         else:
-            remaining = [pid for pid in act_ids if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))]
+            remaining = [
+                pid
+                for pid in act_ids
+                if pid not in used and (players.get(pid) and not is_pitcher(players[pid]))
+            ]
             if remaining:
                 best = max(remaining, key=hitter_score)
                 lineup.append((best, "DH"))
@@ -128,6 +139,20 @@ def auto_fill_lineup_for_team(
             continue
         p = players.get(pid)
         if p and not is_pitcher(p):
+            lineup.append((pid, "DH"))
+            used.add(pid)
+
+    if len(lineup) < 9:
+        fallback_ids = [
+            pid
+            for pid, player in players.items()
+            if pid not in used and player and not is_pitcher(player)
+        ]
+        rng = random.Random(f"{team_id}-lineup-fallback")
+        rng.shuffle(fallback_ids)
+        for pid in fallback_ids:
+            if len(lineup) >= 9:
+                break
             lineup.append((pid, "DH"))
             used.add(pid)
 

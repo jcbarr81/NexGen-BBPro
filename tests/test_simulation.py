@@ -9,6 +9,10 @@ from playbalance.simulation import (
     TeamState,
     generate_boxscore,
 )
+from playbalance.pitch_resolution import resolve_pitch
+from playbalance.physics import Physics
+from playbalance.batter_ai import BatterAI
+from playbalance.pitcher_ai import PitcherAI
 from playbalance.orchestrator import _clone_team_state
 from playbalance.state import PitcherState
 from models.player import Player
@@ -794,27 +798,49 @@ def test_catcher_interference_awards_first(monkeypatch):
 )
 def test_pitch_control_affects_location():
     cfg = load_config()
-    batter1 = make_player("bat1")
-    home_high = TeamState(
-        lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=70)]
-    )
-    away_high = TeamState(lineup=[batter1], bench=[], pitchers=[make_pitcher("ap")])
-    rng_high = MockRandom([0.4, 0.9, 0.9, 0.4, 0.9, 0.9, 0.4, 0.9, 0.9])
-    sim_high = GameSimulation(home_high, away_high, cfg, rng_high)
-    outs_high = sim_high.play_at_bat(away_high, home_high)
-    assert outs_high == 1
+    batter = make_player("bat1")
+    pitcher_high = make_pitcher("hp", control=70)
+    pitcher_low = make_pitcher("lp", control=30)
+    physics = Physics(cfg)
+    batter_ai = BatterAI(cfg)
+    pitcher_ai = PitcherAI(cfg)
 
-    batter2 = make_player("bat2")
-    home_low = TeamState(
-        lineup=[make_player("h1")], bench=[], pitchers=[make_pitcher("hp", control=30)]
+    ctx_high, _ = resolve_pitch(
+        cfg,
+        physics,
+        batter_ai,
+        pitcher_ai,
+        batter=batter,
+        pitcher=pitcher_high,
+        balls=0,
+        strikes=0,
+        control_roll=0.7,
+        target_dx=0.0,
+        target_dy=0.0,
+        pitch_type="fb",
+        objective="attack",
+        rng=MockRandom([0.0]),
     )
-    away_low = TeamState(lineup=[batter2], bench=[], pitchers=[make_pitcher("ap")])
-    rng_low = MockRandom([0.99, 0.99, 0.99] * 4)
-    sim_low = GameSimulation(home_low, away_low, cfg, rng_low)
-    outs_low = sim_low.play_at_bat(away_low, home_low)
-    stats_low = away_low.lineup_stats[batter2.player_id]
-    assert outs_low == 0
-    assert stats_low.bb == 1
+    ctx_low, _ = resolve_pitch(
+        cfg,
+        physics,
+        batter_ai,
+        pitcher_ai,
+        batter=batter,
+        pitcher=pitcher_low,
+        balls=0,
+        strikes=0,
+        control_roll=0.7,
+        target_dx=0.0,
+        target_dy=0.0,
+        pitch_type="fb",
+        objective="attack",
+        rng=MockRandom([0.0]),
+    )
+
+    assert ctx_high.in_zone
+    assert not ctx_low.in_zone
+    assert ctx_low.distance > ctx_high.distance
 
 
 def test_pitch_around_ibb_in_simulation():

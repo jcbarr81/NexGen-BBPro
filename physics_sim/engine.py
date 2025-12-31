@@ -39,8 +39,10 @@ from .team_data import (
     load_roster_status,
     active_roster_ids,
     resolve_lineup,
+    _normalize_team_id,
 )
 from utils.path_utils import get_base_dir
+from utils.lineup_autofill import auto_fill_lineup_for_team
 from services.injury_simulator import InjurySimulator
 
 
@@ -3016,6 +3018,20 @@ def simulate_matchup_from_files(
         active_ids=home_active,
         game_day=game_day,
     )
+    if not away_pitchers:
+        fallback = sorted(
+            pitchers_by_id.values(),
+            key=lambda p: getattr(p, "endurance", 0),
+            reverse=True,
+        )
+        away_pitchers = fallback[:10]
+    if not home_pitchers:
+        fallback = sorted(
+            pitchers_by_id.values(),
+            key=lambda p: getattr(p, "endurance", 0),
+            reverse=True,
+        )
+        home_pitchers = fallback[:10]
     away_starter = away_pitchers[0] if away_pitchers else None
     home_starter = home_pitchers[0] if home_pitchers else None
 
@@ -3032,6 +3048,28 @@ def simulate_matchup_from_files(
     home_lineup, home_positions, missing_home_batters = resolve_lineup(
         home_lineup_slots, batters_by_id
     )
+    if missing_away_batters or len(away_lineup) < 9:
+        auto_fill_lineup_for_team(
+            _normalize_team_id(away_team),
+            players_file=str(players_csv),
+            roster_dir=str(base / "data" / "rosters"),
+            lineup_dir=str(base / "data" / "lineups"),
+        )
+        away_lineup_slots = load_lineup(away_team, away_lineup_hand, base_dir=base)
+        away_lineup, away_positions, missing_away_batters = resolve_lineup(
+            away_lineup_slots, batters_by_id
+        )
+    if missing_home_batters or len(home_lineup) < 9:
+        auto_fill_lineup_for_team(
+            _normalize_team_id(home_team),
+            players_file=str(players_csv),
+            roster_dir=str(base / "data" / "rosters"),
+            lineup_dir=str(base / "data" / "lineups"),
+        )
+        home_lineup_slots = load_lineup(home_team, home_lineup_hand, base_dir=base)
+        home_lineup, home_positions, missing_home_batters = resolve_lineup(
+            home_lineup_slots, batters_by_id
+        )
     away_bench = build_bench(
         team_id=away_team,
         batters_by_id=batters_by_id,

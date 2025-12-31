@@ -151,6 +151,17 @@ qtcore.Qt = Qt
 class QPropertyAnimation:
     pass
 qtcore.QPropertyAnimation = QPropertyAnimation
+class QTimer:
+    def __init__(self, *args, **kwargs):
+        pass
+    def start(self, *args, **kwargs):
+        pass
+    def stop(self, *args, **kwargs):
+        pass
+qtcore.QTimer = QTimer
+def pyqtSignal(*args, **kwargs):
+    return DummySignal()
+qtcore.pyqtSignal = pyqtSignal
 sys.modules['PyQt6'] = types.ModuleType('PyQt6')
 sys.modules['PyQt6.QtWidgets'] = qtwidgets
 sys.modules['PyQt6.QtCore'] = qtcore
