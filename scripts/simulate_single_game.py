@@ -64,7 +64,7 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--engine",
         choices=["legacy", "physics"],
-        help="Simulation engine override (default: PB_GAME_ENGINE or legacy)",
+        help="Simulation engine override (default: PB_GAME_ENGINE or physics)",
     )
     parser.add_argument(
         "--html-output",

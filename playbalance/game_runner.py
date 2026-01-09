@@ -69,10 +69,12 @@ def _physics_usage_context(
 
 def _resolve_game_engine(engine: str | None) -> str:
     raw = engine or os.getenv("PB_GAME_ENGINE") or os.getenv("PB_SIM_ENGINE")
-    token = str(raw or "legacy").strip().lower()
+    token = str(raw or "").strip().lower()
+    if token in {"legacy", "old", "pbini"}:
+        return "legacy"
     if token in {"physics", "phys", "new", "next"}:
         return "physics"
-    return "legacy"
+    return "physics"
 
 
 def _env_flag(name: str, default: bool) -> bool:

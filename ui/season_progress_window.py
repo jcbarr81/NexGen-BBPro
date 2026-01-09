@@ -259,9 +259,7 @@ class SeasonProgressWindow(QDialog):
 
         self.manager = SeasonManager()
         self._simulate_game = simulate_game
-        self._engine_choice = self._normalize_engine_choice(
-            os.getenv("PB_GAME_ENGINE") or os.getenv("PB_SIM_ENGINE")
-        )
+        self._engine_choice = "physics"
         if schedule is None and SCHEDULE_FILE.exists():
             with SCHEDULE_FILE.open(newline="") as fh:
                 reader = csv.DictReader(fh)
@@ -366,22 +364,7 @@ class SeasonProgressWindow(QDialog):
         self._update_auto_activate_tip()
         layout.addWidget(self.auto_activate_checkbox)
 
-        self.engine_toggle = QCheckBox("Use Physics Engine (experimental)")
-        try:
-            self.engine_toggle.setChecked(self._engine_choice == "physics")
-            self.engine_toggle.toggled.connect(self._on_engine_toggle)
-            if self._simulate_game is not None:
-                self.engine_toggle.setEnabled(False)
-                self.engine_toggle.setToolTip(
-                    "Simulation engine is controlled by the caller."
-                )
-            else:
-                self.engine_toggle.setToolTip(
-                    "Toggle between the legacy and physics simulation engines."
-                )
-        except Exception:
-            pass
-        layout.addWidget(self.engine_toggle)
+        self.engine_toggle = None
 
         self.simulate_day_button = QPushButton("Simulate Day")
         self.simulate_day_button.clicked.connect(self._simulate_day)
@@ -641,9 +624,11 @@ class SeasonProgressWindow(QDialog):
 
     def _normalize_engine_choice(self, value: str | None) -> str:
         token = str(value or "").strip().lower()
+        if token in {"legacy", "old", "pbini"}:
+            return "legacy"
         if token in {"physics", "phys", "new", "next"}:
             return "physics"
-        return "legacy"
+        return "physics"
 
     def _engine_simulate_game(
         self,
@@ -665,10 +650,7 @@ class SeasonProgressWindow(QDialog):
         return self._simulate_game or self._engine_simulate_game
 
     def _on_engine_toggle(self, checked: bool) -> None:
-        if self._simulate_game is not None:
-            return
-        self._engine_choice = "physics" if checked else "legacy"
-        os.environ["PB_GAME_ENGINE"] = self._engine_choice
+        return
 
     def _infer_schedule_year(self) -> Optional[int]:
         """Best-effort inference of the active season year from schedule data."""
@@ -913,25 +895,16 @@ class SeasonProgressWindow(QDialog):
         self.simulate_to_draft_button.setVisible(is_regular)
         self.simulate_to_playoffs_button.setVisible(is_regular or is_playoffs)
         self.repair_lineups_button.setVisible(is_regular)
-        try:
-            self.engine_toggle.setVisible(is_regular)
-            if is_regular:
-                if self._simulate_game is not None:
-                    self._set_button_state(
-                        self.engine_toggle,
-                        False,
-                        "Simulation engine is controlled by the caller.",
-                    )
-                else:
-                    enabled = self._active_future is None
-                    reason = (
-                        "A simulation is already running. Please wait for it to finish."
-                        if self._active_future is not None
-                        else ""
-                    )
-                    self._set_button_state(self.engine_toggle, enabled, reason)
-        except Exception:
-            pass
+        if self.engine_toggle is not None:
+            try:
+                self.engine_toggle.setVisible(is_regular)
+                self._set_button_state(
+                    self.engine_toggle,
+                    False,
+                    "Physics engine is now the default.",
+                )
+            except Exception:
+                pass
         playoffs_bracket = bracket
         draft_locked = bool(self._draft_blocked)
         if is_regular:
@@ -2194,17 +2167,15 @@ class SeasonProgressWindow(QDialog):
             self.repair_lineups_button,
         ):
             self._set_button_state(btn, enabled, reason)
-        try:
-            if enabled and self._simulate_game is not None:
+        if self.engine_toggle is not None:
+            try:
                 self._set_button_state(
                     self.engine_toggle,
                     False,
-                    "Simulation engine is controlled by the caller.",
+                    "Physics engine is now the default.",
                 )
-            else:
-                self._set_button_state(self.engine_toggle, enabled, reason)
-        except Exception:
-            pass
+            except Exception:
+                pass
         if not enabled:
             self._set_button_state(self.next_button, False, reason)
 
@@ -2921,6 +2892,9 @@ class SeasonProgressWindow(QDialog):
 
     def _repair_lineups(self) -> None:
         from utils.lineup_autofill import auto_fill_lineup_for_team
+        from utils.player_loader import load_players_from_csv
+        from utils.roster_backfill import ensure_active_rosters
+        from utils.roster_loader import load_roster
         fixed = 0
         failed: list[str] = []
         try:
@@ -2928,6 +2902,26 @@ class SeasonProgressWindow(QDialog):
         except Exception as exc:
             QMessageBox.warning(self, "Repair Lineups", f"Failed to load teams: {exc}")
             return
+        try:
+            players = {
+                p.player_id: p
+                for p in load_players_from_csv(DATA_DIR / "players.csv")
+            }
+            roster_fix = ensure_active_rosters(
+                players=players,
+                roster_dir=DATA_DIR / "rosters",
+            )
+            if roster_fix.get("adjustments"):
+                try:
+                    load_roster.cache_clear()
+                except Exception:
+                    pass
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                "Repair Lineups",
+                f"Failed to backfill rosters: {exc}",
+            )
         for team in teams:
             try:
                 if not self._team_lineup_is_valid(team.team_id):

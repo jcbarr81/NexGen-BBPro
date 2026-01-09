@@ -7,7 +7,7 @@ playbalance-focused plan for ongoing work.
 ## Current State (2025-12-31)
 - HR tuning locked (hr_scale=0.965) with non-HR XBH lift retained.
 - 5-season validation confirms HR leader band 43-59 with no anomaly flags.
-- UI supports an in-game engine toggle for A/B runs.
+- In-game simulation now uses the physics engine by default; legacy toggle removed.
 - Park factors are currently disabled (park config retained for later).
 
 Latest artifacts:
@@ -73,8 +73,8 @@ Acceptance:
 - Park-adjusted metrics remain within MLB tolerances after re-enable.
 
 ### 7) Legacy Swap
-Status: Future
-- Make physics engine the default path and remove the legacy toggle.
+Status: Completed
+- Physics engine is now the default path and the legacy toggle is removed from UI.
 
 Acceptance:
 - Full-season UI flows and tests pass using physics engine only.

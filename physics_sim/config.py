@@ -356,7 +356,7 @@ DEFAULT_TUNING: Dict[str, Any] = {
     "consecutive_usage_penalty": 3.0,
     # Park/environment
     "park_size_scale": 1.0,
-    "park_factor_scale": 0.5,
+    "park_factor_scale": 0.0,
     "foul_territory_scale": 1.0,
     "wind_speed": 0.0,
     "wind_angle_deg": 0.0,
