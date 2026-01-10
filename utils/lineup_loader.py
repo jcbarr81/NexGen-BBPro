@@ -194,12 +194,19 @@ def _build_default_lists(
     # Keep exactly five rotation slots, push any extras to the bullpen group.
     extra_rotation = rotation[5:]
     if extra_rotation:
+        for pitcher in extra_rotation:
+            setattr(pitcher, "assigned_pitching_role", "MR")
         bullpen = extra_rotation + bullpen
         rotation = rotation[:5]
 
     # Label rotation spots consistently (SP1..SP5) for downstream consumers.
     for idx, pitcher in enumerate(rotation, start=1):
         setattr(pitcher, "assigned_pitching_role", f"SP{idx}")
+
+    for pitcher in bullpen:
+        role = str(getattr(pitcher, "assigned_pitching_role", "") or "").upper()
+        if role == "SP":
+            setattr(pitcher, "assigned_pitching_role", "MR")
 
     ordered_pitchers = rotation + bullpen
 

@@ -298,16 +298,24 @@ def _order_pitchers_for_game(
     roles_by_id = roles_by_id or {}
     starters: list[tuple[str, PitcherRatings]] = []
     bullpen: list[PitcherRatings] = []
+    long_relief: list[PitcherRatings] = []
+    sp_slots = {"SP1", "SP2", "SP3", "SP4", "SP5"}
     for pitcher in pitchers:
         role = roles_by_id.get(pitcher.player_id, "")
         if not role:
             role = pitcher.preferred_role or pitcher.role or ""
         role = role.upper()
-        if role.startswith("SP"):
+        if role in sp_slots:
             starters.append((role, pitcher))
+        elif role == "LR":
+            long_relief.append(pitcher)
         else:
             bullpen.append(pitcher)
     if not starters:
+        if long_relief:
+            starter = long_relief[0]
+            rest = [p for p in bullpen + long_relief if p is not starter]
+            return [starter] + rest
         return list(pitchers)
 
     starters_sorted = sorted(starters, key=lambda item: _sp_sort_key(item[0]))
@@ -317,17 +325,41 @@ def _order_pitchers_for_game(
         start_index = game_day % len(rotation)
     chosen_index = start_index
 
+    def _has_available_pitches(pitcher: PitcherRatings, role: str) -> bool:
+        if usage_state is None or game_day is None:
+            return True
+        _, fatigue_limit = _pitcher_usage_limits(pitcher, tuning, role=role)
+        if fatigue_limit <= 0:
+            return False
+        debt = usage_state.workload_for(pitcher.player_id).fatigue_debt
+        ratio = max(0.0, debt / max(1.0, fatigue_limit))
+        availability_ratio = 1.0
+        if role == "CL":
+            availability_ratio = tuning.get("closer_availability_ratio", 1.3)
+        return ratio <= availability_ratio
+
+    def _starter_available(pitcher: PitcherRatings, role: str) -> bool:
+        return _pitcher_is_rested(
+            pitcher_id=pitcher.player_id,
+            role=role,
+            usage_state=usage_state,
+            game_day=game_day,
+            tuning=tuning,
+        ) and _has_available_pitches(pitcher, role)
+
+    def _rest_score(pitcher: PitcherRatings) -> int:
+        days_since = _pitcher_days_since_use(
+            pitcher.player_id,
+            usage_state=usage_state,
+            game_day=game_day,
+        )
+        return days_since if days_since is not None else -1
+
     if usage_state is not None and game_day is not None:
         available_indices = [
             idx
             for idx, (role, pitcher) in enumerate(starters_sorted)
-            if _pitcher_is_rested(
-                pitcher_id=pitcher.player_id,
-                role=role,
-                usage_state=usage_state,
-                game_day=game_day,
-                tuning=tuning,
-            )
+            if _starter_available(pitcher, role)
         ]
         if available_indices:
             for offset in range(len(rotation)):
@@ -336,20 +368,22 @@ def _order_pitchers_for_game(
                     chosen_index = idx
                     break
         else:
-            def rest_score(idx: int) -> int:
-                pitcher = rotation[idx]
-                days_since = _pitcher_days_since_use(
-                    pitcher.player_id,
-                    usage_state=usage_state,
-                    game_day=game_day,
-                )
-                return days_since if days_since is not None else -1
-
-            chosen_index = max(range(len(rotation)), key=rest_score)
+            lr_candidates = [
+                pitcher
+                for pitcher in long_relief
+                if _starter_available(pitcher, "LR")
+            ]
+            if lr_candidates:
+                starter = max(lr_candidates, key=_rest_score)
+                rest = [p for p in bullpen + long_relief if p is not starter]
+                rotation_rest = list(rotation)
+                return [starter] + rest + rotation_rest
+            chosen_index = max(range(len(rotation)), key=lambda idx: _rest_score(rotation[idx]))
 
     rotation = rotation[chosen_index:] + rotation[:chosen_index]
-    ordered = list(rotation)
-    ordered.extend(bullpen)
+    starter = rotation[0]
+    rotation_rest = rotation[1:]
+    ordered = [starter] + bullpen + long_relief + rotation_rest
     return ordered
 
 

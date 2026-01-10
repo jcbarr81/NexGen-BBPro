@@ -797,6 +797,10 @@ def simulate_pitch(
             exit_velo = max(50.0, ev_base * quality)
             exit_velo *= tuning.get("contact_quality_scale", 1.0)
             exit_velo *= tuning.get("offense_scale", 1.0)
+            softcap = tuning.get("exit_velo_softcap", 0.0)
+            if softcap and exit_velo > softcap:
+                high_scale = tuning.get("exit_velo_softcap_scale", 0.5)
+                exit_velo = softcap + (exit_velo - softcap) * high_scale
             gb_bias = (batter.get("gb_tendency", 50.0) - 50.0) / 10.0
             launch_angle_base = tuning.get("launch_angle_base", 10.0)
             launch_angle = random.gauss(

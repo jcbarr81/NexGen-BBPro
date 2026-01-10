@@ -1,0 +1,516 @@
+{
+  "schema_version": 1,
+  "year": 2026,
+  "champion": null,
+  "runner_up": null,
+  "seeds": {
+    "LEAGUE": [
+      {
+        "team_id": "SAN1",
+        "seed": 1,
+        "league": "LEAGUE",
+        "wins": 93,
+        "run_diff": 125
+      },
+      {
+        "team_id": "NAS",
+        "seed": 2,
+        "league": "LEAGUE",
+        "wins": 90,
+        "run_diff": 39
+      },
+      {
+        "team_id": "NEW",
+        "seed": 3,
+        "league": "LEAGUE",
+        "wins": 87,
+        "run_diff": 52
+      },
+      {
+        "team_id": "MIL",
+        "seed": 4,
+        "league": "LEAGUE",
+        "wins": 87,
+        "run_diff": 13
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "name": "LEAGUE DS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "SAN1",
+            "seed": 1,
+            "league": "LEAGUE",
+            "wins": 93,
+            "run_diff": 125
+          },
+          "low": {
+            "team_id": "MIL",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 13
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "SAN1",
+              "away": "MIL",
+              "date": null,
+              "result": "2-3",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S0_G0_MIL_at_SAN1.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "SAN1",
+              "away": "MIL",
+              "date": null,
+              "result": "7-2",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S0_G1_MIL_at_SAN1.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "SAN1",
+              "date": null,
+              "result": "6-11",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S0_G2_SAN1_at_MIL.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "SAN1",
+              "date": null,
+              "result": "6-5",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S0_G3_SAN1_at_MIL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "SAN1",
+              "away": "MIL",
+              "date": null,
+              "result": "4-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S0_G4_MIL_at_SAN1.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            }
+          ],
+          "winner": "MIL"
+        },
+        {
+          "high": {
+            "team_id": "NAS",
+            "seed": 2,
+            "league": "LEAGUE",
+            "wins": 90,
+            "run_diff": 39
+          },
+          "low": {
+            "team_id": "NEW",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 52
+          },
+          "config": {
+            "length": 5,
+            "pattern": [
+              2,
+              2,
+              1
+            ]
+          },
+          "games": [
+            {
+              "home": "NAS",
+              "away": "NEW",
+              "date": null,
+              "result": "6-7",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S1_G0_NEW_at_NAS.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NAS",
+              "away": "NEW",
+              "date": null,
+              "result": "7-6",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S1_G1_NEW_at_NAS.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NEW",
+              "away": "NAS",
+              "date": null,
+              "result": "1-4",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S1_G2_NAS_at_NEW.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "R",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NEW",
+              "away": "NAS",
+              "date": null,
+              "result": "9-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S1_G3_NAS_at_NEW.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "R",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NAS",
+              "away": "NEW",
+              "date": null,
+              "result": "7-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE DS_S1_G4_NEW_at_NAS.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "R",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            }
+          ],
+          "winner": "NEW"
+        }
+      ],
+      "plan": []
+    },
+    {
+      "name": "LEAGUE CS",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "NEW",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 52
+          },
+          "low": {
+            "team_id": "MIL",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 13
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
+            {
+              "home": "NEW",
+              "away": "MIL",
+              "date": null,
+              "result": "6-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G0_MIL_at_NEW.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NEW",
+              "away": "MIL",
+              "date": null,
+              "result": "3-1",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G1_MIL_at_NEW.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "NEW",
+              "date": null,
+              "result": "3-2",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G2_NEW_at_MIL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "NEW",
+              "date": null,
+              "result": "2-5",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G3_NEW_at_MIL.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "NEW",
+              "date": null,
+              "result": "7-2",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G4_NEW_at_MIL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NEW",
+              "away": "MIL",
+              "date": null,
+              "result": "3-6",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G5_MIL_at_NEW.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            }
+          ],
+          "winner": "MIL"
+        }
+      ],
+      "plan": [
+        {
+          "series_key": "cs",
+          "sources": [
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "LEAGUE DS",
+              "slot": 0
+            },
+            {
+              "kind": "winner",
+              "league": null,
+              "seed": null,
+              "source_round": "LEAGUE DS",
+              "slot": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Final",
+      "matchups": [
+        {
+          "high": {
+            "team_id": "NEW",
+            "seed": 3,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 52
+          },
+          "low": {
+            "team_id": "MIL",
+            "seed": 4,
+            "league": "LEAGUE",
+            "wins": 87,
+            "run_diff": 13
+          },
+          "config": {
+            "length": 7,
+            "pattern": [
+              2,
+              3,
+              2
+            ]
+          },
+          "games": [
+            {
+              "home": "NEW",
+              "away": "MIL",
+              "date": null,
+              "result": "6-8",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G0_MIL_at_NEW.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NEW",
+              "away": "MIL",
+              "date": null,
+              "result": "3-1",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G1_MIL_at_NEW.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "NEW",
+              "date": null,
+              "result": "3-2",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G2_NEW_at_MIL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "NEW",
+              "date": null,
+              "result": "2-5",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G3_NEW_at_MIL.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "MIL",
+              "away": "NEW",
+              "date": null,
+              "result": "7-2",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G4_NEW_at_MIL.html",
+              "meta": {
+                "home_innings": 8,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "L",
+                "away_starter_hand": "S",
+                "engine": "physics"
+              }
+            },
+            {
+              "home": "NEW",
+              "away": "MIL",
+              "date": null,
+              "result": "3-6",
+              "boxscore": "/home/james/dev/NexGen-BBPro/data/boxscores/playoffs/2026_LEAGUE CS_S0_G5_MIL_at_NEW.html",
+              "meta": {
+                "home_innings": 9,
+                "away_innings": 9,
+                "extra_innings": false,
+                "home_starter_hand": "S",
+                "away_starter_hand": "L",
+                "engine": "physics"
+              }
+            }
+          ],
+          "winner": "MIL"
+        }
+      ],
+      "plan": []
+    }
+  ]
+}

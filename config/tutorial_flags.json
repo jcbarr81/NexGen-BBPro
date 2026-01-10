@@ -9,5 +9,10 @@
   "dashboard_overview_tutorial_COL": true,
   "dashboard_overview_tutorial_CHI": true,
   "dashboard_overview_tutorial_IND": true,
-  "depth_chart_tutorial_done_IND": true
+  "depth_chart_tutorial_done_IND": true,
+  "dashboard_overview_tutorial_POR": true,
+  "depth_chart_tutorial_done_POR": true,
+  "dashboard_overview_tutorial_ALB": true,
+  "depth_chart_tutorial_done_ALB": true,
+  "dashboard_overview_tutorial_SAN1": true
 }
