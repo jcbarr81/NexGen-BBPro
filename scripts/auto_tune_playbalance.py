@@ -9,7 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping
 
+from playbalance.legacy_guard import require_legacy_enabled
 from playbalance.sim_config import load_tuned_playbalance_config
+
+require_legacy_enabled("Legacy playbalance auto-tune script")
 
 
 def _clamp(value: float, low: float, high: float) -> float:

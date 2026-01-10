@@ -67,6 +67,7 @@ from services.free_agency import list_unsigned_players
 from utils.team_loader import load_teams
 from services.contract_negotiator import evaluate_free_agent_bids
 from utils.news_logger import log_news_event
+from utils.rating_display import rating_display_text
 
 
 class FreeAgencyWindow(QDialog):
@@ -123,11 +124,13 @@ class FreeAgencyWindow(QDialog):
             hands = getattr(p, 'bats', 'R')
             # rough overall score proxy
             rating = int(getattr(p, 'ch', 50))
+            is_pitcher = bool(getattr(p, "is_pitcher", False)) or str(pos).upper() == "P"
+            rating_display = rating_display_text(rating, key="CH", is_pitcher=is_pitcher)
             self.table.setItem(r, 0, QTableWidgetItem(name))
             self.table.setItem(r, 1, QTableWidgetItem(str(pos)))
             self.table.setItem(r, 2, QTableWidgetItem(str(age)))
             self.table.setItem(r, 3, QTableWidgetItem(str(hands)))
-            self.table.setItem(r, 4, QTableWidgetItem(str(rating)))
+            self.table.setItem(r, 4, QTableWidgetItem(str(rating_display)))
             self.table.setItem(r, 5, QTableWidgetItem(""))
         self.status.setText(f"Loaded {len(self._players)} unsigned players")
 
@@ -158,4 +161,3 @@ class FreeAgencyWindow(QDialog):
 
 
 __all__ = ["FreeAgencyWindow"]
-

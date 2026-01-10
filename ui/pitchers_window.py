@@ -18,6 +18,7 @@ from ui.player_profile_dialog import PlayerProfileDialog
 from models.base_player import BasePlayer
 from models.roster import Roster
 from utils.pitcher_role import get_role
+from utils.rating_display import rating_display_text
 
 
 class PitchersWindow(QDialog):
@@ -75,7 +76,16 @@ class PitchersWindow(QDialog):
     # Helpers
     def _make_pitcher_item(self, p: BasePlayer) -> QListWidgetItem:
         age = self._calculate_age(p.birthdate)
-        core = f"AS:{getattr(p, 'arm', 0)} EN:{getattr(p, 'endurance', 0)} CO:{getattr(p, 'control', 0)}"
+        arm_display = rating_display_text(
+            getattr(p, "arm", 0), key="AS", is_pitcher=True
+        )
+        endurance_display = rating_display_text(
+            getattr(p, "endurance", 0), key="EN", is_pitcher=True
+        )
+        control_display = rating_display_text(
+            getattr(p, "control", 0), key="CO", is_pitcher=True
+        )
+        core = f"AS:{arm_display} EN:{endurance_display} CO:{control_display}"
         role = get_role(p)
         label = f"{p.first_name} {p.last_name} ({age}) - {role or p.primary_position} | {core}"
         item = QListWidgetItem(label)

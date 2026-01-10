@@ -498,7 +498,11 @@ def test_playoffs_require_simulation(tmp_path, monkeypatch):
     monkeypatch.setattr(spw, "PROGRESS_FILE", tmp_path / "progress.json")
     win = spw.SeasonProgressWindow(schedule=[])
     assert win.remaining_label.text() == "Playoffs underway; simulate to continue."
+    assert win.simulate_day_button.text() == "Simulate Game"
+    assert win.simulate_round_button.text() == "Simulate Round"
     assert win.simulate_to_playoffs_button.text() == "Simulate Playoffs"
+    assert win.simulate_day_button.isEnabled()
+    assert win.simulate_round_button.isEnabled()
     assert win.simulate_to_playoffs_button.isEnabled()
     assert not win.next_button.isEnabled()
 

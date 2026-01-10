@@ -62,8 +62,17 @@ class LeaguePage(DashboardPage):
         ops.layout().addWidget(self.injury_center_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         ops.layout().addStretch()
 
+        history = Card()
+        history.layout().addWidget(section_title("History & Archives"))
+
+        self.league_history_button = QPushButton("League History")
+        self.league_history_button.setToolTip("Browse archived seasons and awards")
+        history.layout().addWidget(self.league_history_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        history.layout().addStretch()
+
         layout.addWidget(control)
         layout.addWidget(ops)
+        layout.addWidget(history)
         layout.addStretch()
 
 

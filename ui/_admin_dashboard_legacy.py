@@ -74,6 +74,7 @@ from .playoffs_window import PlayoffsWindow
 from .free_agency_window import FreeAgencyWindow
 from .news_window import NewsWindow
 from .injury_center_window import InjuryCenterWindow
+from .league_history_window import LeagueHistoryWindow
 from .owner_dashboard import OwnerDashboard
 from utils.trade_utils import load_trades
 from utils.player_loader import load_players_from_csv
@@ -266,6 +267,7 @@ class MainWindow(QMainWindow):
             lp.season_progress_button.clicked.connect(self.open_season_progress)
             lp.playoffs_view_button.clicked.connect(self.open_playoffs_window)
             lp.reset_opening_day_button.clicked.connect(self.reset_to_opening_day)
+            lp.league_history_button.clicked.connect(self.open_league_history)
         dp = self.pages.get("draft")
         if isinstance(dp, DraftPage):
             dp.view_draft_pool_button.clicked.connect(self.open_draft_pool)
@@ -633,6 +635,12 @@ class MainWindow(QMainWindow):
             self._playoffs_win.show()
         except Exception:
             # Headless environments may lack full Qt stack
+            pass
+
+    def open_league_history(self) -> None:
+        try:
+            show_on_top(LeagueHistoryWindow(self))
+        except Exception:
             pass
 
     # ------------------------------------------------------------------

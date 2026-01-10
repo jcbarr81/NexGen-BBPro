@@ -206,6 +206,7 @@ from services.season_progress_flags import ProgressUpdateError, mark_draft_compl
 from utils.news_logger import log_news_event
 from utils.team_loader import load_teams
 from utils.exceptions import DraftRosterError
+from utils.rating_display import rating_display_text
 from datetime import datetime
 
 
@@ -443,8 +444,16 @@ class DraftConsole(QDialog):
             name = f"{p.get('first_name','')} {p.get('last_name','')}".strip()
             bt = f"{p.get('bats','?')}/{p.get('throws','?')}"
             pos = p.get("primary_position", "?")
-            chphsp = f"{p.get('ch',0)}/{p.get('ph',0)}/{p.get('sp',0)}"
-            armfa = f"{p.get('arm',0)}/{p.get('fa',0)}"
+            is_pitcher = bool(p.get("is_pitcher")) or str(p.get("primary_position", "")).upper() == "P"
+            chphsp = (
+                f"{rating_display_text(p.get('ch', 0), key='CH', is_pitcher=is_pitcher)}"
+                f"/{rating_display_text(p.get('ph', 0), key='PH', is_pitcher=is_pitcher)}"
+                f"/{rating_display_text(p.get('sp', 0), key='SP', is_pitcher=is_pitcher)}"
+            )
+            armfa = (
+                f"{rating_display_text(p.get('arm', 0), key='AS', is_pitcher=is_pitcher)}"
+                f"/{rating_display_text(p.get('fa', 0), key='FA', is_pitcher=is_pitcher)}"
+            )
             age = self._age_from_birthdate(str(p.get("birthdate", "")))
             ovr = str(self._overall_rating(p))
             self.table.setItem(r, 0, QTableWidgetItem(p.get("player_id", "")))
@@ -456,8 +465,11 @@ class DraftConsole(QDialog):
             self.table.setItem(r, 6, QTableWidgetItem(chphsp))
             self.table.setItem(r, 7, QTableWidgetItem(armfa))
             encomo = (
-                f"{p.get('endurance',0)}/{p.get('control',0)}/{p.get('movement',0)}"
-                if p.get('is_pitcher') else ""
+                f"{rating_display_text(p.get('endurance', 0), key='EN', is_pitcher=True)}"
+                f"/{rating_display_text(p.get('control', 0), key='CO', is_pitcher=True)}"
+                f"/{rating_display_text(p.get('movement', 0), key='MO', is_pitcher=True)}"
+                if is_pitcher
+                else ""
             )
             self.table.setItem(r, 8, QTableWidgetItem(encomo))
         self.table.resizeColumnsToContents()

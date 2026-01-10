@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt
 
 from models.base_player import BasePlayer
 from models.roster import Roster
-from utils.pitcher_role import get_role
+from utils.pitcher_role import get_display_role, get_role
 from ui.player_profile_dialog import PlayerProfileDialog
 
 # Reuse the existing retro roster tables for consistent look/feel
@@ -97,12 +97,13 @@ class PlayerBrowserDialog(QDialog):
                 role = get_role(p) if p else ""
                 if not p or not role:
                     continue
+                display_role = get_display_role(p)
                 pitch_vals = [getattr(p, code, "") if getattr(p, code, 0) else "" for code in PITCH_RATINGS]
                 rows.append([
                     seq,
                     f"{p.last_name}, {p.first_name}",
                     slot,
-                    role,
+                    display_role,
                     getattr(p, "bats", ""),
                     getattr(p, "arm", 0),
                     getattr(p, "endurance", 0),

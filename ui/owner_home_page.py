@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional
 from types import SimpleNamespace
 
 try:
-    from PyQt6.QtCore import QPointF, Qt
+    from PyQt6.QtCore import Qt
 except ImportError:  # pragma: no cover - test stubs
     Qt = SimpleNamespace(
         AlignmentFlag=SimpleNamespace(
@@ -23,19 +23,8 @@ except ImportError:  # pragma: no cover - test stubs
         ),
     )
 
-    class QPointF:  # type: ignore[too-many-ancestors]
-        def __init__(self, x: float = 0.0, y: float = 0.0) -> None:
-            self._x = x
-            self._y = y
-
-        def x(self) -> float:
-            return self._x
-
-        def y(self) -> float:
-            return self._y
-
 try:
-    from PyQt6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
+    from PyQt6.QtGui import QColor
 except ImportError:  # pragma: no cover - test stubs
     class _GraphicDummy:
         def __init__(self, *args, **kwargs) -> None:
@@ -47,7 +36,7 @@ except ImportError:  # pragma: no cover - test stubs
 
             return _noop
 
-    QColor = QFont = QPainter = QPen = QPolygonF = _GraphicDummy
+    QColor = _GraphicDummy
 from PyQt6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
@@ -62,6 +51,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .components import Card, section_title, build_metric_row
+from .stat_helpers import format_ip
 
 
 class OwnerHomePage(QWidget):
@@ -229,16 +219,35 @@ class OwnerHomePage(QWidget):
         actions_layout.addStretch()
         self.quick_actions_card.layout().addLayout(actions_layout)
 
-        # Trendlines card -----------------------------------------------
-        self.trend_card = Card()
-        self.trend_card.setMinimumHeight(280)
-        self.trend_card.layout().addWidget(section_title("Trendlines (Last 10 Games)"))
-        self.trend_chart = TrendChartWidget()
-        self.trend_chart.setMinimumHeight(240)
-        self.trend_chart.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        # Performance & standings card ----------------------------------
+        self.performance_card = Card()
+        self.performance_card.setMinimumHeight(320)
+        self.performance_card.layout().addWidget(
+            section_title("Hot/Cold & Division Standings")
         )
-        self.trend_card.layout().addWidget(self.trend_chart)
+
+        performance_row = QHBoxLayout()
+        performance_row.setSpacing(24)
+
+        performers_col = QVBoxLayout()
+        performers_col.setSpacing(8)
+        self.performers_title = QLabel("Hot/Cold Performers")
+        self.performers_title.setStyleSheet("font-weight:600; color:#495057;")
+        performers_col.addWidget(self.performers_title)
+        self.performers_widget = HotColdWidget()
+        performers_col.addWidget(self.performers_widget)
+
+        standings_col = QVBoxLayout()
+        standings_col.setSpacing(8)
+        self.division_title = QLabel("Division Standings")
+        self.division_title.setStyleSheet("font-weight:600; color:#495057;")
+        standings_col.addWidget(self.division_title)
+        self.division_widget = DivisionStandingsWidget()
+        standings_col.addWidget(self.division_widget)
+
+        performance_row.addLayout(performers_col, 1)
+        performance_row.addLayout(standings_col, 1)
+        self.performance_card.layout().addLayout(performance_row)
 
         # Recent News card ----------------------------------------------
         self.news_card = Card()
@@ -290,7 +299,7 @@ class OwnerHomePage(QWidget):
             self.metrics_card,
             self.readiness_card,
             self.quick_actions_card,
-            self.trend_card,
+            self.performance_card,
             self.news_card,
         ]
         self._layout_mode = None
@@ -370,8 +379,22 @@ class OwnerHomePage(QWidget):
         self.bullpen_widget.update_data(bullpen_data)
         matchup_data = m.get("matchup", {}) if m else {}
         self.matchup_widget.update_matchup(matchup_data)
-        trend_data = m.get("trends", {}) if m else {}
-        self.trend_chart.update_trends(trend_data)
+        performer_data = m.get("performers", {}) if m else {}
+        self.performers_widget.update_performers(performer_data)
+        division_data = m.get("division_standings", {}) if m else {}
+        self.division_widget.update_standings(division_data)
+        window = performer_data.get("window")
+        if window:
+            self.performers_title.setText(
+                f"Hot/Cold Performers (Last {window} Days)"
+            )
+        else:
+            self.performers_title.setText("Hot/Cold Performers")
+        division_name = division_data.get("division")
+        if division_name and division_name != "--":
+            self.division_title.setText(f"Division Standings - {division_name}")
+        else:
+            self.division_title.setText("Division Standings")
 
         # Update recent news
         try:
@@ -626,7 +649,7 @@ class OwnerHomePage(QWidget):
             self._place_card(self.quick_actions_card, 0, 1)
             self._place_card(self.readiness_card, 1, 0)
             self._place_card(self.news_card, 1, 1)
-            self._place_card(self.trend_card, 2, 0, 1, 2)
+            self._place_card(self.performance_card, 2, 0, 1, 2)
             self._grid.setColumnStretch(0, 3)
             self._grid.setColumnStretch(1, 2)
             self._grid.setColumnStretch(2, 0)
@@ -639,7 +662,7 @@ class OwnerHomePage(QWidget):
             self._place_card(self.quick_actions_card, 0, 1)
             self._place_card(self.readiness_card, 1, 0)
             self._place_card(self.news_card, 1, 1)
-            self._place_card(self.trend_card, 2, 0, 1, 2)
+            self._place_card(self.performance_card, 2, 0, 1, 2)
             self._grid.setColumnStretch(0, 1)
             self._grid.setColumnStretch(1, 1)
             self._grid.setColumnStretch(2, 0)
@@ -786,111 +809,188 @@ class MatchupScoutWidget(QWidget):
         self.detail.setText(f"{note}\nProbable: {team_prob} vs {opp_prob}")
 
 
-class TrendChartWidget(QWidget):
-    """Lightweight dual-line chart for recent trends."""
+class HotColdWidget(QWidget):
+    """Compact hot/cold performer summaries."""
 
     def __init__(self) -> None:
         super().__init__()
-        self._dates: List[str] = []
-        self._series: Dict[str, List[float]] = {}
-        self.setMinimumHeight(180)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        layout = QGridLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setHorizontalSpacing(16)
+        layout.setVerticalSpacing(8)
 
-    def update_trends(self, data: Dict[str, Any] | None) -> None:
+        hot_label = QLabel("Hot")
+        hot_label.setStyleSheet("font-weight:600;")
+        cold_label = QLabel("Cold")
+        cold_label.setStyleSheet("font-weight:600;")
+        layout.addWidget(hot_label, 0, 0)
+        layout.addWidget(cold_label, 0, 1)
+
+        self.hot_hitters = QLabel("Hitters: --")
+        self.cold_hitters = QLabel("Hitters: --")
+        self.hot_pitchers = QLabel("Pitchers: --")
+        self.cold_pitchers = QLabel("Pitchers: --")
+        for label in (
+            self.hot_hitters,
+            self.cold_hitters,
+            self.hot_pitchers,
+            self.cold_pitchers,
+        ):
+            label.setWordWrap(True)
+
+        layout.addWidget(self.hot_hitters, 1, 0)
+        layout.addWidget(self.cold_hitters, 1, 1)
+        layout.addWidget(self.hot_pitchers, 2, 0)
+        layout.addWidget(self.cold_pitchers, 2, 1)
+
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+
+    def update_performers(self, data: Dict[str, Any] | None) -> None:
         if not data:
-            self._dates = []
-            self._series = {}
-            self.update()
-            return
-        self._dates = list(data.get("dates", []))
-        series = data.get("series", {}) or {}
-        self._series = {
-            "runs_per_game": list(series.get("runs_per_game", [])),
-            "runs_allowed_per_game": list(series.get("runs_allowed_per_game", [])),
-            "win_pct": list(series.get("win_pct", [])),
-        }
-        self.update()
-
-    def paintEvent(self, event) -> None:  # type: ignore[override]
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rect = self.rect().adjusted(16, 16, -16, -32)
-        scored = self._series.get("runs_per_game") or []
-        allowed = self._series.get("runs_allowed_per_game") or []
-        if not scored or not allowed or len(scored) != len(allowed):
-            painter.setPen(QPen(Qt.GlobalColor.gray))
-            painter.drawText(
-                rect,
-                Qt.AlignmentFlag.AlignCenter,
-                "Trend data unavailable.",
-            )
+            self._set_empty()
             return
 
-        points = len(scored)
-        if points == 1:
-            scored = scored * 2
-            allowed = allowed * 2
-            self._dates = (self._dates or ["--"]) * 2
-            points = 2
+        hitters = data.get("hitters", {})
+        if not isinstance(hitters, Mapping):
+            hitters = {}
+        pitchers = data.get("pitchers", {})
+        if not isinstance(pitchers, Mapping):
+            pitchers = {}
 
-        min_val = min(min(scored), min(allowed))
-        max_val = max(max(scored), max(allowed))
-        if abs(max_val - min_val) < 0.25:
-            max_val += 0.5
-            min_val -= 0.5
+        hot_hitters = hitters.get("hot") or []
+        cold_hitters = hitters.get("cold") or []
+        hot_pitchers = pitchers.get("hot") or []
+        cold_pitchers = pitchers.get("cold") or []
 
-        def _map(value: float) -> float:
-            if max_val == min_val:
-                return rect.bottom()
-            ratio = (value - min_val) / (max_val - min_val)
-            return rect.bottom() - ratio * rect.height()
+        self.hot_hitters.setText(self._format_hitters(hot_hitters))
+        self.cold_hitters.setText(self._format_hitters(cold_hitters))
+        self.hot_pitchers.setText(self._format_pitchers(hot_pitchers))
+        self.cold_pitchers.setText(self._format_pitchers(cold_pitchers))
 
-        x_step = rect.width() / max(1, points - 1)
-        scored_poly = QPolygonF(
-            QPointF(rect.left() + idx * x_step, _map(val))
-            for idx, val in enumerate(scored)
-        )
-        allowed_poly = QPolygonF(
-            QPointF(rect.left() + idx * x_step, _map(val))
-            for idx, val in enumerate(allowed)
-        )
+        tooltip_lines = []
+        note = data.get("note")
+        if note:
+            tooltip_lines.append(str(note))
+        range_info = data.get("range", {})
+        if isinstance(range_info, Mapping):
+            start = range_info.get("start")
+            end = range_info.get("end")
+            if start and end:
+                tooltip_lines.append(f"Sample window: {start} to {end}")
+        self.setToolTip("\n".join(tooltip_lines))
 
-        axis_pen = QPen(QColor("#adb5bd"))
-        painter.setPen(axis_pen)
-        painter.drawLine(rect.bottomLeft(), rect.bottomRight())
-        painter.drawLine(rect.bottomLeft(), rect.topLeft())
+    def _set_empty(self) -> None:
+        self.hot_hitters.setText("Hitters: --")
+        self.cold_hitters.setText("Hitters: --")
+        self.hot_pitchers.setText("Pitchers: --")
+        self.cold_pitchers.setText("Pitchers: --")
+        self.setToolTip("")
 
-        painter.setPen(QPen(QColor(47, 158, 68), 2))
-        painter.drawPolyline(scored_poly)
-        painter.setPen(QPen(QColor(224, 49, 49), 2))
-        painter.drawPolyline(allowed_poly)
+    @staticmethod
+    def _format_rate(value: Any, *, decimals: int, strip_zero: bool = True) -> str:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return "--"
+        if numeric != numeric:  # NaN guard
+            return "--"
+        text = f"{numeric:.{decimals}f}"
+        if strip_zero and 0 < numeric < 1:
+            text = text.lstrip("0")
+        return text
 
-        painter.setPen(QPen(QColor("#212529")))
-        painter.setFont(QFont(painter.font().family(), 9, QFont.Weight.Medium))
-        legend_y = rect.top() - 6
-        painter.drawText(rect.left(), legend_y, "Runs For")
-        painter.drawText(rect.left() + 90, legend_y, "Runs Allowed")
+    def _format_hitters(self, entries: List[Dict[str, Any]]) -> str:
+        if not entries:
+            return "Hitters: --"
+        lines = []
+        for entry in entries:
+            name = entry.get("name") or "--"
+            avg = self._format_rate(entry.get("avg"), decimals=3, strip_zero=True)
+            ops = self._format_rate(entry.get("ops"), decimals=3, strip_zero=True)
+            hr = entry.get("hr")
+            line = f"{name} {avg} OPS {ops}"
+            if isinstance(hr, (int, float)) and int(hr) > 0:
+                line = f"{line}, {int(hr)} HR"
+            lines.append(line)
+        return "Hitters:\n" + "\n".join(lines)
 
-        painter.setPen(QPen(QColor("#495057")))
-        if self._dates:
-            painter.drawText(
-                rect.left(),
-                rect.bottom() + 16,
-                self._dates[0],
-            )
-            painter.drawText(
-                rect.right() - 60,
-                rect.bottom() + 16,
-                self._dates[-1],
-            )
+    def _format_pitchers(self, entries: List[Dict[str, Any]]) -> str:
+        if not entries:
+            return "Pitchers: --"
+        lines = []
+        for entry in entries:
+            name = entry.get("name") or "--"
+            era = self._format_rate(entry.get("era"), decimals=2, strip_zero=False)
+            ip = entry.get("ip")
+            ip_label = format_ip(ip) if ip is not None else "--"
+            lines.append(f"{name} {era} ERA, {ip_label} IP")
+        return "Pitchers:\n" + "\n".join(lines)
 
-        win_series = self._series.get("win_pct") or []
-        if win_series:
-            current = win_series[-1]
-            painter.drawText(
-                rect.right() - 130,
-                rect.top() - 6,
-                f"Win% trend: {current:.3f}",
-            )
 
-        painter.end()
+class DivisionStandingsWidget(QWidget):
+    """Compact table for the current division standings."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._layout = QGridLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setHorizontalSpacing(12)
+        self._layout.setVerticalSpacing(6)
+
+    def update_standings(self, data: Dict[str, Any] | None) -> None:
+        layout = self._layout
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+
+        teams = []
+        if data and isinstance(data.get("teams"), list):
+            teams = data.get("teams") or []
+        if not teams:
+            layout.addWidget(QLabel("Standings unavailable."), 0, 0)
+            return
+
+        headers = [
+            ("Team", Qt.AlignmentFlag.AlignLeft),
+            ("W-L", Qt.AlignmentFlag.AlignRight),
+            ("GB", Qt.AlignmentFlag.AlignRight),
+            ("Stk", Qt.AlignmentFlag.AlignRight),
+        ]
+        for col, (label, align) in enumerate(headers):
+            header = QLabel(label)
+            header.setAlignment(align)
+            header.setStyleSheet("font-weight:600; color:#495057;")
+            layout.addWidget(header, 0, col)
+
+        for row_idx, entry in enumerate(teams, start=1):
+            label = entry.get("label") or entry.get("team_id") or "--"
+            wins = entry.get("wins", 0)
+            losses = entry.get("losses", 0)
+            record = f"{wins}-{losses}"
+            gb = entry.get("gb", "--")
+            streak = entry.get("streak", "--")
+
+            name_label = QLabel(str(label))
+            name_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            record_label = QLabel(str(record))
+            record_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+            gb_label = QLabel(str(gb))
+            gb_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+            streak_label = QLabel(str(streak))
+            streak_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+            if entry.get("name"):
+                name_label.setToolTip(str(entry.get("name")))
+            if entry.get("is_current"):
+                name_label.setStyleSheet("font-weight:700;")
+                record_label.setStyleSheet("font-weight:700;")
+                gb_label.setStyleSheet("font-weight:700;")
+                streak_label.setStyleSheet("font-weight:700;")
+
+            layout.addWidget(name_label, row_idx, 0)
+            layout.addWidget(record_label, row_idx, 1)
+            layout.addWidget(gb_label, row_idx, 2)
+            layout.addWidget(streak_label, row_idx, 3)

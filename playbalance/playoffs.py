@@ -1048,6 +1048,97 @@ def simulate_series(matchup: Matchup, *, year: int, round_name: str, series_inde
     return matchup
 
 
+def _simulate_next_series_game(
+    matchup: Matchup,
+    *,
+    year: int,
+    round_name: str,
+    series_index: int,
+    simulate_game=None,
+) -> bool:
+    """Simulate the next unplayed game in a series."""
+
+    wins_needed = _wins_needed(matchup.config.length)
+    high_id = matchup.high.team_id
+    low_id = matchup.low.team_id
+    if not high_id or not low_id:
+        return False
+
+    existing_high, existing_low = _count_series_wins(matchup)
+    if existing_high >= wins_needed or existing_low >= wins_needed:
+        matchup.winner = high_id if existing_high >= wins_needed else low_id
+        return False
+
+    if simulate_game is None:
+        from playbalance.game_runner import simulate_game_scores as _sim
+        simulate_game = _sim
+
+    homes: List[str] = []
+    flip = False
+    for block in matchup.config.pattern:
+        homes.extend([high_id if not flip else low_id] * block)
+        flip = not flip
+
+    played_games = min(len(matchup.games), len(homes))
+    if played_games >= len(homes):
+        return False
+
+    home = homes[played_games]
+    away = low_id if home == high_id else high_id
+    seed = _deterministic_seed(str(year), round_name, str(series_index), str(played_games), home, away)
+    try:
+        result = simulate_game(home, away, seed=seed)
+    except TypeError:
+        result = simulate_game(home, away)
+
+    home_runs = away_runs = None
+    html = None
+    extra: Dict[str, Any] = {}
+    if isinstance(result, tuple):
+        if len(result) >= 2:
+            home_runs, away_runs = result[0], result[1]
+        if len(result) >= 3:
+            html = result[2] if isinstance(result[2], str) else None
+        if len(result) >= 4 and isinstance(result[3], dict):
+            extra = result[3]
+
+    high_wins = existing_high
+    low_wins = existing_low
+    if isinstance(home_runs, int) and isinstance(away_runs, int):
+        winner_team = None
+        if home_runs > away_runs:
+            winner_team = home
+        elif away_runs > home_runs:
+            winner_team = away
+        if winner_team == high_id:
+            high_wins += 1
+        elif winner_team == low_id:
+            low_wins += 1
+
+    box_path = None
+    if html:
+        try:
+            from playbalance.simulation import save_boxscore_html as _save_html
+            game_id = f"{year}_{round_name}_S{series_index}_G{played_games}_{away}_at_{home}"
+            box_path = _save_html("playoffs", html, game_id)
+        except Exception:
+            box_path = None
+
+    result_str = None
+    if isinstance(home_runs, int) and isinstance(away_runs, int):
+        result_str = f"{home_runs}-{away_runs}"
+
+    matchup.games.append(
+        GameResult(home=home, away=away, date=None, result=result_str, boxscore=box_path, meta=extra)
+    )
+
+    if high_wins >= wins_needed or low_wins >= wins_needed:
+        matchup.winner = high_id if high_wins >= wins_needed else low_id
+    else:
+        matchup.winner = None
+    return True
+
+
 def _league_from_round_name(name: str) -> Optional[str]:
     # e.g., "AL DS" -> "AL"
     parts = str(name).split()
@@ -1188,6 +1279,69 @@ def simulate_playoffs(bracket: PlayoffBracket, *, simulate_game=None, persist_cb
     return bracket
 
 
+def simulate_next_game(bracket: PlayoffBracket, *, simulate_game=None, persist_cb=None) -> PlayoffBracket:
+    """Simulate only the next pending playoff game."""
+
+    year = bracket.year or _get_year_from_schedule()
+
+    def persist():
+        try:
+            if persist_cb:
+                persist_cb(bracket)
+            else:
+                save_bracket(bracket)
+        except Exception:
+            pass
+
+    _populate_next_round(bracket, cfg={
+        "series_lengths": getattr(bracket, "series_lengths", {"ds": 5, "cs": 7, "ws": 7, "wildcard": 3}),
+        "home_away_patterns": _DEFAULT_HOME_AWAY_PATTERNS,
+    })
+
+    champ_round_names = _championship_round_names(bracket)
+    for rnd in bracket.rounds:
+        pendings = [
+            i
+            for i, m in enumerate(rnd.matchups)
+            if not m.winner and m.high and m.low and m.high.team_id and m.low.team_id
+        ]
+        if not pendings:
+            if rnd.name in champ_round_names and rnd.matchups and all(m.winner for m in rnd.matchups):
+                champ_id = rnd.matchups[0].winner
+                if champ_id:
+                    bracket.champion = champ_id
+                    m = rnd.matchups[0]
+                    bracket.runner_up = m.low.team_id if champ_id == m.high.team_id else m.high.team_id
+                    persist()
+            continue
+        idx = pendings[0]
+        progressed = _simulate_next_series_game(
+            rnd.matchups[idx],
+            year=year,
+            round_name=rnd.name,
+            series_index=idx,
+            simulate_game=simulate_game,
+        )
+        if progressed:
+            persist()
+        if all(m.winner for m in rnd.matchups):
+            if rnd.name in champ_round_names and rnd.matchups:
+                champ_id = rnd.matchups[0].winner
+                if champ_id:
+                    bracket.champion = champ_id
+                    m = rnd.matchups[0]
+                    bracket.runner_up = m.low.team_id if champ_id == m.high.team_id else m.high.team_id
+                persist()
+                return bracket
+            _populate_next_round(bracket, cfg={
+                "series_lengths": getattr(bracket, "series_lengths", {"ds": 5, "cs": 7, "ws": 7, "wildcard": 3}),
+                "home_away_patterns": _DEFAULT_HOME_AWAY_PATTERNS,
+            })
+            persist()
+        break
+    return bracket
+
+
 def simulate_next_round(bracket: PlayoffBracket, *, simulate_game=None, persist_cb=None) -> PlayoffBracket:
     """Simulate only the next round that has any pending matchups."""
 
@@ -1253,5 +1407,6 @@ __all__ = [
     "generate_bracket",
     "simulate_series",
     "simulate_playoffs",
+    "simulate_next_game",
     "simulate_next_round",
 ]

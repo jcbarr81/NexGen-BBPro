@@ -56,6 +56,10 @@ except ModuleNotFoundError:  # pragma: no cover
 # Ensure project root is on the path when running this script directly
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+from playbalance.legacy_guard import require_legacy_enabled
+
+require_legacy_enabled("Legacy playbalance half-season script")
+
 from playbalance.schedule_generator import generate_mlb_schedule
 from playbalance.simulation import (
     FieldingState,

@@ -96,6 +96,7 @@ from .team_schedule_window import TeamScheduleWindow, SCHEDULE_FILE
 from .team_stats_window import TeamStatsWindow
 from .league_stats_window import LeagueStatsWindow
 from .league_leaders_window import LeagueLeadersWindow
+from .league_history_window import LeagueHistoryWindow
 from .news_window import NewsWindow
 from .season_progress_window import SeasonProgressWindow
 from .player_browser_dialog import PlayerBrowserDialog
@@ -108,6 +109,7 @@ from utils.roster_loader import load_roster
 from utils.player_loader import load_players_from_csv
 from utils.free_agent_finder import find_free_agents
 from utils.pitcher_role import get_role
+from utils.rating_display import rating_display_text
 from utils.team_loader import load_teams, save_team_settings
 from utils.path_utils import get_base_dir
 from utils.sim_date import get_current_sim_date
@@ -586,8 +588,8 @@ class OwnerDashboard(QMainWindow):
                 " injuries, and stats.</p>",
             ),
             TutorialStep(
-                "Trendlines & News",
-                "<p>Trend charts visualize the last ten games while the news card recaps recent sim events."
+                "Performers & Standings",
+                "<p>The dashboard highlights hot/cold performers from recent games and a snapshot of your division standings."
                 " Toggle \"View all\" to expand the news feed preview.</p>",
             ),
             TutorialStep(
@@ -1059,6 +1061,9 @@ class OwnerDashboard(QMainWindow):
     def open_league_leaders_window(self) -> None:
         show_on_top(LeagueLeadersWindow(self.players.values(), self))
 
+    def open_league_history_window(self) -> None:
+        show_on_top(LeagueHistoryWindow(self))
+
     def open_news_window(self) -> None:
         try:
             show_on_top(NewsWindow(self))
@@ -1111,10 +1116,31 @@ class OwnerDashboard(QMainWindow):
         age = self.calculate_age(p.birthdate)
         role = get_role(p)
         if role:
-            core = f"AS:{getattr(p, 'arm', 0)} EN:{getattr(p, 'endurance', 0)} CO:{getattr(p, 'control', 0)}"
+            arm_display = rating_display_text(
+                getattr(p, "arm", 0), key="AS", is_pitcher=True
+            )
+            endurance_display = rating_display_text(
+                getattr(p, "endurance", 0), key="EN", is_pitcher=True
+            )
+            control_display = rating_display_text(
+                getattr(p, "control", 0), key="CO", is_pitcher=True
+            )
+            core = (
+                f"AS:{arm_display} EN:{endurance_display} "
+                f"CO:{control_display}"
+            )
             
         else:
-            core = f"CH:{getattr(p, 'ch', 0)} PH:{getattr(p, 'ph', 0)} SP:{getattr(p, 'sp', 0)}"
+            ch_display = rating_display_text(
+                getattr(p, "ch", 0), key="CH", is_pitcher=False
+            )
+            ph_display = rating_display_text(
+                getattr(p, "ph", 0), key="PH", is_pitcher=False
+            )
+            sp_display = rating_display_text(
+                getattr(p, "sp", 0), key="SP", is_pitcher=False
+            )
+            core = f"CH:{ch_display} PH:{ph_display} SP:{sp_display}"
         label = f"{p.first_name} {p.last_name} ({age}) - {role or p.primary_position} | {core}"
         item = QListWidgetItem(label)
         item.setData(Qt.ItemDataRole.UserRole, p.player_id)

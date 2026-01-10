@@ -13,6 +13,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from services.injury_manager import disabled_list_days_remaining, disabled_list_label
 from services.training_history import load_player_training_history
+from services.injury_history import load_player_injury_history
 
 try:
     from PyQt6.QtCore import Qt, QPointF, QRectF
@@ -216,6 +217,7 @@ from models.base_player import BasePlayer
 from utils.stats_persistence import load_stats
 from utils.path_utils import get_base_dir
 from utils.player_loader import load_players_from_csv
+from utils.rating_display import rating_display_text
 from .components import Card, section_title
 
 
@@ -594,6 +596,10 @@ class PlayerProfileDialog(QDialog):
         if insights is not None:
             _layout_add_widget(root, insights)
 
+        injuries = self._build_injury_history_section()
+        if injuries is not None:
+            _layout_add_widget(root, injuries)
+
         stats_history = self._collect_stats_history()
         _layout_add_widget(root, self._build_stats_section(stats_history))
 
@@ -694,7 +700,12 @@ class PlayerProfileDialog(QDialog):
         pos_label = ', '.join(positions) if positions else '?'
         _layout_add_widget(layout, QLabel(f"Positions: {pos_label}"), 3, 0, 1, 2)
 
-        _layout_add_widget(layout, QLabel(f"Groundball/Flyball: {getattr(self.player, 'gf', '?')}"), 4, 0, 1, 2)
+        gf_display = rating_display_text(
+            getattr(self.player, "gf", "?"), key="GF", is_pitcher=False
+        )
+        _layout_add_widget(
+            layout, QLabel(f"Groundball/Flyball: {gf_display}"), 4, 0, 1, 2
+        )
         return panel
 
     def _build_overall_block(self, *, title: str = "Overall", overall: int | None = None) -> QWidget:
@@ -758,9 +769,24 @@ class PlayerProfileDialog(QDialog):
         _safe_set_vspacing(grid, 4)
 
         metric_pairs = [
-            ("Fielding", getattr(self.player, 'fa', '?')),
-            ("Arm", getattr(self.player, 'arm', '?')),
-            ("Speed", getattr(self.player, 'sp', '?')),
+            (
+                "Fielding",
+                rating_display_text(
+                    getattr(self.player, "fa", "?"), key="FA", is_pitcher=False
+                ),
+            ),
+            (
+                "Arm",
+                rating_display_text(
+                    getattr(self.player, "arm", "?"), key="AS", is_pitcher=False
+                ),
+            ),
+            (
+                "Speed",
+                rating_display_text(
+                    getattr(self.player, "sp", "?"), key="SP", is_pitcher=False
+                ),
+            ),
         ]
         for row, (label, value) in enumerate(metric_pairs):
             _layout_add_widget(grid, QLabel(label), row, 0)
@@ -865,20 +891,32 @@ class PlayerProfileDialog(QDialog):
         _layout_add_widget(layout, QLabel(f"Age: {age}"), 1, 0)
         _layout_add_widget(layout, QLabel(f"Role: {role}"), 1, 1)
 
-        bats = getattr(self.player, 'bats', '?')
-        gf = getattr(self.player, 'gf', '?')
+        bats = getattr(self.player, "bats", "?")
+        gf_display = rating_display_text(
+            getattr(self.player, "gf", "?"), key="GF", is_pitcher=True
+        )
         _layout_add_widget(layout, QLabel(f"Bats: {bats}"), 2, 0)
-        _layout_add_widget(layout, QLabel(f"GF: {gf}"), 2, 1)
+        _layout_add_widget(layout, QLabel(f"GF: {gf_display}"), 2, 1)
 
-        control = getattr(self.player, 'control', '?')
-        movement = getattr(self.player, 'movement', '?')
-        _layout_add_widget(layout, QLabel(f"Control: {control}"), 3, 0)
-        _layout_add_widget(layout, QLabel(f"Movement: {movement}"), 3, 1)
+        control_display = rating_display_text(
+            getattr(self.player, "control", "?"), key="CO", is_pitcher=True
+        )
+        movement_display = rating_display_text(
+            getattr(self.player, "movement", "?"), key="MO", is_pitcher=True
+        )
+        _layout_add_widget(layout, QLabel(f"Control: {control_display}"), 3, 0)
+        _layout_add_widget(layout, QLabel(f"Movement: {movement_display}"), 3, 1)
 
-        endurance = getattr(self.player, 'endurance', '?')
-        hold_runner = getattr(self.player, 'hold_runner', '?')
-        _layout_add_widget(layout, QLabel(f"Endurance: {endurance}"), 4, 0)
-        _layout_add_widget(layout, QLabel(f"Hold Runner: {hold_runner}"), 4, 1)
+        endurance_display = rating_display_text(
+            getattr(self.player, "endurance", "?"), key="EN", is_pitcher=True
+        )
+        hold_display = rating_display_text(
+            getattr(self.player, "hold_runner", "?"),
+            key="hold_runner",
+            is_pitcher=True,
+        )
+        _layout_add_widget(layout, QLabel(f"Endurance: {endurance_display}"), 4, 0)
+        _layout_add_widget(layout, QLabel(f"Hold Runner: {hold_display}"), 4, 1)
         return panel
 
     def _build_pitcher_arsenal_block(self) -> QWidget:
@@ -908,16 +946,18 @@ class PlayerProfileDialog(QDialog):
         for key, label in pitch_labels.items():
             value = getattr(self.player, key, None)
             if isinstance(value, (int, float)) and value > 0:
-                values.append((label, int(value)))
+                values.append((label, int(value), key))
         if not values:
             _layout_add_widget(layout, QLabel("No pitch data"), 1, 0, 1, 2)
             return wrapper
 
-        max_value = max(v for _, v in values)
-        for idx, (label, value) in enumerate(values, start=1):
+        max_value = max(v for _, v, _ in values)
+        for idx, (label, value, key) in enumerate(values, start=1):
             row = idx
             _layout_add_widget(layout, QLabel(label), row, 0)
-            value_label = QLabel(str(value))
+            value_label = QLabel(
+                rating_display_text(value, key=key, is_pitcher=True)
+            )
             if value == max_value:
                 _safe_call(value_label, "setProperty", "highlight", True)
             _layout_add_widget(layout, value_label, row, 1)
@@ -1137,13 +1177,17 @@ class PlayerProfileDialog(QDialog):
             rbi = stats.get("rbi")
             return str(int(rbi)) if isinstance(rbi, (int, float)) else "--"
         if metric_id == "speed":
-            return str(getattr(player, "sp", getattr(player, "speed", "--")))
+            value = getattr(player, "sp", getattr(player, "speed", "--"))
+            return rating_display_text(value, key="SP", is_pitcher=False)
         if metric_id == "power":
-            return str(getattr(player, "ph", getattr(player, "power", "--")))
+            value = getattr(player, "ph", getattr(player, "power", "--"))
+            return rating_display_text(value, key="PH", is_pitcher=False)
         if metric_id == "contact":
-            return str(getattr(player, "ch", getattr(player, "contact", "--")))
+            value = getattr(player, "ch", getattr(player, "contact", "--"))
+            return rating_display_text(value, key="CH", is_pitcher=False)
         if metric_id == "defense":
-            return str(getattr(player, "fa", getattr(player, "defense", "--")))
+            value = getattr(player, "fa", getattr(player, "defense", "--"))
+            return rating_display_text(value, key="FA", is_pitcher=False)
         if metric_id == "era":
             outs = safe("outs")
             ip = outs / 3 if outs else 0
@@ -1171,6 +1215,18 @@ class PlayerProfileDialog(QDialog):
                 return "--"
             walk = safe("bb")
             return f"{(walk * 9) / ip:.2f}"
+        if metric_id == "control":
+            return rating_display_text(
+                getattr(player, "control", "--"), key="CO", is_pitcher=True
+            )
+        if metric_id == "movement":
+            return rating_display_text(
+                getattr(player, "movement", "--"), key="MO", is_pitcher=True
+            )
+        if metric_id == "endurance":
+            return rating_display_text(
+                getattr(player, "endurance", "--"), key="EN", is_pitcher=True
+            )
         return str(getattr(player, metric_id, "--"))
 
     def _build_insights_section(self) -> Card | None:
@@ -1200,6 +1256,35 @@ class PlayerProfileDialog(QDialog):
 
             if idx < len(history) - 1:
                 _safe_call(layout, "addSpacing", 8)
+
+        return card
+
+    def _build_injury_history_section(self) -> Card | None:
+        history = load_player_injury_history(getattr(self.player, "player_id", ""), limit=10)
+        if not history:
+            return None
+
+        card = Card()
+        layout = card.layout()
+        if layout is None:
+            return None
+
+        _layout_add_widget(layout, section_title("Injury History"))
+        for idx, entry in enumerate(history):
+            date = str(entry.get("date") or "").strip()
+            if "T" in date:
+                date = date.split("T", 1)[0]
+            description = str(entry.get("description") or "Injury").strip()
+            if date:
+                text = f"{date} - {description}"
+            else:
+                season = str(entry.get("season_id") or "").strip()
+                text = f"{season} - {description}" if season else description
+            label = QLabel(text)
+            _safe_call(label, "setWordWrap", True)
+            _layout_add_widget(layout, label)
+            if idx < len(history) - 1:
+                _safe_call(layout, "addSpacing", 6)
 
         return card
 
@@ -1645,13 +1730,19 @@ class ComparisonSelectorDialog(QDialog):
         if self._is_pitcher:
             role = getattr(self.player, 'role', '') or 'Pitcher'
             _layout_add_widget(layout, QLabel(f"Role: {role}"))
-            _layout_add_widget(layout, QLabel(f"GF: {getattr(self.player, 'gf', '?')}"))
+            gf_display = rating_display_text(
+                getattr(self.player, "gf", "?"), key="GF", is_pitcher=True
+            )
+            _layout_add_widget(layout, QLabel(f"GF: {gf_display}"))
         else:
             _layout_add_widget(layout, QLabel(f"Primary: {self.player.primary_position}"))
             others = [p for p in getattr(self.player, 'other_positions', []) if p]
             if others:
                 _layout_add_widget(layout, QLabel("Other: " + ", ".join(others)))
-            _layout_add_widget(layout, QLabel(f"GF: {getattr(self.player, 'gf', '?')}"))
+            gf_display = rating_display_text(
+                getattr(self.player, "gf", "?"), key="GF", is_pitcher=False
+            )
+            _layout_add_widget(layout, QLabel(f"GF: {gf_display}"))
 
         _layout_add_stretch(layout)
         return panel
@@ -1670,10 +1761,12 @@ class ComparisonSelectorDialog(QDialog):
         _safe_set_hspacing(grid, 18)
         _safe_set_vspacing(grid, 8)
 
-        for col, (label, value) in enumerate(ratings.items()):
+        for col, (label, key, value) in enumerate(ratings):
             header = QLabel(label)
             _set_alignment(header, "AlignCenter")
-            value_label = QLabel(self._format_stat(value))
+            value_label = QLabel(
+                rating_display_text(value, key=key, is_pitcher=self._is_pitcher)
+            )
             _set_alignment(value_label, "AlignCenter")
             _layout_add_widget(grid, header, 0, col)
             _layout_add_widget(grid, value_label, 1, col)
@@ -1915,7 +2008,7 @@ class ComparisonSelectorDialog(QDialog):
         return card
 
     # ------------------------------------------------------------------
-    def _collect_ratings(self) -> Dict[str, Any]:
+    def _collect_ratings(self) -> List[Tuple[str, str, Any]]:
         excluded = {
             "player_id",
             "first_name",
@@ -1941,7 +2034,7 @@ class ComparisonSelectorDialog(QDialog):
                 values[key] = val
 
         if self._is_pitcher:
-            ordered: Dict[str, Any] = {}
+            ordered: List[Tuple[str, str, Any]] = []
             pitcher_sequence = [
                 ("arm", "AS"),
                 ("endurance", "EN"),
@@ -1958,12 +2051,12 @@ class ComparisonSelectorDialog(QDialog):
             ]
             for key, label in pitcher_sequence:
                 if key in values:
-                    ordered[label] = values.pop(key)
+                    ordered.append((label, key, values.pop(key)))
             for key in sorted(values):
-                ordered[self._format_rating_label(key)] = values[key]
+                ordered.append((self._format_rating_label(key), key, values[key]))
             return ordered
 
-        ordered: Dict[str, Any] = {}
+        ordered: List[Tuple[str, str, Any]] = []
         hitter_sequence = [
             ("ch", "CH"),
             ("ph", "PH"),
@@ -1973,9 +2066,9 @@ class ComparisonSelectorDialog(QDialog):
         ]
         for key, label in hitter_sequence:
             if key in values:
-                ordered[label] = values.pop(key)
+                ordered.append((label, key, values.pop(key)))
         for key in sorted(values):
-            ordered[self._format_rating_label(key)] = values[key]
+            ordered.append((self._format_rating_label(key), key, values[key]))
         return ordered
 
     def _format_rating_label(self, key: str) -> str:

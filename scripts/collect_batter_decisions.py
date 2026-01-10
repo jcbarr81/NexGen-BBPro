@@ -12,6 +12,10 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
+from playbalance.legacy_guard import require_legacy_enabled
+
+require_legacy_enabled("Legacy playbalance diagnostics script")
+
 from playbalance.diagnostics.batter_decision import BatterDecisionTracker
 from playbalance.orchestrator import _clone_team_state
 from playbalance.sim_config import load_tuned_playbalance_config

@@ -26,6 +26,7 @@ from utils.player_loader import load_players_from_csv
 from utils.player_writer import save_players_to_csv
 from utils.team_loader import load_teams
 from services.injury_manager import place_on_injury_list
+from services.injury_history import record_injury_event
 from utils.news_logger import log_news_event
 from utils.pitcher_role import get_role
 from utils.path_utils import get_base_dir
@@ -71,7 +72,12 @@ def _resolve_game_engine(engine: str | None) -> str:
     raw = engine or os.getenv("PB_GAME_ENGINE") or os.getenv("PB_SIM_ENGINE")
     token = str(raw or "").strip().lower()
     if token in {"legacy", "old", "pbini"}:
-        return "legacy"
+        from playbalance.legacy_guard import legacy_enabled, warn_legacy_disabled
+
+        if legacy_enabled():
+            return "legacy"
+        warn_legacy_disabled("Legacy playbalance engine")
+        return "physics"
     if token in {"physics", "phys", "new", "next"}:
         return "physics"
     return "physics"
@@ -1035,6 +1041,18 @@ def _run_physics_game(
     injury_events = metadata.get("injury_events", []) if isinstance(metadata, dict) else []
     if not isinstance(injury_events, list):
         injury_events = []
+    if injury_events:
+        team_lookup = {"home": home_id, "away": away_id}
+        for event in injury_events:
+            if not isinstance(event, dict):
+                continue
+            if event.get("team_id"):
+                continue
+            team_token = event.get("team")
+            if not team_token:
+                continue
+            team_token = str(team_token)
+            event["team_id"] = team_lookup.get(team_token, team_token)
     _apply_injury_events(
         injury_events,
         players_file=str(players_file),
@@ -1411,6 +1429,18 @@ def _apply_injury_events(
             f"{getattr(player, 'first_name', '')} {getattr(player, 'last_name', '')} injured ({description})",
             category="injury",
             team_id=team_id_str,
+        )
+        record_injury_event(
+            {
+                "player_id": str(player_id),
+                "team_id": team_id_str,
+                "description": description,
+                "days": days,
+                "dl_tier": dl_tier,
+                "trigger": event.get("trigger"),
+                "severity": event.get("severity"),
+                "date": injury_date.isoformat(),
+            }
         )
         changed_players = True
 

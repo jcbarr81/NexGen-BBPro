@@ -12,6 +12,7 @@ from utils.path_utils import get_base_dir
 from utils.pitcher_recovery import PitcherRecoveryTracker
 from utils.pitcher_role import get_role
 from utils.sim_date import get_current_sim_date
+from utils.standings_utils import default_record
 from utils.stats_persistence import load_stats as _load_season_stats
 from services.standings_repository import load_standings
 try:
@@ -69,6 +70,12 @@ def gather_owner_quick_metrics(
     trend_data = _collect_trend_data(
         team_id, base_dir, team_schedule, standings_normalized, window=window
     )
+    performers = _collect_recent_performers(
+        team_id, base_dir, roster, players, window=7, limit=3
+    )
+    division_standings = _collect_division_standings(
+        team_id, base_dir, standings_normalized
+    )
 
     injuries = _count_injuries(roster)
     probable_sp = _probable_starter_for_team(roster, players)
@@ -95,6 +102,8 @@ def gather_owner_quick_metrics(
         "bullpen": bullpen,
         "matchup": matchup,
         "trends": trend_data,
+        "performers": performers,
+        "division_standings": division_standings,
         "last_game": last_game_played,
     }
 
@@ -481,6 +490,323 @@ def _collect_trend_data(
             "win_pct": [p["win_pct"] for p in trend_points],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Recent performers and division standings
+
+
+def _team_player_ids(roster: Any | None) -> list[str]:
+    if roster is None:
+        return []
+    candidate_ids: list[str] = []
+    seen: set[str] = set()
+    for attr in ("act", "dl", "ir"):
+        try:
+            ids = getattr(roster, attr, []) or []
+        except Exception:
+            ids = []
+        for pid in ids:
+            if not pid:
+                continue
+            pid_str = str(pid)
+            if pid_str in seen:
+                continue
+            candidate_ids.append(pid_str)
+            seen.add(pid_str)
+    return candidate_ids
+
+
+def _load_recent_snapshots(base_dir: Path, *, window: int) -> list[Mapping[str, Any]]:
+    history_dir = base_dir / "data" / "season_history"
+    snapshots = sorted(history_dir.glob("*.json")) if history_dir.exists() else []
+    entries: list[Mapping[str, Any]] = []
+    for path in snapshots[-max(window, 2) :]:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        if "date" not in payload:
+            payload["date"] = path.stem
+        entries.append(payload)
+    if entries:
+        return entries
+
+    try:
+        stats_payload = _load_season_stats(base_dir / "data" / "season_stats.json")
+    except Exception:
+        return []
+    history = stats_payload.get("history", [])
+    if not isinstance(history, list):
+        return []
+    entries = [entry for entry in history if isinstance(entry, Mapping)]
+    entries.sort(key=lambda entry: str(entry.get("date", "")))
+    return entries[-max(window, 2) :]
+
+
+def _stat_delta(
+    new_stats: Mapping[str, Any],
+    old_stats: Mapping[str, Any],
+    keys: Sequence[str],
+) -> float:
+    new_val = _safe_float(_first_value(new_stats, keys)) or 0.0
+    old_val = _safe_float(_first_value(old_stats, keys)) or 0.0
+    delta = new_val - old_val
+    return delta if delta > 0 else 0.0
+
+
+def _ip_value(stats: Mapping[str, Any]) -> float:
+    ip_val = _safe_float(_first_value(stats, ("ip", "IP")))
+    if ip_val is not None:
+        return ip_val
+    outs = _safe_float(_first_value(stats, ("outs", "OUTS")))
+    if outs is not None:
+        return outs / 3.0
+    return 0.0
+
+
+def _ip_delta(new_stats: Mapping[str, Any], old_stats: Mapping[str, Any]) -> float:
+    delta = _ip_value(new_stats) - _ip_value(old_stats)
+    return delta if delta > 0 else 0.0
+
+
+def _collect_recent_performers(
+    team_id: str,
+    base_dir: Path,
+    roster: Any | None,
+    players: Mapping[str, Any] | None,
+    *,
+    window: int,
+    limit: int,
+) -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "window": window,
+        "hitters": {"hot": [], "cold": []},
+        "pitchers": {"hot": [], "cold": []},
+    }
+    if roster is None or not players:
+        result["note"] = "Roster data unavailable."
+        return result
+
+    snapshots = _load_recent_snapshots(base_dir, window=window)
+    if len(snapshots) < 2:
+        result["note"] = "Recent stat history unavailable."
+        return result
+
+    start_players = snapshots[0].get("players", {}) or {}
+    end_players = snapshots[-1].get("players", {}) or {}
+    if not isinstance(start_players, Mapping) or not isinstance(end_players, Mapping):
+        result["note"] = "Recent stat history unavailable."
+        return result
+
+    start_date = str(snapshots[0].get("date") or "")
+    end_date = str(snapshots[-1].get("date") or "")
+    if start_date and end_date:
+        result["range"] = {"start": start_date, "end": end_date}
+
+    candidate_ids = _team_player_ids(roster)
+    if not candidate_ids:
+        result["note"] = "No roster data available."
+        return result
+
+    min_ab = 8.0
+    min_ip = 3.0
+    hitters: list[Dict[str, Any]] = []
+    pitchers: list[Dict[str, Any]] = []
+    for pid in candidate_ids:
+        player = players.get(pid)
+        if player is None:
+            continue
+        start_stats = start_players.get(pid, {}) or {}
+        end_stats = end_players.get(pid, {}) or {}
+        if not isinstance(start_stats, Mapping) or not isinstance(end_stats, Mapping):
+            continue
+
+        if _is_pitcher_type(player):
+            ip = _ip_delta(end_stats, start_stats)
+            if ip < min_ip:
+                continue
+            er = _stat_delta(end_stats, start_stats, ("er", "ER"))
+            bb = _stat_delta(end_stats, start_stats, ("bb", "BB"))
+            hits = _stat_delta(end_stats, start_stats, ("h", "H"))
+            so = _stat_delta(end_stats, start_stats, ("so", "SO", "k", "K"))
+            era = (er * 9.0) / ip if ip else None
+            whip = (bb + hits) / ip if ip else None
+            if era is None:
+                continue
+            pitchers.append(
+                {
+                    "player_id": str(pid),
+                    "name": _format_player_name(player),
+                    "era": round(float(era), 2),
+                    "whip": round(float(whip), 2) if whip is not None else None,
+                    "ip": float(ip),
+                    "so": int(round(so)),
+                }
+            )
+        else:
+            ab = _stat_delta(end_stats, start_stats, ("ab", "AB"))
+            if ab < min_ab:
+                continue
+            hits = _stat_delta(end_stats, start_stats, ("h", "H"))
+            hr = _stat_delta(end_stats, start_stats, ("hr", "HR"))
+            rbi = _stat_delta(end_stats, start_stats, ("rbi", "RBI"))
+            bb = _stat_delta(end_stats, start_stats, ("bb", "BB"))
+            hbp = _stat_delta(end_stats, start_stats, ("hbp", "HBP"))
+            sf = _stat_delta(end_stats, start_stats, ("sf", "SF"))
+            doubles = _stat_delta(end_stats, start_stats, ("2b", "b2", "B2"))
+            triples = _stat_delta(end_stats, start_stats, ("3b", "b3", "B3"))
+            singles = max(hits - doubles - triples - hr, 0.0)
+            avg = hits / ab if ab else None
+            denom_obp = ab + bb + hbp + sf
+            obp = (hits + bb + hbp) / denom_obp if denom_obp else None
+            total_bases = singles + 2 * doubles + 3 * triples + 4 * hr
+            slg = total_bases / ab if ab else None
+            ops = (obp + slg) if obp is not None and slg is not None else None
+            if ops is None:
+                continue
+            hitters.append(
+                {
+                    "player_id": str(pid),
+                    "name": _format_player_name(player),
+                    "avg": round(float(avg), 3) if avg is not None else None,
+                    "ops": round(float(ops), 3) if ops is not None else None,
+                    "hr": int(round(hr)),
+                    "rbi": int(round(rbi)),
+                    "ab": int(round(ab)),
+                }
+            )
+
+    if hitters:
+        hot_hitters = sorted(
+            hitters,
+            key=lambda entry: (
+                entry.get("ops", 0.0),
+                entry.get("avg", 0.0),
+                entry.get("ab", 0),
+            ),
+            reverse=True,
+        )
+        cold_hitters = sorted(
+            hitters,
+            key=lambda entry: (
+                entry.get("ops", 0.0),
+                entry.get("avg", 0.0),
+                entry.get("ab", 0),
+            ),
+        )
+        result["hitters"]["hot"] = hot_hitters[:limit]
+        result["hitters"]["cold"] = cold_hitters[:limit]
+
+    if pitchers:
+        hot_pitchers = sorted(
+            pitchers,
+            key=lambda entry: (entry.get("era", 0.0), -entry.get("ip", 0.0)),
+        )
+        cold_pitchers = sorted(
+            pitchers,
+            key=lambda entry: (-entry.get("era", 0.0), -entry.get("ip", 0.0)),
+        )
+        result["pitchers"]["hot"] = hot_pitchers[:limit]
+        result["pitchers"]["cold"] = cold_pitchers[:limit]
+
+    if not hitters and not pitchers:
+        result["note"] = "Recent performance samples unavailable."
+    return result
+
+
+def _load_team_metadata(base_dir: Path) -> Dict[str, Dict[str, str]]:
+    path = base_dir / "data" / "teams.csv"
+    if not path.exists():
+        return {}
+    metadata: Dict[str, Dict[str, str]] = {}
+    try:
+        with path.open("r", newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            for row in reader:
+                team_id = str(row.get("team_id") or "").strip()
+                if not team_id:
+                    continue
+                city = str(row.get("city") or "").strip()
+                name = str(row.get("name") or "").strip()
+                division = str(row.get("division") or "").strip()
+                abbr = str(row.get("abbreviation") or team_id).strip()
+                full_name = " ".join(part for part in (city, name) if part).strip()
+                metadata[team_id] = {
+                    "division": division,
+                    "label": abbr or team_id,
+                    "name": full_name or team_id,
+                }
+    except OSError:
+        return {}
+    return metadata
+
+
+def _collect_division_standings(
+    team_id: str,
+    base_dir: Path,
+    standings: Mapping[str, Mapping[str, Any]],
+) -> Dict[str, Any]:
+    meta = _load_team_metadata(base_dir)
+    team_meta = meta.get(team_id, {})
+    division = team_meta.get("division") or "--"
+    if division == "--":
+        return {"division": division, "teams": []}
+
+    division_teams = [
+        (tid, info) for tid, info in meta.items() if info.get("division") == division
+    ]
+    if not division_teams:
+        return {"division": division, "teams": []}
+
+    def win_pct(record: Mapping[str, Any]) -> float:
+        wins = int(record.get("wins", 0) or 0)
+        losses = int(record.get("losses", 0) or 0)
+        games = wins + losses
+        return wins / games if games else 0.0
+
+    def sort_key(team_info: tuple[str, Mapping[str, str]]) -> tuple[float, int]:
+        record = standings.get(team_info[0], default_record())
+        return (win_pct(record), int(record.get("wins", 0)))
+
+    teams_sorted = sorted(division_teams, key=sort_key, reverse=True)
+    leader_record = (
+        standings.get(teams_sorted[0][0], default_record())
+        if teams_sorted
+        else default_record()
+    )
+    leader_wins = int(leader_record.get("wins", 0))
+    leader_losses = int(leader_record.get("losses", 0))
+
+    rows: list[Dict[str, Any]] = []
+    for tid, info in teams_sorted:
+        record = standings.get(tid, default_record())
+        wins = int(record.get("wins", 0))
+        losses = int(record.get("losses", 0))
+        games = wins + losses
+        pct = wins / games if games else 0.0
+        gb_value = ((leader_wins - wins) + (losses - leader_losses)) / 2
+        if abs(gb_value) < 1e-6:
+            gb_str = "0"
+        else:
+            gb_str = f"{gb_value:.1f}".rstrip("0").rstrip(".")
+        rows.append(
+            {
+                "team_id": tid,
+                "label": info.get("label") or tid,
+                "name": info.get("name") or tid,
+                "wins": wins,
+                "losses": losses,
+                "pct": round(pct, 3),
+                "gb": gb_str,
+                "streak": _format_streak(record),
+                "last10": _format_last10(record),
+                "is_current": tid == team_id,
+            }
+        )
+    return {"division": division, "teams": rows}
 
 
 # ---------------------------------------------------------------------------

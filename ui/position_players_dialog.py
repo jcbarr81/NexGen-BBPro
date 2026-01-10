@@ -17,6 +17,7 @@ from ui.player_profile_dialog import PlayerProfileDialog
 from models.base_player import BasePlayer
 from models.roster import Roster
 from utils.pitcher_role import get_role
+from utils.rating_display import rating_display_text, rating_display_value
 
 
 # ---------------------------------------------------------------------------
@@ -43,6 +44,8 @@ COLUMNS = [
     "FA",
     "AS",
 ]
+
+RATING_COLUMNS = {"CH", "PH", "SP", "FA", "AS"}
 
 
 class NumberDelegate(QtWidgets.QStyledItemDelegate):
@@ -96,7 +99,14 @@ class SlotItem(QtWidgets.QTableWidgetItem):
 class NumericItem(QtWidgets.QTableWidgetItem):
     """Item that stores numeric sort keys when possible."""
 
-    def __init__(self, value: object, *, align_left: bool = False) -> None:
+    def __init__(
+        self,
+        value: object,
+        *,
+        align_left: bool = False,
+        display_value: object | None = None,
+        sort_value: object | None = None,
+    ) -> None:
         super().__init__()
         flags = self.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable
         self.setFlags(flags)
@@ -106,17 +116,29 @@ class NumericItem(QtWidgets.QTableWidgetItem):
             else QtCore.Qt.AlignmentFlag.AlignRight
         )
         self.setTextAlignment(alignment | QtCore.Qt.AlignmentFlag.AlignVCenter)
-        self._set_value(value)
+        self._set_value(value, display_value=display_value, sort_value=sort_value)
 
-    def _set_value(self, value: object) -> None:
+    def _set_value(
+        self,
+        value: object,
+        *,
+        display_value: object | None = None,
+        sort_value: object | None = None,
+    ) -> None:
+        numeric_source = value if sort_value is None else sort_value
         try:
-            numeric = float(value)
+            numeric = float(numeric_source)
         except (TypeError, ValueError):
-            self.setData(QtCore.Qt.ItemDataRole.DisplayRole, str(value))
+            display = value if display_value is None else display_value
+            self.setData(QtCore.Qt.ItemDataRole.DisplayRole, str(display))
         else:
-            display = int(numeric) if numeric.is_integer() else numeric
+            if display_value is None:
+                display = int(numeric) if numeric.is_integer() else numeric
+            else:
+                display = display_value
             self.setData(QtCore.Qt.ItemDataRole.DisplayRole, display)
             self.setData(QtCore.Qt.ItemDataRole.EditRole, numeric)
+            self.setData(QtCore.Qt.ItemDataRole.SortRole, numeric)
 
 
 class RetroHeader(QtWidgets.QWidget):
@@ -188,7 +210,19 @@ class RosterTable(QtWidgets.QTableWidget):
                     )
                 else:
                     align_left = column in {"Player Name", "POSN", "B"}
-                    item = NumericItem(val, align_left=align_left)
+                    display_value = None
+                    if column in RATING_COLUMNS:
+                        display_value = rating_display_value(
+                            val,
+                            key=column,
+                            is_pitcher=False,
+                        )
+                    item = NumericItem(
+                        val,
+                        align_left=align_left,
+                        display_value=display_value,
+                        sort_value=val if column in RATING_COLUMNS else None,
+                    )
                 if c == 0:
                     item.setData(QtCore.Qt.ItemDataRole.UserRole, pid)
                 self.setItem(r, c, item)
@@ -386,15 +420,30 @@ class PositionPlayersDialog(QtWidgets.QDialog):
         age = self._calculate_age(p.birthdate)
         role = get_role(p)
         if role:
+            arm_display = rating_display_text(
+                getattr(p, "arm", 0), key="AS", is_pitcher=True
+            )
+            endurance_display = rating_display_text(
+                getattr(p, "endurance", 0), key="EN", is_pitcher=True
+            )
+            control_display = rating_display_text(
+                getattr(p, "control", 0), key="CO", is_pitcher=True
+            )
             core = (
-                f"AS:{getattr(p, 'arm', 0)} EN:{getattr(p, 'endurance', 0)} "
-                f"CO:{getattr(p, 'control', 0)}"
+                f"AS:{arm_display} EN:{endurance_display} "
+                f"CO:{control_display}"
             )
         else:
-            core = (
-                f"CH:{getattr(p, 'ch', 0)} PH:{getattr(p, 'ph', 0)} "
-                f"SP:{getattr(p, 'sp', 0)}"
+            ch_display = rating_display_text(
+                getattr(p, "ch", 0), key="CH", is_pitcher=False
             )
+            ph_display = rating_display_text(
+                getattr(p, "ph", 0), key="PH", is_pitcher=False
+            )
+            sp_display = rating_display_text(
+                getattr(p, "sp", 0), key="SP", is_pitcher=False
+            )
+            core = f"CH:{ch_display} PH:{ph_display} SP:{sp_display}"
         label = (
             f"{p.first_name} {p.last_name} ({age}) - {role or p.primary_position} | {core}"
         )

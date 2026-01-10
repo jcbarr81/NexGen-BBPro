@@ -29,6 +29,10 @@ class SchedulePage(QWidget):
         btn_leaders.clicked.connect(dashboard.open_league_leaders_window)
         card.layout().addWidget(btn_leaders)
 
+        btn_history = QPushButton("League History", objectName="Primary")
+        btn_history.clicked.connect(dashboard.open_league_history_window)
+        card.layout().addWidget(btn_history)
+
         card.layout().addStretch()
         layout.addWidget(card)
         layout.addStretch()

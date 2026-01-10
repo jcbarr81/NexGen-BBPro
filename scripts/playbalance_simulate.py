@@ -38,6 +38,10 @@ except ModuleNotFoundError:  # pragma: no cover - fallback when tqdm unavailable
 # Allow running the script without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from playbalance.legacy_guard import require_legacy_enabled
+
+require_legacy_enabled("Legacy playbalance simulation script")
+
 from playbalance.benchmarks import load_benchmarks, league_average
 from playbalance.schedule_generator import generate_mlb_schedule
 from playbalance.sim_config import load_tuned_playbalance_config

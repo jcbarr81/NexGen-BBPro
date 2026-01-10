@@ -46,3 +46,12 @@ def get_role(pitcher: Any) -> str:
         return ""
 
     return "SP" if endurance > ENDURANCE_THRESHOLD else "RP"
+
+
+def get_display_role(pitcher: Any) -> str:
+    """Return the preferred pitching role if set, falling back to ``get_role``."""
+
+    preferred = str(_get_attr(pitcher, "preferred_pitching_role", "")).upper().strip()
+    if preferred:
+        return preferred
+    return get_role(pitcher)
