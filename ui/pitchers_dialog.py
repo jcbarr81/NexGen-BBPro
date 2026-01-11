@@ -133,6 +133,16 @@ class SlotItem(QtWidgets.QTableWidgetItem):
 class NumericItem(QtWidgets.QTableWidgetItem):
     """Item that stores numeric sort keys when possible."""
 
+    def __lt__(self, other: QtWidgets.QTableWidgetItem) -> bool:  # type: ignore[override]
+        left = self.data(QtCore.Qt.ItemDataRole.EditRole)
+        right = other.data(QtCore.Qt.ItemDataRole.EditRole)
+        if left is None or right is None:
+            return super().__lt__(other)
+        try:
+            return float(left) < float(right)
+        except (TypeError, ValueError):
+            return super().__lt__(other)
+
     def __init__(
         self,
         value: object,
@@ -172,7 +182,6 @@ class NumericItem(QtWidgets.QTableWidgetItem):
                 display = display_value
             self.setData(QtCore.Qt.ItemDataRole.DisplayRole, display)
             self.setData(QtCore.Qt.ItemDataRole.EditRole, numeric)
-            self.setData(QtCore.Qt.ItemDataRole.SortRole, numeric)
 
 
 class RetroHeader(QtWidgets.QWidget):

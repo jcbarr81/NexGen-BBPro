@@ -1,0 +1,65 @@
+{
+  "season_id": "usabl-2026",
+  "events": [
+    {
+      "date": "2026-04-21",
+      "player_id": "P3305",
+      "team_id": "WAS",
+      "description": "Day-to-day shoulder bruise",
+      "trigger": "collision",
+      "severity": "minor",
+      "days": 3,
+      "dl_tier": "none"
+    },
+    {
+      "date": "2026-05-01",
+      "player_id": "P1701",
+      "team_id": "LOS",
+      "description": "Day-to-day shoulder bruise",
+      "trigger": "hit_by_pitch",
+      "severity": "minor",
+      "days": 1,
+      "dl_tier": "none"
+    },
+    {
+      "date": "2026-06-16",
+      "player_id": "P4330",
+      "team_id": "HOU",
+      "description": "Day-to-day shoulder bruise",
+      "trigger": "collision",
+      "severity": "minor",
+      "days": 1,
+      "dl_tier": "none"
+    },
+    {
+      "date": "2026-06-21",
+      "player_id": "P8100",
+      "team_id": "LAS",
+      "description": "Day-to-day shoulder bruise",
+      "trigger": "hit_by_pitch",
+      "severity": "minor",
+      "days": 2,
+      "dl_tier": "none"
+    },
+    {
+      "date": "2026-07-02",
+      "player_id": "P8279",
+      "team_id": "GRE",
+      "description": "Day-to-day shoulder bruise",
+      "trigger": "collision",
+      "severity": "minor",
+      "days": 2,
+      "dl_tier": "none"
+    },
+    {
+      "date": "2026-07-10",
+      "player_id": "P5113",
+      "team_id": "HOU",
+      "description": "Day-to-day shoulder bruise",
+      "trigger": "collision",
+      "severity": "minor",
+      "days": 3,
+      "dl_tier": "none"
+    }
+  ]
+}
